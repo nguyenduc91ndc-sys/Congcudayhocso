@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '../types';
-import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail } from 'lucide-react';
+import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail, Code2, MessageCircle } from 'lucide-react';
 import { getTrialStatusByEmail, upgradeToPro, setCurrentEmail, isValidEmail, canUseTrialByEmail } from '../utils/trialUtils';
 
 interface LoginProps {
@@ -311,13 +311,24 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </AnimatePresence>
 
         {/* Contact Info */}
-        <div className="mt-8 pt-6 border-t border-purple-200/50">
-          <p className="text-sm text-purple-700/70 font-medium">
-            Phát triển bởi <span className="font-bold text-purple-800">Đức Nguyễn</span>
-          </p>
-          <p className="text-xs text-purple-600/60 mt-1">
-            Zalo: <a href="https://zalo.me/0975509490" target="_blank" rel="noopener noreferrer" className="font-semibold hover:text-purple-800 transition-colors">0975509490</a>
-          </p>
+        {/* Contact Info */}
+        <div className="mt-8 pt-6 border-t border-purple-200/50 flex flex-col items-center gap-3">
+          <div className="flex items-center gap-2 text-sm font-medium bg-white/50 px-4 py-2 rounded-full border border-purple-100/50 shadow-sm backdrop-blur-sm">
+            <Code2 size={16} className="text-purple-600" />
+            <span className="text-purple-800/80">
+              Phát triển bởi <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-600">Đức Nguyễn</span>
+            </span>
+          </div>
+
+          <a
+            href="https://zalo.me/0975509490"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center gap-2 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-all bg-blue-50/80 hover:bg-blue-100 px-3 py-1.5 rounded-full border border-blue-100"
+          >
+            <MessageCircle size={14} className="fill-blue-600/20" />
+            <span>Zalo: 0975509490</span>
+          </a>
         </div>
       </motion.div>
     </div>
