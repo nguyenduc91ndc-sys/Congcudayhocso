@@ -6,20 +6,16 @@ import { motion, AnimatePresence } from 'framer-motion';
 const ThemeSelector: React.FC = () => {
     const { currentTheme, setTheme } = useTheme();
     const [isOpen, setIsOpen] = React.useState(false);
-    const isDark = currentTheme.type === 'dark';
 
     return (
         <div className="relative">
             <button
                 onClick={() => setIsOpen(!isOpen)}
-                className={`flex items-center gap-2 px-3 py-2 rounded-lg transition-all border ${isDark
-                    ? 'bg-slate-800/50 hover:bg-slate-700 border-slate-700/50 text-slate-300'
-                    : 'bg-white/50 hover:bg-slate-100 border-slate-200 text-slate-600'
-                    }`}
+                className="flex items-center gap-2 px-3 py-2 rounded-lg bg-slate-800/50 hover:bg-slate-700 transition-all border border-slate-700/50"
                 title="Đổi màu giao diện"
             >
-                <Palette size={18} className={isDark ? "text-slate-400" : "text-slate-600"} />
-                <span className="hidden md:inline text-sm font-medium">
+                <Palette size={18} className="text-slate-400" />
+                <span className="hidden md:inline text-sm font-medium text-slate-300">
                     {currentTheme.emoji}
                 </span>
             </button>
@@ -30,12 +26,9 @@ const ThemeSelector: React.FC = () => {
                         initial={{ opacity: 0, scale: 0.95, y: -10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                        className={`absolute right-0 top-12 backdrop-blur-xl rounded-xl shadow-2xl border p-3 z-50 min-w-[240px] max-h-[400px] overflow-y-auto ${isDark
-                            ? 'bg-slate-800/95 border-slate-700 text-slate-200'
-                            : 'bg-white/90 border-white/40 text-slate-800'
-                            }`}
+                        className="absolute right-0 top-12 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 p-3 z-50 min-w-[220px] max-h-[400px] overflow-y-auto"
                     >
-                        <p className={`text-xs mb-2 px-2 font-bold uppercase tracking-wider ${isDark ? 'text-slate-500' : 'text-slate-500'}`}>Chọn giao diện</p>
+                        <p className="text-xs text-slate-500 mb-2 px-2 font-medium">Chọn theme</p>
                         <div className="space-y-1">
                             {themes.map((theme) => (
                                 <button
@@ -44,29 +37,23 @@ const ThemeSelector: React.FC = () => {
                                         setTheme(theme.id);
                                         setIsOpen(false);
                                     }}
-                                    className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all ${currentTheme.id === theme.id
-                                        ? (isDark ? 'bg-slate-700 ring-2 ring-purple-500 shadow-sm' : 'bg-purple-50 ring-2 ring-purple-500 shadow-sm')
-                                        : (isDark ? 'hover:bg-slate-700/50' : 'hover:bg-slate-100')
+                                    className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg transition-all ${currentTheme.id === theme.id
+                                            ? 'bg-slate-700 ring-1 ring-purple-500'
+                                            : 'hover:bg-slate-700/50'
                                         }`}
                                 >
                                     <div
-                                        className="w-8 h-8 rounded-full shadow-sm border-2 border-white/20 flex-shrink-0"
+                                        className="w-7 h-7 rounded-lg shadow-sm border border-white/10 flex-shrink-0"
                                         style={{
-                                            background: `linear-gradient(135deg, ${theme.from}, ${theme.via}, ${theme.to})`,
+                                            background: `linear-gradient(135deg, ${theme.gradientFrom}, ${theme.gradientVia}, ${theme.gradientTo})`,
                                         }}
                                     />
-                                    <div className="flex-1 text-left">
-                                        <p className={`text-sm font-bold ${currentTheme.id === theme.id
-                                            ? 'text-purple-500'
-                                            : (isDark ? 'text-slate-200' : 'text-slate-700')
-                                            }`}>
-                                            {theme.name}
-                                        </p>
-                                        <p className="text-xs text-slate-400 font-medium capitalize">
-                                            {theme.type} mode
-                                        </p>
-                                    </div>
-                                    <span className="text-xl">{theme.emoji}</span>
+                                    <span className="text-sm font-medium text-slate-200 flex-1 text-left">
+                                        {theme.emoji} {theme.name}
+                                    </span>
+                                    {currentTheme.id === theme.id && (
+                                        <span className="text-emerald-400 text-sm">✓</span>
+                                    )}
                                 </button>
                             ))}
                         </div>
