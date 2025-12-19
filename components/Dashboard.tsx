@@ -9,7 +9,7 @@ import {
 import ThemeSelector from './ThemeSelector';
 import { useTheme } from '../contexts/ThemeContext';
 import { getTrialStatus, activateWithCode, upgradeToPro, useTrialPlay } from '../utils/trialUtils';
-import { createShareUrl } from '../utils/shareUtils';
+import { createShareUrl, shortenUrl } from '../utils/shareUtils';
 import { verifyAdminPassword, isAdminAuthenticated, setAdminAuthenticated } from '../utils/adminAuth';
 
 interface DashboardProps {
@@ -146,7 +146,8 @@ const VideoItem: React.FC<{
     onDelete: () => void;
     onShare: () => void;
     canPlay: boolean;
-}> = ({ lesson, onPlay, onEdit, onDelete, onShare, canPlay }) => (
+    isShortening?: boolean;
+}> = ({ lesson, onPlay, onEdit, onDelete, onShare, canPlay, isShortening }) => (
     <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
@@ -199,9 +200,16 @@ const VideoItem: React.FC<{
             {/* Copy Link Button */}
             <button
                 onClick={onShare}
-                className="py-2 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-amber-400 to-orange-500 shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
+                disabled={isShortening}
+                className="py-2 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-amber-400 to-orange-500 shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-wait"
             >
-                Sao chép link
+                {isShortening ? (
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                ) : (
+                    <>
+                        <Share2 size={16} /> Sao chép link
+                    </>
+                )}
             </button>
 
             {/* Delete Button */}
@@ -225,6 +233,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const [licenseError, setLicenseError] = useState('');
     const [activeTab, setActiveTab] = useState<'tools' | 'videos'>('tools');
     const [copiedId, setCopiedId] = useState<string | null>(null);
+    const [isShorteningId, setIsShorteningId] = useState<string | null>(null);
     const [showAdminModal, setShowAdminModal] = useState(false);
     const [adminPassword, setAdminPassword] = useState('');
     const [adminError, setAdminError] = useState('');
@@ -268,10 +277,24 @@ const Dashboard: React.FC<DashboardProps> = ({
     };
 
     const handleShare = async (lesson: VideoLesson) => {
-        const shareUrl = createShareUrl(lesson);
-        await navigator.clipboard.writeText(shareUrl);
-        setCopiedId(lesson.id);
-        setTimeout(() => setCopiedId(null), 2000);
+        if (isShorteningId) return;
+        setIsShorteningId(lesson.id);
+
+        try {
+            const longUrl = createShareUrl(lesson);
+            const shortUrl = await shortenUrl(longUrl);
+            await navigator.clipboard.writeText(shortUrl);
+            setCopiedId(lesson.id);
+            setTimeout(() => setCopiedId(null), 2000);
+        } catch (error) {
+            console.error('Share error:', error);
+            // Fallback
+            const longUrl = createShareUrl(lesson);
+            await navigator.clipboard.writeText(longUrl);
+            setCopiedId(lesson.id);
+        } finally {
+            setIsShorteningId(null);
+        }
     };
 
     // Admin access handler - kiểm tra session hoặc yêu cầu mật khẩu
@@ -574,6 +597,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                 onDelete={() => onDelete(lesson.id)}
                                                 onShare={() => handleShare(lesson)}
                                                 canPlay={isPro || remainingTrials > 0}
+                                                isShortening={isShorteningId === lesson.id}
                                             />
                                         ))}
                                     </div>

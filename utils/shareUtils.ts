@@ -71,9 +71,25 @@ export const decodeVideoData = (encodedData: string): VideoLesson | null => {
 };
 
 /**
- * Tạo URL chia sẻ với dữ liệu video nén
+ * Tạo URL chia sẻ với dữ liệu video nén (URL dài)
  */
 export const createShareUrl = (lesson: VideoLesson): string => {
     const encoded = encodeVideoData(lesson);
     return `${window.location.origin}?v=${encoded}`;
+};
+
+/**
+ * Rút gọn URL bằng TinyURL API
+ */
+export const shortenUrl = async (longUrl: string): Promise<string> => {
+    try {
+        const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+        if (response.ok) {
+            return await response.text();
+        }
+        return longUrl; // Fallback nếu lỗi
+    } catch (error) {
+        console.error('Error shortening URL:', error);
+        return longUrl; // Fallback nếu lỗi
+    }
 };
