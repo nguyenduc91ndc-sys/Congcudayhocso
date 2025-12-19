@@ -204,67 +204,45 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-4"
             >
-              {showInAppWarning ? (
-                /* Hiển thị nút mở trình duyệt nếu đang ở in-app browser */
-                <>
-                  <div className="bg-yellow-100/80 border border-yellow-400 rounded-xl p-4 text-left">
-                    <p className="text-yellow-800 font-bold text-sm mb-2">⚠️ Không thể đăng nhập Google</p>
-                    <p className="text-yellow-700 text-xs">
-                      Trình duyệt Zalo/Facebook không hỗ trợ đăng nhập Google. Vui lòng mở bằng Chrome/Safari.
-                    </p>
-                  </div>
-                  <motion.button
-                    onClick={openInBrowser}
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    className="w-full py-4 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
-                  >
-                    🌐 Mở bằng trình duyệt
-                  </motion.button>
-                </>
-              ) : (
-                /* Hiển thị Google Login nếu ở trình duyệt bình thường */
-                <>
-                  <div className="flex justify-center">
-                    <GoogleLogin
-                      onSuccess={(credentialResponse) => {
-                        if (credentialResponse.credential) {
-                          const decoded = jwtDecode<GoogleCredentialPayload>(credentialResponse.credential);
-                          const avatar = decoded.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decoded.name)}&backgroundColor=7c3aed&textColor=ffffff`;
+              {/* Google Login Button */}
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                      const decoded = jwtDecode<GoogleCredentialPayload>(credentialResponse.credential);
+                      const avatar = decoded.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decoded.name)}&backgroundColor=7c3aed&textColor=ffffff`;
 
-                          const userData: User = {
-                            id: decoded.sub,
-                            name: decoded.name,
-                            avatar: avatar,
-                            email: decoded.email,
-                          };
+                      const userData: User = {
+                        id: decoded.sub,
+                        name: decoded.name,
+                        avatar: avatar,
+                        email: decoded.email,
+                      };
 
-                          onLogin(userData);
-                        }
-                      }}
-                      onError={() => {
-                        setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
-                      }}
-                      theme="filled_blue"
-                      size="large"
-                      shape="pill"
-                      text="signin_with"
-                      locale="vi"
-                    />
-                  </div>
+                      onLogin(userData);
+                    }
+                  }}
+                  onError={() => {
+                    setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
+                  }}
+                  theme="filled_blue"
+                  size="large"
+                  shape="pill"
+                  text="signin_with"
+                  locale="vi"
+                />
+              </div>
 
-                  {/* Error Message */}
-                  {error && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className="bg-red-100/80 border border-red-300 rounded-xl p-3 flex items-start gap-2 text-left"
-                    >
-                      <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
-                      <p className="text-sm text-red-700">{error}</p>
-                    </motion.div>
-                  )}
-                </>
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-100/80 border border-red-300 rounded-xl p-3 flex items-start gap-2 text-left"
+                >
+                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+                  <p className="text-sm text-red-700">{error}</p>
+                </motion.div>
               )}
             </motion.div>
           )}
