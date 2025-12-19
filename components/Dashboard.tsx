@@ -116,13 +116,13 @@ const VideoItem: React.FC<{
         <div className="flex justify-between items-start mb-2">
             <h4 className={`text-xl font-bold truncate pr-4 flex-1 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{lesson.title}</h4>
             <span className="flex-shrink-0 px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-semibold shadow-sm">
-                {lesson.questions.length} câu hỏi
+                {(lesson.questions || []).length} câu hỏi
             </span>
         </div>
 
         {/* Date */}
         <p className={`text-sm mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
-            Cập nhật: {new Date(lesson.createdAt).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}
+            Cập nhật: {new Date(lesson.createdAt || Date.now()).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
 
         {/* View Original Link */}
@@ -537,7 +537,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                             <HelpCircle size={24} />
                                         </div>
                                         <div>
-                                            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{lessons.reduce((sum, l) => sum + l.questions.length, 0)}</p>
+                                            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{lessons.reduce((sum, l) => sum + (l.questions || []).length, 0)}</p>
                                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Câu hỏi</p>
                                         </div>
                                     </div>
