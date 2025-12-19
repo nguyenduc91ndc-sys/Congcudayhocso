@@ -1,0 +1,5 @@
+{
+  "name": "Galvanic Cell Simulator",
+  "description": "An interactive HTML5 simulation of a Galvanic (Voltaic) Cell. Users can select different metals for the anode and cathode to observe the electrochemical potential, electron flow, and chemical equations.",
+  "requestFramePermissions": []
+}

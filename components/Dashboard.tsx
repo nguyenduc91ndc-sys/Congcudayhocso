@@ -6,8 +6,7 @@ import {
     Play, Trash2, Edit3, Share2, Box, Brain, RotateCcw, HelpCircle,
     Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield
 } from 'lucide-react';
-import ThemeSelector from './ThemeSelector';
-import { useTheme } from '../contexts/ThemeContext';
+
 import { getTrialStatus, activateWithCode, upgradeToPro, useTrialPlay } from '../utils/trialUtils';
 import { createShareUrl, shortenUrl } from '../utils/shareUtils';
 import { verifyAdminPassword, isAdminAuthenticated, setAdminAuthenticated } from '../utils/adminAuth';
@@ -30,7 +29,7 @@ interface DashboardProps {
 
 const MAX_TRIAL_COUNT = 3;
 
-// Professional Tool Card Component
+// Modern Tool Card Component
 interface ToolCardProps {
     title: string;
     description: string;
@@ -44,95 +43,49 @@ interface ToolCardProps {
 const ToolCard: React.FC<ToolCardProps> = ({
     title, description, icon, accentColor, onClick, badge, disabled
 }) => {
-    const [rotateX, setRotateX] = React.useState(0);
-    const [rotateY, setRotateY] = React.useState(0);
-    const [isHovered, setIsHovered] = React.useState(false);
-
-    const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-        if (disabled) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        setRotateX((y - centerY) / 10);
-        setRotateY((centerX - x) / 10);
-    };
-
-    const handleMouseLeave = () => {
-        setRotateX(0);
-        setRotateY(0);
-        setIsHovered(false);
-    };
-
     return (
         <motion.button
-            whileHover={disabled ? {} : { scale: 1.02 }}
+            whileHover={disabled ? {} : { y: -5, scale: 1.02 }}
             whileTap={disabled ? {} : { scale: 0.98 }}
             onClick={disabled ? undefined : onClick}
-            onMouseMove={handleMouseMove}
-            onMouseEnter={() => setIsHovered(true)}
-            onMouseLeave={handleMouseLeave}
-            style={{
-                transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-                transformStyle: 'preserve-3d',
-            }}
-            className={`relative group text-left p-6 rounded-2xl border transition-all duration-200 ${disabled
-                ? 'bg-white/10 border-white/10 cursor-not-allowed opacity-50'
-                : 'bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl'
+            className={`relative group text-left p-6 rounded-[24px] overflow-hidden transition-all duration-300 h-full flex flex-col justify-between ${disabled
+                ? 'bg-slate-100/50 cursor-not-allowed opacity-60 grayscale'
+                : 'bg-white/80 backdrop-blur-md hover:bg-white shadow-lg hover:shadow-2xl border border-white/50'
                 }`}
         >
-            {/* 3D Shine effect */}
-            {!disabled && isHovered && (
-                <div
-                    className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden"
-                    style={{
-                        background: `linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.2) 55%, transparent 60%)`,
-                        transform: 'translateZ(1px)',
-                    }}
-                />
-            )}
-
-            {/* Glow effect */}
+            {/* Background Blob for glow effect */}
             {!disabled && (
-                <div
-                    className={`absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-40 transition-opacity duration-300 blur-xl ${accentColor}`}
-                    style={{ transform: 'translateZ(-10px)' }}
-                />
+                <div className={`absolute -right-10 -bottom-10 w-32 h-32 rounded-full opacity-0 group-hover:opacity-20 blur-3xl transition-opacity duration-500 ${accentColor.replace('bg-', 'bg-')}`} />
             )}
 
-            {/* Badge */}
-            {badge && (
-                <span
-                    className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10"
-                    style={{ transform: 'translateZ(20px)' }}
-                >
-                    {badge}
-                </span>
-            )}
+            <div className="relative z-10 w-full">
+                <div className="flex justify-between items-start mb-4">
+                    <div className={`w-14 h-14 rounded-2xl ${accentColor} flex items-center justify-center text-white shadow-lg group-hover:scale-110 transition-transform duration-300`}>
+                        {icon}
+                    </div>
 
-            {/* Icon with 3D pop */}
-            <div
-                className={`w-14 h-14 rounded-xl ${accentColor} flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-shadow`}
-                style={{ transform: 'translateZ(30px)' }}
-            >
-                {icon}
+                    {badge && (
+                        <span className="px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-full bg-slate-900 text-white shadow-sm">
+                            {badge}
+                        </span>
+                    )}
+                </div>
+
+                <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-slate-800 group-hover:to-slate-600 transition-colors">
+                    {title}
+                </h3>
+                <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                    {description}
+                </p>
             </div>
 
-            {/* Content with 3D depth */}
-            <div style={{ transform: 'translateZ(20px)' }}>
-                <h3 className="text-lg font-bold text-white mb-1 drop-shadow-sm">{title}</h3>
-                <p className="text-sm text-white/70 leading-relaxed">{description}</p>
-            </div>
-
-            {/* Arrow indicator with animation */}
+            {/* Action Arrow */}
             {!disabled && (
-                <ChevronRight
-                    size={20}
-                    className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300"
-                    style={{ transform: 'translateZ(20px)' }}
-                />
+                <div className="relative z-10 mt-6 flex justify-end">
+                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors duration-300">
+                        <ChevronRight size={16} />
+                    </div>
+                </div>
             )}
         </motion.button>
     );
@@ -226,7 +179,7 @@ const VideoItem: React.FC<{
 const Dashboard: React.FC<DashboardProps> = ({
     user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onVongQuay, onLuckyWheel, isAdmin
 }) => {
-    const { currentTheme } = useTheme();
+
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
     const [showLicenseModal, setShowLicenseModal] = useState(false);
     const [licenseInput, setLicenseInput] = useState('');
@@ -337,87 +290,87 @@ const Dashboard: React.FC<DashboardProps> = ({
         }
     };
 
+    const getGreeting = () => {
+        const hour = new Date().getHours();
+        if (hour < 12) return 'Chào buổi sáng';
+        if (hour < 18) return 'Chào buổi chiều';
+        return 'Chào buổi tối';
+    };
+
     return (
-        <div className="min-h-screen relative">
-            {/* Dynamic Theme Background */}
-            <div
-                className="fixed inset-0 -z-10 transition-all duration-500"
-                style={{
-                    background: `linear-gradient(135deg, ${currentTheme.gradientFrom}, ${currentTheme.gradientVia}, ${currentTheme.gradientTo})`
-                }}
-            />
-            {/* Overlay for readability */}
-            <div className="fixed inset-0 bg-black/30 -z-10" />
+        <div className="min-h-screen relative bg-slate-50 font-sans selection:bg-purple-200">
+            {/* Mesh Gradient Background */}
+            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
+                <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
+                <div className="absolute top-0 right-1/4 w-96 h-96 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+                <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
+            </div>
 
-            {/* Header */}
-            <header className="border-b border-white/10 sticky top-0 z-50 bg-black/20 backdrop-blur-xl">
-                <div className="max-w-6xl mx-auto px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        {/* Logo & User */}
-                        <div className="flex items-center gap-4">
-                            <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center">
-                                <Zap size={20} className="text-white" />
-                            </div>
-                            <div>
-                                <h1 className="font-semibold text-white">Giáo viên yêu công nghệ</h1>
-                                <p className="text-xs text-slate-500">Xin chào, {user.name}</p>
-                            </div>
+            {/* Floating Glass Header */}
+            <header className="sticky top-4 z-50 mx-4 md:mx-auto max-w-6xl">
+                <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg shadow-purple-500/5 rounded-2xl px-6 py-4 flex items-center justify-between transition-all">
+                    {/* Logo & User */}
+                    <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md transform rotate-3 hover:rotate-0 transition-transform">
+                            <Zap size={20} className="text-white" />
                         </div>
-
-                        {/* Right Actions */}
-                        <div className="flex items-center gap-3">
-                            {/* Pro/Trial Badge */}
-                            {isPro ? (
-                                <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-900/30 border border-emerald-700/30 rounded-full">
-                                    <CheckCircle size={14} className="text-emerald-400" />
-                                    <span className="text-xs font-medium text-emerald-400">Pro</span>
-                                </div>
-                            ) : (
-                                <button
-                                    onClick={() => setShowLicenseModal(true)}
-                                    className="flex items-center gap-2 px-3 py-1.5 bg-amber-900/30 border border-amber-700/30 rounded-full hover:bg-amber-900/50 transition-colors"
-                                >
-                                    <Sparkles size={14} className="text-amber-400" />
-                                    <span className="text-xs font-medium text-amber-400">{remainingTrials}/{MAX_TRIAL_COUNT} lượt</span>
-                                </button>
-                            )}
-
-                            {isAdmin && (
-                                <button onClick={handleAdminAccess} className="p-2 rounded-lg hover:bg-white/10 text-white/60 hover:text-white transition-colors" title="Quản trị">
-                                    <Shield size={18} />
-                                </button>
-                            )}
-
-                            <ThemeSelector />
-
-                            <button
-                                onClick={onLogout}
-                                className="p-2 rounded-lg hover:bg-slate-800 text-slate-400 hover:text-red-400 transition-colors"
-                            >
-                                <LogOut size={18} />
-                            </button>
+                        <div>
+                            <h1 className="font-bold text-slate-800 tracking-tight">Giáo viên CN</h1>
                         </div>
                     </div>
 
-                    {/* Tab Navigation */}
-                    <div className="flex gap-1 mt-4 bg-slate-800/50 p-1 rounded-lg w-fit">
+                    {/* Desktop Navigation Tabs */}
+                    <div className="hidden md:flex bg-slate-100/80 p-1.5 rounded-xl">
                         <button
                             onClick={() => setActiveTab('tools')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'tools'
-                                ? 'bg-slate-700 text-white'
-                                : 'text-slate-400 hover:text-white'
+                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'tools'
+                                ? 'bg-white text-purple-700 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             Công cụ
                         </button>
                         <button
                             onClick={() => setActiveTab('videos')}
-                            className={`px-4 py-2 rounded-md text-sm font-medium transition-all ${activeTab === 'videos'
-                                ? 'bg-slate-700 text-white'
-                                : 'text-slate-400 hover:text-white'
+                            className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'videos'
+                                ? 'bg-white text-purple-700 shadow-sm'
+                                : 'text-slate-500 hover:text-slate-700'
                                 }`}
                         >
                             Video ({lessons.length})
+                        </button>
+                    </div>
+
+                    {/* Right Actions */}
+                    <div className="flex items-center gap-3">
+                        {/* Pro/Trial Badge */}
+                        {isPro ? (
+                            <div className="flex items-center gap-2 px-3 py-1.5 bg-emerald-50 border border-emerald-100 rounded-full">
+                                <CheckCircle size={14} className="text-emerald-500" />
+                                <span className="text-xs font-bold text-emerald-600">PRO</span>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => setShowLicenseModal(true)}
+                                className="flex items-center gap-2 px-3 py-1.5 bg-amber-50 border border-amber-100 rounded-full hover:bg-amber-100 transition-colors"
+                            >
+                                <Sparkles size={14} className="text-amber-500" />
+                                <span className="text-xs font-bold text-amber-600">{remainingTrials} free</span>
+                            </button>
+                        )}
+
+                        {isAdmin && (
+                            <button onClick={handleAdminAccess} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors" title="Quản trị">
+                                <Shield size={18} />
+                            </button>
+                        )}
+
+                        <button
+                            onClick={onLogout}
+                            className="p-2 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-500 transition-colors"
+                            title="Đăng xuất"
+                        >
+                            <LogOut size={18} />
                         </button>
                     </div>
                 </div>
@@ -425,6 +378,43 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* Main Content */}
             <main className="max-w-6xl mx-auto px-6 py-8">
+                {/* Hero Section */}
+                <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="mb-10 text-center md:text-left"
+                >
+                    <p className="text-purple-600 font-semibold mb-2 flex items-center justify-center md:justify-start gap-2">
+                        <span className="inline-block w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
+                        {getGreeting()},
+                    </p>
+                    <h2 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-2 tracking-tight">
+                        {user.name} <span className="text-4xl">👋</span>
+                    </h2>
+                    <p className="text-slate-500 text-lg">Hôm nay bạn muốn tạo trải nghiệm học tập nào?</p>
+                </motion.div>
+
+                {/* Mobile Tab Navigation */}
+                <div className="md:hidden flex gap-2 mb-8 bg-white/50 p-1.5 rounded-xl backdrop-blur-sm border border-white/20">
+                    <button
+                        onClick={() => setActiveTab('tools')}
+                        className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'tools'
+                            ? 'bg-white text-purple-700 shadow-sm'
+                            : 'text-slate-500'
+                            }`}
+                    >
+                        Công cụ
+                    </button>
+                    <button
+                        onClick={() => setActiveTab('videos')}
+                        className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'videos'
+                            ? 'bg-white text-purple-700 shadow-sm'
+                            : 'text-slate-500'
+                            }`}
+                    >
+                        Video
+                    </button>
+                </div>
                 <AnimatePresence mode="wait">
                     {activeTab === 'tools' ? (
                         <motion.div
@@ -432,122 +422,115 @@ const Dashboard: React.FC<DashboardProps> = ({
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: -20 }}
-                            className="space-y-8"
+                            className="space-y-12"
                         >
-                            {/* Tools Grid */}
+                            {/* Tools Grid - Bento Style */}
                             <section>
-                                <h2 className="text-lg font-semibold text-white mb-4">Công cụ dạy học</h2>
-                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                                    {/* Tools đã hoạt động */}
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 bg-purple-100 rounded-lg">
+                                        <Box size={20} className="text-purple-600" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-800">Kho công cụ</h3>
+                                </div>
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[180px]">
+                                    {/* Main Tool - Spans 2 rows on Desktop if needed, here just 1 */}
                                     <ToolCard
                                         title="Video tương tác"
-                                        description="Tạo video YouTube với câu hỏi tương tác"
-                                        icon={<Video size={24} className="text-white" />}
-                                        accentColor="bg-blue-600"
+                                        description="Biến video YouTube thành bài học tương tác với câu hỏi trắc nghiệm."
+                                        icon={<Video size={28} className="text-white" />}
+                                        accentColor="bg-gradient-to-br from-blue-500 to-indigo-600"
                                         onClick={() => setActiveTab('videos')}
                                         badge={`${lessons.length} video`}
                                     />
 
                                     <ToolCard
                                         title="Ong về Tổ"
-                                        description="Game vui nhộn với chú ong trả lời câu hỏi"
-                                        icon={<span className="text-2xl">🐝</span>}
-                                        accentColor="bg-amber-500"
+                                        description="Game trắc nghiệm vui nhộn giúp học sinh ôn tập kiến thức."
+                                        icon={<span className="text-3xl filter drop-shadow-md">🐝</span>}
+                                        accentColor="bg-gradient-to-br from-amber-400 to-orange-500"
                                         onClick={onBeeGame}
                                     />
 
                                     <ToolCard
                                         title="Hình học 3D"
-                                        description="Khám phá hình khối không gian tương tác"
-                                        icon={<Box size={24} className="text-white" />}
-                                        accentColor="bg-purple-600"
+                                        description="Khám phá và tương tác với các khối hình không gian trực quan."
+                                        icon={<Box size={28} className="text-white" />}
+                                        accentColor="bg-gradient-to-br from-purple-500 to-fuchsia-600"
                                         onClick={onGeometry3D}
                                     />
 
                                     <ToolCard
                                         title="Vòng quay"
-                                        description="Vòng tròn gọi tên học sinh"
-                                        icon={<RotateCcw size={24} className="text-white" />}
-                                        accentColor="bg-pink-500"
+                                        description="Gọi tên ngẫu nhiên học sinh, tạo sự hồi hộp trong lớp học."
+                                        icon={<RotateCcw size={28} className="text-white" />}
+                                        accentColor="bg-gradient-to-br from-pink-500 to-rose-500"
                                         onClick={onVongQuay}
                                     />
 
                                     <ToolCard
                                         title="Vòng quay may mắn"
-                                        description="Bánh xe quay chọn người may mắn"
-                                        icon={<span className="text-2xl">🎡</span>}
-                                        accentColor="bg-rose-500"
+                                        description="Quay thưởng ngẫu nhiên với giao diện đẹp mắt."
+                                        icon={<span className="text-3xl filter drop-shadow-md">🎡</span>}
+                                        accentColor="bg-gradient-to-br from-rose-400 to-red-500"
                                         onClick={onLuckyWheel}
                                     />
 
-                                    {/* Tools sắp ra mắt */}
+                                    {/* Coming Soon Tools - Slightly transparent */}
                                     <ToolCard
                                         title="Quiz Game"
-                                        description="Trắc nghiệm nhanh kiểu Kahoot"
-                                        icon={<HelpCircle size={24} className="text-white" />}
-                                        accentColor="bg-emerald-600"
+                                        description="Đấu trường tri thức trực tuyến (Sắp ra mắt)"
+                                        icon={<HelpCircle size={28} className="text-white" />}
+                                        accentColor="bg-slate-400"
                                         onClick={() => { }}
                                         badge="Sắp ra mắt"
                                         disabled
                                     />
-
-                                    <ToolCard
-                                        title="Thẻ ghi nhớ"
-                                        description="Flashcards học từ vựng và công thức"
-                                        icon={<Brain size={24} className="text-white" />}
-                                        accentColor="bg-orange-500"
-                                        onClick={() => { }}
-                                        badge="Sắp ra mắt"
-                                        disabled
-                                    />
-
                                 </div>
                             </section>
 
-                            {/* Stats */}
-                            <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                                <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                                            <Video size={18} className="text-blue-400" />
+                            {/* Stats Section */}
+                            <section>
+                                <div className="flex items-center gap-3 mb-6">
+                                    <div className="p-2 bg-emerald-100 rounded-lg">
+                                        <Zap size={20} className="text-emerald-600" />
+                                    </div>
+                                    <h3 className="text-xl font-bold text-slate-800">Thống kê hoạt động</h3>
+                                </div>
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                                            <Video size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-white">{lessons.length}</p>
-                                            <p className="text-xs text-slate-500">Video</p>
+                                            <p className="text-2xl font-bold text-slate-800">{lessons.length}</p>
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Video</p>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center">
-                                            <HelpCircle size={18} className="text-purple-400" />
+                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+                                            <HelpCircle size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-white">{lessons.reduce((sum, l) => sum + l.questions.length, 0)}</p>
-                                            <p className="text-xs text-slate-500">Câu hỏi</p>
+                                            <p className="text-2xl font-bold text-slate-800">{lessons.reduce((sum, l) => sum + l.questions.length, 0)}</p>
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Câu hỏi</p>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-emerald-600/20 rounded-lg flex items-center justify-center">
-                                            <Zap size={18} className="text-emerald-400" />
+                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                                            <Zap size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-white">3</p>
-                                            <p className="text-xs text-slate-500">Công cụ</p>
+                                            <p className="text-2xl font-bold text-slate-800">5</p>
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Công cụ</p>
                                         </div>
                                     </div>
-                                </div>
-                                <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4">
-                                    <div className="flex items-center gap-3">
-                                        <div className="w-10 h-10 bg-amber-600/20 rounded-lg flex items-center justify-center">
-                                            <Star size={18} className="text-amber-400" />
+                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
+                                        <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+                                            <Star size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-white">{isPro ? '∞' : remainingTrials}</p>
-                                            <p className="text-xs text-slate-500">Lượt còn</p>
+                                            <p className="text-2xl font-bold text-slate-800 scale-100 origin-left">{isPro ? '∞' : remainingTrials}</p>
+                                            <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lượt còn</p>
                                         </div>
                                     </div>
                                 </div>
