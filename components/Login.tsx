@@ -233,7 +233,30 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               {/* Google Login Button */}
               <div className="flex justify-center w-full px-4 sm:px-0">
                 <motion.button
-                  onClick={() => login()}
+                  onClick={() => {
+                    if (showInAppWarning) {
+                      // Nếu đang ở Zalo/Facebook, mở link trong trình duyệt ngoài
+                      const url = window.location.href;
+                      // Copy link vào clipboard để tiện cho user
+                      if (navigator.clipboard) {
+                        navigator.clipboard.writeText(url).catch(() => { });
+                      }
+
+                      // Hiển thị hướng dẫn
+                      const confirmed = window.confirm(
+                        'Zalo/Facebook không hỗ trợ đăng nhập Google.\n\nBấm OK để mở bằng trình duyệt Chrome/Safari.\n(Link đã được copy, bạn có thể dán thủ công nếu cần)'
+                      );
+
+                      if (confirmed) {
+                        window.open(url, '_system');
+                        // Fallback cho một số thiết bị
+                        window.location.href = url;
+                      }
+                    } else {
+                      // Nếu không phải in-app browser, đăng nhập bình thường
+                      login();
+                    }
+                  }}
                   disabled={isLoadingGoogle}
                   whileHover={{ scale: 1.02 }}
                   whileTap={{ scale: 0.98 }}
@@ -244,7 +267,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   ) : (
                     <>
                       <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
-                      <span className="text-lg">Đăng nhập với Google</span>
+                      <span className="text-lg">
+                        {showInAppWarning ? 'Mở bằng trình duyệt để đăng nhập' : 'Đăng nhập với Google'}
+                      </span>
                     </>
                   )}
                 </motion.button>
