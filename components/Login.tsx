@@ -42,20 +42,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const [step, setStep] = useState<'choose' | 'email' | 'code' | 'name'>('choose');
+  const [step, setStep] = useState<'email' | 'code' | 'name'>('email');
   const [validatedNote, setValidatedNote] = useState('');
   const [isProMode, setIsProMode] = useState(false);
   const [trialStatus, setTrialStatus] = useState({ usesRemaining: 3, totalUses: 0, isPro: false });
-
-  const handleGuestLogin = () => {
-    setIsProMode(false);
-    setStep('email'); // Yêu cầu nhập email trước
-  };
-
-  const handleProLogin = () => {
-    setIsProMode(true);
-    setStep('code');
-  };
 
   const handleEmailSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -112,7 +102,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       id: generateUserId(),
       name: displayName.trim(),
       avatar: avatar,
-      email: isProMode ? undefined : email, // Chỉ lưu email nếu không phải Pro
+      email: email,
     };
 
     onLogin(userData);
@@ -151,67 +141,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
         {/* Login Form */}
         <AnimatePresence mode="wait">
-          {step === 'choose' && (
-            <motion.div
-              key="choose-step"
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="space-y-4"
-            >
-              {/* Guest Trial Button */}
-              <motion.button
-                onClick={handleGuestLogin}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-4 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
-              >
-                <Gift size={24} />
-                <div className="text-left">
-                  <div className="text-base">Dùng thử miễn phí</div>
-                  <div className="text-xs opacity-80">3 lượt tạo video / email</div>
-                </div>
-              </motion.button>
-
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-purple-300/50"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white/40 text-purple-600 font-medium">hoặc</span>
-                </div>
-              </div>
-
-              {/* Pro Login Button */}
-              <motion.button
-                onClick={handleProLogin}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-4 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
-              >
-                <Crown size={24} />
-                <div className="text-left">
-                  <div className="text-base">Đã có mã Pro</div>
-                  <div className="text-xs opacity-80">Xem không giới hạn</div>
-                </div>
-              </motion.button>
-
-              {/* Error Message */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-100/80 border border-red-300 rounded-xl p-3 flex items-start gap-2 text-left"
-                >
-                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
-                  <p className="text-sm text-red-700">{error}</p>
-                </motion.div>
-              )}
-            </motion.div>
-          )}
-
-          {/* Email Step - cho Trial */}
+          {/* Email Step - Default */}
           {step === 'email' && (
             <motion.form
               key="email-step"
@@ -219,18 +149,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               onSubmit={handleEmailSubmit}
-              className="space-y-4"
+              className="space-y-6"
             >
-              {/* Header */}
-              <div className="bg-blue-100/60 rounded-xl p-3 flex items-center gap-2">
-                <Gift className="text-blue-600" size={20} />
-                <p className="font-bold text-blue-800 text-sm">Nhập email để dùng thử</p>
-              </div>
-
               {/* Email Input */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="text-purple-500" size={20} />
+                  <Mail className="text-purple-500" size={24} />
                 </div>
                 <input
                   type="email"
@@ -258,28 +182,33 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </motion.div>
               )}
 
-              {/* Buttons */}
-              <div className="flex gap-3">
+              {/* Submit Button */}
+              <motion.button
+                type="submit"
+                disabled={!email.trim()}
+                whileHover={{ scale: email.trim() ? 1.02 : 1 }}
+                whileTap={{ scale: email.trim() ? 0.98 : 1 }}
+                className={`w-full py-4 px-6 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all ${email.trim()
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg'
+                  : 'bg-gray-300 cursor-not-allowed'
+                  }`}
+              >
+                Tiếp tục
+                <ArrowRight size={20} />
+              </motion.button>
+
+              {/* Switch to Pro Code */}
+              <div className="pt-2">
                 <button
                   type="button"
-                  onClick={() => setStep('choose')}
-                  className="flex-1 py-3 px-4 rounded-xl font-bold text-purple-700 bg-white/60 border-2 border-purple-200 hover:bg-white/80 transition-all"
+                  onClick={() => {
+                    setIsProMode(true);
+                    setStep('code');
+                  }}
+                  className="text-sm text-purple-600 hover:text-purple-800 font-medium underline decoration-dashed hover:decoration-solid underline-offset-4"
                 >
-                  ← Quay lại
+                  Tôi đã có mã kích hoạt Pro
                 </button>
-                <motion.button
-                  type="submit"
-                  disabled={!email.trim()}
-                  whileHover={{ scale: email.trim() ? 1.02 : 1 }}
-                  whileTap={{ scale: email.trim() ? 0.98 : 1 }}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${email.trim()
-                    ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg'
-                    : 'bg-gray-300 cursor-not-allowed'
-                    }`}
-                >
-                  Tiếp tục
-                  <ArrowRight size={18} />
-                </motion.button>
               </div>
             </motion.form>
           )}
@@ -291,18 +220,29 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               onSubmit={handleCodeSubmit}
-              className="space-y-4"
+              className="space-y-6"
             >
-              {/* Header */}
-              <div className="bg-purple-100/60 rounded-xl p-3 flex items-center gap-2">
-                <Crown className="text-purple-600" size={20} />
-                <p className="font-bold text-purple-800 text-sm">Nhập mã Pro</p>
+              {/* Header with Back Button */}
+              <div className="flex items-center justify-between mb-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsProMode(false);
+                    setStep('email');
+                  }}
+                  className="text-sm text-purple-600 font-medium flex items-center gap-1"
+                >
+                  ← Quay lại nhập Email
+                </button>
+                <span className="text-purple-800 font-bold flex items-center gap-1">
+                  <Crown size={16} /> Nhập mã Pro
+                </span>
               </div>
 
               {/* Access Code Input */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Key className="text-purple-500" size={20} />
+                  <Key className="text-purple-500" size={24} />
                 </div>
                 <input
                   type="text"
@@ -330,41 +270,32 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 </motion.div>
               )}
 
-              {/* Buttons */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep('choose')}
-                  className="flex-1 py-3 px-4 rounded-xl font-bold text-purple-700 bg-white/60 border-2 border-purple-200 hover:bg-white/80 transition-all"
-                >
-                  ← Quay lại
-                </button>
-                <motion.button
-                  type="submit"
-                  disabled={!accessCode.trim() || isValidating}
-                  whileHover={{ scale: accessCode.trim() ? 1.02 : 1 }}
-                  whileTap={{ scale: accessCode.trim() ? 0.98 : 1 }}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${accessCode.trim() && !isValidating
-                    ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg'
-                    : 'bg-gray-300 cursor-not-allowed'
-                    }`}
-                >
-                  {isValidating ? (
-                    <>
-                      <motion.div
-                        animate={{ rotate: 360 }}
-                        transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
-                        className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
-                      />
-                    </>
-                  ) : (
-                    <>
-                      Tiếp tục
-                      <ArrowRight size={18} />
-                    </>
-                  )}
-                </motion.button>
-              </div>
+              {/* Submit Button */}
+              <motion.button
+                type="submit"
+                disabled={!accessCode.trim() || isValidating}
+                whileHover={{ scale: accessCode.trim() ? 1.02 : 1 }}
+                whileTap={{ scale: accessCode.trim() ? 0.98 : 1 }}
+                className={`w-full py-4 px-6 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all ${accessCode.trim() && !isValidating
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg'
+                  : 'bg-gray-300 cursor-not-allowed'
+                  }`}
+              >
+                {isValidating ? (
+                  <>
+                    <motion.div
+                      animate={{ rotate: 360 }}
+                      transition={{ duration: 1, repeat: Infinity, ease: 'linear' }}
+                      className="w-5 h-5 border-2 border-white border-t-transparent rounded-full"
+                    />
+                  </>
+                ) : (
+                  <>
+                    Kích hoạt ngay
+                    <ArrowRight size={20} />
+                  </>
+                )}
+              </motion.button>
             </motion.form>
           )}
 
@@ -375,7 +306,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               onSubmit={handleNameSubmit}
-              className="space-y-4"
+              className="space-y-6"
             >
               {/* Status Badge */}
               {isProMode ? (
@@ -401,7 +332,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               {/* Display Name Input */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <UserIcon className="text-purple-500" size={20} />
+                  <UserIcon className="text-purple-500" size={24} />
                 </div>
                 <input
                   type="text"
@@ -435,14 +366,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   onClick={() => setStep(isProMode ? 'code' : 'email')}
                   className="flex-1 py-3 px-4 rounded-xl font-bold text-purple-700 bg-white/60 border-2 border-purple-200 hover:bg-white/80 transition-all"
                 >
-                  ← Quay lại
+                  ←
                 </button>
                 <motion.button
                   type="submit"
                   disabled={!displayName.trim()}
                   whileHover={{ scale: displayName.trim() ? 1.02 : 1 }}
                   whileTap={{ scale: displayName.trim() ? 0.98 : 1 }}
-                  className={`flex-1 py-3 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${displayName.trim()
+                  className={`flex-[3] py-3 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${displayName.trim()
                     ? 'bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg'
                     : 'bg-gray-300 cursor-not-allowed'
                     }`}
