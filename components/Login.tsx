@@ -42,7 +42,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [isValidating, setIsValidating] = useState(false);
-  const [step, setStep] = useState<'email' | 'code' | 'name'>('email');
+  const [step, setStep] = useState<'email' | 'code'>('email');
   const [validatedNote, setValidatedNote] = useState('');
   const [isProMode, setIsProMode] = useState(false);
   const [trialStatus, setTrialStatus] = useState({ usesRemaining: 3, totalUses: 0, isPro: false });
@@ -61,9 +61,25 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     setTrialStatus(status);
 
     if (canUseTrialByEmail(email)) {
-      // Lưu email hiện tại để sử dụng logic trừ lượt sau này
+      // Lưu email hiện tại
       setCurrentEmail(email);
-      setStep('name');
+
+      // Tự động tạo tên từ email và đăng nhập luôn
+      // Lấy phần trước @ và viết hoa chữ cái đầu
+      const autoName = email.split('@')[0].charAt(0).toUpperCase() + email.split('@')[0].slice(1);
+
+      // Tạo avatar
+      const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(autoName)}&backgroundColor=7c3aed&textColor=ffffff`;
+
+      const userData: User = {
+        id: generateUserId(),
+        name: autoName, // Sử dụng tên tự tạo
+        avatar: avatar,
+        email: email,
+      };
+
+      onLogin(userData);
+
     } else {
       setError('Email này đã hết lượt dùng thử miễn phí. Vui lòng nâng cấp Pro!');
     }
@@ -79,33 +95,24 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       if (result.valid) {
         setValidatedNote(result.note || '');
         upgradeToPro();
-        setStep('name');
+
+        // Tự động đăng nhập luôn với tên mặc định "Pro User" hoặc gì đó nếu chưa có tên
+        const autoName = "Thành viên Pro";
+        const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(autoName)}&backgroundColor=10b981&textColor=ffffff`;
+
+        const userData: User = {
+          id: generateUserId(),
+          name: autoName,
+          avatar: avatar,
+          // Không set email nếu là code pro ẩn danh, hoặc set email dummy nếu cần
+        };
+
+        onLogin(userData);
       } else {
         setError('Mã truy cập không hợp lệ. Vui lòng liên hệ Admin để được cấp mã.');
       }
       setIsValidating(false);
     }, 500);
-  };
-
-  const handleNameSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-
-    if (!displayName.trim()) {
-      setError('Vui lòng nhập tên hiển thị');
-      return;
-    }
-
-    // Tạo avatar từ tên
-    const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(displayName.trim())}&backgroundColor=7c3aed&textColor=ffffff`;
-
-    const userData: User = {
-      id: generateUserId(),
-      name: displayName.trim(),
-      avatar: avatar,
-      email: email,
-    };
-
-    onLogin(userData);
   };
 
   const formatCode = (value: string): string => {
@@ -299,90 +306,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             </motion.form>
           )}
 
-          {step === 'name' && (
-            <motion.form
-              key="name-step"
-              initial={{ opacity: 0, x: 20 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -20 }}
-              onSubmit={handleNameSubmit}
-              className="space-y-6"
-            >
-              {/* Status Badge */}
-              {isProMode ? (
-                <div className="bg-green-100/80 border border-green-300 rounded-xl p-3 flex items-center gap-2">
-                  <CheckCircle className="text-green-600" size={20} />
-                  <div className="text-left">
-                    <p className="font-bold text-green-800 text-sm">🎉 Mã Pro hợp lệ!</p>
-                    {validatedNote && <p className="text-xs text-green-700">{validatedNote}</p>}
-                  </div>
-                </div>
-              ) : (
-                <div className="bg-blue-100/80 border border-blue-300 rounded-xl p-3 flex items-center gap-2">
-                  <Gift className="text-blue-600" size={20} />
-                  <div className="text-left">
-                    <p className="font-bold text-blue-800 text-sm">Chế độ dùng thử</p>
-                    <p className="text-xs text-blue-700">
-                      {trialStatus.isPro ? '✓ Đã nâng cấp Pro' : `Bạn có ${trialStatus.usesRemaining} lượt tạo video miễn phí`}
-                    </p>
-                  </div>
-                </div>
-              )}
 
-              {/* Display Name Input */}
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <UserIcon className="text-purple-500" size={24} />
-                </div>
-                <input
-                  type="text"
-                  value={displayName}
-                  onChange={(e) => {
-                    setDisplayName(e.target.value);
-                    setError('');
-                  }}
-                  placeholder="Nhập tên của bạn"
-                  className="w-full pl-12 pr-4 py-4 bg-white/70 border-2 border-purple-200 rounded-2xl focus:border-purple-500 focus:outline-none text-center text-lg"
-                  autoFocus
-                />
-              </div>
-
-              {/* Error Message */}
-              {error && (
-                <motion.div
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-100/80 border border-red-300 rounded-xl p-3 flex items-start gap-2 text-left"
-                >
-                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
-                  <p className="text-sm text-red-700">{error}</p>
-                </motion.div>
-              )}
-
-              {/* Buttons */}
-              <div className="flex gap-3">
-                <button
-                  type="button"
-                  onClick={() => setStep(isProMode ? 'code' : 'email')}
-                  className="flex-1 py-3 px-4 rounded-xl font-bold text-purple-700 bg-white/60 border-2 border-purple-200 hover:bg-white/80 transition-all"
-                >
-                  ←
-                </button>
-                <motion.button
-                  type="submit"
-                  disabled={!displayName.trim()}
-                  whileHover={{ scale: displayName.trim() ? 1.02 : 1 }}
-                  whileTap={{ scale: displayName.trim() ? 0.98 : 1 }}
-                  className={`flex-[3] py-3 px-4 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${displayName.trim()
-                    ? 'bg-gradient-to-r from-green-500 to-emerald-600 shadow-lg'
-                    : 'bg-gray-300 cursor-not-allowed'
-                    }`}
-                >
-                  Vào ngay! 🎉
-                </motion.button>
-              </div>
-            </motion.form>
-          )}
         </AnimatePresence>
 
         {/* Contact Info */}
