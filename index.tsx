@@ -3,7 +3,7 @@ import { createRoot } from 'react-dom/client';
 import { GoogleOAuthProvider } from '@react-oauth/google';
 import App from './App';
 
-const GOOGLE_CLIENT_ID = '1082810192334-ulsu1kc9on6bh146213c5sa62n8rh8ja.apps.googleusercontent.com';
+const GOOGLE_CLIENT_ID = '628367914494-l5cg4kh1434dcpdp22rmehih40sian1r.apps.googleusercontent.com';
 
 const rootElement = document.getElementById('root');
 if (!rootElement) {
