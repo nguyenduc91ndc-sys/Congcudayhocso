@@ -148,41 +148,68 @@ const VideoItem: React.FC<{
     canPlay: boolean;
 }> = ({ lesson, onPlay, onEdit, onDelete, onShare, canPlay }) => (
     <motion.div
-        initial={{ opacity: 0, y: 10 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-slate-800/50 rounded-xl p-4 border border-slate-700/50 hover:border-slate-600 transition-all group"
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
     >
-        <div className="flex items-center justify-between">
-            <div className="flex-1 min-w-0">
-                <h4 className="font-semibold text-white truncate">{lesson.title}</h4>
-                <div className="flex items-center gap-3 mt-1">
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <HelpCircle size={12} /> {lesson.questions.length} câu hỏi
-                    </span>
-                    <span className="text-xs text-slate-500 flex items-center gap-1">
-                        <Clock size={12} /> {new Date(lesson.createdAt).toLocaleDateString('vi-VN')}
-                    </span>
-                </div>
-            </div>
-            <div className="flex items-center gap-1 ml-4 opacity-0 group-hover:opacity-100 transition-opacity">
-                <button onClick={onShare} className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-white transition-colors" title="Chia sẻ">
-                    <Share2 size={16} />
-                </button>
-                <button onClick={onEdit} className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-blue-400 transition-colors" title="Chỉnh sửa">
-                    <Edit3 size={16} />
-                </button>
-                <button onClick={onDelete} className="p-2 rounded-lg hover:bg-slate-700 text-slate-400 hover:text-red-400 transition-colors" title="Xóa">
-                    <Trash2 size={16} />
-                </button>
-            </div>
+        {/* Header: Title and Badge */}
+        <div className="flex justify-between items-start mb-2">
+            <h4 className="text-xl font-bold text-slate-800 truncate pr-4 flex-1">{lesson.title}</h4>
+            <span className="flex-shrink-0 px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-semibold shadow-sm">
+                {lesson.questions.length} câu hỏi
+            </span>
+        </div>
+
+        {/* Date */}
+        <p className="text-slate-500 text-sm mb-2">
+            Cập nhật: {new Date(lesson.createdAt).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}
+        </p>
+
+        {/* View Original Link */}
+        <a
+            href={lesson.youtubeUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium mb-6 hover:underline"
+        >
+            Xem video gốc
+        </a>
+
+        {/* Action Buttons Grid */}
+        <div className="grid grid-cols-2 gap-3">
+            {/* View Button */}
             <button
                 onClick={canPlay ? onPlay : undefined}
-                className={`ml-3 px-4 py-2 rounded-lg font-medium text-sm flex items-center gap-2 transition-all ${canPlay
-                    ? 'bg-emerald-600 hover:bg-emerald-500 text-white'
-                    : 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                className={`py-2 px-4 rounded-xl font-bold text-white shadow-md transition-transform active:scale-95 flex items-center justify-center gap-2 ${canPlay
+                    ? 'bg-gradient-to-r from-indigo-500 to-purple-600 hover:shadow-lg'
+                    : 'bg-slate-400 cursor-not-allowed'
                     }`}
             >
-                <Play size={14} /> Phát
+                Xem
+            </button>
+
+            {/* Edit Button */}
+            <button
+                onClick={onEdit}
+                className="py-2 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-sky-500 to-blue-600 shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
+            >
+                Chỉnh sửa
+            </button>
+
+            {/* Copy Link Button */}
+            <button
+                onClick={onShare}
+                className="py-2 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-amber-400 to-orange-500 shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
+            >
+                Sao chép link
+            </button>
+
+            {/* Delete Button */}
+            <button
+                onClick={onDelete}
+                className="py-2 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-600 shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
+            >
+                Xóa
             </button>
         </div>
     </motion.div>
@@ -511,45 +538,47 @@ const Dashboard: React.FC<DashboardProps> = ({
                             exit={{ opacity: 0, y: -20 }}
                         >
                             {/* Videos Section */}
-                            <div className="flex items-center justify-between mb-6">
-                                <h2 className="text-lg font-semibold text-white">Video của tôi</h2>
-                                <button
-                                    onClick={onCreateNew}
-                                    className="flex items-center gap-2 px-4 py-2 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium text-sm transition-colors"
-                                >
-                                    <Plus size={16} /> Tạo mới
-                                </button>
-                            </div>
-
-                            {lessons.length === 0 ? (
-                                <div className="bg-slate-800/30 border border-slate-700/30 rounded-2xl p-12 text-center">
-                                    <div className="w-16 h-16 bg-slate-800 rounded-2xl flex items-center justify-center mx-auto mb-4">
-                                        <Video size={32} className="text-slate-600" />
-                                    </div>
-                                    <h3 className="text-lg font-semibold text-white mb-2">Chưa có video nào</h3>
-                                    <p className="text-slate-500 mb-6 text-sm">Tạo video tương tác đầu tiên của bạn</p>
+                            <div className="bg-white rounded-[30px] p-8 shadow-xl">
+                                <div className="flex items-center justify-between mb-8">
+                                    <h2 className="text-3xl font-extrabold text-slate-700">Video của tôi</h2>
                                     <button
                                         onClick={onCreateNew}
-                                        className="px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-lg font-medium transition-colors"
+                                        className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all active:scale-95"
                                     >
-                                        Tạo video mới
+                                        <Plus size={20} /> Tạo video mới
                                     </button>
                                 </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {lessons.map(lesson => (
-                                        <VideoItem
-                                            key={lesson.id}
-                                            lesson={lesson}
-                                            onPlay={() => handlePlayLesson(lesson)}
-                                            onEdit={() => onEdit(lesson)}
-                                            onDelete={() => onDelete(lesson.id)}
-                                            onShare={() => handleShare(lesson)}
-                                            canPlay={isPro || remainingTrials > 0}
-                                        />
-                                    ))}
-                                </div>
-                            )}
+
+                                {lessons.length === 0 ? (
+                                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50">
+                                        <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                            <Video size={36} className="text-indigo-600" />
+                                        </div>
+                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Chưa có video nào</h3>
+                                        <p className="text-slate-500 mb-8">Tạo video tương tác đầu tiên của bạn ngay bây giờ!</p>
+                                        <button
+                                            onClick={onCreateNew}
+                                            className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors shadow-md hover:shadow-lg"
+                                        >
+                                            Tạo video mới
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                                        {lessons.map(lesson => (
+                                            <VideoItem
+                                                key={lesson.id}
+                                                lesson={lesson}
+                                                onPlay={() => handlePlayLesson(lesson)}
+                                                onEdit={() => onEdit(lesson)}
+                                                onDelete={() => onDelete(lesson.id)}
+                                                onShare={() => handleShare(lesson)}
+                                                canPlay={isPro || remainingTrials > 0}
+                                            />
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
