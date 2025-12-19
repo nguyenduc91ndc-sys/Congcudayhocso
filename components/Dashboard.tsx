@@ -7,6 +7,8 @@ import {
     Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield
 } from 'lucide-react';
 
+import ThemeSelector from './ThemeSelector';
+import { useTheme } from '../contexts/ThemeContext';
 import { getTrialStatus, activateWithCode, upgradeToPro, useTrialPlay } from '../utils/trialUtils';
 import { createShareUrl, shortenUrl } from '../utils/shareUtils';
 import { verifyAdminPassword, isAdminAuthenticated, setAdminAuthenticated } from '../utils/adminAuth';
@@ -38,10 +40,11 @@ interface ToolCardProps {
     onClick: () => void;
     badge?: string;
     disabled?: boolean;
+    darkMode?: boolean;
 }
 
 const ToolCard: React.FC<ToolCardProps> = ({
-    title, description, icon, accentColor, onClick, badge, disabled
+    title, description, icon, accentColor, onClick, badge, disabled, darkMode
 }) => {
     return (
         <motion.button
@@ -50,7 +53,9 @@ const ToolCard: React.FC<ToolCardProps> = ({
             onClick={disabled ? undefined : onClick}
             className={`relative group text-left p-6 rounded-[24px] overflow-hidden transition-all duration-300 h-full flex flex-col justify-between ${disabled
                 ? 'bg-slate-100/50 cursor-not-allowed opacity-60 grayscale'
-                : 'bg-white/80 backdrop-blur-md hover:bg-white shadow-lg hover:shadow-2xl border border-white/50'
+                : darkMode
+                    ? 'bg-slate-800/60 backdrop-blur-md hover:bg-slate-800 border border-white/10 shadow-lg hover:shadow-2xl hover:border-white/20'
+                    : 'bg-white/80 backdrop-blur-md hover:bg-white shadow-lg hover:shadow-2xl border border-white/50'
                 }`}
         >
             {/* Background Blob for glow effect */}
@@ -65,16 +70,16 @@ const ToolCard: React.FC<ToolCardProps> = ({
                     </div>
 
                     {badge && (
-                        <span className="px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-full bg-slate-900 text-white shadow-sm">
+                        <span className={`px-3 py-1 text-[10px] font-bold tracking-wider uppercase rounded-full shadow-sm ${darkMode ? 'bg-white text-slate-900' : 'bg-slate-900 text-white'}`}>
                             {badge}
                         </span>
                     )}
                 </div>
 
-                <h3 className="text-xl font-bold text-slate-800 mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r group-hover:from-slate-800 group-hover:to-slate-600 transition-colors">
+                <h3 className={`text-xl font-bold mb-2 group-hover:text-transparent group-hover:bg-clip-text group-hover:bg-gradient-to-r ${darkMode ? 'text-white from-white to-slate-400' : 'text-slate-800 from-slate-800 to-slate-600'} transition-colors`}>
                     {title}
                 </h3>
-                <p className="text-sm text-slate-500 font-medium leading-relaxed">
+                <p className={`text-sm font-medium leading-relaxed ${darkMode ? 'text-slate-300' : 'text-slate-500'}`}>
                     {description}
                 </p>
             </div>
@@ -82,7 +87,7 @@ const ToolCard: React.FC<ToolCardProps> = ({
             {/* Action Arrow */}
             {!disabled && (
                 <div className="relative z-10 mt-6 flex justify-end">
-                    <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center group-hover:bg-slate-900 group-hover:text-white transition-colors duration-300">
+                    <div className={`w-8 h-8 rounded-full flex items-center justify-center transition-colors duration-300 ${darkMode ? 'bg-slate-700 group-hover:bg-white group-hover:text-slate-900 text-white' : 'bg-slate-100 group-hover:bg-slate-900 group-hover:text-white'}`}>
                         <ChevronRight size={16} />
                     </div>
                 </div>
@@ -100,22 +105,23 @@ const VideoItem: React.FC<{
     onShare: () => void;
     canPlay: boolean;
     isShortening?: boolean;
-}> = ({ lesson, onPlay, onEdit, onDelete, onShare, canPlay, isShortening }) => (
+    darkMode?: boolean;
+}> = ({ lesson, onPlay, onEdit, onDelete, onShare, canPlay, isShortening, darkMode }) => (
     <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        className="bg-white rounded-2xl p-6 border border-slate-200 shadow-sm hover:shadow-md transition-all group relative overflow-hidden"
+        className={`rounded-2xl p-6 border shadow-sm hover:shadow-md transition-all group relative overflow-hidden ${darkMode ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-200'}`}
     >
         {/* Header: Title and Badge */}
         <div className="flex justify-between items-start mb-2">
-            <h4 className="text-xl font-bold text-slate-800 truncate pr-4 flex-1">{lesson.title}</h4>
+            <h4 className={`text-xl font-bold truncate pr-4 flex-1 ${darkMode ? 'text-white' : 'text-slate-800'}`}>{lesson.title}</h4>
             <span className="flex-shrink-0 px-3 py-1 rounded-full bg-indigo-600 text-white text-xs font-semibold shadow-sm">
                 {lesson.questions.length} câu hỏi
             </span>
         </div>
 
         {/* Date */}
-        <p className="text-slate-500 text-sm mb-2">
+        <p className={`text-sm mb-2 ${darkMode ? 'text-slate-400' : 'text-slate-500'}`}>
             Cập nhật: {new Date(lesson.createdAt).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
 
@@ -180,6 +186,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onVongQuay, onLuckyWheel, isAdmin
 }) => {
 
+    const { currentTheme } = useTheme();
+    const isDark = currentTheme.type === 'dark';
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
     const [showLicenseModal, setShowLicenseModal] = useState(false);
     const [licenseInput, setLicenseInput] = useState('');
@@ -299,33 +307,43 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     return (
         <div className="min-h-screen relative bg-slate-50 font-sans selection:bg-purple-200">
-            {/* Mesh Gradient Background */}
-            <div className="fixed inset-0 -z-10 overflow-hidden pointer-events-none">
-                <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
-                <div className="absolute top-0 right-1/4 w-96 h-96 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
-                <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
+            {/* Dynamic Background */}
+            <div
+                className={`fixed inset-0 -z-10 overflow-hidden transition-all duration-700 ease-in-out ${currentTheme.type === 'dark' ? 'bg-slate-900' : 'bg-slate-50'}`}
+                style={{
+                    background: currentTheme.id === 'modern' ? undefined : `linear-gradient(135deg, ${currentTheme.from}, ${currentTheme.via}, ${currentTheme.to})`
+                }}
+            >
+                {/* Modern Theme Mesh Blobs */}
+                {currentTheme.id === 'modern' && (
+                    <>
+                        <div className="absolute top-0 left-1/4 w-96 h-96 bg-purple-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob" />
+                        <div className="absolute top-0 right-1/4 w-96 h-96 bg-yellow-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-2000" />
+                        <div className="absolute -bottom-32 left-1/3 w-96 h-96 bg-pink-300 rounded-full mix-blend-multiply filter blur-3xl opacity-30 animate-blob animation-delay-4000" />
+                    </>
+                )}
             </div>
 
             {/* Floating Glass Header */}
             <header className="sticky top-4 z-50 mx-4 md:mx-auto max-w-6xl">
-                <div className="bg-white/70 backdrop-blur-xl border border-white/40 shadow-lg shadow-purple-500/5 rounded-2xl px-6 py-4 flex items-center justify-between transition-all">
+                <div className={`${isDark ? 'bg-slate-900/80 border-slate-700 shadow-slate-900/50' : 'bg-white/70 border-white/40 shadow-purple-500/5'} backdrop-blur-xl border shadow-lg rounded-2xl px-6 py-4 flex items-center justify-between transition-all`}>
                     {/* Logo & User */}
                     <div className="flex items-center gap-4">
                         <div className="w-10 h-10 bg-gradient-to-tr from-purple-600 to-indigo-600 rounded-xl flex items-center justify-center shadow-md transform rotate-3 hover:rotate-0 transition-transform">
                             <Zap size={20} className="text-white" />
                         </div>
                         <div>
-                            <h1 className="font-bold text-slate-800 tracking-tight">Giáo viên CN</h1>
+                            <h1 className={`font-bold tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>Giáo viên CN</h1>
                         </div>
                     </div>
 
                     {/* Desktop Navigation Tabs */}
-                    <div className="hidden md:flex bg-slate-100/80 p-1.5 rounded-xl">
+                    <div className={`hidden md:flex p-1.5 rounded-xl ${isDark ? 'bg-slate-800' : 'bg-slate-100/80'}`}>
                         <button
                             onClick={() => setActiveTab('tools')}
                             className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'tools'
-                                ? 'bg-white text-purple-700 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700'
+                                ? (isDark ? 'bg-slate-700 text-purple-400 shadow-sm' : 'bg-white text-purple-700 shadow-sm')
+                                : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')
                                 }`}
                         >
                             Công cụ
@@ -333,8 +351,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <button
                             onClick={() => setActiveTab('videos')}
                             className={`px-4 py-1.5 rounded-lg text-sm font-semibold transition-all ${activeTab === 'videos'
-                                ? 'bg-white text-purple-700 shadow-sm'
-                                : 'text-slate-500 hover:text-slate-700'
+                                ? (isDark ? 'bg-slate-700 text-purple-400 shadow-sm' : 'bg-white text-purple-700 shadow-sm')
+                                : (isDark ? 'text-slate-400 hover:text-slate-200' : 'text-slate-500 hover:text-slate-700')
                                 }`}
                         >
                             Video ({lessons.length})
@@ -360,14 +378,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                         )}
 
                         {isAdmin && (
-                            <button onClick={handleAdminAccess} className="p-2 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-500 hover:text-slate-800 transition-colors" title="Quản trị">
+                            <button onClick={handleAdminAccess} className={`p-2 rounded-xl transition-colors ${isDark ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-white' : 'bg-slate-100 text-slate-500 hover:bg-slate-200 hover:text-slate-800'}`} title="Quản trị">
                                 <Shield size={18} />
                             </button>
                         )}
 
+                        <ThemeSelector />
+
                         <button
                             onClick={onLogout}
-                            className="p-2 rounded-xl bg-slate-100 hover:bg-red-50 text-slate-500 hover:text-red-500 transition-colors"
+                            className={`p-2 rounded-xl transition-colors ${isDark ? 'bg-slate-800 text-slate-400 hover:bg-slate-700 hover:text-red-400' : 'bg-slate-100 text-slate-500 hover:bg-red-50 hover:text-red-500'}`}
                             title="Đăng xuất"
                         >
                             <LogOut size={18} />
@@ -384,23 +404,23 @@ const Dashboard: React.FC<DashboardProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="mb-10 text-center md:text-left"
                 >
-                    <p className="text-purple-600 font-semibold mb-2 flex items-center justify-center md:justify-start gap-2">
+                    <p className={`font-semibold mb-2 flex items-center justify-center md:justify-start gap-2 ${isDark ? 'text-purple-400' : 'text-purple-600'}`}>
                         <span className="inline-block w-2 h-2 rounded-full bg-purple-500 animate-pulse" />
                         {getGreeting()},
                     </p>
-                    <h2 className="text-4xl md:text-5xl font-extrabold text-slate-800 mb-2 tracking-tight">
+                    <h2 className={`text-4xl md:text-5xl font-extrabold mb-2 tracking-tight ${isDark ? 'text-white' : 'text-slate-800'}`}>
                         {user.name} <span className="text-4xl">👋</span>
                     </h2>
-                    <p className="text-slate-500 text-lg">Hôm nay bạn muốn tạo trải nghiệm học tập nào?</p>
+                    <p className={`text-lg ${isDark ? 'text-slate-400' : 'text-slate-500'}`}>Hôm nay bạn muốn tạo trải nghiệm học tập nào?</p>
                 </motion.div>
 
                 {/* Mobile Tab Navigation */}
-                <div className="md:hidden flex gap-2 mb-8 bg-white/50 p-1.5 rounded-xl backdrop-blur-sm border border-white/20">
+                <div className={`md:hidden flex gap-2 mb-8 p-1.5 rounded-xl backdrop-blur-sm border ${isDark ? 'bg-slate-800/50 border-slate-700' : 'bg-white/50 border-white/20'}`}>
                     <button
                         onClick={() => setActiveTab('tools')}
                         className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'tools'
-                            ? 'bg-white text-purple-700 shadow-sm'
-                            : 'text-slate-500'
+                            ? (isDark ? 'bg-slate-700 text-purple-400 shadow-sm' : 'bg-white text-purple-700 shadow-sm')
+                            : (isDark ? 'text-slate-400' : 'text-slate-500')
                             }`}
                     >
                         Công cụ
@@ -408,8 +428,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <button
                         onClick={() => setActiveTab('videos')}
                         className={`flex-1 py-2 rounded-lg text-sm font-semibold transition-all ${activeTab === 'videos'
-                            ? 'bg-white text-purple-700 shadow-sm'
-                            : 'text-slate-500'
+                            ? (isDark ? 'bg-slate-700 text-purple-400 shadow-sm' : 'bg-white text-purple-700 shadow-sm')
+                            : (isDark ? 'text-slate-400' : 'text-slate-500')
                             }`}
                     >
                         Video
@@ -427,10 +447,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                             {/* Tools Grid - Bento Style */}
                             <section>
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-purple-100 rounded-lg">
-                                        <Box size={20} className="text-purple-600" />
+                                    <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-purple-100'}`}>
+                                        <Box size={20} className={isDark ? 'text-purple-400' : 'text-purple-600'} />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-800">Kho công cụ</h3>
+                                    <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Kho công cụ</h3>
                                 </div>
                                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 auto-rows-[180px]">
                                     {/* Main Tool - Spans 2 rows on Desktop if needed, here just 1 */}
@@ -441,6 +461,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         accentColor="bg-gradient-to-br from-blue-500 to-indigo-600"
                                         onClick={() => setActiveTab('videos')}
                                         badge={`${lessons.length} video`}
+                                        darkMode={isDark}
                                     />
 
                                     <ToolCard
@@ -449,6 +470,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         icon={<span className="text-3xl filter drop-shadow-md">🐝</span>}
                                         accentColor="bg-gradient-to-br from-amber-400 to-orange-500"
                                         onClick={onBeeGame}
+                                        darkMode={isDark}
                                     />
 
                                     <ToolCard
@@ -457,6 +479,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         icon={<Box size={28} className="text-white" />}
                                         accentColor="bg-gradient-to-br from-purple-500 to-fuchsia-600"
                                         onClick={onGeometry3D}
+                                        darkMode={isDark}
                                     />
 
                                     <ToolCard
@@ -465,6 +488,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         icon={<RotateCcw size={28} className="text-white" />}
                                         accentColor="bg-gradient-to-br from-pink-500 to-rose-500"
                                         onClick={onVongQuay}
+                                        darkMode={isDark}
                                     />
 
                                     <ToolCard
@@ -473,6 +497,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         icon={<span className="text-3xl filter drop-shadow-md">🎡</span>}
                                         accentColor="bg-gradient-to-br from-rose-400 to-red-500"
                                         onClick={onLuckyWheel}
+                                        darkMode={isDark}
                                     />
 
                                     {/* Coming Soon Tools - Slightly transparent */}
@@ -484,6 +509,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         onClick={() => { }}
                                         badge="Sắp ra mắt"
                                         disabled
+                                        darkMode={isDark}
                                     />
                                 </div>
                             </section>
@@ -491,45 +517,45 @@ const Dashboard: React.FC<DashboardProps> = ({
                             {/* Stats Section */}
                             <section>
                                 <div className="flex items-center gap-3 mb-6">
-                                    <div className="p-2 bg-emerald-100 rounded-lg">
-                                        <Zap size={20} className="text-emerald-600" />
+                                    <div className={`p-2 rounded-lg ${isDark ? 'bg-slate-800' : 'bg-emerald-100'}`}>
+                                        <Zap size={20} className={isDark ? 'text-emerald-400' : 'text-emerald-600'} />
                                     </div>
-                                    <h3 className="text-xl font-bold text-slate-800">Thống kê hoạt động</h3>
+                                    <h3 className={`text-xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>Thống kê hoạt động</h3>
                                 </div>
                                 <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-blue-50 rounded-2xl flex items-center justify-center text-blue-600">
+                                    <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} rounded-2xl p-5 border shadow-sm flex items-center gap-4`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDark ? 'bg-slate-700 text-blue-400' : 'bg-blue-50 text-blue-600'}`}>
                                             <Video size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-slate-800">{lessons.length}</p>
+                                            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{lessons.length}</p>
                                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Video</p>
                                         </div>
                                     </div>
-                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-purple-50 rounded-2xl flex items-center justify-center text-purple-600">
+                                    <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} rounded-2xl p-5 border shadow-sm flex items-center gap-4`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDark ? 'bg-slate-700 text-purple-400' : 'bg-purple-50 text-purple-600'}`}>
                                             <HelpCircle size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-slate-800">{lessons.reduce((sum, l) => sum + l.questions.length, 0)}</p>
+                                            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>{lessons.reduce((sum, l) => sum + l.questions.length, 0)}</p>
                                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Câu hỏi</p>
                                         </div>
                                     </div>
-                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-emerald-50 rounded-2xl flex items-center justify-center text-emerald-600">
+                                    <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} rounded-2xl p-5 border shadow-sm flex items-center gap-4`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDark ? 'bg-slate-700 text-emerald-400' : 'bg-emerald-50 text-emerald-600'}`}>
                                             <Zap size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-slate-800">5</p>
+                                            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'}`}>5</p>
                                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Công cụ</p>
                                         </div>
                                     </div>
-                                    <div className="bg-white rounded-2xl p-5 border border-slate-100 shadow-sm flex items-center gap-4">
-                                        <div className="w-12 h-12 bg-amber-50 rounded-2xl flex items-center justify-center text-amber-600">
+                                    <div className={`${isDark ? 'bg-slate-800 border-slate-700' : 'bg-white border-slate-100'} rounded-2xl p-5 border shadow-sm flex items-center gap-4`}>
+                                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center ${isDark ? 'bg-slate-700 text-amber-400' : 'bg-amber-50 text-amber-600'}`}>
                                             <Star size={24} />
                                         </div>
                                         <div>
-                                            <p className="text-2xl font-bold text-slate-800 scale-100 origin-left">{isPro ? '∞' : remainingTrials}</p>
+                                            <p className={`text-2xl font-bold ${isDark ? 'text-white' : 'text-slate-800'} scale-100 origin-left`}>{isPro ? '∞' : remainingTrials}</p>
                                             <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider">Lượt còn</p>
                                         </div>
                                     </div>
@@ -544,9 +570,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                             exit={{ opacity: 0, y: -20 }}
                         >
                             {/* Videos Section */}
-                            <div className="bg-white rounded-[30px] p-8 shadow-xl">
+                            <div className={`${isDark ? 'bg-slate-800 border-slate-700 shadow-slate-900/50' : 'bg-white shadow-xl'} rounded-[30px] p-8 transition-colors border shadow-sm`}>
                                 <div className="flex items-center justify-between mb-8">
-                                    <h2 className="text-3xl font-extrabold text-slate-700">Video của tôi</h2>
+                                    <h2 className={`text-3xl font-extrabold ${isDark ? 'text-white' : 'text-slate-700'}`}>Video của tôi</h2>
                                     <button
                                         onClick={onCreateNew}
                                         className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 hover:from-indigo-600 hover:to-purple-700 text-white rounded-xl font-bold shadow-lg hover:shadow-xl transition-all active:scale-95"
@@ -556,12 +582,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 </div>
 
                                 {lessons.length === 0 ? (
-                                    <div className="border-2 border-dashed border-slate-200 rounded-2xl p-12 text-center bg-slate-50">
+                                    <div className={`border-2 border-dashed rounded-2xl p-12 text-center ${isDark ? 'border-slate-700 bg-slate-800/50' : 'border-slate-200 bg-slate-50'}`}>
                                         <div className="w-20 h-20 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                             <Video size={36} className="text-indigo-600" />
                                         </div>
-                                        <h3 className="text-xl font-bold text-slate-800 mb-2">Chưa có video nào</h3>
-                                        <p className="text-slate-500 mb-8">Tạo video tương tác đầu tiên của bạn ngay bây giờ!</p>
+                                        <h3 className={`text-xl font-bold mb-2 ${isDark ? 'text-white' : 'text-slate-800'}`}>Chưa có video nào</h3>
+                                        <p className={`${isDark ? 'text-slate-400' : 'text-slate-500'} mb-8`}>Tạo video tương tác đầu tiên của bạn ngay bây giờ!</p>
                                         <button
                                             onClick={onCreateNew}
                                             className="px-8 py-3 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold transition-colors shadow-md hover:shadow-lg"
@@ -581,6 +607,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                 onShare={() => handleShare(lesson)}
                                                 canPlay={isPro || remainingTrials > 0}
                                                 isShortening={isShorteningId === lesson.id}
+                                                darkMode={isDark}
                                             />
                                         ))}
                                     </div>
