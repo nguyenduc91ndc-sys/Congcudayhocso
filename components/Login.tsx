@@ -1,17 +1,9 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { GoogleLogin } from '@react-oauth/google';
-import { jwtDecode } from 'jwt-decode';
+import { useGoogleLogin } from '@react-oauth/google';
 import { User } from '../types';
 import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail } from 'lucide-react';
 import { getTrialStatusByEmail, upgradeToPro, setCurrentEmail, isValidEmail, canUseTrialByEmail } from '../utils/trialUtils';
-
-interface GoogleCredentialPayload {
-  sub: string;
-  name: string;
-  email: string;
-  picture?: string;
-}
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -63,6 +55,40 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [isProMode, setIsProMode] = useState(false);
   const [trialStatus, setTrialStatus] = useState({ usesRemaining: 3, totalUses: 0, isPro: false });
   const [showInAppWarning] = useState(isInAppBrowser());
+  const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
+
+  // Custom Google Login Hook
+  const login = useGoogleLogin({
+    onSuccess: async (tokenResponse) => {
+      setIsLoadingGoogle(true);
+      try {
+        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
+          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
+        });
+        const data = await userInfo.json();
+
+        const avatar = data.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name)}&backgroundColor=7c3aed&textColor=ffffff`;
+
+        const userData: User = {
+          id: data.sub,
+          name: data.name,
+          avatar: avatar,
+          email: data.email,
+        };
+
+        onLogin(userData);
+      } catch (err) {
+        console.error('Failed to translate token to user info', err);
+        setError('Không thể lấy thông tin người dùng từ Google.');
+      } finally {
+        setIsLoadingGoogle(false);
+      }
+    },
+    onError: () => {
+      setError('Đăng nhập thất bại. Vui lòng thử lại.');
+      setIsLoadingGoogle(false);
+    },
+  });
 
   // Hàm mở link trong trình duyệt mặc định
   const openInBrowser = () => {
@@ -205,32 +231,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               className="space-y-4"
             >
               {/* Google Login Button */}
-              <div className="flex justify-center">
-                <GoogleLogin
-                  onSuccess={(credentialResponse) => {
-                    if (credentialResponse.credential) {
-                      const decoded = jwtDecode<GoogleCredentialPayload>(credentialResponse.credential);
-                      const avatar = decoded.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decoded.name)}&backgroundColor=7c3aed&textColor=ffffff`;
-
-                      const userData: User = {
-                        id: decoded.sub,
-                        name: decoded.name,
-                        avatar: avatar,
-                        email: decoded.email,
-                      };
-
-                      onLogin(userData);
-                    }
-                  }}
-                  onError={() => {
-                    setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
-                  }}
-                  theme="filled_blue"
-                  size="large"
-                  shape="pill"
-                  text="signin_with"
-                  locale="vi"
-                />
+              <div className="flex justify-center w-full px-4 sm:px-0">
+                <motion.button
+                  onClick={() => login()}
+                  disabled={isLoadingGoogle}
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="w-full sm:w-auto min-w-[280px] py-4 px-6 rounded-full font-bold text-gray-700 bg-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 border border-gray-200"
+                >
+                  {isLoadingGoogle ? (
+                    <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
+                  ) : (
+                    <>
+                      <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
+                      <span className="text-lg">Đăng nhập với Google</span>
+                    </>
+                  )}
+                </motion.button>
               </div>
 
               {/* Error Message */}
