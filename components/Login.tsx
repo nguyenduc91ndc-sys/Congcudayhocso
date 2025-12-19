@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '../types';
-import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail, Code2, MessageCircle } from 'lucide-react';
+import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail, Code2, MessageCircle, Sparkles } from 'lucide-react';
 import { getTrialStatusByEmail, upgradeToPro, setCurrentEmail, isValidEmail, canUseTrialByEmail } from '../utils/trialUtils';
 
 interface LoginProps {
@@ -312,23 +312,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
           </AnimatePresence>
 
-          {/* Contact Info */}
-          <div className="mt-6 pt-4 border-t border-purple-200/50 flex flex-col items-center gap-2">
-            <div className="flex items-center gap-2 text-xs font-medium bg-white/50 px-3 py-1.5 rounded-full border border-purple-100/50 shadow-sm backdrop-blur-sm">
-              <Code2 size={14} className="text-purple-600" />
-              <span className="text-purple-800/80">
-                Phát triển bởi <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-600">Đức Nguyễn</span>
-              </span>
-            </div>
-
+          {/* Premium Footer Signature */}
+          <div className="mt-6 pt-4 border-t border-purple-200/30">
             <a
               href="https://zalo.me/0975509490"
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2 text-[10px] font-semibold text-blue-600 hover:text-blue-700 transition-all bg-blue-50/80 hover:bg-blue-100 px-3 py-1 rounded-full border border-blue-100"
+              className="premium-footer flex items-center justify-center gap-2 text-xs font-medium text-purple-700/80 hover:text-purple-900 cursor-pointer"
             >
-              <MessageCircle size={12} className="fill-blue-600/20" />
-              <span>Zalo: 0975509490</span>
+              <Sparkles size={12} className="text-amber-500" />
+              <span className="text-shimmer font-bold">Đức Nguyễn</span>
+              <span className="text-purple-400">·</span>
+              <span className="text-purple-600/70">Zalo 0975509490</span>
             </a>
           </div>
         </div>
