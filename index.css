@@ -1,0 +1,75 @@
+/* Global Responsive Styles */
+
+/* Make sure the app fills the viewport */
+html, body, #root {
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+/* Mobile-first responsive adjustments */
+@media (max-width: 640px) {
+  /* Question modal wrapper - full width on mobile */
+  .question-modal-wrapper {
+    padding: 8px !important;
+  }
+  
+  /* Question modal - tighter on small screens */
+  .question-modal {
+    padding: 16px !important;
+    border-radius: 20px !important;
+    max-width: 100% !important;
+    margin: 8px !important;
+  }
+  
+  /* Question text smaller on mobile */
+  .question-text {
+    font-size: 1.125rem !important;
+    line-height: 1.4 !important;
+  }
+  
+  /* Options grid - single column on very small screens */
+  .options-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+  
+  /* Option button - more compact */
+  .option-button {
+    padding: 12px !important;
+  }
+  
+  /* Submit button */
+  .submit-button {
+    padding: 12px 24px !important;
+    font-size: 1rem !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .question-modal {
+    padding: 24px !important;
+    max-width: 90% !important;
+  }
+}
+
+/* Ensure touch targets are large enough */
+@media (pointer: coarse) {
+  button, a {
+    min-height: 44px;
+  }
+}
+
+/* Prevent horizontal scroll */
+* {
+  box-sizing: border-box;
+}
+
+/* Better text rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
