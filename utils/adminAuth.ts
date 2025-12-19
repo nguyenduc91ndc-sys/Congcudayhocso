@@ -12,8 +12,8 @@ export async function hashPassword(password: string): Promise<string> {
 }
 
 // Mật khẩu admin đã hash (SHA-256)
-// Mật khẩu gốc: "admin2024" -> bạn có thể đổi bằng cách chạy hashPassword('matkhaumoi') trong console
-const ADMIN_PASSWORD_HASH = 'b8b8eb83374c0bf3b1c3224159f615790a34f1b7ed6dfecdd80d4e8a8958c22e'; // "admin2024"
+// Mật khẩu gốc: "admin2024" -> bạn có thể đổi bằng cách thay đổi ADMIN_PASSWORD
+const ADMIN_PASSWORD = 'admin2024';
 
 // Danh sách email admin được phép
 export const ADMIN_EMAILS = [
@@ -29,8 +29,7 @@ export function isAdminEmail(email: string | undefined): boolean {
 
 // Xác thực mật khẩu admin
 export async function verifyAdminPassword(password: string): Promise<boolean> {
-    const hashedInput = await hashPassword(password);
-    return hashedInput === ADMIN_PASSWORD_HASH;
+    return password === ADMIN_PASSWORD;
 }
 
 // Lưu trạng thái đã xác thực admin (session)
