@@ -205,16 +205,17 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               </motion.button>
 
               {/* Switch to Pro Code */}
-              <div className="pt-2">
+              <div className="pt-4 flex justify-center">
                 <button
                   type="button"
                   onClick={() => {
                     setIsProMode(true);
                     setStep('code');
                   }}
-                  className="text-sm text-purple-600 hover:text-purple-800 font-medium underline decoration-dashed hover:decoration-solid underline-offset-4"
+                  className="group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 transition-all shadow-sm hover:shadow"
                 >
-                  Tôi đã có mã kích hoạt Pro
+                  <Crown size={16} className="text-purple-600 group-hover:scale-110 transition-transform" />
+                  <span>Tôi đã có mã kích hoạt Pro</span>
                 </button>
               </div>
             </motion.form>
