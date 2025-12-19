@@ -13,7 +13,7 @@ export async function hashPassword(password: string): Promise<string> {
 
 // Mật khẩu admin đã hash (SHA-256)
 // Mật khẩu gốc: "admin2024" -> bạn có thể đổi bằng cách chạy hashPassword('matkhaumoi') trong console
-const ADMIN_PASSWORD_HASH = 'c6ba91b90d922e159893f46c387e5dc1b3dc5c101a5a4522f03b987177a24a91'; // "admin2024"
+const ADMIN_PASSWORD_HASH = 'b8b8eb83374c0bf3b1c3224159f615790a34f1b7ed6dfecdd80d4e8a8958c22e'; // "admin2024"
 
 // Danh sách email admin được phép
 export const ADMIN_EMAILS = [
