@@ -1,8 +1,17 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { GoogleLogin } from '@react-oauth/google';
+import { jwtDecode } from 'jwt-decode';
 import { User } from '../types';
 import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail } from 'lucide-react';
 import { getTrialStatusByEmail, upgradeToPro, setCurrentEmail, isValidEmail, canUseTrialByEmail } from '../utils/trialUtils';
+
+interface GoogleCredentialPayload {
+  sub: string;
+  name: string;
+  email: string;
+  picture?: string;
+}
 
 interface LoginProps {
   onLogin: (user: User) => void;
@@ -175,43 +184,46 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-4"
             >
-              {/* Guest Trial Button */}
-              <motion.button
-                onClick={handleGuestLogin}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-4 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
-              >
-                <Gift size={24} />
-                <div className="text-left">
-                  <div className="text-base">Dùng thử miễn phí</div>
-                  <div className="text-xs opacity-80">3 lượt tạo video / email</div>
-                </div>
-              </motion.button>
+              {/* Google Login Button */}
+              <div className="flex justify-center">
+                <GoogleLogin
+                  onSuccess={(credentialResponse) => {
+                    if (credentialResponse.credential) {
+                      const decoded = jwtDecode<GoogleCredentialPayload>(credentialResponse.credential);
+                      const avatar = decoded.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(decoded.name)}&backgroundColor=7c3aed&textColor=ffffff`;
 
-              {/* Divider */}
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <div className="w-full border-t border-purple-300/50"></div>
-                </div>
-                <div className="relative flex justify-center text-sm">
-                  <span className="px-2 bg-white/40 text-purple-600 font-medium">hoặc</span>
-                </div>
+                      const userData: User = {
+                        id: decoded.sub,
+                        name: decoded.name,
+                        avatar: avatar,
+                        email: decoded.email,
+                      };
+
+                      onLogin(userData);
+                    }
+                  }}
+                  onError={() => {
+                    setError('Đăng nhập Google thất bại. Vui lòng thử lại.');
+                  }}
+                  theme="filled_blue"
+                  size="large"
+                  shape="pill"
+                  text="signin_with"
+                  locale="vi"
+                />
               </div>
 
-              {/* Pro Login Button */}
-              <motion.button
-                onClick={handleProLogin}
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                className="w-full py-4 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
-              >
-                <Crown size={24} />
-                <div className="text-left">
-                  <div className="text-base">Đã có mã Pro</div>
-                  <div className="text-xs opacity-80">Xem không giới hạn</div>
-                </div>
-              </motion.button>
+              {/* Error Message */}
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="bg-red-100/80 border border-red-300 rounded-xl p-3 flex items-start gap-2 text-left"
+                >
+                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
+                  <p className="text-sm text-red-700">{error}</p>
+                </motion.div>
+              )}
             </motion.div>
           )}
 
