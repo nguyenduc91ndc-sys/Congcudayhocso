@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useGoogleLogin } from '@react-oauth/google';
 import { User } from '../types';
 import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail } from 'lucide-react';
 import { getTrialStatusByEmail, upgradeToPro, setCurrentEmail, isValidEmail, canUseTrialByEmail } from '../utils/trialUtils';
@@ -37,13 +36,6 @@ const generateUserId = (): string => {
   return 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
-// Kiểm tra xem có đang ở trong in-app browser (Zalo, Facebook, etc.) không
-const isInAppBrowser = (): boolean => {
-  const ua = navigator.userAgent || navigator.vendor || '';
-  // Kiểm tra Zalo, Facebook, Instagram, Messenger, Line, etc.
-  return /FBAN|FBAV|Zalo|Instagram|Line|Messenger|MicroMessenger/i.test(ua);
-};
-
 const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [accessCode, setAccessCode] = useState('');
   const [displayName, setDisplayName] = useState('');
@@ -54,53 +46,6 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [validatedNote, setValidatedNote] = useState('');
   const [isProMode, setIsProMode] = useState(false);
   const [trialStatus, setTrialStatus] = useState({ usesRemaining: 3, totalUses: 0, isPro: false });
-  const [showInAppWarning] = useState(isInAppBrowser());
-  const [isLoadingGoogle, setIsLoadingGoogle] = useState(false);
-
-  // Custom Google Login Hook
-  const login = useGoogleLogin({
-    onSuccess: async (tokenResponse) => {
-      setIsLoadingGoogle(true);
-      try {
-        const userInfo = await fetch('https://www.googleapis.com/oauth2/v3/userinfo', {
-          headers: { Authorization: `Bearer ${tokenResponse.access_token}` },
-        });
-        const data = await userInfo.json();
-
-        const avatar = data.picture || `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(data.name)}&backgroundColor=7c3aed&textColor=ffffff`;
-
-        const userData: User = {
-          id: data.sub,
-          name: data.name,
-          avatar: avatar,
-          email: data.email,
-        };
-
-        onLogin(userData);
-      } catch (err) {
-        console.error('Failed to translate token to user info', err);
-        setError('Không thể lấy thông tin người dùng từ Google.');
-      } finally {
-        setIsLoadingGoogle(false);
-      }
-    },
-    onError: () => {
-      setError('Đăng nhập thất bại. Vui lòng thử lại.');
-      setIsLoadingGoogle(false);
-    },
-  });
-
-  // Hàm mở link trong trình duyệt mặc định
-  const openInBrowser = () => {
-    const url = window.location.href;
-    // Thử các cách khác nhau để mở trong trình duyệt
-    window.open(url, '_system');
-    // Fallback: copy link và hướng dẫn user
-    if (navigator.clipboard) {
-      navigator.clipboard.writeText(url);
-      alert('Đã copy link! Hãy mở trình duyệt Chrome/Safari và dán link vào để đăng nhập.');
-    }
-  };
 
   const handleGuestLogin = () => {
     setIsProMode(false);
@@ -125,29 +70,13 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     const status = getTrialStatusByEmail(email);
     setTrialStatus(status);
 
-    if (!status.isPro && status.usesRemaining <= 0) {
-      setError(`Email ${email} đã hết 3 lượt dùng thử. Vui lòng sử dụng mã Pro để tiếp tục.`);
-      return;
+    if (canUseTrialByEmail(email)) {
+      // Lưu email hiện tại để sử dụng logic trừ lượt sau này
+      setCurrentEmail(email);
+      setStep('name');
+    } else {
+      setError('Email này đã hết lượt dùng thử miễn phí. Vui lòng nâng cấp Pro!');
     }
-
-    // Lưu email hiện tại
-    setCurrentEmail(email);
-
-    // Tự động tạo tên từ email (phần trước @) và đăng nhập luôn
-    const nameFromEmail = email.split('@')[0]
-      .replace(/[._-]/g, ' ') // Thay dấu . _ - thành khoảng trắng
-      .replace(/\b\w/g, c => c.toUpperCase()); // Viết hoa chữ cái đầu
-
-    const avatar = `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(nameFromEmail)}&backgroundColor=7c3aed&textColor=ffffff`;
-
-    const userData: User = {
-      id: generateUserId(),
-      name: nameFromEmail,
-      avatar: avatar,
-      email: email,
-    };
-
-    onLogin(userData);
   };
 
   const handleCodeSubmit = (e: React.FormEvent) => {
@@ -183,7 +112,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       id: generateUserId(),
       name: displayName.trim(),
       avatar: avatar,
-      email: email,
+      email: isProMode ? undefined : email, // Chỉ lưu email nếu không phải Pro
     };
 
     onLogin(userData);
@@ -230,50 +159,43 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               exit={{ opacity: 0, y: -20 }}
               className="space-y-4"
             >
-              {/* Google Login Button */}
-              <div className="flex justify-center w-full px-4 sm:px-0">
-                <motion.button
-                  onClick={() => {
-                    if (showInAppWarning) {
-                      // Nếu đang ở Zalo/Facebook, mở link trong trình duyệt ngoài
-                      const url = window.location.href;
-                      // Copy link vào clipboard để tiện cho user
-                      if (navigator.clipboard) {
-                        navigator.clipboard.writeText(url).catch(() => { });
-                      }
+              {/* Guest Trial Button */}
+              <motion.button
+                onClick={handleGuestLogin}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
+              >
+                <Gift size={24} />
+                <div className="text-left">
+                  <div className="text-base">Dùng thử miễn phí</div>
+                  <div className="text-xs opacity-80">3 lượt tạo video / email</div>
+                </div>
+              </motion.button>
 
-                      // Hiển thị hướng dẫn
-                      const confirmed = window.confirm(
-                        'Zalo/Facebook không hỗ trợ đăng nhập Google.\n\nBấm OK để mở bằng trình duyệt Chrome/Safari.\n(Link đã được copy, bạn có thể dán thủ công nếu cần)'
-                      );
-
-                      if (confirmed) {
-                        window.open(url, '_system');
-                        // Fallback cho một số thiết bị
-                        window.location.href = url;
-                      }
-                    } else {
-                      // Nếu không phải in-app browser, đăng nhập bình thường
-                      login();
-                    }
-                  }}
-                  disabled={isLoadingGoogle}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                  className="w-full sm:w-auto min-w-[280px] py-4 px-6 rounded-full font-bold text-gray-700 bg-white shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3 border border-gray-200"
-                >
-                  {isLoadingGoogle ? (
-                    <div className="w-6 h-6 border-2 border-purple-500 border-t-transparent rounded-full animate-spin" />
-                  ) : (
-                    <>
-                      <img src="https://www.google.com/favicon.ico" alt="Google" className="w-6 h-6" />
-                      <span className="text-lg">
-                        {showInAppWarning ? 'Mở bằng trình duyệt để đăng nhập' : 'Đăng nhập với Google'}
-                      </span>
-                    </>
-                  )}
-                </motion.button>
+              {/* Divider */}
+              <div className="relative">
+                <div className="absolute inset-0 flex items-center">
+                  <div className="w-full border-t border-purple-300/50"></div>
+                </div>
+                <div className="relative flex justify-center text-sm">
+                  <span className="px-2 bg-white/40 text-purple-600 font-medium">hoặc</span>
+                </div>
               </div>
+
+              {/* Pro Login Button */}
+              <motion.button
+                onClick={handleProLogin}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+                className="w-full py-4 px-6 rounded-2xl font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg hover:shadow-xl transition-all flex items-center justify-center gap-3"
+              >
+                <Crown size={24} />
+                <div className="text-left">
+                  <div className="text-base">Đã có mã Pro</div>
+                  <div className="text-xs opacity-80">Xem không giới hạn</div>
+                </div>
+              </motion.button>
 
               {/* Error Message */}
               {error && (
@@ -302,7 +224,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               {/* Header */}
               <div className="bg-blue-100/60 rounded-xl p-3 flex items-center gap-2">
                 <Gift className="text-blue-600" size={20} />
-                <p className="font-bold text-blue-800 text-sm">Nhập email để dùng thử (3 lượt/email)</p>
+                <p className="font-bold text-blue-800 text-sm">Nhập email để dùng thử</p>
               </div>
 
               {/* Email Input */}
@@ -374,7 +296,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               {/* Header */}
               <div className="bg-purple-100/60 rounded-xl p-3 flex items-center gap-2">
                 <Crown className="text-purple-600" size={20} />
-                <p className="font-bold text-purple-800 text-sm">Nhập mã Pro để xem không giới hạn</p>
+                <p className="font-bold text-purple-800 text-sm">Nhập mã Pro</p>
               </div>
 
               {/* Access Code Input */}
@@ -389,8 +311,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     setAccessCode(formatCode(e.target.value));
                     setError('');
                   }}
-                  placeholder="Nhập mã (VD: PRO-XXXX-XXXX)"
-                  className="w-full pl-12 pr-4 py-4 bg-white/70 border-2 border-purple-200 rounded-2xl focus:border-purple-500 focus:outline-none font-mono text-center text-lg tracking-wider placeholder:text-sm placeholder:tracking-normal placeholder:font-sans"
+                  placeholder="PRO-XXXX-XXXX"
+                  className="w-full pl-12 pr-4 py-4 bg-white/70 border-2 border-purple-200 rounded-2xl focus:border-purple-500 focus:outline-none font-mono text-center text-lg tracking-wider placeholder:tracking-normal placeholder:font-sans"
                   autoComplete="off"
                   autoFocus
                 />
