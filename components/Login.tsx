@@ -126,23 +126,23 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         initial={{ opacity: 0, scale: 0.9, y: 20 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
         transition={{ duration: 0.5 }}
-        className="w-full max-w-md bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl rounded-[40px] p-8 sm:p-10 text-center"
+        className="w-full max-w-md bg-white/40 backdrop-blur-xl border border-white/60 shadow-2xl rounded-[32px] p-6 sm:p-8 text-center"
       >
         {/* Avatar */}
-        <div className="mb-6 inline-block">
+        <div className="mb-4 inline-block">
           <img
             src="/avatar.jpg"
             alt="Avatar Giáo viên"
-            className="w-24 h-24 sm:w-28 sm:h-28 rounded-full object-cover shadow-lg border-4 border-white/80"
+            className="w-20 h-20 sm:w-24 sm:h-24 rounded-full object-cover shadow-lg border-4 border-white/80"
           />
         </div>
 
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-purple-900 mb-2">
+        <h1 className="text-xl sm:text-2xl font-extrabold text-purple-900 mb-1">
           Giáo viên yêu công nghệ
         </h1>
-        <h2 className="text-lg sm:text-xl font-bold text-purple-700 mb-4">NTD</h2>
+        <h2 className="text-base sm:text-lg font-bold text-purple-700 mb-3">NTD</h2>
 
-        <p className="text-purple-800/80 mb-6 text-base sm:text-lg font-medium">
+        <p className="text-purple-800/80 mb-5 text-sm sm:text-base font-medium">
           Video, trò chơi dạy học và hơn thế nữa
         </p>
 
@@ -156,12 +156,12 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               onSubmit={handleEmailSubmit}
-              className="space-y-6"
+              className="space-y-4"
             >
               {/* Email Input */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Mail className="text-purple-500" size={24} />
+                  <Mail className="text-purple-500" size={20} />
                 </div>
                 <input
                   type="email"
@@ -171,7 +171,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     setError('');
                   }}
                   placeholder="email@example.com"
-                  className="w-full pl-12 pr-4 py-4 bg-white/70 border-2 border-purple-200 rounded-2xl focus:border-purple-500 focus:outline-none text-center text-lg"
+                  className="w-full pl-10 pr-4 py-3 bg-white/70 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:outline-none text-center text-base"
                   autoComplete="email"
                   autoFocus
                 />
@@ -182,10 +182,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-100/80 border border-red-300 rounded-xl p-3 flex items-start gap-2 text-left"
+                  className="bg-red-100/80 border border-red-300 rounded-lg p-2 flex items-start gap-2 text-left"
                 >
-                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
-                  <p className="text-sm text-red-700">{error}</p>
+                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={16} />
+                  <p className="text-xs text-red-700">{error}</p>
                 </motion.div>
               )}
 
@@ -195,26 +195,26 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 disabled={!email.trim()}
                 whileHover={{ scale: email.trim() ? 1.02 : 1 }}
                 whileTap={{ scale: email.trim() ? 0.98 : 1 }}
-                className={`w-full py-4 px-6 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all ${email.trim()
-                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-lg'
+                className={`w-full py-3 px-6 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${email.trim()
+                  ? 'bg-gradient-to-r from-blue-500 to-cyan-500 shadow-md'
                   : 'bg-gray-300 cursor-not-allowed'
                   }`}
               >
                 Tiếp tục
-                <ArrowRight size={20} />
+                <ArrowRight size={18} />
               </motion.button>
 
               {/* Switch to Pro Code */}
-              <div className="pt-4 flex justify-center">
+              <div className="pt-2 flex justify-center">
                 <button
                   type="button"
                   onClick={() => {
                     setIsProMode(true);
                     setStep('code');
                   }}
-                  className="group flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 transition-all shadow-sm hover:shadow"
+                  className="group flex items-center gap-2 px-3 py-1.5 rounded-lg text-xs font-medium text-purple-700 bg-purple-50 hover:bg-purple-100 border border-purple-200 hover:border-purple-300 transition-all shadow-sm hover:shadow"
                 >
-                  <Crown size={16} className="text-purple-600 group-hover:scale-110 transition-transform" />
+                  <Crown size={14} className="text-purple-600 group-hover:scale-110 transition-transform" />
                   <span>Tôi đã có mã kích hoạt Pro</span>
                 </button>
               </div>
@@ -228,7 +228,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
               onSubmit={handleCodeSubmit}
-              className="space-y-6"
+              className="space-y-4"
             >
               {/* Header with Back Button */}
               <div className="flex items-center justify-between mb-2">
@@ -238,19 +238,19 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     setIsProMode(false);
                     setStep('email');
                   }}
-                  className="text-sm text-purple-600 font-medium flex items-center gap-1"
+                  className="text-xs text-purple-600 font-medium flex items-center gap-1"
                 >
-                  ← Quay lại nhập Email
+                  ← Quay lại
                 </button>
-                <span className="text-purple-800 font-bold flex items-center gap-1">
-                  <Crown size={16} /> Nhập mã Pro
+                <span className="text-purple-800 font-bold flex items-center gap-1 text-sm">
+                  <Crown size={14} /> Nhập mã Pro
                 </span>
               </div>
 
               {/* Access Code Input */}
               <div className="relative">
                 <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                  <Key className="text-purple-500" size={24} />
+                  <Key className="text-purple-500" size={20} />
                 </div>
                 <input
                   type="text"
@@ -260,7 +260,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     setError('');
                   }}
                   placeholder="PRO-XXXX-XXXX"
-                  className="w-full pl-12 pr-4 py-4 bg-white/70 border-2 border-purple-200 rounded-2xl focus:border-purple-500 focus:outline-none font-mono text-center text-lg tracking-wider placeholder:tracking-normal placeholder:font-sans"
+                  className="w-full pl-10 pr-4 py-3 bg-white/70 border-2 border-purple-200 rounded-xl focus:border-purple-500 focus:outline-none font-mono text-center text-base tracking-wider placeholder:tracking-normal placeholder:font-sans"
                   autoComplete="off"
                   autoFocus
                 />
@@ -271,10 +271,10 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 <motion.div
                   initial={{ opacity: 0, y: -10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="bg-red-100/80 border border-red-300 rounded-xl p-3 flex items-start gap-2 text-left"
+                  className="bg-red-100/80 border border-red-300 rounded-lg p-2 flex items-start gap-2 text-left"
                 >
-                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={18} />
-                  <p className="text-sm text-red-700">{error}</p>
+                  <AlertCircle className="text-red-500 flex-shrink-0 mt-0.5" size={16} />
+                  <p className="text-xs text-red-700">{error}</p>
                 </motion.div>
               )}
 
@@ -284,8 +284,8 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 disabled={!accessCode.trim() || isValidating}
                 whileHover={{ scale: accessCode.trim() ? 1.02 : 1 }}
                 whileTap={{ scale: accessCode.trim() ? 0.98 : 1 }}
-                className={`w-full py-4 px-6 rounded-2xl font-bold text-white flex items-center justify-center gap-2 transition-all ${accessCode.trim() && !isValidating
-                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg'
+                className={`w-full py-3 px-6 rounded-xl font-bold text-white flex items-center justify-center gap-2 transition-all ${accessCode.trim() && !isValidating
+                  ? 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-md'
                   : 'bg-gray-300 cursor-not-allowed'
                   }`}
               >
@@ -300,7 +300,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                 ) : (
                   <>
                     Kích hoạt ngay
-                    <ArrowRight size={20} />
+                    <ArrowRight size={18} />
                   </>
                 )}
               </motion.button>
@@ -311,10 +311,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
         </AnimatePresence>
 
         {/* Contact Info */}
-        {/* Contact Info */}
-        <div className="mt-8 pt-6 border-t border-purple-200/50 flex flex-col items-center gap-3">
-          <div className="flex items-center gap-2 text-sm font-medium bg-white/50 px-4 py-2 rounded-full border border-purple-100/50 shadow-sm backdrop-blur-sm">
-            <Code2 size={16} className="text-purple-600" />
+        <div className="mt-6 pt-4 border-t border-purple-200/50 flex flex-col items-center gap-2">
+          <div className="flex items-center gap-2 text-xs font-medium bg-white/50 px-3 py-1.5 rounded-full border border-purple-100/50 shadow-sm backdrop-blur-sm">
+            <Code2 size={14} className="text-purple-600" />
             <span className="text-purple-800/80">
               Phát triển bởi <span className="font-bold text-transparent bg-clip-text bg-gradient-to-r from-purple-700 to-pink-600">Đức Nguyễn</span>
             </span>
@@ -324,9 +323,9 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
             href="https://zalo.me/0975509490"
             target="_blank"
             rel="noopener noreferrer"
-            className="flex items-center gap-2 text-xs font-semibold text-blue-600 hover:text-blue-700 transition-all bg-blue-50/80 hover:bg-blue-100 px-3 py-1.5 rounded-full border border-blue-100"
+            className="flex items-center gap-2 text-[10px] font-semibold text-blue-600 hover:text-blue-700 transition-all bg-blue-50/80 hover:bg-blue-100 px-3 py-1 rounded-full border border-blue-100"
           >
-            <MessageCircle size={14} className="fill-blue-600/20" />
+            <MessageCircle size={12} className="fill-blue-600/20" />
             <span>Zalo: 0975509490</span>
           </a>
         </div>
