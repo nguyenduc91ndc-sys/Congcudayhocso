@@ -1,6 +1,6 @@
 /**
  * Utility để phát âm thanh trong ứng dụng
- * Sử dụng Web Audio API để tạo âm thanh tổng hợp
+ * Sử dụng cả file MP3 bên ngoài và Web Audio API để tạo âm thanh tổng hợp
  */
 
 // Audio Context singleton
@@ -12,6 +12,53 @@ const getAudioContext = (): AudioContext => {
     }
     return audioContext;
 };
+
+// ============ HỆ THỐNG PHÁT ÂM THANH TỪ FILE MP3 ============
+
+// Cache các Audio objects để tối ưu hiệu suất
+const audioCache: { [key: string]: HTMLAudioElement } = {};
+
+/**
+ * Tạo hoặc lấy Audio element từ cache
+ */
+const getAudioElement = (src: string): HTMLAudioElement => {
+    if (!audioCache[src]) {
+        audioCache[src] = new Audio(src);
+        audioCache[src].preload = 'auto';
+    }
+    return audioCache[src];
+};
+
+/**
+ * Phát âm thanh từ file MP3
+ * @param src - Đường dẫn đến file âm thanh
+ * @param volume - Âm lượng (0.0 - 1.0), mặc định 1.0
+ */
+export const playExternalSound = (src: string, volume: number = 1.0): void => {
+    try {
+        const audio = getAudioElement(src);
+        audio.volume = Math.max(0, Math.min(1, volume));
+        audio.currentTime = 0; // Reset về đầu để có thể phát lại
+        audio.play().catch(e => {
+            console.warn('Could not play external sound:', e);
+        });
+    } catch (e) {
+        console.warn('Error playing external sound:', e);
+    }
+};
+
+// Đường dẫn các file âm thanh
+const SOUND_PATHS = {
+    victory: '/sounds/Am_thanh_chuc_mung_chien_thang-www_tiengdong_com.mp3',
+    incorrect: '/sounds/Am_thanh_tra_loi_sai-www_tiengdong_com.mp3',
+};
+
+// Pre-load các file âm thanh khi module được import
+if (typeof window !== 'undefined') {
+    Object.values(SOUND_PATHS).forEach(path => {
+        getAudioElement(path);
+    });
+}
 
 /**
  * Phát âm thanh "Đúng rồi!" - tone vui vẻ, cao dần
@@ -62,75 +109,10 @@ export const playCorrectSound = (): void => {
 };
 
 /**
- * Phát âm thanh "Sai rồi!" - TO và rõ ràng kiểu còi xe
+ * Phát âm thanh "Sai rồi!" - sử dụng file MP3 bên ngoài
  */
 export const playIncorrectSound = (): void => {
-    try {
-        const ctx = getAudioContext();
-        const now = ctx.currentTime;
-
-        // Âm thanh chính - TO với volume gần max
-        // Kiểu "EHHH" như còi xe sai
-
-        // Main tone - rất to
-        const main = ctx.createOscillator();
-        const mainGain = ctx.createGain();
-        main.connect(mainGain);
-        mainGain.connect(ctx.destination);
-        main.type = 'sine';
-        main.frequency.value = 220; // A3
-        mainGain.gain.setValueAtTime(0, now);
-        mainGain.gain.linearRampToValueAtTime(0.9, now + 0.03); // Volume gần max
-        mainGain.gain.setValueAtTime(0.9, now + 0.5);
-        mainGain.gain.linearRampToValueAtTime(0, now + 0.7);
-        main.start(now);
-        main.stop(now + 0.75);
-
-        // Sub bass để đầy đặn
-        const sub = ctx.createOscillator();
-        const subGain = ctx.createGain();
-        sub.connect(subGain);
-        subGain.connect(ctx.destination);
-        sub.type = 'sine';
-        sub.frequency.value = 110; // A2 - octave thấp
-        subGain.gain.setValueAtTime(0, now);
-        subGain.gain.linearRampToValueAtTime(0.7, now + 0.03);
-        subGain.gain.setValueAtTime(0.7, now + 0.5);
-        subGain.gain.linearRampToValueAtTime(0, now + 0.7);
-        sub.start(now);
-        sub.stop(now + 0.75);
-
-        // Octave cao để sáng hơn
-        const high = ctx.createOscillator();
-        const highGain = ctx.createGain();
-        high.connect(highGain);
-        highGain.connect(ctx.destination);
-        high.type = 'sine';
-        high.frequency.value = 440; // A4
-        highGain.gain.setValueAtTime(0, now);
-        highGain.gain.linearRampToValueAtTime(0.5, now + 0.03);
-        highGain.gain.setValueAtTime(0.5, now + 0.5);
-        highGain.gain.linearRampToValueAtTime(0, now + 0.7);
-        high.start(now);
-        high.stop(now + 0.75);
-
-        // Fifth để hài hòa (E)
-        const fifth = ctx.createOscillator();
-        const fifthGain = ctx.createGain();
-        fifth.connect(fifthGain);
-        fifthGain.connect(ctx.destination);
-        fifth.type = 'sine';
-        fifth.frequency.value = 330; // E4
-        fifthGain.gain.setValueAtTime(0, now);
-        fifthGain.gain.linearRampToValueAtTime(0.4, now + 0.03);
-        fifthGain.gain.setValueAtTime(0.4, now + 0.5);
-        fifthGain.gain.linearRampToValueAtTime(0, now + 0.7);
-        fifth.start(now);
-        fifth.stop(now + 0.75);
-
-    } catch (e) {
-        console.warn('Could not play incorrect sound:', e);
-    }
+    playExternalSound(SOUND_PATHS.incorrect, 0.8);
 };
 
 /**
@@ -211,9 +193,16 @@ export const playMustRewatchSound = (): void => {
 };
 
 /**
- * Phát âm thanh chiến thắng hoành tráng - fanfare với nhiều nốt
+ * Phát âm thanh chiến thắng hoành tráng - sử dụng file MP3 bên ngoài
  */
 export const playVictorySound = (): void => {
+    playExternalSound(SOUND_PATHS.victory, 1.0);
+};
+
+/**
+ * [LEGACY] Phát âm thanh chiến thắng bằng Web Audio API (backup)
+ */
+export const playVictorySoundSynthesized = (): void => {
     try {
         const ctx = getAudioContext();
         const now = ctx.currentTime;
