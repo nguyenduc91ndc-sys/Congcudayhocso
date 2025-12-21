@@ -7,6 +7,7 @@ import {
     Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield
 } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
+import ChatBox from './ChatBox';
 import { useTheme } from '../contexts/ThemeContext';
 import { getTrialStatus, activateWithCode, upgradeToPro, useTrialPlay } from '../utils/trialUtils';
 import { createShareUrl, shortenUrl } from '../utils/shareUtils';
@@ -737,6 +738,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </motion.div>
                 )}
             </AnimatePresence>
+
+            {/* AI Chatbox */}
+            <ChatBox userName={user.name} />
         </div>
     );
 };
