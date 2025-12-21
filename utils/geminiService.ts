@@ -18,7 +18,7 @@ const API_KEYS = [
     // Thêm các key khác vào đây
 ];
 
-const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent';
+const API_URL = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent';
 
 // Track current key index and failed keys
 let currentKeyIndex = 0;
