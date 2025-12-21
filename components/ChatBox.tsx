@@ -104,16 +104,11 @@ export default function ChatBox({ userName }: ChatBoxProps) {
                         : 'opacity-0 translate-y-4 pointer-events-none'
                     }
         `}
-                style={{
-                    maxHeight: 'calc(100vh - 120px)',
-                    top: '20px',
-                    bottom: 'auto'
-                }}
             >
                 <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden flex flex-col"
                     style={{
                         boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)',
-                        maxHeight: 'calc(100vh - 140px)'
+                        maxHeight: 'calc(100vh - 150px)'
                     }}
                 >
                     {/* Header */}
