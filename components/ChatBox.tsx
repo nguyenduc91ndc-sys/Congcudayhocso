@@ -104,9 +104,17 @@ export default function ChatBox({ userName }: ChatBoxProps) {
                         : 'opacity-0 translate-y-4 pointer-events-none'
                     }
         `}
+                style={{
+                    maxHeight: 'calc(100vh - 120px)',
+                    top: '20px',
+                    bottom: 'auto'
+                }}
             >
-                <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden"
-                    style={{ boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)' }}
+                <div className="bg-white/90 backdrop-blur-xl rounded-3xl shadow-2xl border border-white/50 overflow-hidden flex flex-col"
+                    style={{
+                        boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25), 0 0 0 1px rgba(255, 255, 255, 0.1)',
+                        maxHeight: 'calc(100vh - 140px)'
+                    }}
                 >
                     {/* Header */}
                     <div className="bg-gradient-to-r from-purple-600 via-pink-500 to-orange-400 px-5 py-4">
@@ -133,7 +141,7 @@ export default function ChatBox({ userName }: ChatBoxProps) {
                     </div>
 
                     {/* Messages Area */}
-                    <div className="h-[350px] overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-purple-50/50 to-white/50">
+                    <div className="flex-1 min-h-[200px] max-h-[350px] overflow-y-auto p-4 space-y-4 bg-gradient-to-b from-purple-50/50 to-white/50">
                         {messages.length === 0 && (
                             <div className="text-center py-8">
                                 <div className="w-16 h-16 mx-auto mb-4 bg-gradient-to-r from-purple-100 to-pink-100 rounded-full flex items-center justify-center">
