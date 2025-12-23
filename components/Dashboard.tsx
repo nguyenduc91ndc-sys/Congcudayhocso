@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Video, LogOut, Crown, Sparkles, Key, X, CheckCircle, Settings,
     Play, Trash2, Edit3, Share2, Box, Brain, RotateCcw, HelpCircle,
-    Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield
+    Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield, Coffee
 } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import ChatBox from './ChatBox';
@@ -242,6 +242,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const [adminPassword, setAdminPassword] = useState('');
     const [adminError, setAdminError] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
+    const [showDonateModal, setShowDonateModal] = useState(false);
 
     useEffect(() => {
         setTrialStatus(getTrialStatus());
@@ -393,6 +394,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                             )}
 
                             <ThemeSelector />
+
+                            {/* Donate Button */}
+                            <button
+                                onClick={() => setShowDonateModal(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 rounded-full hover:bg-amber-500/30 transition-colors group"
+                                title="Ủng hộ"
+                            >
+                                <Coffee size={14} className="text-amber-400 group-hover:animate-bounce" />
+                                <span className="text-xs font-medium text-amber-400 hidden sm:inline">Ủng hộ</span>
+                            </button>
 
                             <button
                                 onClick={onLogout}
@@ -762,7 +773,11 @@ const Dashboard: React.FC<DashboardProps> = ({
             <ChatBox userName={user.name} />
 
             {/* Welcome Modal */}
-            <WelcomeModal userName={user.name} />
+            <WelcomeModal
+                isOpen={showDonateModal}
+                onClose={() => setShowDonateModal(false)}
+                userName={user.name}
+            />
         </div>
     );
 };

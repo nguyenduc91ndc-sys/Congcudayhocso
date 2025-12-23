@@ -1,33 +1,14 @@
-import React, { useState, useEffect } from 'react';
+import React from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { X, Heart, Coffee, Sparkles } from 'lucide-react';
 
 interface WelcomeModalProps {
-    userName: string;
+    isOpen: boolean;
+    onClose: () => void;
+    userName?: string;
 }
 
-const WelcomeModal: React.FC<WelcomeModalProps> = ({ userName }) => {
-    const [isOpen, setIsOpen] = useState(false);
-
-    useEffect(() => {
-        // Kiểm tra xem đã hiển thị hôm nay chưa
-        const lastShown = localStorage.getItem('ntd_welcome_shown_date');
-        const today = new Date().toDateString();
-
-        if (lastShown !== today) {
-            // Delay một chút để trang load xong
-            const timer = setTimeout(() => {
-                setIsOpen(true);
-                localStorage.setItem('ntd_welcome_shown_date', today);
-            }, 1000);
-            return () => clearTimeout(timer);
-        }
-    }, []);
-
-    const handleClose = () => {
-        setIsOpen(false);
-    };
-
+const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }) => {
     return (
         <AnimatePresence>
             {isOpen && (
@@ -36,7 +17,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ userName }) => {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     className="fixed inset-0 bg-black/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
-                    onClick={handleClose}
+                    onClick={onClose}
                 >
                     <motion.div
                         initial={{ scale: 0.8, opacity: 0, y: 50 }}
@@ -57,7 +38,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ userName }) => {
 
                         {/* Close button */}
                         <button
-                            onClick={handleClose}
+                            onClick={onClose}
                             className="absolute top-4 right-4 p-2 text-white/60 hover:text-white hover:bg-white/10 rounded-full transition-colors z-10"
                         >
                             <X size={24} />
@@ -73,7 +54,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ userName }) => {
 
                             {/* Title */}
                             <h2 className="text-2xl font-bold text-white mb-4">
-                                Chào mừng{userName ? `, ${userName.split(' ').pop()}` : ''}! 🎉
+                                Mời ly cà phê ☕
                             </h2>
 
                             {/* Message */}
@@ -102,10 +83,10 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ userName }) => {
 
                             {/* Close button */}
                             <button
-                                onClick={handleClose}
+                                onClick={onClose}
                                 className="w-full py-3 bg-gradient-to-r from-pink-500 to-purple-600 hover:from-pink-400 hover:to-purple-500 text-white font-bold rounded-xl shadow-lg transform hover:-translate-y-0.5 transition-all active:scale-95"
                             >
-                                Bắt đầu sử dụng 🚀
+                                Đóng
                             </button>
                         </div>
                     </motion.div>
