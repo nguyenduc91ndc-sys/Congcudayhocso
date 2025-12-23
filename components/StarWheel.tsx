@@ -9,10 +9,10 @@ const StarWheel: React.FC<StarWheelProps> = ({ onBack }) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
 
     useEffect(() => {
-        // Adjust iframe height on load
+        // Adjust iframe height on load - full screen
         const handleResize = () => {
             if (iframeRef.current) {
-                iframeRef.current.style.height = `${window.innerHeight - 60}px`;
+                iframeRef.current.style.height = `${window.innerHeight}px`;
             }
         };
         handleResize();
@@ -21,22 +21,17 @@ const StarWheel: React.FC<StarWheelProps> = ({ onBack }) => {
     }, []);
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-indigo-900 via-purple-800 to-pink-900">
-            {/* Header */}
-            <div className="flex items-center gap-4 p-4 bg-black/30 backdrop-blur-sm border-b border-white/10">
-                <button
-                    onClick={onBack}
-                    className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-colors"
-                >
-                    <ArrowLeft size={20} />
-                    <span className="font-medium">Quay lại</span>
-                </button>
-                <h1 className="text-xl font-bold text-white flex items-center gap-2">
-                    <span className="text-2xl">⭐</span> Vòng Xoay Ngôi Sao
-                </h1>
-            </div>
+        <div className="min-h-screen relative">
+            {/* Floating Back Button */}
+            <button
+                onClick={onBack}
+                className="fixed top-4 left-4 z-50 flex items-center gap-2 px-4 py-2 bg-black/50 hover:bg-black/70 text-white rounded-xl transition-colors backdrop-blur-sm border border-white/20 shadow-lg"
+            >
+                <ArrowLeft size={20} />
+                <span className="font-medium">Quay lại</span>
+            </button>
 
-            {/* Game iframe */}
+            {/* Game iframe - Full screen */}
             <iframe
                 ref={iframeRef}
                 src="/vong-xoay-ngoi-sao/ngoisao.html"
