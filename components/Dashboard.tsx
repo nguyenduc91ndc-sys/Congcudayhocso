@@ -583,6 +583,39 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     </div>
                                 </div>
                             </section>
+
+                            {/* Donate Card - Dễ thấy */}
+                            <section
+                                onClick={() => setShowDonateModal(true)}
+                                className="mt-6 bg-gradient-to-r from-amber-900/40 to-orange-900/40 border border-amber-500/30 rounded-2xl p-4 cursor-pointer hover:border-amber-400/50 transition-all group"
+                            >
+                                <div className="flex items-center gap-4">
+                                    {/* QR Code nhỏ - Cropped */}
+                                    <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform">
+                                        <div className="w-16 h-16 overflow-hidden">
+                                            <img
+                                                src="/qr-donate.png"
+                                                alt="QR Donate"
+                                                className="w-[105px] h-auto -mt-[22px] -ml-[17px]"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Text */}
+                                    <div className="flex-1 min-w-0">
+                                        <h3 className="text-amber-300 font-bold text-sm flex items-center gap-2">
+                                            <Coffee size={16} className="text-amber-400" />
+                                            Ủng hộ Giáo viên yêu CN
+                                        </h3>
+                                        <p className="text-white/70 text-xs mt-1 line-clamp-2">
+                                            Mời em ly cà phê để có động lực chia sẻ! Tuỳ tâm, vui vẻ! 💖
+                                        </p>
+                                    </div>
+
+                                    {/* Arrow */}
+                                    <ChevronRight size={20} className="text-amber-400/50 group-hover:text-amber-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                                </div>
+                            </section>
                         </motion.div>
                     ) : (
                         <motion.div

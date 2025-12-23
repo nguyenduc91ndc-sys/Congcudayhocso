@@ -66,13 +66,15 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
                                 <span className="text-pink-300 italic">Tuỳ tâm, vui vẻ! Cảm ơn thầy cô!! 💖</span>
                             </p>
 
-                            {/* QR Code */}
-                            <div className="bg-white rounded-2xl p-3 mx-auto w-fit shadow-xl mb-4">
-                                <img
-                                    src="/qr-donate.png"
-                                    alt="QR Code Donate"
-                                    className="w-48 h-auto mx-auto rounded-lg"
-                                />
+                            {/* QR Code - Cropped */}
+                            <div className="bg-white rounded-2xl p-2 mx-auto w-fit shadow-xl mb-4 overflow-hidden">
+                                <div className="w-40 h-40 overflow-hidden rounded-lg">
+                                    <img
+                                        src="/qr-donate.png"
+                                        alt="QR Code Donate"
+                                        className="w-[260px] h-auto -mt-[55px] -ml-[42px]"
+                                    />
+                                </div>
                             </div>
 
                             {/* Bank info */}
