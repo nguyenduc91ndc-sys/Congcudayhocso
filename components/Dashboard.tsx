@@ -596,7 +596,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                             <img
                                                 src="/qr-donate.png"
                                                 alt="QR Donate"
-                                                className="w-[105px] h-auto -mt-[22px] -ml-[17px]"
+                                                className="w-[96px] h-auto -mt-[19px] -ml-[13px]"
                                             />
                                         </div>
                                     </div>

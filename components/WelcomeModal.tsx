@@ -72,7 +72,7 @@ const WelcomeModal: React.FC<WelcomeModalProps> = ({ isOpen, onClose, userName }
                                     <img
                                         src="/qr-donate.png"
                                         alt="QR Code Donate"
-                                        className="w-[260px] h-auto -mt-[55px] -ml-[42px]"
+                                        className="w-[240px] h-auto -mt-[48px] -ml-[32px]"
                                     />
                                 </div>
                             </div>
