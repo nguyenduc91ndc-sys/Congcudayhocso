@@ -809,6 +809,32 @@ const Dashboard: React.FC<DashboardProps> = ({
                 onClose={() => setShowDonateModal(false)}
                 userName={user.name}
             />
+
+            {/* Floating Donate Button - Thu hút sự chú ý */}
+            <motion.button
+                onClick={() => setShowDonateModal(true)}
+                className="fixed bottom-24 right-6 z-40 flex items-center gap-2 px-4 py-3 bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-white font-bold rounded-full shadow-lg hover:shadow-xl transition-all"
+                initial={{ scale: 0, opacity: 0 }}
+                animate={{
+                    scale: 1,
+                    opacity: 1,
+                    boxShadow: [
+                        "0 0 0 0 rgba(245, 158, 11, 0.7)",
+                        "0 0 0 15px rgba(245, 158, 11, 0)",
+                        "0 0 0 0 rgba(245, 158, 11, 0)"
+                    ]
+                }}
+                transition={{
+                    scale: { delay: 2, duration: 0.3 },
+                    opacity: { delay: 2, duration: 0.3 },
+                    boxShadow: { delay: 3, duration: 2, repeat: Infinity, repeatDelay: 3 }
+                }}
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+            >
+                <Coffee size={20} className="animate-bounce" />
+                <span className="hidden sm:inline">Ủng hộ</span>
+            </motion.button>
         </div>
     );
 };
