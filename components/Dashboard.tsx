@@ -52,6 +52,30 @@ const ToolCard: React.FC<ToolCardProps> = ({
     const [rotateY, setRotateY] = React.useState(0);
     const [isHovered, setIsHovered] = React.useState(false);
 
+    // Hover sound effect using Web Audio API
+    const playHoverSound = React.useCallback(() => {
+        if (disabled) return;
+        try {
+            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800; // Tần số cao hơn cho âm thanh nhẹ
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.05, audioContext.currentTime); // Volume nhỏ
+            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.08);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.08);
+        } catch (e) {
+            // Ignore audio errors
+        }
+    }, [disabled]);
+
     const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
         if (disabled) return;
         const rect = e.currentTarget.getBoundingClientRect();
@@ -76,7 +100,10 @@ const ToolCard: React.FC<ToolCardProps> = ({
             whileTap={disabled ? {} : { scale: 0.98 }}
             onClick={disabled ? undefined : onClick}
             onMouseMove={handleMouseMove}
-            onMouseEnter={() => setIsHovered(true)}
+            onMouseEnter={() => {
+                setIsHovered(true);
+                playHoverSound();
+            }}
             onMouseLeave={handleMouseLeave}
             style={{
                 transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
