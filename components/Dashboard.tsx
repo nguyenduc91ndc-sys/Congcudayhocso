@@ -590,15 +590,13 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 className="mt-6 bg-gradient-to-r from-amber-900/40 to-orange-900/40 border border-amber-500/30 rounded-2xl p-4 cursor-pointer hover:border-amber-400/50 transition-all group"
                             >
                                 <div className="flex items-center gap-4">
-                                    {/* QR Code nhỏ - Cropped */}
-                                    <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform">
-                                        <div className="w-16 h-16 overflow-hidden">
-                                            <img
-                                                src="/qr-donate.png"
-                                                alt="QR Donate"
-                                                className="w-[96px] h-auto -mt-[19px] -ml-[13px]"
-                                            />
-                                        </div>
+                                    {/* QR Code nhỏ */}
+                                    <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform p-1">
+                                        <img
+                                            src="/qr-donate.png"
+                                            alt="QR Donate"
+                                            className="w-full h-full object-contain"
+                                        />
                                     </div>
 
                                     {/* Text */}
