@@ -11,6 +11,7 @@ import ChatBox from './ChatBox';
 import WelcomeModal from './WelcomeModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { getTrialStatus, activateWithCode, upgradeToPro, useTrialPlay } from '../utils/trialUtils';
+import { playCorrectSound, playIncorrectSound, playMustRewatchSound, playVictorySound, playHoverSound } from '../utils/soundUtils';
 import { createShareUrl, shortenUrl } from '../utils/shareUtils';
 import { verifyAdminPassword, isAdminAuthenticated, setAdminAuthenticated } from '../utils/adminAuth';
 
@@ -52,121 +53,97 @@ const ToolCard: React.FC<ToolCardProps> = ({
     const [rotateY, setRotateY] = React.useState(0);
     const [isHovered, setIsHovered] = React.useState(false);
 
-    // Hover sound effect using Web Audio API
-    const playHoverSound = React.useCallback(() => {
-        if (disabled) return;
-        try {
-            const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
-            const oscillator = audioContext.createOscillator();
-            const gainNode = audioContext.createGain();
+const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
+    if (disabled) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = e.clientX - rect.left;
+    const y = e.clientY - rect.top;
+    const centerX = rect.width / 2;
+    const centerY = rect.height / 2;
 
-            oscillator.connect(gainNode);
-            gainNode.connect(audioContext.destination);
+    setRotateX((y - centerY) / 10);
+    setRotateY((centerX - x) / 10);
+};
 
-            oscillator.frequency.value = 800; // Tần số cao hơn cho âm thanh nhẹ
-            oscillator.type = 'sine';
+const handleMouseLeave = () => {
+    setRotateX(0);
+    setRotateY(0);
+    setIsHovered(false);
+};
 
-            gainNode.gain.setValueAtTime(0.05, audioContext.currentTime); // Volume nhỏ
-            gainNode.gain.exponentialRampToValueAtTime(0.001, audioContext.currentTime + 0.08);
-
-            oscillator.start(audioContext.currentTime);
-            oscillator.stop(audioContext.currentTime + 0.08);
-        } catch (e) {
-            // Ignore audio errors
-        }
-    }, [disabled]);
-
-    const handleMouseMove = (e: React.MouseEvent<HTMLButtonElement>) => {
-        if (disabled) return;
-        const rect = e.currentTarget.getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-        const centerX = rect.width / 2;
-        const centerY = rect.height / 2;
-
-        setRotateX((y - centerY) / 10);
-        setRotateY((centerX - x) / 10);
-    };
-
-    const handleMouseLeave = () => {
-        setRotateX(0);
-        setRotateY(0);
-        setIsHovered(false);
-    };
-
-    return (
-        <motion.button
-            whileHover={disabled ? {} : { scale: 1.02 }}
-            whileTap={disabled ? {} : { scale: 0.98 }}
-            onClick={disabled ? undefined : onClick}
-            onMouseMove={handleMouseMove}
-            onMouseEnter={() => {
-                setIsHovered(true);
-                playHoverSound();
-            }}
-            onMouseLeave={handleMouseLeave}
-            style={{
-                transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
-                transformStyle: 'preserve-3d',
-            }}
-            className={`relative group text-left p-6 rounded-2xl border transition-all duration-200 ${disabled
-                ? 'bg-white/10 border-white/10 cursor-not-allowed opacity-50'
-                : 'bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl'
-                }`}
-        >
-            {/* 3D Shine effect */}
-            {!disabled && isHovered && (
-                <div
-                    className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden"
-                    style={{
-                        background: `linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.2) 55%, transparent 60%)`,
-                        transform: 'translateZ(1px)',
-                    }}
-                />
-            )}
-
-            {/* Glow effect */}
-            {!disabled && (
-                <div
-                    className={`absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-40 transition-opacity duration-300 blur-xl ${accentColor}`}
-                    style={{ transform: 'translateZ(-10px)' }}
-                />
-            )}
-
-            {/* Badge */}
-            {badge && (
-                <span
-                    className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10"
-                    style={{ transform: 'translateZ(20px)' }}
-                >
-                    {badge}
-                </span>
-            )}
-
-            {/* Icon with 3D pop */}
+return (
+    <motion.button
+        whileHover={disabled ? {} : { scale: 1.02 }}
+        whileTap={disabled ? {} : { scale: 0.98 }}
+        onClick={disabled ? undefined : onClick}
+        onMouseMove={handleMouseMove}
+        onMouseEnter={() => {
+            setIsHovered(true);
+            playHoverSound();
+        }}
+        onMouseLeave={handleMouseLeave}
+        style={{
+            transform: `perspective(1000px) rotateX(${rotateX}deg) rotateY(${rotateY}deg)`,
+            transformStyle: 'preserve-3d',
+        }}
+        className={`relative group text-left p-6 rounded-2xl border transition-all duration-200 ${disabled
+            ? 'bg-white/10 border-white/10 cursor-not-allowed opacity-50'
+            : 'bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl'
+            }`}
+    >
+        {/* 3D Shine effect */}
+        {!disabled && isHovered && (
             <div
-                className={`w-14 h-14 rounded-xl ${accentColor} flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-shadow`}
-                style={{ transform: 'translateZ(30px)' }}
+                className="absolute inset-0 rounded-2xl pointer-events-none overflow-hidden"
+                style={{
+                    background: `linear-gradient(105deg, transparent 40%, rgba(255,255,255,0.2) 45%, rgba(255,255,255,0.3) 50%, rgba(255,255,255,0.2) 55%, transparent 60%)`,
+                    transform: 'translateZ(1px)',
+                }}
+            />
+        )}
+
+        {/* Glow effect */}
+        {!disabled && (
+            <div
+                className={`absolute -inset-1 rounded-2xl opacity-0 group-hover:opacity-40 transition-opacity duration-300 blur-xl ${accentColor}`}
+                style={{ transform: 'translateZ(-10px)' }}
+            />
+        )}
+
+        {/* Badge */}
+        {badge && (
+            <span
+                className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10"
+                style={{ transform: 'translateZ(20px)' }}
             >
-                {icon}
-            </div>
+                {badge}
+            </span>
+        )}
 
-            {/* Content with 3D depth */}
-            <div style={{ transform: 'translateZ(20px)' }}>
-                <h3 className="text-lg font-bold text-white mb-1 drop-shadow-sm">{title}</h3>
-                <p className="text-sm text-white/70 leading-relaxed">{description}</p>
-            </div>
+        {/* Icon with 3D pop */}
+        <div
+            className={`w-14 h-14 rounded-xl ${accentColor} flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-shadow`}
+            style={{ transform: 'translateZ(30px)' }}
+        >
+            {icon}
+        </div>
 
-            {/* Arrow indicator with animation */}
-            {!disabled && (
-                <ChevronRight
-                    size={20}
-                    className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300"
-                    style={{ transform: 'translateZ(20px)' }}
-                />
-            )}
-        </motion.button>
-    );
+        {/* Content with 3D depth */}
+        <div style={{ transform: 'translateZ(20px)' }}>
+            <h3 className="text-lg font-bold text-white mb-1 drop-shadow-sm">{title}</h3>
+            <p className="text-sm text-white/70 leading-relaxed">{description}</p>
+        </div>
+
+        {/* Arrow indicator with animation */}
+        {!disabled && (
+            <ChevronRight
+                size={20}
+                className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300"
+                style={{ transform: 'translateZ(20px)' }}
+            />
+        )}
+    </motion.button>
+);
 };
 
 // Video List Item

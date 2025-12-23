@@ -265,3 +265,37 @@ export const playVictorySoundSynthesized = (): void => {
         console.warn('Could not play victory sound:', e);
     }
 };
+/**
+ * Phát âm thanh hover (tick nhẹ)
+ */
+export const playHoverSound = (): void => {
+    try {
+        const ctx = getAudioContext();
+
+        // Resume context nếu bị suspended (do autoplay policy)
+        if (ctx.state === 'suspended') {
+            ctx.resume().catch(() => { });
+        }
+
+        const now = ctx.currentTime;
+        const oscillator = ctx.createOscillator();
+        const gainNode = ctx.createGain();
+
+        oscillator.connect(gainNode);
+        gainNode.connect(ctx.destination);
+
+        // Sound characteristics for a "tick"
+        oscillator.type = 'sine';
+        oscillator.frequency.setValueAtTime(600, now); // Tần số cao hơn chút
+        oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.05);
+
+        // Volume envelope
+        gainNode.gain.setValueAtTime(0.03, now); // Volume vừa đủ
+        gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+
+        oscillator.start(now);
+        oscillator.stop(now + 0.1);
+    } catch (e) {
+        // Ignore errors
+    }
+};
