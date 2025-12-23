@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '../types';
-import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail, Code2, MessageCircle, Sparkles } from 'lucide-react';
+import { Key, User as UserIcon, ArrowRight, AlertCircle, CheckCircle, Gift, Crown, Mail, Code2, MessageCircle, Sparkles, Play } from 'lucide-react';
 import { getTrialStatusByEmail, upgradeToPro, setCurrentEmail, isValidEmail, canUseTrialByEmail } from '../utils/trialUtils';
 
 interface LoginProps {
@@ -311,6 +311,21 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
 
 
           </AnimatePresence>
+
+          {/* Video Intro Button */}
+          <div className="mt-5">
+            <a
+              href="https://youtu.be/gfMUjPfxX0U"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="group inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-rose-600 hover:from-red-400 hover:to-rose-500 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 active:scale-95"
+            >
+              <div className="w-7 h-7 bg-white/20 rounded-full flex items-center justify-center group-hover:bg-white/30 transition-colors">
+                <Play size={14} className="text-white ml-0.5" fill="currentColor" />
+              </div>
+              <span className="text-sm">Xem video giới thiệu</span>
+            </a>
+          </div>
 
           {/* Premium Footer Signature */}
           <div className="mt-6 pt-4 border-t border-purple-200/30">
