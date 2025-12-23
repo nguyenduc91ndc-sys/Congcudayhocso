@@ -8,6 +8,7 @@ import {
 } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import ChatBox from './ChatBox';
+import WelcomeModal from './WelcomeModal';
 import { useTheme } from '../contexts/ThemeContext';
 import { getTrialStatus, activateWithCode, upgradeToPro, useTrialPlay } from '../utils/trialUtils';
 import { createShareUrl, shortenUrl } from '../utils/shareUtils';
@@ -759,6 +760,9 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* AI Chatbox */}
             <ChatBox userName={user.name} />
+
+            {/* Welcome Modal */}
+            <WelcomeModal userName={user.name} />
         </div>
     );
 };
