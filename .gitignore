@@ -24,3 +24,8 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Environment files (QUAN TRỌNG - không commit API keys!)
+.env
+.env.local
+.env.production

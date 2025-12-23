@@ -26,6 +26,8 @@ interface DashboardProps {
     onBeeGame: () => void;
     onVongQuay: () => void;
     onLuckyWheel: () => void;
+    onKingGame: () => void;
+    onStarWheel: () => void;
     isAdmin: boolean;
 }
 
@@ -225,7 +227,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onVongQuay, onLuckyWheel, isAdmin
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, isAdmin
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -475,11 +477,27 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     />
 
                                     <ToolCard
+                                        title="Đường đến Ngôi Vua"
+                                        description="Gọi tên học sinh kết hợp câu hỏi"
+                                        icon={<span className="text-2xl">👑</span>}
+                                        accentColor="bg-yellow-500"
+                                        onClick={onKingGame}
+                                    />
+
+                                    <ToolCard
                                         title="Vòng quay may mắn"
                                         description="Bánh xe quay chọn người may mắn"
                                         icon={<span className="text-2xl">🎡</span>}
                                         accentColor="bg-rose-500"
                                         onClick={onLuckyWheel}
+                                    />
+
+                                    <ToolCard
+                                        title="Vòng Xoay Ngôi Sao"
+                                        description="Vòng quay ngôi sao may mắn"
+                                        icon={<span className="text-2xl">⭐</span>}
+                                        accentColor="bg-indigo-500"
+                                        onClick={onStarWheel}
                                     />
 
                                     {/* Tools sắp ra mắt */}

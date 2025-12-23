@@ -9,6 +9,8 @@ import Geometry3D from './components/Geometry3D';
 import BeeGame from './components/BeeGame';
 import VongQuay from './components/VongQuay';
 import LuckyWheel from './components/LuckyWheel';
+import KingGame from './components/KingGame';
+import StarWheel from './components/StarWheel';
 import { User, ViewState, VideoLesson } from './types';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { decodeVideoData } from './utils/shareUtils';
@@ -167,6 +169,8 @@ function App() {
               onBeeGame={() => setView('BEE_GAME')}
               onVongQuay={() => setView('VONG_QUAY')}
               onLuckyWheel={() => setView('LUCKY_WHEEL')}
+              onKingGame={() => setView('KING_GAME')}
+              onStarWheel={() => setView('STAR_WHEEL')}
               isAdmin={ADMIN_EMAILS.includes(user.email?.toLowerCase() || '')}
             />
           )}
@@ -212,6 +216,14 @@ function App() {
 
           {view === 'LUCKY_WHEEL' && (
             <LuckyWheel onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'KING_GAME' && (
+            <KingGame onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'STAR_WHEEL' && (
+            <StarWheel onBack={() => setView('DASHBOARD')} />
           )}
         </div>
       </div>
