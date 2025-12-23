@@ -39,7 +39,7 @@ const StarWheel: React.FC<StarWheelProps> = ({ onBack }) => {
             {/* Game iframe */}
             <iframe
                 ref={iframeRef}
-                src="./VÒNG XOAY NGÔI SAO/ngoisao.html"
+                src="/vong-xoay-ngoi-sao/ngoisao.html"
                 className="w-full border-0"
                 title="Vòng Xoay Ngôi Sao"
                 allow="autoplay"
