@@ -767,7 +767,7 @@
         // =========================================================
         // VICTORY SCREEN
         // =========================================================
-        const VictoryScreen = ({ onRestart, showButtons }) => (
+        const VictoryScreen = ({ onRestart, onBackToSetup, showButtons }) => (
             <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
                 <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full text-center border-4 border-yellow-400 relative overflow-hidden">
                     {showButtons && (
@@ -795,12 +795,20 @@
                     </p>
 
                     {showButtons && (
-                        <button
-                            onClick={onRestart}
-                            className="inline-flex items-center justify-center px-8 py-3 text-lg font-bold text-white transition-all bg-green-500 rounded-full hover:bg-green-600 shadow-lg transform hover:scale-105"
-                        >
-                            Chơi Lại
-                        </button>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                            <button
+                                onClick={onBackToSetup}
+                                className="inline-flex items-center justify-center px-6 py-3 text-lg font-bold text-gray-600 transition-all bg-gray-200 rounded-full hover:bg-gray-300 shadow-lg transform hover:scale-105"
+                            >
+                                ← Về soạn câu hỏi
+                            </button>
+                            <button
+                                onClick={onRestart}
+                                className="inline-flex items-center justify-center px-8 py-3 text-lg font-bold text-white transition-all bg-green-500 rounded-full hover:bg-green-600 shadow-lg transform hover:scale-105"
+                            >
+                                🔄 Chơi Lại
+                            </button>
+                        </div>
                     )}
                 </div>
             </div>
@@ -1123,7 +1131,7 @@
                     )}
 
                     {(gameState === GameStage.VICTORY_PENDING || gameState === GameStage.VICTORY) && (
-                        <VictoryScreen onRestart={handleRestart} showButtons={gameState === GameStage.VICTORY} />
+                        <VictoryScreen onRestart={handleRestart} onBackToSetup={handleBackToSetup} showButtons={gameState === GameStage.VICTORY} />
                     )}
                 </div>
             );
