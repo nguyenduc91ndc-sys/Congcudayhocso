@@ -289,8 +289,8 @@ export const playHoverSound = (): void => {
         oscillator.frequency.setValueAtTime(600, now); // Tần số cao hơn chút
         oscillator.frequency.exponentialRampToValueAtTime(800, now + 0.05);
 
-        // Volume envelope
-        gainNode.gain.setValueAtTime(0.03, now); // Volume vừa đủ
+        // Volume envelope - tăng âm lượng để nghe rõ hơn
+        gainNode.gain.setValueAtTime(0.15, now); // Volume rõ hơn
         gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
 
         oscillator.start(now);

@@ -21,7 +21,7 @@ export interface VideoLesson {
   createdAt: number;
 }
 
-export type ViewState = 'LOGIN' | 'DASHBOARD' | 'CREATE_EDIT' | 'PLAYER' | 'ADMIN' | 'GEOMETRY_3D' | 'BEE_GAME' | 'VONG_QUAY' | 'LUCKY_WHEEL' | 'KING_GAME' | 'STAR_WHEEL';
+export type ViewState = 'LOGIN' | 'DASHBOARD' | 'CREATE_EDIT' | 'PLAYER' | 'ADMIN' | 'GEOMETRY_3D' | 'BEE_GAME' | 'BEE_GAME_EDITABLE' | 'VONG_QUAY' | 'LUCKY_WHEEL' | 'KING_GAME' | 'STAR_WHEEL';
 
 export interface User {
   id: string;

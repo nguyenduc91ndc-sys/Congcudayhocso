@@ -159,7 +159,6 @@ export const activateWithCode = (code: string): boolean => {
     return false;
 };
 
-// Lấy danh sách tất cả email đã đăng ký trial (cho Admin)
 export const getAllTrialEmails = (): { email: string; totalUses: number; isPro: boolean; createdAt: string }[] => {
     const data = getAllTrialData();
     return Object.entries(data).map(([email, info]) => ({
@@ -168,4 +167,130 @@ export const getAllTrialEmails = (): { email: string; totalUses: number; isPro: 
         isPro: info.isPro,
         createdAt: info.createdAt,
     }));
+};
+
+// =========================================================
+// BEE GAME TRIAL SYSTEM - Theo dõi theo DEVICE (không thể bypass bằng đổi tài khoản)
+// =========================================================
+const BEE_GAME_TRIAL_KEY = 'ntd_bee_game_device_trial';
+const BEE_GAME_DEVICE_KEY = 'ntd_bee_game_device_id';
+const BEE_GAME_PRO_KEY = 'ntd_bee_game_pro_emails';
+const BEE_GAME_MAX_FREE_USES = 3;
+
+// Tạo device ID duy nhất
+const generateDeviceId = (): string => {
+    const nav = window.navigator;
+    const screen = window.screen;
+
+    const fingerprint = [
+        nav.userAgent,
+        nav.language,
+        screen.colorDepth,
+        screen.width + 'x' + screen.height,
+        new Date().getTimezoneOffset(),
+        nav.hardwareConcurrency || 'unknown',
+        (nav as any).deviceMemory || 'unknown',
+    ].join('|');
+
+    // Simple hash function
+    let hash = 0;
+    for (let i = 0; i < fingerprint.length; i++) {
+        const char = fingerprint.charCodeAt(i);
+        hash = ((hash << 5) - hash) + char;
+        hash = hash & hash;
+    }
+
+    return 'device_' + Math.abs(hash).toString(16);
+};
+
+// Lấy hoặc tạo device ID
+const getDeviceId = (): string => {
+    let deviceId = localStorage.getItem(BEE_GAME_DEVICE_KEY);
+    if (!deviceId) {
+        deviceId = generateDeviceId();
+        localStorage.setItem(BEE_GAME_DEVICE_KEY, deviceId);
+    }
+    return deviceId;
+};
+
+interface BeeGameDeviceTrialData {
+    plays: number;
+    lastUsed: string;
+}
+
+// Lấy dữ liệu trial của device
+const getBeeGameDeviceData = (): BeeGameDeviceTrialData => {
+    const deviceId = getDeviceId();
+    const saved = localStorage.getItem(BEE_GAME_TRIAL_KEY + '_' + deviceId);
+    if (!saved) return { plays: 0, lastUsed: '' };
+    return JSON.parse(saved);
+};
+
+// Lưu dữ liệu trial của device
+const saveBeeGameDeviceData = (data: BeeGameDeviceTrialData): void => {
+    const deviceId = getDeviceId();
+    localStorage.setItem(BEE_GAME_TRIAL_KEY + '_' + deviceId, JSON.stringify(data));
+};
+
+// Kiểm tra email có phải Pro không
+const isBeeGameProEmail = (email: string): boolean => {
+    const saved = localStorage.getItem(BEE_GAME_PRO_KEY);
+    if (!saved) return false;
+    const proEmails: string[] = JSON.parse(saved);
+    return proEmails.includes(normalizeEmail(email));
+};
+
+// Thêm email vào danh sách Pro
+const addBeeGameProEmail = (email: string): void => {
+    const saved = localStorage.getItem(BEE_GAME_PRO_KEY);
+    const proEmails: string[] = saved ? JSON.parse(saved) : [];
+    const normalizedEmail = normalizeEmail(email);
+    if (!proEmails.includes(normalizedEmail)) {
+        proEmails.push(normalizedEmail);
+        localStorage.setItem(BEE_GAME_PRO_KEY, JSON.stringify(proEmails));
+    }
+};
+
+export const getBeeGameTrialStatus = (email: string): { playsRemaining: number; totalPlays: number; isPro: boolean } => {
+    // Kiểm tra email Pro trước
+    if (isBeeGameProEmail(email)) {
+        return { playsRemaining: 999, totalPlays: 0, isPro: true };
+    }
+
+    // Lấy số lượt đã dùng của DEVICE (không phải email)
+    const deviceData = getBeeGameDeviceData();
+
+    return {
+        playsRemaining: Math.max(0, BEE_GAME_MAX_FREE_USES - deviceData.plays),
+        totalPlays: deviceData.plays,
+        isPro: false,
+    };
+};
+
+export const useBeeGameTrial = (email: string): { playsRemaining: number; totalPlays: number; isPro: boolean } => {
+    // Nếu là Pro thì không trừ lượt
+    if (isBeeGameProEmail(email)) {
+        return { playsRemaining: 999, totalPlays: 0, isPro: true };
+    }
+
+    // Trừ lượt của DEVICE
+    const deviceData = getBeeGameDeviceData();
+    deviceData.plays = (deviceData.plays || 0) + 1;
+    deviceData.lastUsed = new Date().toISOString();
+    saveBeeGameDeviceData(deviceData);
+
+    return {
+        playsRemaining: Math.max(0, BEE_GAME_MAX_FREE_USES - deviceData.plays),
+        totalPlays: deviceData.plays,
+        isPro: false,
+    };
+};
+
+export const canUseBeeGameTrial = (email: string): boolean => {
+    const status = getBeeGameTrialStatus(email);
+    return status.isPro || status.playsRemaining > 0;
+};
+
+export const upgradeBeeGameToPro = (email: string): void => {
+    addBeeGameProEmail(email);
 };

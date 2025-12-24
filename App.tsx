@@ -7,6 +7,7 @@ import VideoPlayer from './components/VideoPlayer';
 import AdminPanel from './components/AdminPanel';
 import Geometry3D from './components/Geometry3D';
 import BeeGame from './components/BeeGame';
+import BeeGameEditable from './components/BeeGameEditable';
 import VongQuay from './components/VongQuay';
 import LuckyWheel from './components/LuckyWheel';
 import KingGame from './components/KingGame';
@@ -167,6 +168,7 @@ function App() {
               onAdmin={() => setView('ADMIN')}
               onGeometry3D={() => setView('GEOMETRY_3D')}
               onBeeGame={() => setView('BEE_GAME')}
+              onBeeGameEditable={() => setView('BEE_GAME_EDITABLE')}
               onVongQuay={() => setView('VONG_QUAY')}
               onLuckyWheel={() => setView('LUCKY_WHEEL')}
               onKingGame={() => setView('KING_GAME')}
@@ -208,6 +210,10 @@ function App() {
 
           {view === 'BEE_GAME' && (
             <BeeGame onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'BEE_GAME_EDITABLE' && (
+            <BeeGameEditable onBack={() => setView('DASHBOARD')} userEmail={user?.email} />
           )}
 
           {view === 'VONG_QUAY' && (
