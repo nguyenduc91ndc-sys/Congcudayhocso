@@ -101,8 +101,8 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
 
     // Save course
     const handleSave = async () => {
-        if (!formData.title || !formData.youtubeUrl) {
-            alert('Vui lòng nhập tiêu đề và link YouTube!');
+        if (!formData.title) {
+            alert('Vui lòng nhập tiêu đề khóa học!');
             return;
         }
 
@@ -372,7 +372,7 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
                                 {/* YouTube/Drive URL */}
                                 <div>
                                     <label className="block text-white/80 text-sm font-medium mb-1">
-                                        Link video (YouTube/Drive) *
+                                        Link video (YouTube/Drive)
                                     </label>
                                     <input
                                         type="text"
