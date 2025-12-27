@@ -3,13 +3,14 @@ import { getDatabase } from 'firebase/database';
 import { getStorage } from 'firebase/storage';
 
 const firebaseConfig = {
-    apiKey: "AIzaSyB-placeholder-update-this",
+    apiKey: "AIzaSyD8b5wDZjI7GMQN0LfdssjSSrDu724LRIk",
     authDomain: "giaoviencongnghe-3c2a9.firebaseapp.com",
-    projectId: "giaoviencongnghe-3c2a9",
     databaseURL: "https://giaoviencongnghe-3c2a9-default-rtdb.asia-southeast1.firebasedatabase.app",
-    storageBucket: "giaoviencongnghe-3c2a9.appspot.com",
-    messagingSenderId: "000000000000",
-    appId: "1:000000000000:web:placeholder"
+    projectId: "giaoviencongnghe-3c2a9",
+    storageBucket: "giaoviencongnghe-3c2a9.firebasestorage.app",
+    messagingSenderId: "1024719098510",
+    appId: "1:1024719098510:web:323719476029d430c16fdf",
+    measurementId: "G-0YLC6TN39W"
 };
 
 const app = initializeApp(firebaseConfig);
