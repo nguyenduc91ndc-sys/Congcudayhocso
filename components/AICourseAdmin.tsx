@@ -138,25 +138,42 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
         }
     };
 
-    // Get YouTube/Drive thumbnail (hỗ trợ nhiều format)
-    const getVideoThumbnail = (url: string) => {
-        if (!url) return '';
+    // Lấy YouTube video ID (hỗ trợ nhiều format)
+    const getYouTubeVideoId = (url: string): string | null => {
+        if (!url) return null;
 
         // Hỗ trợ YouTube Shorts: youtube.com/shorts/VIDEO_ID
         const shortsMatch = url.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
-        if (shortsMatch) return `https://img.youtube.com/vi/${shortsMatch[1]}/hqdefault.jpg`;
+        if (shortsMatch) return shortsMatch[1];
 
         // Hỗ trợ YouTube Live: youtube.com/live/VIDEO_ID
-        const liveMatch = url.match(/\/live\/([a-zA-Z0-9_-]{11})/);
-        if (liveMatch) return `https://img.youtube.com/vi/${liveMatch[1]}/hqdefault.jpg`;
+        const liveMatch = url.match(/\/live\/([a-zA-Z0-9_-]+)/);
+        if (liveMatch) return liveMatch[1];
 
-        // Google Drive không có thumbnail API công khai, trả về empty
+        // Hỗ trợ youtu.be/VIDEO_ID
+        const shortUrlMatch = url.match(/youtu\.be\/([a-zA-Z0-9_-]+)/);
+        if (shortUrlMatch) return shortUrlMatch[1];
+
+        // Hỗ trợ youtube.com/watch?v=VIDEO_ID
+        const watchMatch = url.match(/[?&]v=([a-zA-Z0-9_-]+)/);
+        if (watchMatch) return watchMatch[1];
+
+        // Hỗ trợ youtube.com/embed/VIDEO_ID
+        const embedMatch = url.match(/\/embed\/([a-zA-Z0-9_-]+)/);
+        if (embedMatch) return embedMatch[1];
+
+        return null;
+    };
+
+    // Get video thumbnail
+    const getVideoThumbnail = (url: string) => {
+        if (!url) return '';
+
+        // Google Drive không có thumbnail API công khai
         if (url.includes('drive.google.com')) return '';
 
-        // Hỗ trợ các format YouTube khác: watch?v=, youtu.be/, embed/, v/
-        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\\??v?=?([^#&?]*).*/;
-        const match = url.match(regExp);
-        const videoId = (match && match[7].length === 11) ? match[7] : null;
+        // YouTube
+        const videoId = getYouTubeVideoId(url);
         return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
     };
 
@@ -254,11 +271,17 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
                             >
                                 {/* Thumbnail */}
                                 <div className="relative aspect-video bg-black/50">
-                                    <img
-                                        src={course.thumbnail || getVideoThumbnail(course.youtubeUrl)}
-                                        alt={course.title}
-                                        className="w-full h-full object-cover"
-                                    />
+                                    {(course.thumbnail || getVideoThumbnail(course.youtubeUrl)) ? (
+                                        <img
+                                            src={course.thumbnail || getVideoThumbnail(course.youtubeUrl)}
+                                            alt={course.title}
+                                            className="w-full h-full object-cover"
+                                        />
+                                    ) : (
+                                        <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-purple-500 to-indigo-600">
+                                            <Play size={48} className="text-white/50" />
+                                        </div>
+                                    )}
                                     {/* Badges */}
                                     <div className="absolute top-2 left-2 flex gap-2">
                                         {course.isHot && (
@@ -283,7 +306,7 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
                                         <span className={`text-sm font-bold ${course.price === 0 ? 'text-green-400' : 'text-purple-400'}`}>
                                             {course.price === 0 ? 'Miễn phí' : `${course.price.toLocaleString('vi-VN')}đ`}
                                         </span>
-                                        <span className="text-white/40 text-xs">• {course.duration}</span>
+                                        {course.duration && <span className="text-white/40 text-xs">• {course.duration}</span>}
                                         <span className="text-white/40 text-xs">• {course.enrollCount} học viên</span>
                                     </div>
 
@@ -448,7 +471,7 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
                                                     if (ytThumb) (e.target as HTMLImageElement).src = ytThumb;
                                                 }}
                                             />
-                                        ) : formData.youtubeUrl ? (
+                                        ) : formData.youtubeUrl && getVideoThumbnail(formData.youtubeUrl) ? (
                                             <img
                                                 src={getVideoThumbnail(formData.youtubeUrl)}
                                                 alt="Video thumbnail"
