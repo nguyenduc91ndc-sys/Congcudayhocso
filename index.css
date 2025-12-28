@@ -1,0 +1,215 @@
+/* Global Responsive Styles */
+
+/* Make sure the app fills the viewport */
+html {
+  width: 100%;
+  min-height: 100%;
+  margin: 0;
+  padding: 0;
+  overflow-y: scroll !important;
+  overflow-x: hidden;
+}
+
+body {
+  width: 100%;
+  min-height: 100vh;
+  margin: 0;
+  padding: 0;
+  overflow-x: hidden;
+}
+
+#root {
+  width: 100%;
+  min-height: 100vh;
+}
+
+/* Mobile-first responsive adjustments */
+@media (max-width: 640px) {
+
+  /* Question modal wrapper - full width on mobile */
+  .question-modal-wrapper {
+    padding: 8px !important;
+  }
+
+  /* Question modal - tighter on small screens */
+  .question-modal {
+    padding: 16px !important;
+    border-radius: 20px !important;
+    max-width: 100% !important;
+    margin: 8px !important;
+  }
+
+  /* Question text smaller on mobile */
+  .question-text {
+    font-size: 1.125rem !important;
+    line-height: 1.4 !important;
+  }
+
+  /* Options grid - single column on very small screens */
+  .options-grid {
+    grid-template-columns: 1fr !important;
+    gap: 8px !important;
+  }
+
+  /* Option button - more compact */
+  .option-button {
+    padding: 12px !important;
+  }
+
+  /* Submit button */
+  .submit-button {
+    padding: 12px 24px !important;
+    font-size: 1rem !important;
+  }
+}
+
+/* Tablet adjustments */
+@media (min-width: 641px) and (max-width: 1024px) {
+  .question-modal {
+    padding: 24px !important;
+    max-width: 90% !important;
+  }
+}
+
+/* Ensure touch targets are large enough */
+@media (pointer: coarse) {
+
+  button,
+  a {
+    min-height: 44px;
+  }
+}
+
+/* Prevent horizontal scroll */
+* {
+  box-sizing: border-box;
+}
+
+/* Better text rendering */
+body {
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Animated Gradient Border */
+@keyframes gradient-rotate {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  50% {
+    background-position: 100% 50%;
+  }
+
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
+.animated-border-wrapper {
+  position: relative;
+  padding: 3px;
+  border-radius: 32px;
+  background: linear-gradient(90deg, #9333ea, #ec4899, #f97316, #eab308, #22c55e, #06b6d4, #9333ea);
+  background-size: 400% 400%;
+  animation: gradient-rotate 4s ease infinite;
+}
+
+.animated-border-wrapper::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 32px;
+  background: inherit;
+  filter: blur(12px);
+  opacity: 0.6;
+  z-index: -1;
+}
+
+.animated-border-inner {
+  border-radius: 30px;
+  background: rgba(255, 255, 255, 0.9);
+  backdrop-filter: blur(20px);
+}
+
+/* Button Hover Animation */
+.btn-animated {
+  transition: all 0.3s ease;
+}
+
+.btn-animated:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.15);
+}
+
+/* Shimmer/Shine Effect for Premium Text */
+@keyframes shimmer {
+  0% {
+    background-position: -200% center;
+  }
+
+  100% {
+    background-position: 200% center;
+  }
+}
+
+.text-shimmer {
+  background: linear-gradient(90deg,
+      #7c3aed 0%,
+      #ec4899 25%,
+      #f59e0b 50%,
+      #ec4899 75%,
+      #7c3aed 100%);
+  background-size: 200% auto;
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: shimmer 3s linear infinite;
+}
+
+/* Premium Footer Hover Effect */
+.premium-footer {
+  transition: all 0.3s ease;
+}
+
+.premium-footer:hover {
+  transform: scale(1.02);
+  filter: brightness(1.1);
+}
+
+/* Custom Scrollbar - Orange/Gold Style (like dangkyhoc.com) */
+::-webkit-scrollbar {
+  width: 12px;
+  height: 12px;
+}
+
+::-webkit-scrollbar-track {
+  background: #1a1a2e;
+  border-radius: 10px;
+}
+
+::-webkit-scrollbar-thumb {
+  background: linear-gradient(180deg, #f59e0b 0%, #d97706 50%, #b45309 100%);
+  border-radius: 10px;
+  border: 2px solid #1a1a2e;
+  min-height: 40px;
+  max-height: 80px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(180deg, #fbbf24 0%, #f59e0b 50%, #d97706 100%);
+}
+
+::-webkit-scrollbar-thumb:active {
+  background: linear-gradient(180deg, #fcd34d 0%, #fbbf24 50%, #f59e0b 100%);
+}
+
+::-webkit-scrollbar-corner {
+  background: #1a1a2e;
+}
+
+/* Firefox Scrollbar */
+* {
+  scrollbar-width: auto;
+  scrollbar-color: #d97706 #1a1a2e;
+}

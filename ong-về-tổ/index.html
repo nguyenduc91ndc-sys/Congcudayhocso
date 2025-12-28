@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Ong Về Tổ</title>
+
+  <!-- Tailwind CSS -->
+  <script src="https://cdn.tailwindcss.com"></script>
+
+  <!-- React & ReactDOM (UMD) - Using React 18 -->
+  <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+  <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+
+  <!-- Babel for JSX -->
+  <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+  <!-- Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet">
+
+  <!-- KaTeX CSS for LaTeX formulas -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.css">
+
+  <!-- KaTeX JS -->
+  <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
+
+  <style>
+    body {
+      font-family: 'Nunito', sans-serif;
+    }
+
+    .font-nunito {
+      font-family: 'Nunito', sans-serif;
+    }
+
+    /* Animations */
+    @keyframes float {
+      0% {
+        transform: translateY(0px);
+      }
+
+      50% {
+        transform: translateY(-10px);
+      }
+
+      100% {
+        transform: translateY(0px);
+      }
+    }
+
+    .animate-float {
+      animation: float 3s ease-in-out infinite;
+    }
+
+    @keyframes wing-flap {
+      0% {
+        transform: scaleY(1);
+      }
+
+      50% {
+        transform: scaleY(0.6);
+      }
+
+      100% {
+        transform: scaleY(1);
+      }
+    }
+
+    .animate-wings {
+      transform-origin: center;
+      animation: wing-flap 0.1s linear infinite;
+    }
+
+    @keyframes shake {
+
+      0%,
+      100% {
+        transform: translateX(0);
+      }
+
+      25% {
+        transform: translateX(-5px);
+      }
+
+      75% {
+        transform: translateX(5px);
+      }
+    }
+
+    .shake {
+      animation: shake 0.3s ease-in-out 2;
+    }
+
+    @keyframes bounce-slow {
+
+      0%,
+      100% {
+        transform: translateY(0);
+      }
+
+      50% {
+        transform: translateY(-5px);
+      }
+    }
+
+    .animate-bounce-slow {
+      animation: bounce-slow 2s infinite;
+    }
+
+    @keyframes loadingBar {
+      0% {
+        width: 5%;
+      }
+
+      50% {
+        width: 95%;
+      }
+
+      100% {
+        width: 5%;
+      }
+    }
+
+    @keyframes shimmer {
+      0% {
+        transform: translateX(-100%);
+      }
+
+      100% {
+        transform: translateX(100%);
+      }
+    }
+  </style>
+  <script type="importmap">
+{
+  "imports": {
+    "react": "https://esm.sh/react@^19.2.1",
+    "react-dom/": "https://esm.sh/react-dom@^19.2.1/",
+    "react/": "https://esm.sh/react@^19.2.1/"
+  }
+}
+</script>
+  <link rel="stylesheet" href="/index.css">
+</head>
+
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel">
+    const { useState, useEffect, useRef } = React;
+
+    // ---------------------------------------------------------
+    // 1. CONSTANTS & DATA
+    // ---------------------------------------------------------
+
+    const GameStage = {
+      INTRO: 'INTRO',
+      INTRO_VIDEO: 'INTRO_VIDEO',
+      PLAYING: 'PLAYING',
+      VICTORY_PENDING: 'VICTORY_PENDING',
+      OUTRO_VIDEO: 'OUTRO_VIDEO',
+      VICTORY: 'VICTORY',
+    };
+
+    const QUESTIONS = [
+      {
+        id: 1,
+        question: "Câu thường có mấy thành phần chính? Đó là các thành phần nào?",
+        options: [
+          { id: "A", text: "Gồm 2 thành phần chính: chủ ngữ và vị ngữ" },
+          { id: "B", text: "Gồm 3 thành phần chính: chủ ngữ, vị ngữ và trạng ngữ" },
+          { id: "C", text: "Gồm 2 thành phần chính: chủ ngữ và trạng ngữ" }
+        ],
+        correctAnswerId: "A"
+      },
+      {
+        id: 2,
+        question: "Chủ ngữ thường trả lời cho câu hỏi nào?",
+        options: [
+          { id: "A", text: "Làm gì, thế nào, là ai,..." },
+          { id: "B", text: "Làm gì, ai, con gì,..." },
+          { id: "C", text: "Ai, cái gì, con gì,..." }
+        ],
+        correctAnswerId: "C"
+      },
+      {
+        id: 3,
+        question: "Tìm chủ ngữ trong câu sau: “Chú chim sơn ca nhảy nhót trên cành cây.”",
+        options: [
+          { id: "A", text: "Chú chim" },
+          { id: "B", text: "Chú chim sơn ca" },
+          { id: "C", text: "Nhảy nhót trên cành cây" }
+        ],
+        correctAnswerId: "B"
+      }
+    ];
+
+    const TOTAL_STAGES = QUESTIONS.length;
+
+    const PATH_POINTS = [
+      { x: 10, y: 20 },   // Start: Top Left
+      { x: 30, y: 35 },   // Station 1: Dip down slightly
+      { x: 50, y: 15 },   // Station 2: Loop up High
+      { x: 70, y: 35 },   // Station 3: Dip down slightly
+      { x: 90, y: 20 }    // Hive: Top Right
+    ];
+
+    const INTRO_VIDEO_URL = "https://s2.file2s.com/Trochoiongveto/Giao%20nhi%E1%BB%87m%20v%E1%BB%A5.mp4";
+    const OUTRO_VIDEO_URL = "https://s2.file2s.com/Trochoiongveto/C%E1%BA%A3m%20%C6%A1n%20sau%20nhi%E1%BB%87m%20v%E1%BB%A5.mp4";
+
+    // ---------------------------------------------------------
+    // 2. GAME ASSETS
+    // ---------------------------------------------------------
+
+    const BeeSVG = ({ className }) => (
+      <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
+        <defs>
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feGaussianBlur in="SourceAlpha" stdDeviation="2" />
+            <feOffset dx="1" dy="2" result="offsetblur" />
+            <feComponentTransfer>
+              <feFuncA type="linear" slope="0.3" />
+            </feComponentTransfer>
+            <feMerge>
+              <feMergeNode in="offsetblur" />
+              <feMergeNode in="SourceGraphic" />
+            </feMerge>
+          </filter>
+        </defs>
+        <g className="animate-float" filter="url(#shadow)">
+          <path d="M 40 40 C 10 10, -10 50, 40 55 Z" fill="#E0F7FA" stroke="#B2EBF2" strokeWidth="2" className="animate-wings" style={{ transformOrigin: "40px 50px" }} />
+          <path d="M 60 40 C 90 10, 110 50, 60 55 Z" fill="#E0F7FA" stroke="#B2EBF2" strokeWidth="2" className="animate-wings" style={{ transformOrigin: "60px 50px", animationDelay: '0.1s' }} />
+          <ellipse cx="50" cy="55" rx="35" ry="30" fill="#FFD54F" stroke="#F57F17" strokeWidth="2" />
+          <path d="M 30 35 Q 50 25 70 35" stroke="#3E2723" strokeWidth="8" fill="none" strokeLinecap="round" />
+          <path d="M 20 55 Q 50 45 80 55" stroke="#3E2723" strokeWidth="8" fill="none" strokeLinecap="round" />
+          <path d="M 28 75 Q 50 65 72 75" stroke="#3E2723" strokeWidth="8" fill="none" strokeLinecap="round" />
+          <ellipse cx="50" cy="50" rx="28" ry="22" fill="#FFE082" />
+          <circle cx="38" cy="48" r="5" fill="#3E2723" />
+          <circle cx="39" cy="46" r="2" fill="white" />
+          <circle cx="62" cy="48" r="5" fill="#3E2723" />
+          <circle cx="63" cy="46" r="2" fill="white" />
+          <circle cx="32" cy="55" r="3.5" fill="#FF8A80" opacity="0.6" />
+          <circle cx="68" cy="55" r="3.5" fill="#FF8A80" opacity="0.6" />
+          <path d="M 45 58 Q 50 63 55 58" stroke="#3E2723" strokeWidth="2.5" fill="none" strokeLinecap="round" />
+          <path d="M 35 28 Q 30 10 20 15" stroke="#3E2723" strokeWidth="2" fill="none" />
+          <circle cx="20" cy="15" r="2" fill="#3E2723" />
+          <path d="M 65 28 Q 70 10 80 15" stroke="#3E2723" strokeWidth="2" fill="none" />
+          <circle cx="80" cy="15" r="2" fill="#3E2723" />
+          <path d="M 50 85 L 47 92 L 53 92 Z" fill="#3E2723" />
+        </g>
+      </svg>
+    );
+
+    const HiveSVG = ({ className }) => (
+      <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(10, 5)">
+          <path d="M 40 -15 Q 40 0 40 10" stroke="#795548" strokeWidth="4" fill="none" />
+          <path d="M 0 -10 Q 50 -10 100 -5" stroke="#5D4037" strokeWidth="6" strokeLinecap="round" />
+          <path d="M 35 -5 Q 20 -5 20 -20 Q 35 -20 35 -5" fill="#66BB6A" />
+          <path d="M 45 -5 Q 60 -5 60 -20 Q 45 -20 45 -5" fill="#81C784" />
+          <ellipse cx="50" cy="15" rx="20" ry="10" fill="#FFCA28" stroke="#F57F17" strokeWidth="1" />
+          <ellipse cx="50" cy="30" rx="30" ry="14" fill="#FFC107" stroke="#F57F17" strokeWidth="1" />
+          <ellipse cx="50" cy="50" rx="35" ry="18" fill="#FFB300" stroke="#F57F17" strokeWidth="1" />
+          <ellipse cx="50" cy="70" rx="28" ry="14" fill="#FFA000" stroke="#F57F17" strokeWidth="1" />
+          <ellipse cx="50" cy="85" rx="15" ry="8" fill="#FF8F00" stroke="#F57F17" strokeWidth="1" />
+          <circle cx="50" cy="55" r="10" fill="#3E2723" />
+          <path d="M 30 30 Q 40 25 50 30" stroke="white" strokeWidth="2" opacity="0.3" fill="none" />
+          <path d="M 25 50 Q 35 45 45 50" stroke="white" strokeWidth="2" opacity="0.3" fill="none" />
+          <path d="M 50 85 Q 50 95 55 92 Q 52 98 50 98 Q 48 98 45 92 Q 50 95 50 85" fill="#FFD700" stroke="#FFA000" strokeWidth="0.5" />
+        </g>
+      </svg>
+    );
+
+    const WarningSVG = ({ className }) => (
+      <svg viewBox="0 0 100 100" className={className} xmlns="http://www.w3.org/2000/svg">
+        <g transform="translate(50, 50)">
+          <path d="M 0 -35 L 40 35 L -40 35 Z" fill="#FFEB3B" stroke="#F57F17" strokeWidth="4" strokeLinejoin="round" />
+          <path d="M 0 -25 L 30 28 L -30 28 Z" fill="none" stroke="#FFF" strokeWidth="2" opacity="0.5" />
+          <path d="M 0 -12 L 0 12" stroke="#E65100" strokeWidth="6" strokeLinecap="round" />
+          <circle cx="0" cy="22" r="4" fill="#E65100" />
+        </g>
+      </svg>
+    );
+
+    const SoundOnSVG = ({ className }) => (
+      <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+        <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+        <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+      </svg>
+    );
+
+    const SoundOffSVG = ({ className }) => (
+      <svg viewBox="0 0 24 24" className={className} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+        <line x1="1" y1="1" x2="23" y2="23" />
+        <path d="M9 9v6a23 23 0 0 1-2 2H3V7h4" />
+        <path d="M11 5v6" />
+        <path d="M16 9l5 5" />
+        <path d="M21 9l-5 5" />
+      </svg>
+    );
+
+    // ---------------------------------------------------------
+    // 3. COMPONENTS
+    // ---------------------------------------------------------
+
+    // LatexRenderer: Renders text with LaTeX formulas ($...$)
+    const LatexRenderer = ({ text, className }) => {
+      const renderLatex = (input) => {
+        const parts = [];
+        const regex = /\$\$([\s\S]*?)\$\$|\$((?:[^$\\]|\\.)+?)\$/g;
+
+        let lastIndex = 0;
+        let match;
+        let keyIndex = 0;
+
+        while ((match = regex.exec(input)) !== null) {
+          if (match.index > lastIndex) {
+            parts.push(
+              React.createElement('span', { key: `text-${keyIndex++}` },
+                input.slice(lastIndex, match.index)
+              )
+            );
+          }
+
+          const isDisplay = match[1] !== undefined;
+          const formula = isDisplay ? match[1] : match[2];
+
+          try {
+            const html = katex.renderToString(formula.trim(), {
+              throwOnError: false,
+              displayMode: isDisplay,
+              trust: true,
+            });
+
+            parts.push(
+              React.createElement('span', {
+                key: `latex-${keyIndex++}`,
+                className: isDisplay ? 'block my-2 text-center' : 'inline',
+                dangerouslySetInnerHTML: { __html: html }
+              })
+            );
+          } catch (error) {
+            console.error('KaTeX error:', error);
+            parts.push(
+              React.createElement('span', { key: `error-${keyIndex++}`, className: 'text-red-500' },
+                isDisplay ? `$$${formula}$$` : `$${formula}$`
+              )
+            );
+          }
+
+          lastIndex = regex.lastIndex;
+        }
+
+        if (lastIndex < input.length) {
+          parts.push(
+            React.createElement('span', { key: `text-${keyIndex++}` },
+              input.slice(lastIndex)
+            )
+          );
+        }
+
+        return parts.length > 0 ? parts : [React.createElement('span', { key: 'empty' }, input)];
+      };
+
+      return React.createElement('span', { className }, renderLatex(text));
+    };
+
+    const StartScreen = ({ onStart }) => {
+      return (
+        <div className="relative min-h-screen flex flex-col items-center justify-center p-4 bg-yellow-50">
+          <div className="absolute inset-0 pointer-events-none overflow-hidden">
+            <div className="absolute inset-0 bg-gradient-to-b from-yellow-50 via-yellow-100 to-orange-50"></div>
+            <div className="absolute top-10 right-20 w-32 h-32 bg-yellow-300 rounded-full blur-xl opacity-60 animate-pulse"></div>
+            <svg className="absolute bottom-0 left-0 w-full h-[60%] z-0 opacity-50" preserveAspectRatio="none" viewBox="0 0 1440 320">
+              <path fill="#FEF3C7" fillOpacity="1" d="M0,224L60,213.3C120,203,240,181,360,181.3C480,181,600,203,720,224C840,245,960,267,1080,261.3C1200,256,1320,224,1380,208L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
+            </svg>
+            <svg className="absolute bottom-0 left-0 w-full h-[50%] z-0 opacity-60" preserveAspectRatio="none" viewBox="0 0 1440 320">
+              <path fill="#FDE68A" fillOpacity="0.8" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,208C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+            </svg>
+            <div className="absolute bottom-[5%] left-[5%] text-orange-300 text-6xl opacity-60 animate-bounce-slow">✿</div>
+            <div className="absolute bottom-[10%] right-[10%] text-yellow-500 text-5xl opacity-60 animate-bounce-slow" style={{ animationDelay: '1s' }}>✿</div>
+          </div>
+
+          <div className="relative z-10 w-full max-w-5xl bg-white/95 shadow-2xl rounded-[2.5rem] p-6 md:p-8 border-8 border-yellow-400 text-center animate-float flex flex-col items-center justify-center">
+            <div className="flex justify-center mb-4 relative">
+              <div className="absolute -top-16 right-8 transform rotate-12">
+                <span className="text-5xl animate-bounce delay-700">⚠️</span>
+              </div>
+              <div className="w-32 h-32 bg-gradient-to-br from-yellow-200 to-orange-100 rounded-full flex items-center justify-center shadow-inner border-4 border-white">
+                <BeeSVG className="w-24 h-24" />
+              </div>
+            </div>
+
+            <h1 className="text-4xl md:text-5xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500 mb-4 drop-shadow-sm font-nunito">
+              Ong Về Tổ
+            </h1>
+
+            <div className="bg-orange-50 p-4 rounded-2xl border-4 border-dashed border-orange-200 mb-6 text-left relative w-full max-w-3xl mx-auto">
+              <div className="absolute top-0 right-0 p-4 opacity-10 text-5xl pointer-events-none">🐝</div>
+              <h2 className="text-xl font-bold text-orange-700 mb-3 flex items-center">
+                <span className="text-2xl mr-2">📜</span> Hướng dẫn chơi:
+              </h2>
+              <ul className="space-y-2 text-orange-900 text-lg font-medium">
+                <li className="flex items-start">
+                  <span className="flex-shrink-0 w-7 h-7 bg-green-500 text-white rounded-full flex items-center justify-center font-bold mr-3 mt-0.5 text-sm">1</span>
+                  <span>Giúp chú Ong vượt qua <span className="font-bold text-red-500">3 cửa ải</span> để về tổ.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="flex-shrink-0 w-7 h-7 bg-blue-500 text-white rounded-full flex items-center justify-center font-bold mr-3 mt-0.5 text-sm">2</span>
+                  <span>Mỗi cửa ải là một <span className="font-bold text-blue-600">câu đố thú vị</span> mà em cần giải đáp.</span>
+                </li>
+                <li className="flex items-start">
+                  <span className="flex-shrink-0 w-7 h-7 bg-purple-500 text-white rounded-full flex items-center justify-center font-bold mr-3 mt-0.5 text-sm">3</span>
+                  <span>Trả lời đúng để đưa Ong về nhà an toàn nhé!</span>
+                </li>
+              </ul>
+            </div>
+
+            <button
+              onClick={onStart}
+              className="group relative inline-flex items-center justify-center px-10 py-4 text-xl font-bold text-white transition-all duration-200 bg-gradient-to-b from-yellow-400 to-orange-500 rounded-full shadow-[0_8px_0_rgb(194,65,12)] hover:shadow-[0_4px_0_rgb(194,65,12)] hover:translate-y-1 active:shadow-none active:translate-y-2 focus:outline-none"
+            >
+              <span className="mr-3 drop-shadow-md">Bắt Đầu Ngay</span>
+              <svg className="w-6 h-6 transition-transform group-hover:translate-x-2 drop-shadow-md" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+              </svg>
+            </button>
+          </div>
+        </div>
+      );
+    };
+
+    const QuestionModal = ({ question, onAnswer, playCorrectSound, playWrongSound }) => {
+      const [selectedOption, setSelectedOption] = useState(null);
+      const [showFeedback, setShowFeedback] = useState(null);
+
+      const handleOptionClick = (optionId) => {
+        if (showFeedback === 'correct') return;
+
+        setSelectedOption(optionId);
+
+        if (optionId === question.correctAnswerId) {
+          setShowFeedback('correct');
+          playCorrectSound();
+          setTimeout(() => {
+            onAnswer(true);
+          }, 1500);
+        } else {
+          setShowFeedback('incorrect');
+          playWrongSound();
+        }
+      };
+
+      const tryAgain = () => {
+        setShowFeedback(null);
+        setSelectedOption(null);
+      };
+
+      return (
+        <div className="fixed inset-0 z-50 flex items-end justify-center pb-4 md:pb-6 px-4 pointer-events-none">
+          <div className="relative w-full max-w-[630px] min-h-[35vh] bg-white rounded-[2rem] shadow-2xl overflow-visible border-[6px] border-white ring-4 ring-yellow-300 animate-float pointer-events-auto flex flex-col">
+            <div className="absolute -top-6 -left-6 text-5xl transform -rotate-12 drop-shadow-lg">🌸</div>
+            <div className="absolute -bottom-6 -right-6 text-5xl transform rotate-12 drop-shadow-lg">🍀</div>
+
+            <div className="bg-gradient-to-r from-yellow-400 to-orange-400 p-4 text-center rounded-t-[1.5rem] border-b-4 border-yellow-200 flex-shrink-0">
+              <h2 className="text-2xl font-extrabold text-white drop-shadow-md tracking-wide">
+                Câu hỏi số {question.id}
+              </h2>
+            </div>
+
+            <div className="flex-1 p-6 py-4 md:py-6 bg-yellow-50/95 flex flex-col justify-center rounded-b-[1.5rem] relative">
+              <p className="text-xl md:text-2xl text-yellow-900 font-bold mb-4 leading-relaxed text-center font-nunito">
+                <LatexRenderer text={question.question} />
+              </p>
+
+              <div className="space-y-3 relative">
+                {question.options.map((option) => {
+                  let buttonStyle = "border-2 border-yellow-200 bg-white hover:bg-yellow-100 hover:scale-[1.02] text-gray-700 shadow-sm";
+
+                  if (selectedOption === option.id) {
+                    if (showFeedback === 'correct') {
+                      buttonStyle = "bg-green-100 border-green-500 text-green-800 font-bold ring-4 ring-green-200 scale-[1.02]";
+                    } else if (showFeedback === 'incorrect') {
+                      buttonStyle = "bg-red-100 border-red-500 text-red-800 ring-4 ring-red-200";
+                    }
+                  }
+
+                  return (
+                    <button
+                      key={option.id}
+                      onClick={() => handleOptionClick(option.id)}
+                      className={`w-full p-3 md:p-4 text-left rounded-2xl transition-all duration-200 text-xl md:text-2xl group ${buttonStyle}`}
+                      disabled={showFeedback !== null}
+                    >
+                      <span className={`inline-block w-10 h-10 text-center leading-10 rounded-full mr-4 font-bold transition-colors text-xl ${selectedOption === option.id && showFeedback === 'correct' ? 'bg-green-500 text-white' :
+                        selectedOption === option.id && showFeedback === 'incorrect' ? 'bg-red-500 text-white' :
+                          'bg-yellow-200 text-yellow-800 group-hover:bg-yellow-300'
+                        }`}>
+                        {option.id}
+                      </span>
+                      <LatexRenderer text={option.text} />
+                    </button>
+                  );
+                })}
+
+                {showFeedback === 'incorrect' && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm rounded-2xl border-4 border-red-300 shadow-xl">
+                    <p className="text-red-600 font-bold text-2xl mb-4 text-center px-4">Chưa đúng rồi em ơi! Thử lại nhé! 🤔</p>
+                    <button
+                      onClick={tryAgain}
+                      className="px-8 py-3 bg-red-500 text-white rounded-full font-bold text-xl hover:bg-red-600 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95"
+                    >
+                      Thử lại
+                    </button>
+                  </div>
+                )}
+
+                {showFeedback === 'correct' && (
+                  <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm rounded-2xl border-4 border-green-300">
+                    <p className="text-green-600 font-bold text-4xl animate-pulse text-center px-4">🎉 Xuất sắc! Quá giỏi! 🎉</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      );
+    };
+
+    const VictoryScreen = ({ onRestart, showButtons }) => {
+      return (
+        <div className="absolute inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+          <div className="bg-white rounded-3xl shadow-2xl p-8 max-w-lg w-full text-center border-4 border-yellow-400 relative overflow-hidden">
+            {showButtons && (
+              <div className="absolute top-0 left-0 w-full h-full pointer-events-none opacity-20">
+                <div className="absolute top-10 left-10 w-4 h-4 bg-red-500 rounded-full animate-ping"></div>
+                <div className="absolute top-20 right-20 w-6 h-6 bg-blue-500 rounded-full animate-ping delay-100"></div>
+                <div className="absolute bottom-10 left-1/2 w-5 h-5 bg-green-500 rounded-full animate-ping delay-200"></div>
+              </div>
+            )}
+
+            <h2 className="text-4xl font-extrabold text-yellow-600 mb-4">
+              Chúc Mừng!
+            </h2>
+
+            {showButtons && (
+              <div className="flex justify-center items-center gap-4 mb-6">
+                <div className="w-24 h-24 transform translate-x-4">
+                  <BeeSVG />
+                </div>
+                <div className="text-3xl animate-pulse">❤️</div>
+                <div className="w-24 h-24">
+                  <HiveSVG />
+                </div>
+              </div>
+            )}
+
+            <p className="text-xl text-gray-700 mb-8 leading-relaxed">
+              Các em đã xuất sắc trả lời đúng tất cả các câu hỏi và đưa chú Ong về tổ an toàn!
+              <br />
+              {showButtons && <span className="font-bold text-yellow-600 block mt-2 animate-bounce">Các em thật giỏi! 🌟</span>}
+            </p>
+
+            {showButtons && (
+              <button
+                onClick={onRestart}
+                className="inline-flex items-center justify-center px-8 py-3 text-lg font-bold text-white transition-all bg-green-500 rounded-full hover:bg-green-600 shadow-lg transform hover:scale-105"
+              >
+                Chơi Lại
+              </button>
+            )}
+          </div>
+        </div>
+      );
+    };
+
+    const LoadingScreen = () => (
+      <div className="fixed inset-0 z-[60] flex flex-col items-center justify-center bg-orange-50 font-nunito overflow-hidden">
+        <div className="absolute inset-0 bg-yellow-100 opacity-50">
+          <div className="absolute top-[-10%] left-[-10%] w-[120%] h-[120%] bg-[url('data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNDAiIGhlaWdodD0iNDAiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBhdGggZD0iTTAgMjAgTDIwIDAgTBM0MCAyMCBMMjAgNDAgWiIgZmlsbD0iI0ZFQjkwMCIgZmlsbC1vcGFjaXR5PSIwLjEiLz48L3N2Zz4=')] opacity-30 animate-[spin_60s_linear_infinite]"></div>
+        </div>
+        <div className="relative mb-10">
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-64 h-64 border-8 border-dashed border-orange-200 rounded-full animate-[spin_10s_linear_infinite]"></div>
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-52 h-52 border-4 border-yellow-300 rounded-full animate-[spin_8s_linear_infinite_reverse]"></div>
+          <div className="relative z-10 animate-bounce">
+            <BeeSVG className="w-40 h-40 drop-shadow-xl" />
+          </div>
+          <div className="absolute top-0 left-1/2 w-full h-full animate-[spin_3s_linear_infinite]">
+            <div className="absolute -top-8 left-1/2 -translate-x-1/2 text-3xl transform rotate-180">🍯</div>
+          </div>
+        </div>
+        <div className="relative z-10 flex flex-col items-center">
+          <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-orange-500 to-yellow-500 tracking-[0.2em] mb-4 animate-pulse uppercase" style={{ textShadow: '2px 2px 4px rgba(249, 115, 22, 0.2)' }}>
+            Loading...
+          </h1>
+          <div className="w-64 h-4 bg-white rounded-full border-2 border-orange-200 p-1 shadow-inner relative overflow-hidden">
+            <div className="absolute top-0 bottom-0 left-0 bg-gradient-to-r from-yellow-400 to-orange-500 rounded-full animate-[loadingBar_2s_ease-in-out_infinite]" style={{ width: '50%' }}></div>
+            <div className="absolute top-0 bottom-0 left-0 right-0 bg-gradient-to-r from-transparent via-white to-transparent opacity-30 animate-[shimmer_1.5s_infinite]"></div>
+          </div>
+        </div>
+      </div>
+    );
+
+    const YellowNatureBackground = () => (
+      <div className="absolute inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute inset-0 bg-gradient-to-b from-yellow-50 via-yellow-100 to-orange-50"></div>
+        <div className="absolute top-10 right-20 w-20 h-20 bg-yellow-300 rounded-full blur-xl opacity-60 animate-pulse"></div>
+        <svg className="absolute bottom-0 left-0 w-full h-[50%] z-0" preserveAspectRatio="none" viewBox="0 0 1440 320">
+          <path fill="#FEF3C7" fillOpacity="1" d="M0,224L60,213.3C120,203,240,181,360,181.3C480,181,600,203,720,224C840,245,960,267,1080,261.3C1200,256,1320,224,1380,208L1440,192L1440,320L1380,320C1320,320,1200,320,1080,320C960,320,840,320,720,320C600,320,480,320,360,320C240,320,120,320,60,320L0,320Z"></path>
+        </svg>
+        <svg className="absolute bottom-0 left-0 w-full h-[40%] z-0" preserveAspectRatio="none" viewBox="0 0 1440 320">
+          <path fill="#FDE68A" fillOpacity="0.8" d="M0,96L48,112C96,128,192,160,288,186.7C384,213,480,235,576,213.3C672,192,768,128,864,128C960,128,1056,192,1152,208C1248,224,1344,192,1392,176L1440,160L1440,320L1392,320C1344,320,1248,320,1152,320C1056,320,960,320,864,320C768,320,672,320,576,320C480,320,384,320,288,320C192,320,96,320,48,320L0,320Z"></path>
+        </svg>
+        <div className="absolute bottom-[10%] left-[10%] text-orange-300 text-4xl opacity-80 animate-bounce-slow">✿</div>
+        <div className="absolute bottom-[15%] left-[25%] text-yellow-500 text-3xl opacity-70" style={{ animationDelay: '1s' }}>❀</div>
+        <div className="absolute bottom-[8%] left-[45%] text-orange-400 text-5xl opacity-80 animate-bounce-slow" style={{ animationDelay: '0.5s' }}>✿</div>
+        <div className="absolute bottom-[12%] right-[30%] text-yellow-600 text-3xl opacity-60">❀</div>
+        <div className="absolute bottom-[5%] right-[10%] text-orange-300 text-6xl opacity-80 animate-bounce-slow">✿</div>
+        <div className="absolute top-[15%] left-[10%] text-white text-6xl opacity-60 animate-float">☁</div>
+        <div className="absolute top-[10%] right-[20%] text-white text-8xl opacity-40 animate-float" style={{ animationDelay: '2s' }}>☁</div>
+      </div>
+    );
+
+    // ---------------------------------------------------------
+    // 4. MAIN APP COMPONENT
+    // ---------------------------------------------------------
+
+    function App() {
+      const [isLoading, setIsLoading] = useState(true);
+      const [gameState, setGameState] = useState(GameStage.INTRO);
+      const [currentStationIndex, setCurrentStationIndex] = useState(0);
+      const [isModalOpen, setIsModalOpen] = useState(false);
+      const [beePosition, setBeePosition] = useState(PATH_POINTS[0]);
+      const [isMusicMuted, setIsMusicMuted] = useState(false);
+
+      const audioRef = useRef(null);
+
+      useEffect(() => {
+        audioRef.current = new Audio('https://s2.file2s.com/nhacnengamechotreem.mp3');
+        audioRef.current.loop = true;
+        audioRef.current.volume = 0.35;
+
+        const timer = setTimeout(() => {
+          setIsLoading(false);
+        }, 3000);
+
+        return () => {
+          clearTimeout(timer);
+          if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current = null;
+          }
+        };
+      }, []);
+
+      useEffect(() => {
+        const playAudio = async () => {
+          if (audioRef.current) {
+            const isVideoPlaying = gameState === GameStage.INTRO_VIDEO || gameState === GameStage.OUTRO_VIDEO;
+            if (!isLoading && gameState !== GameStage.INTRO && !isVideoPlaying && !isMusicMuted) {
+              try {
+                audioRef.current.volume = 0.35;
+                await audioRef.current.play();
+              } catch (e) {
+                console.log("Audio autoplay blocked, requires interaction");
+              }
+            } else {
+              audioRef.current.pause();
+            }
+          }
+        };
+        playAudio();
+      }, [gameState, isLoading, isMusicMuted]);
+
+      const playCorrectSound = () => {
+        const sfx = new Audio('https://s2.file2s.com/amthanhhieuung/dung-6.mp3');
+        sfx.volume = 1.0;
+        sfx.play().catch(e => console.log("SFX play failed", e));
+      };
+
+      const playWrongSound = () => {
+        const sfx = new Audio('https://s2.file2s.com/amthanhhieuung/sai-4.mp3');
+        sfx.volume = 1.0;
+        sfx.play().catch(e => console.log("SFX play failed", e));
+      };
+
+      const handleStartGame = () => {
+        setGameState(GameStage.INTRO_VIDEO);
+      };
+
+      const handleIntroVideoEnded = () => {
+        setGameState(GameStage.PLAYING);
+        setCurrentStationIndex(0);
+        setBeePosition(PATH_POINTS[0]);
+        setTimeout(() => {
+          moveToStation(1);
+        }, 600);
+      };
+
+      const handleOutroVideoEnded = () => {
+        setGameState(GameStage.VICTORY);
+      };
+
+      const moveToStation = (index) => {
+        setBeePosition(PATH_POINTS[index]);
+        setCurrentStationIndex(index);
+        if (index > 0 && index <= TOTAL_STAGES) {
+          setTimeout(() => {
+            setIsModalOpen(true);
+          }, 2000);
+        } else if (index === TOTAL_STAGES + 1) {
+          setTimeout(() => {
+            setGameState(GameStage.VICTORY_PENDING);
+            setTimeout(() => {
+              setGameState(GameStage.OUTRO_VIDEO);
+            }, 2500);
+          }, 2000);
+        }
+      };
+
+      const handleAnswer = (isCorrect) => {
+        if (isCorrect) {
+          setIsModalOpen(false);
+          moveToStation(currentStationIndex + 1);
+        }
+      };
+
+      const handleRestart = () => {
+        setIsLoading(true);
+        setGameState(GameStage.INTRO);
+        setCurrentStationIndex(0);
+        setBeePosition(PATH_POINTS[0]);
+        setIsModalOpen(false);
+        setTimeout(() => {
+          setIsLoading(false);
+        }, 3000);
+      };
+
+      const toggleMusic = () => {
+        setIsMusicMuted(!isMusicMuted);
+      };
+
+      const renderVideoOverlay = (src, onEnded) => (
+        <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4">
+          <div className="relative w-[70%] max-w-5xl shadow-2xl rounded-xl overflow-hidden bg-black ring-4 ring-yellow-400">
+            <video
+              src={src}
+              autoPlay
+              className="w-full h-auto aspect-video"
+              onEnded={onEnded}
+              controls={false}
+            />
+            <button
+              onClick={onEnded}
+              className="absolute bottom-4 right-4 px-4 py-1.5 bg-white/20 hover:bg-white/40 text-white text-sm rounded-full backdrop-blur-md transition-colors"
+            >
+              Bỏ qua &gt;&gt;
+            </button>
+          </div>
+        </div>
+      );
+
+      if (isLoading) {
+        return <LoadingScreen />;
+      }
+
+      const showStartScreen = gameState === GameStage.INTRO || gameState === GameStage.INTRO_VIDEO;
+
+      return (
+        <div className="relative w-full h-screen overflow-hidden font-sans select-none bg-yellow-50">
+          {showStartScreen ? (
+            <StartScreen onStart={handleStartGame} />
+          ) : (
+            <React.Fragment>
+              <YellowNatureBackground />
+              <div className="relative z-10 w-full h-full flex flex-col">
+                <div className="absolute top-0 left-1/2 transform -translate-x-1/2 z-50 pointer-events-none mt-2 w-full flex justify-center">
+                  <div className="bg-gradient-to-r from-orange-400 via-yellow-500 to-orange-400 px-8 py-2 rounded-b-3xl shadow-[0_4px_0_rgb(194,65,12)] border-2 border-t-0 border-white/50 animate-float">
+                    <h1 className="text-xl md:text-2xl font-black text-white uppercase tracking-wider drop-shadow-md flex items-center gap-2">
+                      <span>🐝</span> Trò chơi "Ong Về Tổ" <span>🌻</span>
+                    </h1>
+                  </div>
+                </div>
+                <div className="absolute top-16 left-4 right-4 flex justify-between items-center z-[100] pointer-events-none">
+                  <div className="bg-white/90 backdrop-blur-md px-6 py-2 rounded-full shadow-lg border-4 border-yellow-400 flex items-center gap-3 pointer-events-auto">
+                    <span className="text-2xl">🍯</span>
+                    <div>
+                      <p className="text-[10px] text-yellow-800 font-bold uppercase tracking-wider">Cửa ải</p>
+                      <p className="text-lg font-extrabold text-yellow-600 leading-none">
+                        {Math.min(currentStationIndex, TOTAL_STAGES)} / {TOTAL_STAGES}
+                      </p>
+                    </div>
+                  </div>
+                  <button
+                    onClick={toggleMusic}
+                    className={`pointer-events-auto w-12 h-12 bg-white/95 backdrop-blur-md rounded-full shadow-xl border-[3px] flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${isMusicMuted ? 'border-gray-400 text-gray-500 bg-gray-50' : 'border-green-400 text-green-600 bg-green-50'}`}
+                    title={isMusicMuted ? "Bật nhạc nền" : "Tắt nhạc nền"}
+                    style={{ zIndex: 101 }}
+                  >
+                    {isMusicMuted ? <SoundOffSVG className="w-6 h-6" /> : <SoundOnSVG className="w-6 h-6" />}
+                  </button>
+                </div>
+                <div className="flex-1 relative w-full h-full mt-10">
+                  <svg className="absolute inset-0 w-full h-full pointer-events-none z-0" viewBox="0 0 100 100" preserveAspectRatio="none">
+                    <path
+                      d={`M ${PATH_POINTS[0].x} ${PATH_POINTS[0].y} 
+                           C ${PATH_POINTS[0].x + 10} ${PATH_POINTS[0].y}, ${PATH_POINTS[1].x - 10} ${PATH_POINTS[1].y}, ${PATH_POINTS[1].x} ${PATH_POINTS[1].y}
+                           S ${PATH_POINTS[2].x - 10} ${PATH_POINTS[2].y}, ${PATH_POINTS[2].x} ${PATH_POINTS[2].y}
+                           S ${PATH_POINTS[3].x - 10} ${PATH_POINTS[3].y}, ${PATH_POINTS[3].x} ${PATH_POINTS[3].y}
+                           S ${PATH_POINTS[4].x - 10} ${PATH_POINTS[4].y}, ${PATH_POINTS[4].x} ${PATH_POINTS[4].y}`}
+                      fill="none"
+                      stroke="#FFF"
+                      strokeWidth="5"
+                      className="opacity-60"
+                      transform="translate(0, 0.5)"
+                    />
+                    <path
+                      d={`M ${PATH_POINTS[0].x} ${PATH_POINTS[0].y} 
+                           C ${PATH_POINTS[0].x + 10} ${PATH_POINTS[0].y}, ${PATH_POINTS[1].x - 10} ${PATH_POINTS[1].y}, ${PATH_POINTS[1].x} ${PATH_POINTS[1].y}
+                           S ${PATH_POINTS[2].x - 10} ${PATH_POINTS[2].y}, ${PATH_POINTS[2].x} ${PATH_POINTS[2].y}
+                           S ${PATH_POINTS[3].x - 10} ${PATH_POINTS[3].y}, ${PATH_POINTS[3].x} ${PATH_POINTS[3].y}
+                           S ${PATH_POINTS[4].x - 10} ${PATH_POINTS[4].y}, ${PATH_POINTS[4].x} ${PATH_POINTS[4].y}`}
+                      fill="none"
+                      stroke="#D97706"
+                      strokeWidth="2"
+                      strokeDasharray="3 3"
+                      className="drop-shadow-sm opacity-90"
+                    />
+                  </svg>
+                  {[1, 2, 3].map((stageIndex) => {
+                    const point = PATH_POINTS[stageIndex];
+                    const isPassed = currentStationIndex > stageIndex;
+                    const isCurrent = currentStationIndex === stageIndex;
+
+                    return (
+                      <div
+                        key={stageIndex}
+                        className="absolute w-16 h-16 md:w-20 md:h-20 -translate-x-1/2 -translate-y-1/2 transition-all duration-500 z-10 flex flex-col items-center"
+                        style={{ left: `${point.x}%`, top: `${point.y}%` }}
+                      >
+                        <div className={`relative w-full h-full transition-transform duration-500 ${isCurrent ? 'scale-125' : 'scale-100'} ${isPassed ? 'grayscale opacity-70' : ''}`}>
+                          <WarningSVG />
+                          <div className="absolute -top-2 -right-2 bg-white text-orange-700 font-bold w-8 h-8 rounded-full flex items-center justify-center border-2 border-orange-500 shadow-sm text-sm">
+                            {stageIndex}
+                          </div>
+                        </div>
+                      </div>
+                    );
+                  })}
+                  <div
+                    className="absolute w-32 h-32 md:w-44 md:h-44 -translate-x-1/2 -translate-y-1/2 z-20"
+                    style={{ left: `${PATH_POINTS[4].x}%`, top: `${PATH_POINTS[4].y}%` }}
+                  >
+                    <HiveSVG className="drop-shadow-2xl filter brightness-110" />
+                  </div>
+                  <div
+                    className="absolute w-12 h-12 -translate-x-1/2 -translate-y-1/2 z-0 opacity-80"
+                    style={{ left: `${PATH_POINTS[0].x}%`, top: `${PATH_POINTS[0].y}%` }}
+                  >
+                    <div className="bg-orange-500/50 w-full h-full rounded-full animate-ping"></div>
+                    <div className="absolute inset-0 bg-orange-500 w-full h-full rounded-full border-2 border-white flex items-center justify-center text-white font-bold text-xs shadow-md">
+                      START
+                    </div>
+                  </div>
+                  <div
+                    className="absolute z-30 w-24 h-24 md:w-36 md:h-36 -translate-x-1/2 -translate-y-1/2 transition-all duration-[2000ms] ease-in-out"
+                    style={{
+                      left: `${beePosition.x}%`,
+                      top: `${beePosition.y}%`,
+                    }}
+                  >
+                    <div className="relative w-full h-full">
+                      <BeeSVG className="drop-shadow-2xl" />
+                      {!isModalOpen && gameState === GameStage.PLAYING && currentStationIndex < 4 && currentStationIndex > 0 && (
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-2xl rounded-bl-none text-sm font-extrabold text-orange-500 whitespace-nowrap animate-bounce shadow-lg border-2 border-orange-200">
+                          Cẩn thận!
+                        </div>
+                      )}
+                      {isModalOpen === false && gameState === GameStage.PLAYING && currentStationIndex === 0 && (
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 bg-white px-4 py-2 rounded-2xl rounded-bl-none text-sm font-extrabold text-blue-500 whitespace-nowrap animate-bounce shadow-lg border-2 border-blue-200">
+                          Về tổ thôi!
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </React.Fragment>
+          )}
+
+          {gameState === GameStage.INTRO_VIDEO && renderVideoOverlay(INTRO_VIDEO_URL, handleIntroVideoEnded)}
+          {gameState === GameStage.OUTRO_VIDEO && renderVideoOverlay(OUTRO_VIDEO_URL, handleOutroVideoEnded)}
+
+          {isModalOpen && gameState === GameStage.PLAYING && (
+            <QuestionModal
+              question={QUESTIONS[currentStationIndex - 1]}
+              onAnswer={handleAnswer}
+              playCorrectSound={playCorrectSound}
+              playWrongSound={playWrongSound}
+            />
+          )}
+
+          {(gameState === GameStage.VICTORY_PENDING || gameState === GameStage.VICTORY) && (
+            <VictoryScreen
+              onRestart={handleRestart}
+              showButtons={gameState === GameStage.VICTORY}
+            />
+          )}
+        </div>
+      );
+    }
+
+    const root = ReactDOM.createRoot(document.getElementById('root'));
+    root.render(<App />);
+  </script>
+  <script type="module" src="/index.tsx"></script>
+</body>
+
+</html>
