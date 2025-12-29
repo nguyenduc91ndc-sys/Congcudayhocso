@@ -16,18 +16,49 @@ const AICourseCard: React.FC<AICourseCardProps> = ({ course, onPreview, onRegist
         return price.toLocaleString('vi-VN') + 'đ';
     };
 
-    // Lấy YouTube video ID từ URL
+    // Lấy YouTube video ID từ URL - hỗ trợ nhiều định dạng
     const getYouTubeVideoId = (url: string): string | null => {
-        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-        const match = url.match(regExp);
-        return (match && match[7].length === 11) ? match[7] : null;
+        const patterns = [
+            // YouTube live: youtube.com/live/VIDEO_ID
+            /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+            // YouTube shorts: youtube.com/shorts/VIDEO_ID
+            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+            // YouTube watch: youtube.com/watch?v=VIDEO_ID
+            /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+            // YouTube embed: youtube.com/embed/VIDEO_ID
+            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+            // YouTube short URL: youtu.be/VIDEO_ID
+            /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+            // YouTube v format: youtube.com/v/VIDEO_ID
+            /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+        ];
+
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match && match[1]) {
+                return match[1];
+            }
+        }
+        return null;
     };
 
-    // Lấy thumbnail từ YouTube
+    // Lấy thumbnail từ YouTube hoặc Google Drive
     const getThumbnail = () => {
         if (course.thumbnail) return course.thumbnail;
+
+        // Thử lấy từ YouTube
         const videoId = getYouTubeVideoId(course.youtubeUrl);
-        return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+        if (videoId) {
+            return `https://img.youtube.com/vi/${videoId}/hqdefault.jpg`;
+        }
+
+        // Thử lấy từ Google Drive
+        const driveMatch = course.youtubeUrl.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch && driveMatch[1]) {
+            return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w400`;
+        }
+
+        return '';
     };
 
     // Render rating sao

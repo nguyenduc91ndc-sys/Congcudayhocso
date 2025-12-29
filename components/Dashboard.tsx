@@ -36,6 +36,8 @@ interface DashboardProps {
     onVideoStore: () => void;
     onInteractiveVideo: () => void;
     onAICourseStore: () => void;
+    onCanvaBasics: () => void;
+    onNewYear: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
 }
@@ -239,7 +241,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, isAdmin, isGuest
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onNewYear, isAdmin, isGuest
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -253,6 +255,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const [adminError, setAdminError] = useState('');
     const [isVerifying, setIsVerifying] = useState(false);
     const [showDonateModal, setShowDonateModal] = useState(false);
+    const [showZaloModal, setShowZaloModal] = useState(false);
 
     useEffect(() => {
         setTrialStatus(getTrialStatus());
@@ -407,14 +410,14 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                             <ThemeSelector />
 
-                            {/* Donate Button */}
+                            {/* Zalo Group Button */}
                             <button
-                                onClick={() => setShowDonateModal(true)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-amber-500/20 border border-amber-500/30 rounded-full hover:bg-amber-500/30 transition-colors group"
-                                title="Ủng hộ"
+                                onClick={() => setShowZaloModal(true)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 rounded-full hover:bg-blue-500/30 transition-colors group"
+                                title="Cộng đồng Zalo"
                             >
-                                <Coffee size={14} className="text-amber-400 group-hover:animate-bounce" />
-                                <span className="text-xs font-medium text-amber-400 hidden sm:inline">Ủng hộ</span>
+                                <Users size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs font-medium text-blue-400 hidden sm:inline">Cộng đồng Zalo</span>
                             </button>
 
                             {isGuest ? (
@@ -447,6 +450,51 @@ const Dashboard: React.FC<DashboardProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-8"
                 >
+                    {/* 🎆 Banner Chào Xuân 2026 */}
+                    <motion.section
+                        onClick={onNewYear}
+                        whileHover={{ scale: 1.01 }}
+                        whileTap={{ scale: 0.99 }}
+                        className="relative mb-6 cursor-pointer group overflow-hidden rounded-2xl"
+                    >
+                        {/* Animated background */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 bg-[length:200%_100%] animate-[shimmer_3s_linear_infinite]" />
+
+                        {/* Overlay pattern */}
+                        <div className="absolute inset-0 opacity-20" style={{
+                            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23fff" fill-opacity="0.4"%3E%3Cpath d="M10 0l2.94 6.56L20 7.64l-5 4.36 1.18 6.88L10 15.4l-6.18 3.48L5 12 0 7.64l7.06-1.08z"/%3E%3C/g%3E%3C/svg%3E")',
+                        }} />
+
+                        {/* Content */}
+                        <div className="relative px-6 py-4 flex items-center justify-between">
+                            <div className="flex items-center gap-4">
+                                {/* Firework icon */}
+                                <div className="text-4xl animate-bounce">
+                                    🎆
+                                </div>
+                                <div>
+                                    <h3 className="text-white font-bold text-lg drop-shadow-lg flex items-center gap-2">
+                                        <span className="animate-pulse">✨</span>
+                                        Chào Xuân 2026
+                                        <span className="animate-pulse">✨</span>
+                                    </h3>
+                                    <p className="text-white/90 text-sm">
+                                        Nhấn để xem hiệu ứng pháo hoa đặc biệt! 🧧🎊
+                                    </p>
+                                </div>
+                            </div>
+
+                            {/* Arrow */}
+                            <div className="flex items-center gap-2">
+                                <span className="text-2xl">🧧</span>
+                                <ChevronRight size={24} className="text-white group-hover:translate-x-2 transition-transform" />
+                            </div>
+                        </div>
+
+                        {/* Glow effect on hover */}
+                        <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity bg-white blur-xl" />
+                    </motion.section>
+
                     {/* Tools Grid */}
                     <section>
                         <h2 className="text-lg font-semibold text-white mb-4">Công cụ dạy học</h2>
@@ -599,6 +647,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 badge="Sắp ra mắt"
                                 disabled
                             />
+
+                            <ToolCard
+                                title="Canva cơ bản"
+                                description="Video hướng dẫn sử dụng Canva từ cộng đồng"
+                                icon={<span className="text-2xl">🎨</span>}
+                                accentColor="bg-gradient-to-br from-teal-500 to-cyan-600"
+                                onClick={onCanvaBasics}
+                                badge="Mới"
+                            />
                         </div>
                     </section>
 
@@ -650,34 +707,34 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                     </section>
 
-                    {/* Donate Card - Dễ thấy */}
+                    {/* Zalo Community Card */}
                     <section
-                        onClick={() => setShowDonateModal(true)}
-                        className="mt-6 bg-gradient-to-r from-amber-900/40 to-orange-900/40 border border-amber-500/30 rounded-2xl p-4 cursor-pointer hover:border-amber-400/50 transition-all group"
+                        onClick={() => setShowZaloModal(true)}
+                        className="mt-6 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border border-blue-500/30 rounded-2xl p-4 cursor-pointer hover:border-blue-400/50 transition-all group relative ring-2 ring-blue-500/30 animate-pulse hover:animate-none"
                     >
                         <div className="flex items-center gap-4">
                             {/* QR Code nhỏ */}
                             <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform p-1">
                                 <img
-                                    src="/qr-donate.png"
-                                    alt="QR Donate"
+                                    src="/zalo-group-qr.png"
+                                    alt="QR Zalo Group"
                                     className="w-full h-full object-contain"
                                 />
                             </div>
 
                             {/* Text */}
                             <div className="flex-1 min-w-0">
-                                <h3 className="text-amber-300 font-bold text-sm flex items-center gap-2">
-                                    <Coffee size={16} className="text-amber-400" />
-                                    Ủng hộ Giáo viên yêu CN
+                                <h3 className="text-blue-300 font-bold text-sm flex items-center gap-2">
+                                    <Users size={16} className="text-blue-400" />
+                                    Tham gia Cộng đồng Giáo viên 4.0
                                 </h3>
                                 <p className="text-white/70 text-xs mt-1 line-clamp-2">
-                                    Mời em ly cà phê để có động lực chia sẻ! Tuỳ tâm, vui vẻ! 💖
+                                    Quét QR hoặc bấm vào đây để tham gia nhóm Zalo chia sẻ kinh nghiệm và tài liệu!
                                 </p>
                             </div>
 
                             {/* Arrow */}
-                            <ChevronRight size={20} className="text-amber-400/50 group-hover:text-amber-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                            <ChevronRight size={20} className="text-blue-400/50 group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
                         </div>
                     </section>
                 </motion.div>
@@ -809,6 +866,72 @@ const Dashboard: React.FC<DashboardProps> = ({
                         className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-4 py-2 rounded-lg font-medium text-sm shadow-lg z-50"
                     >
                         ✓ Đã sao chép link
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Zalo Modal */}
+            <AnimatePresence>
+                {showZaloModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[100] flex items-center justify-center p-4"
+                        onClick={() => setShowZaloModal(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.95, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            className="bg-white border border-slate-200 rounded-2xl p-5 max-w-sm w-full text-center relative overflow-hidden shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            {/* Decorative Background - Reduced height */}
+                            <div className="absolute top-0 left-0 right-0 h-20 bg-gradient-to-b from-blue-500 to-cyan-500" />
+                            <div className="absolute top-3 right-3 z-10">
+                                <button onClick={() => setShowZaloModal(false)} className="p-2 bg-white/20 hover:bg-white/30 rounded-full text-white transition-colors">
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="relative z-10 pt-4">
+                                {/* Smaller Icon */}
+                                <div className="w-16 h-16 bg-white rounded-xl mx-auto shadow-lg flex items-center justify-center mb-3 p-1">
+                                    <div className="w-full h-full bg-blue-50 rounded-lg flex items-center justify-center">
+                                        <Users size={28} className="text-blue-600" />
+                                    </div>
+                                </div>
+
+                                <h3 className="text-lg font-bold text-slate-800 mb-1">Cộng đồng Giáo viên 4.0</h3>
+                                <p className="text-slate-500 text-sm mb-4 px-2">
+                                    Chia sẻ kinh nghiệm & tài liệu giảng dạy 4.0
+                                </p>
+
+                                {/* QR Code Container - Compact */}
+                                <div className="rounded-xl overflow-hidden mb-4 mx-auto max-w-[180px] shadow-sm">
+                                    <img
+                                        src="/zalo-group-qr.png"
+                                        alt="QR Code Zalo"
+                                        className="w-full h-full object-contain"
+                                    />
+                                </div>
+
+                                <button
+                                    onClick={() => window.open('https://zalo.me/g/kvfmke936', '_blank')}
+                                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
+                                >
+                                    Tham gia ngay <ExternalLink size={16} />
+                                </button>
+
+                                <button
+                                    onClick={() => setShowZaloModal(false)}
+                                    className="w-full mt-3 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-600 font-semibold rounded-lg transition-colors text-sm"
+                                >
+                                    Đóng
+                                </button>
+                            </div>
+                        </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>

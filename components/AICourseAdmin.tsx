@@ -98,12 +98,27 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
 
         setSaving(true);
         try {
+            // Loại bỏ các giá trị undefined trước khi gửi Firebase
+            // Firebase không chấp nhận undefined
+            const cleanedData: any = {};
+            Object.keys(formData).forEach(key => {
+                const value = (formData as any)[key];
+                if (value !== undefined) {
+                    cleanedData[key] = value;
+                }
+            });
+
+            // Đảm bảo originalPrice là null nếu không có giá trị
+            if (cleanedData.originalPrice === undefined || cleanedData.originalPrice === '') {
+                cleanedData.originalPrice = null;
+            }
+
             if (editingCourse) {
                 // Update existing
-                await updateCourse(editingCourse.id, formData);
+                await updateCourse(editingCourse.id, cleanedData);
             } else {
                 // Add new
-                await addCourse(formData);
+                await addCourse(cleanedData);
             }
             setShowForm(false);
             setEditingCourse(null);
@@ -128,12 +143,38 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
         }
     };
 
-    // Get YouTube thumbnail
-    const getYouTubeThumbnail = (url: string) => {
-        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-        const match = url.match(regExp);
-        const videoId = (match && match[7].length === 11) ? match[7] : null;
-        return videoId ? `https://img.youtube.com/vi/${videoId}/hqdefault.jpg` : '';
+    // Get YouTube thumbnail - hỗ trợ nhiều định dạng
+    const getYouTubeThumbnail = (url: string): string => {
+        // Kiểm tra định dạng YouTube
+        const patterns = [
+            // YouTube live: youtube.com/live/VIDEO_ID
+            /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+            // YouTube shorts: youtube.com/shorts/VIDEO_ID
+            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+            // YouTube watch: youtube.com/watch?v=VIDEO_ID
+            /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+            // YouTube embed: youtube.com/embed/VIDEO_ID
+            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+            // YouTube short URL: youtu.be/VIDEO_ID
+            /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+            // YouTube v format: youtube.com/v/VIDEO_ID
+            /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+        ];
+
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match && match[1]) {
+                return `https://img.youtube.com/vi/${match[1]}/hqdefault.jpg`;
+            }
+        }
+
+        // Nếu không phải YouTube, kiểm tra Google Drive
+        const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch && driveMatch[1]) {
+            return `https://drive.google.com/thumbnail?id=${driveMatch[1]}&sz=w400`;
+        }
+
+        return '';
     };
 
     return (

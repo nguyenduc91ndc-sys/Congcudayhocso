@@ -9,9 +9,11 @@ interface AICourseStoreProps {
     onBack: () => void;
     isAdmin?: boolean;
     onAdmin?: () => void;
+    isLoggedIn?: boolean;
+    onRequireLogin?: () => void;
 }
 
-const AICourseStore: React.FC<AICourseStoreProps> = ({ onBack, isAdmin, onAdmin }) => {
+const AICourseStore: React.FC<AICourseStoreProps> = ({ onBack, isAdmin, onAdmin, isLoggedIn, onRequireLogin }) => {
     const [courses, setCourses] = useState<AICourse[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedCourse, setSelectedCourse] = useState<AICourse | null>(null);
@@ -27,14 +29,22 @@ const AICourseStore: React.FC<AICourseStoreProps> = ({ onBack, isAdmin, onAdmin 
         return () => unsubscribe();
     }, []);
 
-    // Xem demo video
+    // Xem demo video - yêu cầu đăng nhập
     const handlePreview = (course: AICourse) => {
+        if (!isLoggedIn && onRequireLogin) {
+            onRequireLogin();
+            return;
+        }
         setSelectedCourse(course);
         setShowPreview(true);
     };
 
-    // Đăng ký khóa học
+    // Đăng ký khóa học - yêu cầu đăng nhập
     const handleRegister = (course: AICourse) => {
+        if (!isLoggedIn && onRequireLogin) {
+            onRequireLogin();
+            return;
+        }
         if (course.registerUrl) {
             window.open(course.registerUrl, '_blank');
         } else {
@@ -43,12 +53,37 @@ const AICourseStore: React.FC<AICourseStoreProps> = ({ onBack, isAdmin, onAdmin 
         }
     };
 
-    // Lấy YouTube embed URL
+    // Lấy YouTube embed URL - hỗ trợ nhiều định dạng
     const getYouTubeEmbedUrl = (url: string) => {
-        const regExp = /^.*((youtu.be\/)|(v\/)|(\/u\/\w\/)|(embed\/)|(watch\?))\??v?=?([^#&?]*).*/;
-        const match = url.match(regExp);
-        const videoId = (match && match[7].length === 11) ? match[7] : null;
-        return videoId ? `https://www.youtube.com/embed/${videoId}?autoplay=1` : '';
+        const patterns = [
+            // YouTube live: youtube.com/live/VIDEO_ID
+            /youtube\.com\/live\/([a-zA-Z0-9_-]{11})/,
+            // YouTube shorts: youtube.com/shorts/VIDEO_ID
+            /youtube\.com\/shorts\/([a-zA-Z0-9_-]{11})/,
+            // YouTube watch: youtube.com/watch?v=VIDEO_ID
+            /youtube\.com\/watch\?v=([a-zA-Z0-9_-]{11})/,
+            // YouTube embed: youtube.com/embed/VIDEO_ID
+            /youtube\.com\/embed\/([a-zA-Z0-9_-]{11})/,
+            // YouTube short URL: youtu.be/VIDEO_ID
+            /youtu\.be\/([a-zA-Z0-9_-]{11})/,
+            // YouTube v format: youtube.com/v/VIDEO_ID
+            /youtube\.com\/v\/([a-zA-Z0-9_-]{11})/,
+        ];
+
+        for (const pattern of patterns) {
+            const match = url.match(pattern);
+            if (match && match[1]) {
+                return `https://www.youtube.com/embed/${match[1]}?autoplay=1`;
+            }
+        }
+
+        // Nếu là Google Drive, trả về link embed
+        const driveMatch = url.match(/drive\.google\.com\/file\/d\/([a-zA-Z0-9_-]+)/);
+        if (driveMatch && driveMatch[1]) {
+            return `https://drive.google.com/file/d/${driveMatch[1]}/preview`;
+        }
+
+        return '';
     };
 
     return (

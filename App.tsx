@@ -17,6 +17,8 @@ import VideoStore from './components/VideoStore';
 import InteractiveVideoModule from './components/InteractiveVideoModule';
 import AICourseStore from './components/AICourseStore';
 import AICourseAdmin from './components/AICourseAdmin';
+import CanvaBasics from './components/CanvaBasics';
+import NewYearWelcome from './components/NewYearWelcome';
 import Footer from './components/Footer';
 import ZaloBrowserWarning from './components/ZaloBrowserWarning';
 import { User, ViewState, VideoLesson } from './types';
@@ -24,7 +26,7 @@ import { ThemeProvider } from './contexts/ThemeContext';
 import { decodeVideoData } from './utils/shareUtils';
 import { logVisit } from './utils/analyticsUtils';
 import { incrementVisitCount } from './utils/visitCounter';
-import { logVisitorToFirebase } from './utils/firebaseVisitors';
+import { logVisitorToFirebase, logLoginHistory, checkAndMigrateIfNeeded } from './utils/firebaseVisitors';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -36,6 +38,7 @@ function App() {
   const [currentLesson, setCurrentLesson] = useState<VideoLesson | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false); // Login modal for guest
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null); // Action after login
+  const [showNewYearWelcome, setShowNewYearWelcome] = useState(false); // New Year welcome modal
 
   // Lấy storage key theo email user
   const getLessonsStorageKey = (email?: string): string => {
@@ -71,19 +74,71 @@ function App() {
       if (savedLessons) {
         setLessons(JSON.parse(savedLessons));
       }
+
+      // Check and log history if needed (throttle 30 mins OR new day)
+      const lastLogTime = localStorage.getItem('ntd_last_log_time');
+      const now = Date.now();
+
+      let shouldLog = false;
+      if (!lastLogTime) {
+        shouldLog = true;
+      } else {
+        const lastLogDate = new Date(parseInt(lastLogTime));
+        const currentDate = new Date(now);
+        // Check if different day
+        const isNewDay = lastLogDate.getDate() !== currentDate.getDate() ||
+          lastLogDate.getMonth() !== currentDate.getMonth() ||
+          lastLogDate.getFullYear() !== currentDate.getFullYear();
+        // Check time diff > 30 mins
+        const isTimeElapsed = (now - parseInt(lastLogTime) > 30 * 60 * 1000);
+
+        shouldLog = isNewDay || isTimeElapsed;
+      }
+
+      if (shouldLog) {
+        // Log vào lịch sử
+        logLoginHistory(parsedUser.id, parsedUser.name, parsedUser.email || '', parsedUser.avatar);
+        // Update last log time
+        localStorage.setItem('ntd_last_log_time', now.toString());
+
+        // Log vào visitor logs (cho danh sách hiển thị realtime nếu dùng)
+        incrementVisitCount();
+        logVisitorToFirebase(parsedUser.id, parsedUser.name, parsedUser.avatar, parsedUser.email);
+      }
     }
     // Always stay on DASHBOARD (default view)
+
+    // Migration: copy dữ liệu cũ từ visitorLogs sang loginHistory (chỉ chạy 1 lần)
+    checkAndMigrateIfNeeded();
+
+    // Auto-show New Year welcome on first visit (trong mùa Tết)
+    const hasSeenNewYear = localStorage.getItem('ntd_seen_new_year_2026');
+    const now = new Date();
+    // Hiển thị từ 15/12 đến hết 28/2 (mùa Tết)
+    const isNewYearSeason = (now.getMonth() === 11 && now.getDate() >= 15) || // 15/12 trở đi
+      now.getMonth() === 0 || // Tháng 1
+      (now.getMonth() === 1 && now.getDate() <= 28); // Đến hết 28/2
+
+    if (!hasSeenNewYear && isNewYearSeason && !sharedData) {
+      setTimeout(() => {
+        setShowNewYearWelcome(true);
+        localStorage.setItem('ntd_seen_new_year_2026', 'true');
+      }, 1000); // Delay 1s để app load xong
+    }
   }, []);
 
   const handleLogin = (loggedInUser: User) => {
     setUser(loggedInUser);
     localStorage.setItem('ntd_user', JSON.stringify(loggedInUser));
+    localStorage.setItem('ntd_last_log_time', Date.now().toString());
     // Ghi nhận lượt truy cập (local)
     logVisit(loggedInUser.id, loggedInUser.name, loggedInUser.avatar);
     // Tăng lượt truy cập chung (Firebase)
     incrementVisitCount();
     // Lưu visitor vào Firebase
     logVisitorToFirebase(loggedInUser.id, loggedInUser.name, loggedInUser.avatar, loggedInUser.email);
+    // Lưu vào lịch sử đăng nhập lâu dài (1 năm)
+    logLoginHistory(loggedInUser.id, loggedInUser.name, loggedInUser.email || '', loggedInUser.avatar);
     // Load lessons cho user mới đăng nhập
     const userLessonsKey = getLessonsStorageKey(loggedInUser.email);
     const savedLessons = localStorage.getItem(userLessonsKey);
@@ -211,6 +266,8 @@ function App() {
                   onVideoStore={() => setView('VIDEO_STORE')}
                   onInteractiveVideo={() => requireLogin(() => setView('INTERACTIVE_VIDEO'))}
                   onAICourseStore={() => setView('AI_COURSE_STORE')}
+                  onCanvaBasics={() => setView('CANVA_BASICS')}
+                  onNewYear={() => setShowNewYearWelcome(true)}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                 />
@@ -298,12 +355,23 @@ function App() {
               onBack={() => setView('DASHBOARD')}
               isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
               onAdmin={() => setView('AI_COURSE_ADMIN')}
+              isLoggedIn={!!user}
+              onRequireLogin={() => setShowLoginModal(true)}
             />
           )}
 
           {view === 'AI_COURSE_ADMIN' && (
             <AICourseAdmin
               onBack={() => setView('DASHBOARD')}
+            />
+          )}
+
+          {view === 'CANVA_BASICS' && (
+            <CanvaBasics
+              onBack={() => setView('DASHBOARD')}
+              isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
+              isLoggedIn={!!user}
+              onRequireLogin={() => setShowLoginModal(true)}
             />
           )}
 
@@ -330,6 +398,13 @@ function App() {
                   <Login onLogin={handleLogin} />
                 </motion.div>
               </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* New Year Welcome Modal */}
+          <AnimatePresence>
+            {showNewYearWelcome && (
+              <NewYearWelcome onClose={() => setShowNewYearWelcome(false)} />
             )}
           </AnimatePresence>
         </div>

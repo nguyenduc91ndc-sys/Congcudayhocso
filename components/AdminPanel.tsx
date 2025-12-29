@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Clock, Monitor, MessageCircle, Star, XCircle, Check, X, Edit2, Save, Eye, ShoppingBag, Film, Package, Flame, Link, ExternalLink, Upload, ImageIcon, Loader2 } from 'lucide-react';
+import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Clock, Monitor, MessageCircle, Star, XCircle, Check, X, Edit2, Save, Eye, ShoppingBag, Film, Package, Flame, Link, ExternalLink, Upload, ImageIcon, Loader2, Search, History, Mail } from 'lucide-react';
 import { getAnalytics, Analytics, VisitorLog } from '../utils/analyticsUtils';
 import { getAllFeedbacks, getPendingFeedbacks, getApprovedFeedbacks, approveFeedback, rejectFeedback, deleteFeedback, updateFeedback, Feedback } from '../utils/feedbackUtils';
 import { getVisitStats, setVisitCount } from '../utils/visitCounter';
-import { getRecentVisitors, FirebaseVisitor } from '../utils/firebaseVisitors';
+import { getRecentVisitors, FirebaseVisitor, getLoginHistory, searchLoginHistory, LoginHistoryEntry, getTodayLoginCount, getUniqueUserCount, getLoginHistoryCount } from '../utils/firebaseVisitors';
 import { AIVideo, Order } from '../types/videoStoreTypes';
 import { subscribeToVideos, addVideo, updateVideo, deleteVideo } from '../utils/firebaseVideoStore';
 import { subscribeToOrders, confirmOrder, cancelOrder } from '../utils/firebaseOrders';
@@ -55,6 +55,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     // Firebase visitors
     const [firebaseVisitors, setFirebaseVisitors] = useState<FirebaseVisitor[]>([]);
 
+    // Login history states
+    const [loginHistory, setLoginHistory] = useState<LoginHistoryEntry[]>([]);
+    const [historySearchTerm, setHistorySearchTerm] = useState('');
+    const [isLoadingHistory, setIsLoadingHistory] = useState(false);
+    const [historyLimit, setHistoryLimit] = useState(50);
+    const [showHistorySearch, setShowHistorySearch] = useState(false);
+    const [historyFilterDate, setHistoryFilterDate] = useState<'today' | null>(null);
+
     // Video store states
     const [videos, setVideos] = useState<AIVideo[]>([]);
     const [showVideoForm, setShowVideoForm] = useState(false);
@@ -72,21 +80,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
-        setKeys(getStoredKeys());
-        setAnalytics(getAnalytics());
+        // Initial load statistics
+        loadStatistics();
         loadFeedbacks();
         loadGlobalVisitCount();
         loadFirebaseVisitors();
+
+        // Initial load of history
+        loadLoginHistory();
 
         // Subscribe to videos
         const unsubscribeVideos = subscribeToVideos(setVideos);
         // Subscribe to orders
         const unsubscribeOrders = subscribeToOrders(setOrders);
 
-        // Cập nhật thống kê mỗi 5 giây
+        // Cập nhật thống kê mỗi 30 giây để tránh query quá nhiều
         const interval = setInterval(() => {
-            setAnalytics(getAnalytics());
-        }, 5000);
+            loadStatistics();
+        }, 30000);
 
         return () => {
             clearInterval(interval);
@@ -94,6 +105,49 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             unsubscribeOrders();
         };
     }, []);
+
+
+    useEffect(() => {
+        // Reload history when filter changes
+        if (historyFilterDate === 'today') {
+            // Load nhiều hơn để đảm bảo thấy hết người hôm nay
+            loadLoginHistory('', 200);
+        } else {
+            loadLoginHistory('', 50);
+        }
+    }, [historyFilterDate]);
+
+    // Filter history for display
+    const filteredHistory = loginHistory.filter(entry => {
+        if (historyFilterDate === 'today') {
+            const entryDate = new Date(entry.loginTime);
+            const today = new Date();
+            return entryDate.getDate() === today.getDate() &&
+                entryDate.getMonth() === today.getMonth() &&
+                entryDate.getFullYear() === today.getFullYear();
+        }
+        return true;
+    });
+
+    // Load statistics from Firebase Realtime Database
+    const loadStatistics = async () => {
+        try {
+            const [totalVisits, uniqueCount, todayCount] = await Promise.all([
+                getLoginHistoryCount(),
+                getUniqueUserCount(),
+                getTodayLoginCount()
+            ]);
+
+            setAnalytics(prev => ({
+                ...prev,
+                totalVisits: totalVisits,
+                uniqueVisitors: uniqueCount,
+                todayVisits: todayCount
+            }));
+        } catch (error) {
+            console.error('Error loading statistics:', error);
+        }
+    };
 
     const loadFeedbacks = async () => {
         setIsLoadingFeedbacks(true);
@@ -119,6 +173,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         const visitors = await getRecentVisitors(50);
         setFirebaseVisitors(visitors);
     };
+
+    // Load login history
+    const loadLoginHistory = async (search: string = '', limit: number = 50) => {
+        setIsLoadingHistory(true);
+        try {
+            const history = search
+                ? await searchLoginHistory(search, limit)
+                : await getLoginHistory(limit);
+            setLoginHistory(history);
+        } catch (error) {
+            console.error('Error loading login history:', error);
+        } finally {
+            setIsLoadingHistory(false);
+        }
+    };
+
+    // Handle search with debounce
+    const handleHistorySearch = (term: string) => {
+        setHistorySearchTerm(term);
+        loadLoginHistory(term, historyLimit);
+    };
+
+    // Load more history
+    const handleLoadMoreHistory = () => {
+        const newLimit = historyLimit + 50;
+        setHistoryLimit(newLimit);
+        loadLoginHistory(historySearchTerm, newLimit);
+    };
+
+    // Initial load for login history
+    useEffect(() => {
+        loadLoginHistory();
+    }, []);
 
     // Video handlers
     const resetVideoForm = () => {
@@ -312,10 +399,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                     <div className="text-2xl sm:text-3xl font-bold">{analytics.uniqueVisitors}</div>
                                     <div className="text-xs sm:text-sm opacity-80">Người dùng</div>
                                 </div>
-                                <div className="bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white text-center shadow-lg">
-                                    <div className="text-2xl sm:text-3xl font-bold">{analytics.todayVisits}</div>
-                                    <div className="text-xs sm:text-sm opacity-80">Hôm nay</div>
-                                </div>
+                                <motion.div
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setHistoryFilterDate(historyFilterDate === 'today' ? null : 'today')}
+                                    className={`bg-gradient-to-br from-green-500 to-emerald-500 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white text-center shadow-lg cursor-pointer transition-all ${historyFilterDate === 'today' ? 'ring-4 ring-green-300 transform scale-105' : ''}`}
+                                >
+                                    <div className="text-2xl sm:text-3xl font-bold">
+                                        {historyFilterDate === 'today' ? filteredHistory.length : analytics.todayVisits}
+                                    </div>
+                                    <div className="text-xs sm:text-sm opacity-80 flex items-center justify-center gap-1">
+                                        Hôm nay {historyFilterDate === 'today' && <CheckCircle size={12} />}
+                                    </div>
+                                </motion.div>
                             </div>
 
                             {/* Global Visit Count Control */}
@@ -342,40 +438,106 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 <p className="text-white/70 text-xs mt-2">Hiện tại: {globalVisitCount.toLocaleString('vi-VN')} lượt (hiển thị ở Footer)</p>
                             </div>
 
-                            {/* Recent Visitors */}
-                            <div className="flex-1 overflow-y-auto">
-                                <h3 className="font-bold text-purple-800 mb-3 flex items-center gap-2">
-                                    <Users size={18} /> Người dùng gần đây (Firebase)
-                                </h3>
-                                {firebaseVisitors.length === 0 ? (
-                                    <div className="text-center text-gray-500 py-10">
-                                        <Users size={48} className="mx-auto mb-4 opacity-30" />
-                                        <p>Chưa có lượt truy cập nào</p>
+                            {/* Login History Section - Moved up to replace legacy visitors */}
+                            <div className="flex-1 flex flex-col overflow-hidden">
+                                <div className="flex items-center justify-between mb-3 flex-shrink-0">
+                                    <h3 className="font-bold text-purple-800 flex items-center gap-2">
+                                        <Users size={18} /> {historyFilterDate === 'today' ? 'Truy cập hôm nay' : 'Người dùng gần đây'}
+                                    </h3>
+                                    <div className="flex items-center gap-2">
+                                        <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+                                            {filteredHistory.length} lượt
+                                        </span>
+                                        <button
+                                            onClick={() => {
+                                                setShowHistorySearch(!showHistorySearch);
+                                                if (showHistorySearch && historySearchTerm) {
+                                                    setHistorySearchTerm('');
+                                                    loadLoginHistory('', historyLimit);
+                                                }
+                                            }}
+                                            className={`p-2 rounded-xl transition-colors ${showHistorySearch ? 'bg-purple-600 text-white' : 'bg-purple-100 text-purple-600 hover:bg-purple-200'}`}
+                                            title="Tìm kiếm"
+                                        >
+                                            <Search size={16} />
+                                        </button>
+                                    </div>
+                                </div>
+
+                                {/* Search - Chỉ hiện khi nhấn nút */}
+                                <AnimatePresence>
+                                    {showHistorySearch && (
+                                        <motion.div
+                                            initial={{ height: 0, opacity: 0 }}
+                                            animate={{ height: 'auto', opacity: 1 }}
+                                            exit={{ height: 0, opacity: 0 }}
+                                            className="mb-3 overflow-hidden flex-shrink-0"
+                                        >
+                                            <div className="relative">
+                                                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
+                                                <input
+                                                    type="text"
+                                                    value={historySearchTerm}
+                                                    onChange={(e) => handleHistorySearch(e.target.value)}
+                                                    placeholder="Tìm kiếm theo tên hoặc email..."
+                                                    className="w-full pl-10 pr-4 py-2.5 border-2 border-purple-300 rounded-xl focus:border-purple-500 focus:outline-none bg-white text-sm"
+                                                    autoFocus
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
+                                </AnimatePresence>
+
+                                {isLoadingHistory ? (
+                                    <div className="text-center py-8">
+                                        <Loader2 size={24} className="animate-spin mx-auto text-purple-500" />
+                                        <p className="text-gray-500 text-sm mt-2">Đang tải lịch sử...</p>
+                                    </div>
+                                ) : loginHistory.length === 0 ? (
+                                    <div className="text-center text-gray-500 py-8">
+                                        <Users size={40} className="mx-auto mb-3 opacity-30" />
+                                        <p>{historySearchTerm ? 'Không tìm thấy kết quả' : 'Chưa có người dùng nào'}</p>
                                     </div>
                                 ) : (
-                                    <div className="space-y-2">
-                                        {firebaseVisitors.slice(0, 20).map((visitor, index) => (
-                                            <motion.div
-                                                key={index}
-                                                initial={{ opacity: 0, x: -10 }}
-                                                animate={{ opacity: 1, x: 0 }}
-                                                className="bg-white rounded-xl p-3 shadow-sm flex items-center gap-3"
-                                            >
-                                                <img
-                                                    src={visitor.avatar}
-                                                    alt={visitor.name}
-                                                    className="w-10 h-10 rounded-full object-cover border-2 border-purple-200"
-                                                />
-                                                <div className="flex-1">
-                                                    <div className="font-bold text-gray-800">{visitor.name}</div>
-                                                    <div className="text-xs text-gray-500 flex items-center gap-2">
-                                                        <Clock size={12} /> {new Date(visitor.loginTime).toLocaleString('vi-VN')}
-                                                        <Monitor size={12} /> {visitor.device}
+                                    <>
+                                        <div className="space-y-1 overflow-y-auto pr-1 flex-1 custom-scrollbar" style={{ maxHeight: 'calc(100vh - 420px)' }}>
+                                            {filteredHistory.map((entry, index) => (
+                                                <motion.div
+                                                    key={`${entry.id}-${entry.loginTime}-${index}`}
+                                                    initial={{ opacity: 0 }}
+                                                    animate={{ opacity: 1 }}
+                                                    className="bg-white rounded-lg p-2 flex items-center gap-2 border border-purple-100 hover:bg-purple-50 transition-colors"
+                                                >
+                                                    <img
+                                                        src={entry.avatar}
+                                                        alt={entry.name}
+                                                        className="w-8 h-8 rounded-full object-cover border border-purple-200 flex-shrink-0"
+                                                    />
+                                                    <div className="flex-1 min-w-0">
+                                                        <div className="font-medium text-gray-800 text-sm truncate">{entry.name}</div>
+                                                        <div className="text-xs text-purple-600 truncate flex items-center gap-1">
+                                                            <Mail size={9} />
+                                                            {entry.email || 'No email'}
+                                                        </div>
+                                                        <div className="text-xs text-gray-500 flex items-center gap-1 mt-0.5">
+                                                            <Clock size={9} />
+                                                            {new Date(entry.loginTime).toLocaleString('vi-VN')}
+                                                            <Monitor size={9} className="ml-2" />
+                                                            {entry.device}
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            </motion.div>
-                                        ))}
-                                    </div>
+                                                </motion.div>
+                                            ))}
+                                        </div>
+                                        {loginHistory.length >= historyLimit && (
+                                            <button
+                                                onClick={handleLoadMoreHistory}
+                                                className="w-full mt-3 py-2 bg-purple-100 text-purple-700 rounded-xl font-semibold text-sm hover:bg-purple-200 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <Plus size={16} /> Tải thêm
+                                            </button>
+                                        )}
+                                    </>
                                 )}
                             </div>
                         </div>
