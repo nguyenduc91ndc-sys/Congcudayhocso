@@ -321,12 +321,16 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
             });
 
             // Draw text
+            // Check if mobile (width < 640px)
+            const isMobile = w < 640;
+
             if (isStarted && textStateRef.current < MESSAGES.length) {
                 const text = MESSAGES[textStateRef.current];
                 let fontSize: number;
 
                 if (text === '2026') {
-                    fontSize = Math.min(w, h) * 0.3;
+                    // Smaller font on mobile
+                    fontSize = isMobile ? Math.min(w, h) * 0.25 : Math.min(w, h) * 0.3;
                     draw3DText(
                         ctx,
                         text,
@@ -336,11 +340,12 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                         "'Cinzel Decorative', serif",
                         `rgba(255, 223, 0, ${textAlphaRef.current})`,
                         `rgba(139, 69, 19, ${textAlphaRef.current})`,
-                        15,
+                        isMobile ? 10 : 15,
                         textAlphaRef.current
                     );
                 } else if (text === 'CHÚC MỪNG NĂM MỚI') {
-                    fontSize = Math.min(w, h) * 0.1;
+                    // Smaller font on mobile
+                    fontSize = isMobile ? Math.min(w, h) * 0.07 : Math.min(w, h) * 0.1;
                     draw3DText(
                         ctx,
                         text,
@@ -350,30 +355,54 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                         "'Cinzel Decorative', serif",
                         `rgba(255, 50, 50, ${textAlphaRef.current})`,
                         `rgba(139, 0, 0, ${textAlphaRef.current})`,
-                        10,
+                        isMobile ? 6 : 10,
                         textAlphaRef.current
                     );
                 } else if (text === 'AN KHANG - THỊNH VƯỢNG - VẠN SỰ NHƯ Ý') {
-                    fontSize = Math.min(w, h) * 0.055;
-                    draw3DText(
-                        ctx,
-                        text,
-                        w / 2,
-                        h / 2,
-                        fontSize,
-                        "'Cinzel Decorative', serif",
-                        `rgba(255, 215, 0, ${textAlphaRef.current})`,
-                        `rgba(184, 134, 11, ${textAlphaRef.current})`,
-                        15,
-                        textAlphaRef.current
-                    );
+                    // Split into 2 lines on mobile
+                    if (isMobile) {
+                        fontSize = Math.min(w, h) * 0.045;
+                        const line1 = 'AN KHANG - THỊNH VƯỢNG';
+                        const line2 = 'VẠN SỰ NHƯ Ý';
+                        const lineHeight = fontSize * 1.4;
+
+                        draw3DText(
+                            ctx, line1, w / 2, h / 2 - lineHeight / 2, fontSize,
+                            "'Cinzel Decorative', serif",
+                            `rgba(255, 215, 0, ${textAlphaRef.current})`,
+                            `rgba(184, 134, 11, ${textAlphaRef.current})`,
+                            8, textAlphaRef.current
+                        );
+                        draw3DText(
+                            ctx, line2, w / 2, h / 2 + lineHeight / 2, fontSize,
+                            "'Cinzel Decorative', serif",
+                            `rgba(255, 215, 0, ${textAlphaRef.current})`,
+                            `rgba(184, 134, 11, ${textAlphaRef.current})`,
+                            8, textAlphaRef.current
+                        );
+                    } else {
+                        fontSize = Math.min(w, h) * 0.055;
+                        draw3DText(
+                            ctx,
+                            text,
+                            w / 2,
+                            h / 2,
+                            fontSize,
+                            "'Cinzel Decorative', serif",
+                            `rgba(255, 215, 0, ${textAlphaRef.current})`,
+                            `rgba(184, 134, 11, ${textAlphaRef.current})`,
+                            15,
+                            textAlphaRef.current
+                        );
+                    }
                 } else {
-                    fontSize = Math.min(w, h) * 0.08;
+                    // Other messages - smaller on mobile
+                    fontSize = isMobile ? Math.min(w, h) * 0.06 : Math.min(w, h) * 0.08;
                     ctx.font = `${fontSize}px 'Great Vibes', cursive`;
                     ctx.textAlign = 'center';
                     ctx.textBaseline = 'middle';
                     ctx.shadowColor = '#00ffff';
-                    ctx.shadowBlur = 20;
+                    ctx.shadowBlur = isMobile ? 15 : 20;
                     ctx.fillStyle = `rgba(0, 255, 255, ${textAlphaRef.current})`;
                     ctx.fillText(text, w / 2, h / 2);
                     ctx.shadowBlur = 0;
@@ -660,7 +689,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                     <div className="text-center">
                         {/* Gift icon */}
                         <motion.div
-                            className="text-8xl mb-6"
+                            className="text-6xl sm:text-7xl md:text-8xl mb-4 sm:mb-6"
                             animate={{
                                 scale: [1, 1.1, 1],
                                 rotate: [0, -5, 5, 0]
@@ -676,7 +705,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
 
                         {/* Title */}
                         <h2
-                            className="text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-500 mb-4"
+                            className="text-2xl sm:text-3xl md:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-pink-400 to-purple-500 mb-3 sm:mb-4 px-4"
                             style={{
                                 textShadow: '0 0 30px rgba(255, 200, 0, 0.5)',
                                 fontFamily: "'Dancing Script', cursive"
@@ -686,16 +715,16 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                         </h2>
 
                         {/* Subtitle */}
-                        <p className="text-white/80 text-lg mb-8 flex items-center justify-center gap-3">
-                            <span className="text-2xl">🔊</span>
-                            Bật loa để trải nghiệm tốt nhất
-                            <span className="text-2xl">🎶</span>
+                        <p className="text-white/80 text-sm sm:text-base md:text-lg mb-6 sm:mb-8 flex items-center justify-center gap-2 sm:gap-3 px-4">
+                            <span className="text-xl sm:text-2xl">🔊</span>
+                            <span className="text-center">Bật loa để trải nghiệm tốt nhất</span>
+                            <span className="text-xl sm:text-2xl">🎶</span>
                         </p>
 
                         {/* Start Button */}
                         <motion.button
                             onClick={handleStart}
-                            className="px-10 py-4 text-xl font-bold text-white bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 rounded-full border-2 border-white/40 uppercase tracking-wider"
+                            className="px-6 sm:px-8 md:px-10 py-3 sm:py-4 text-base sm:text-lg md:text-xl font-bold text-white bg-gradient-to-r from-pink-500 via-red-500 to-yellow-500 rounded-full border-2 border-white/40 uppercase tracking-wider"
                             style={{
                                 boxShadow: '0 0 30px rgba(255, 100, 150, 0.6), 0 0 60px rgba(255, 200, 0, 0.3)',
                             }}
@@ -731,10 +760,10 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                 >
                     {/* Falling flowers container */}
                     <div className="absolute inset-0 overflow-hidden pointer-events-none">
-                        {[...Array(20)].map((_, i) => (
+                        {[...Array(15)].map((_, i) => (
                             <motion.div
                                 key={i}
-                                className="absolute text-2xl md:text-3xl"
+                                className="absolute text-xl sm:text-2xl md:text-3xl"
                                 initial={{
                                     x: `${Math.random() * 100}%`,
                                     y: -50,
@@ -760,7 +789,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
 
                     {/* Typewriter text box */}
                     <div
-                        className="relative max-w-2xl mx-4 p-8 rounded-3xl text-center"
+                        className="relative max-w-2xl mx-3 sm:mx-4 p-4 sm:p-6 md:p-8 rounded-2xl sm:rounded-3xl text-center"
                         style={{
                             background: 'rgba(0, 0, 0, 0.7)',
                             backdropFilter: 'blur(10px)',
@@ -769,13 +798,13 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                         }}
                     >
                         {/* Corner decorations */}
-                        <span className="absolute top-3 left-3 text-3xl">🌸</span>
-                        <span className="absolute top-3 right-3 text-3xl">🌼</span>
-                        <span className="absolute bottom-3 left-3 text-3xl">🌼</span>
-                        <span className="absolute bottom-3 right-3 text-3xl">🌸</span>
+                        <span className="absolute top-2 left-2 sm:top-3 sm:left-3 text-xl sm:text-2xl md:text-3xl">🌸</span>
+                        <span className="absolute top-2 right-2 sm:top-3 sm:right-3 text-xl sm:text-2xl md:text-3xl">🌼</span>
+                        <span className="absolute bottom-2 left-2 sm:bottom-3 sm:left-3 text-xl sm:text-2xl md:text-3xl">🌼</span>
+                        <span className="absolute bottom-2 right-2 sm:bottom-3 sm:right-3 text-xl sm:text-2xl md:text-3xl">🌸</span>
 
                         <p
-                            className="text-lg md:text-xl text-white leading-relaxed whitespace-pre-line"
+                            className="text-sm sm:text-base md:text-lg lg:text-xl text-white leading-relaxed whitespace-pre-line px-2 sm:px-4 py-2"
                             style={{
                                 fontFamily: "'Dancing Script', cursive",
                                 textShadow: '0 0 10px rgba(255, 200, 150, 0.5)',
@@ -805,7 +834,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                     <motion.img
                         src="/images/newyear_celebration.png"
                         alt="Chúc mừng năm mới 2026"
-                        className="w-80 h-auto md:w-96 lg:w-[28rem] rounded-3xl"
+                        className="w-56 sm:w-72 md:w-80 lg:w-96 h-auto rounded-2xl sm:rounded-3xl"
                         style={{
                             boxShadow: '0 0 50px rgba(255, 200, 0, 0.6), 0 0 100px rgba(255, 100, 150, 0.4)',
                         }}
@@ -820,7 +849,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                     />
 
                     {/* Buttons container */}
-                    <div className="flex items-center gap-5">
+                    <div className="flex flex-col sm:flex-row items-center gap-3 sm:gap-5">
                         {/* Replay button */}
                         <motion.button
                             whileHover={{ scale: 1.1 }}
@@ -829,7 +858,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                                 e.stopPropagation();
                                 handleReplay();
                             }}
-                            className="flex items-center gap-3 px-8 py-3 text-lg font-bold text-white bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full border-2 border-white/40 uppercase tracking-wider"
+                            className="flex items-center gap-2 sm:gap-3 px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base md:text-lg font-bold text-white bg-gradient-to-r from-yellow-400 via-orange-500 to-red-500 rounded-full border-2 border-white/40 uppercase tracking-wider"
                             style={{
                                 boxShadow: '0 0 25px rgba(255, 200, 0, 0.6), 0 0 50px rgba(255, 100, 0, 0.3)',
                             }}
@@ -855,7 +884,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                                 }
                                 onClose();
                             }}
-                            className="flex items-center gap-2 px-8 py-3 text-lg font-bold text-white bg-gradient-to-r from-gray-600 to-gray-800 rounded-full border-2 border-white/40 uppercase tracking-wider"
+                            className="flex items-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base md:text-lg font-bold text-white bg-gradient-to-r from-gray-600 to-gray-800 rounded-full border-2 border-white/40 uppercase tracking-wider"
                             style={{
                                 boxShadow: '0 0 20px rgba(100, 100, 100, 0.5)',
                             }}
@@ -878,7 +907,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                         }
                         onClose();
                     }}
-                    className="absolute top-4 right-4 flex items-center gap-2 px-4 py-2 text-white font-semibold bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 border-2 border-white/50 rounded-full transition-all hover:scale-105 z-[101]"
+                    className="absolute top-6 sm:top-4 right-3 sm:right-4 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base text-white font-semibold bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 border-2 border-white/50 rounded-full transition-all hover:scale-105 z-[101]"
                     style={{
                         boxShadow: '0 0 15px rgba(255, 100, 100, 0.6), 0 4px 15px rgba(0, 0, 0, 0.3)',
                     }}
