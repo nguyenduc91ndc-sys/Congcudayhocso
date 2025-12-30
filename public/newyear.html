@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎆 Chúc Mừng Năm Mới 2026 🎆</title>
+    <link
+        href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;700&family=Cinzel+Decorative:wght@400;700;900&family=Great+Vibes&display=swap"
+        rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: #050505;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Quicksand', sans-serif;
+            cursor: pointer;
+            user-select: none;
+        }
+
+        #canvas {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        /* Instruction Screen */
+        #instruction {
+            position: fixed;
+            inset: 0;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        #instruction.hidden {
+            display: none;
+        }
+
+        .gift-box {
+            font-size: 6rem;
+            animation: bounce 2s infinite;
+        }
+
+        @keyframes bounce {
+
+            0%,
+            100% {
+                transform: scale(1) rotate(0);
+            }
+
+            25% {
+                transform: scale(1.1) rotate(-5deg);
+            }
+
+            75% {
+                transform: scale(1.1) rotate(5deg);
+            }
+        }
+
+        .instruction-title {
+            font-size: 2.5rem;
+            font-family: 'Dancing Script', cursive;
+            background: linear-gradient(90deg, #ffd700, #ff69b4, #9370db);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 1rem 0;
+        }
+
+        .instruction-sub {
+            color: rgba(255, 255, 255, 0.8);
+            font-size: 1.2rem;
+            margin-bottom: 2rem;
+        }
+
+        .start-btn {
+            padding: 1rem 3rem;
+            font-size: 1.3rem;
+            font-weight: bold;
+            background: linear-gradient(90deg, #ff6b9d, #c44569, #ffd700);
+            color: white;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 0 30px rgba(255, 100, 150, 0.6);
+            animation: glow 2s infinite;
+        }
+
+        @keyframes glow {
+
+            0%,
+            100% {
+                box-shadow: 0 0 30px rgba(255, 100, 150, 0.6);
+            }
+
+            50% {
+                box-shadow: 0 0 50px rgba(255, 100, 150, 0.8);
+            }
+        }
+
+        .start-btn:hover {
+            transform: scale(1.1);
+        }
+
+        /* Typewriter Screen */
+        #typewriter-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            display: none;
+            align-items: center;
+            justify-content: center;
+        }
+
+        #typewriter-screen.show {
+            display: flex;
+        }
+
+        .flower {
+            position: absolute;
+            font-size: 2rem;
+            animation: fall linear infinite;
+            opacity: 0.8;
+            pointer-events: none;
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(-50px) rotate(0);
+                opacity: 0.8;
+            }
+
+            100% {
+                transform: translateY(120vh) rotate(360deg);
+                opacity: 0;
+            }
+        }
+
+        .typewriter-box {
+            position: relative;
+            max-width: 600px;
+            margin: 1rem;
+            padding: 2rem;
+            background: rgba(0, 0, 0, 0.7);
+            backdrop-filter: blur(10px);
+            border-radius: 2rem;
+            border: 2px solid rgba(255, 200, 150, 0.3);
+            box-shadow: 0 0 40px rgba(255, 150, 200, 0.3);
+        }
+
+        .typewriter-box .corner {
+            position: absolute;
+            font-size: 2rem;
+        }
+
+        .typewriter-box .corner.tl {
+            top: 0.5rem;
+            left: 0.5rem;
+        }
+
+        .typewriter-box .corner.tr {
+            top: 0.5rem;
+            right: 0.5rem;
+        }
+
+        .typewriter-box .corner.bl {
+            bottom: 0.5rem;
+            left: 0.5rem;
+        }
+
+        .typewriter-box .corner.br {
+            bottom: 0.5rem;
+            right: 0.5rem;
+        }
+
+        .typewriter-text {
+            font-family: 'Dancing Script', cursive;
+            font-size: 1.3rem;
+            color: white;
+            line-height: 1.8;
+            text-align: center;
+            text-shadow: 0 0 10px rgba(255, 200, 150, 0.5);
+            white-space: pre-line;
+        }
+
+        .cursor {
+            animation: blink 0.5s infinite;
+        }
+
+        @keyframes blink {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0;
+            }
+        }
+
+        /* End Screen */
+        #end-screen {
+            position: fixed;
+            inset: 0;
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 2rem;
+        }
+
+        #end-screen.show {
+            display: flex;
+        }
+
+        .celebration-text {
+            font-family: 'Cinzel Decorative', serif;
+            font-size: 3rem;
+            color: #ffd700;
+            text-shadow: 0 0 30px rgba(255, 200, 0, 0.8), 0 5px 15px rgba(0, 0, 0, 0.5);
+            animation: pulse 2s infinite;
+        }
+
+        @keyframes pulse {
+
+            0%,
+            100% {
+                transform: scale(1);
+            }
+
+            50% {
+                transform: scale(1.05);
+            }
+        }
+
+        .btn-group {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            justify-content: center;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.8rem 2rem;
+            font-size: 1.1rem;
+            font-weight: bold;
+            border-radius: 50px;
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            cursor: pointer;
+            transition: transform 0.3s;
+        }
+
+        .action-btn:hover {
+            transform: scale(1.1);
+        }
+
+        .replay-btn {
+            background: linear-gradient(90deg, #ffd700, #ff8c00, #ff4500);
+            color: white;
+        }
+
+        .close-btn {
+            background: linear-gradient(90deg, #555, #333);
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas"></canvas>
+
+    <!-- Instruction Screen -->
+    <div id="instruction">
+        <div style="text-align: center;">
+            <div class="gift-box">🎁</div>
+            <h2 class="instruction-title">Bạn có một món quà!</h2>
+            <p class="instruction-sub">🔊 Bật loa để trải nghiệm tốt nhất 🎶</p>
+            <button class="start-btn" onclick="startShow()">🎉 Mở Quà 🎉</button>
+        </div>
+    </div>
+
+    <!-- Typewriter Screen -->
+    <div id="typewriter-screen">
+        <div class="typewriter-box">
+            <span class="corner tl">🌸</span>
+            <span class="corner tr">🌼</span>
+            <span class="corner bl">🌼</span>
+            <span class="corner br">🌸</span>
+            <p class="typewriter-text" id="typewriter-text"></p>
+        </div>
+    </div>
+
+    <!-- End Screen -->
+    <div id="end-screen">
+        <div style="text-align: center;">
+            <div style="font-size: 5rem; margin-bottom: 1rem;">🎆🎊🎆</div>
+            <h1 class="celebration-text">CHÚC MỪNG<br>NĂM MỚI 2026</h1>
+            <div style="font-size: 3rem; margin: 1rem 0;">🌸🌼💮🌸🌼</div>
+        </div>
+        <div class="btn-group">
+            <button class="action-btn replay-btn" onclick="replay()">🔄 Xem Lại</button>
+            <button class="action-btn close-btn" onclick="closeShow()">✖ Đóng</button>
+        </div>
+    </div>
+
+    <script>
+        const canvas = document.getElementById('canvas');
+        const ctx = canvas.getContext('2d');
+
+        let stars = [], fireworks = [], particles = [];
+        let isStarted = false, textState = 0, textAlpha = 0, fadeIn = true;
+        let bgMusic = null;
+
+        const MESSAGES = [
+            'Tạm biệt 2025...', 'Những kỷ niệm đẹp...', 'Những bài học quý giá...',
+            'Giờ khắc chuyển giao...', 'Đã điểm...', 'CHÚC MỪNG NĂM MỚI', '2026',
+            'AN KHANG - THỊNH VƯỢNG - VẠN SỰ NHƯ Ý'
+        ];
+        const COLORS = [
+            { r: 255, g: 0, b: 85 }, { r: 0, g: 255, b: 204 }, { r: 255, g: 255, b: 0 },
+            { r: 204, g: 0, b: 255 }, { r: 0, g: 153, b: 255 }, { r: 255, g: 100, b: 100 }
+        ];
+        const TYPEWRITER_MSG = `🌸 Xuân về đều có mai đào - Mở đầu câu nói lời chào mến thương.\n\nNguyễn Đức xin gửi đến quý thầy cô, bạn bè đồng nghiệp: một năm mới với nhiều thành công trong sự nghiệp trồng người cao quý!!\n\n🎊 Chúc mừng năm mới 2026! 🎊`;
+
+        // Background music URL (royalty free)
+        const BG_MUSIC_URL = 'https://www.soundhelix.com/examples/mp3/SoundHelix-Song-1.mp3';
+
+        function resize() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+        window.addEventListener('resize', resize);
+        resize();
+
+        // Create stars
+        for (let i = 0; i < 150; i++) {
+            stars.push({
+                x: Math.random() * canvas.width,
+                y: Math.random() * canvas.height,
+                size: Math.random() * 2,
+                twinkle: Math.random() * 0.02
+            });
+        }
+
+        function createFirework(sx, sy, tx, ty) {
+            const angle = Math.atan2(ty - sy, tx - sx);
+            const color = COLORS[Math.floor(Math.random() * COLORS.length)];
+            fireworks.push({ x: sx, y: sy, tx, ty, vx: Math.cos(angle) * 14, vy: Math.sin(angle) * 14, color, exploded: false, trail: [] });
+            playSound('whistle');
+        }
+
+        function createExplosion(x, y, color) {
+            playSound('explosion');
+            for (let i = 0; i < 90; i++) {
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 6 + 1;
+                particles.push({ x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, alpha: 1, decay: Math.random() * 0.015 + 0.01, gravity: 0.05, color });
+            }
+        }
+
+        function playSound(type) {
+            const sounds = {
+                whistle: 'https://actions.google.com/sounds/v1/cartoon/cartoon_cowbell.ogg',
+                explosion: 'https://actions.google.com/sounds/v1/impacts/crash.ogg'
+            };
+            try {
+                const audio = new Audio(sounds[type]);
+                audio.volume = type === 'whistle' ? 0.25 : 0.3;
+                if (type === 'whistle') audio.playbackRate = 1.5;
+                audio.play().catch(() => { });
+            } catch (e) { }
+        }
+
+        function draw3DText(text, x, y, size, font, color1, color2, depth) {
+            ctx.font = `bold ${size}px ${font}`;
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+            for (let i = depth; i > 0; i--) {
+                ctx.fillStyle = color2;
+                ctx.fillText(text, x + i, y + i);
+            }
+            ctx.fillStyle = color1;
+            ctx.shadowColor = color1; ctx.shadowBlur = 20;
+            ctx.fillText(text, x, y);
+            ctx.shadowBlur = 0;
+        }
+
+        function animate() {
+            ctx.fillStyle = 'rgba(5,5,5,0.2)';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Draw stars
+            stars.forEach(s => {
+                s.size += s.twinkle;
+                if (s.size > 2.5 || s.size < 0.5) s.twinkle *= -1;
+                ctx.fillStyle = `rgba(255,255,255,${s.size / 2.5})`;
+                ctx.beginPath(); ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2); ctx.fill();
+            });
+
+            if (isStarted && textState < MESSAGES.length) {
+                const text = MESSAGES[textState];
+                const w = canvas.width, h = canvas.height;
+                let fontSize;
+
+                if (text === '2026') {
+                    fontSize = Math.min(w, h) * 0.3;
+                    draw3DText(text, w / 2, h / 2, fontSize, "'Cinzel Decorative', serif", `rgba(255,223,0,${textAlpha})`, `rgba(139,69,19,${textAlpha})`, 15);
+                } else if (text === 'CHÚC MỪNG NĂM MỚI') {
+                    fontSize = Math.min(w, h) * 0.1;
+                    draw3DText(text, w / 2, h / 2, fontSize, "'Cinzel Decorative', serif", `rgba(255,50,50,${textAlpha})`, `rgba(139,0,0,${textAlpha})`, 10);
+                } else if (text === 'AN KHANG - THỊNH VƯỢNG - VẠN SỰ NHƯ Ý') {
+                    fontSize = Math.min(w, h) * 0.055;
+                    draw3DText(text, w / 2, h / 2, fontSize, "'Cinzel Decorative', serif", `rgba(255,215,0,${textAlpha})`, `rgba(184,134,11,${textAlpha})`, 15);
+                } else {
+                    fontSize = Math.min(w, h) * 0.08;
+                    ctx.font = `${fontSize}px 'Great Vibes', cursive`;
+                    ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+                    ctx.shadowColor = '#00ffff'; ctx.shadowBlur = 20;
+                    ctx.fillStyle = `rgba(0,255,255,${textAlpha})`;
+                    ctx.fillText(text, w / 2, h / 2);
+                    ctx.shadowBlur = 0;
+                }
+
+                if (fadeIn) { textAlpha += 0.008; if (textAlpha >= 1) fadeIn = false; }
+                else {
+                    textAlpha -= 0.015;
+                    if (textAlpha <= 0) {
+                        textState++;
+                        fadeIn = true;
+                        if (MESSAGES[textState] === '2026') launchSalvo(10);
+                        if (textState >= MESSAGES.length) showTypewriter();
+                    }
+                }
+
+                // Ambient fireworks during text
+                if (Math.random() < 0.012) {
+                    createFirework(canvas.width * 0.1 + Math.random() * canvas.width * 0.8, canvas.height,
+                        canvas.width * 0.15 + Math.random() * canvas.width * 0.7, canvas.height * 0.15 + Math.random() * canvas.height * 0.4);
+                }
+            }
+
+            // Update fireworks
+            for (let i = fireworks.length - 1; i >= 0; i--) {
+                const fw = fireworks[i];
+                fw.x += fw.vx; fw.y += fw.vy; fw.vy += 0.05;
+                fw.trail.push({ x: fw.x, y: fw.y, alpha: 1 });
+                if (fw.trail.length > 5) fw.trail.shift();
+                fw.trail.forEach(t => {
+                    ctx.fillStyle = `rgba(${fw.color.r},${fw.color.g},${fw.color.b},${t.alpha})`;
+                    ctx.beginPath(); ctx.arc(t.x, t.y, 2, 0, Math.PI * 2); ctx.fill();
+                    t.alpha -= 0.2;
+                });
+                const dist = Math.hypot(fw.tx - fw.x, fw.ty - fw.y);
+                if (dist < 20 || fw.y < fw.ty) {
+                    createExplosion(fw.x, fw.y, fw.color);
+                    fireworks.splice(i, 1);
+                }
+            }
+
+            // Update particles
+            for (let i = particles.length - 1; i >= 0; i--) {
+                const p = particles[i];
+                p.x += p.vx; p.y += p.vy; p.vy += p.gravity; p.alpha -= p.decay;
+                if (p.alpha > 0) {
+                    ctx.globalCompositeOperation = 'lighter';
+                    ctx.fillStyle = `rgba(${p.color.r},${p.color.g},${p.color.b},${p.alpha})`;
+                    ctx.beginPath(); ctx.arc(p.x, p.y, 2.5, 0, Math.PI * 2); ctx.fill();
+                    ctx.globalCompositeOperation = 'source-over';
+                } else particles.splice(i, 1);
+            }
+
+            requestAnimationFrame(animate);
+        }
+        animate();
+
+        function launchSalvo(count) {
+            for (let i = 0; i < count; i++) {
+                setTimeout(() => {
+                    createFirework(canvas.width / 2 + (Math.random() - 0.5) * canvas.width / 2, canvas.height,
+                        canvas.width / 2 + (Math.random() - 0.5) * canvas.width * 0.8, canvas.height / 2 + (Math.random() - 0.5) * canvas.height / 2);
+                }, i * 150);
+            }
+        }
+
+        function startShow() {
+            document.getElementById('instruction').classList.add('hidden');
+            isStarted = true;
+
+            // Play background music
+            try {
+                bgMusic = new Audio(BG_MUSIC_URL);
+                bgMusic.volume = 0.4;
+                bgMusic.loop = true;
+                bgMusic.play().catch(() => { });
+            } catch (e) { }
+
+            // Opening salvo
+            const positions = [{ sx: 0.2, tx: 0.25, ty: 0.3 }, { sx: 0.35, tx: 0.4, ty: 0.25 }, { sx: 0.5, tx: 0.5, ty: 0.2 }, { sx: 0.65, tx: 0.6, ty: 0.25 }, { sx: 0.8, tx: 0.75, ty: 0.3 }];
+            positions.forEach((p, i) => {
+                setTimeout(() => createFirework(canvas.width * p.sx, canvas.height, canvas.width * p.tx, canvas.height * p.ty), i * 200);
+            });
+            setTimeout(() => { for (let i = 0; i < 3; i++) setTimeout(() => createFirework(canvas.width * (0.3 + Math.random() * 0.4), canvas.height, canvas.width * (0.2 + Math.random() * 0.6), canvas.height * (0.2 + Math.random() * 0.3)), i * 250); }, 1200);
+        }
+
+        function showTypewriter() {
+            const screen = document.getElementById('typewriter-screen');
+            screen.classList.add('show');
+
+            // Create falling flowers
+            for (let i = 0; i < 20; i++) {
+                const flower = document.createElement('div');
+                flower.className = 'flower';
+                flower.textContent = ['🌸', '🌼', '💮'][i % 3];
+                flower.style.left = Math.random() * 100 + '%';
+                flower.style.animationDuration = (8 + Math.random() * 4) + 's';
+                flower.style.animationDelay = Math.random() * 5 + 's';
+                screen.appendChild(flower);
+            }
+
+            // Typewriter effect
+            let charIndex = 0;
+            const textEl = document.getElementById('typewriter-text');
+            const interval = setInterval(() => {
+                if (charIndex <= TYPEWRITER_MSG.length) {
+                    textEl.innerHTML = TYPEWRITER_MSG.substring(0, charIndex) + '<span class="cursor">|</span>';
+                    charIndex++;
+                } else {
+                    clearInterval(interval);
+                    setTimeout(() => {
+                        screen.classList.remove('show');
+                        document.getElementById('end-screen').classList.add('show');
+                    }, 2000);
+                }
+            }, 50);
+        }
+
+        function replay() {
+            document.getElementById('end-screen').classList.remove('show');
+            document.getElementById('typewriter-screen').classList.remove('show');
+            // Remove old flowers
+            document.querySelectorAll('.flower').forEach(f => f.remove());
+            document.getElementById('instruction').classList.remove('hidden');
+            isStarted = false; textState = 0; textAlpha = 0; fadeIn = true;
+            if (bgMusic) { bgMusic.pause(); bgMusic.currentTime = 0; }
+        }
+
+        function closeShow() {
+            if (bgMusic) bgMusic.pause();
+            document.body.innerHTML = '<div style="display:flex;align-items:center;justify-content:center;height:100vh;background:#050505;color:white;font-size:2rem;font-family:Dancing Script,cursive;text-align:center;padding:2rem;">🎆 Chúc bạn và gia đình năm mới an khang thịnh vượng! 🎆</div>';
+        }
+
+        // Click to add firework
+        document.body.addEventListener('click', (e) => {
+            if (isStarted && textState < MESSAGES.length && e.target.tagName !== 'BUTTON') {
+                createFirework(canvas.width / 2, canvas.height, e.clientX, e.clientY);
+            }
+        });
+    </script>
+</body>
+
+</html>

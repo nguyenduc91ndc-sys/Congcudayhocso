@@ -9,6 +9,10 @@ export default defineConfig(({ mode }) => {
     server: {
       port: 5173,
       host: '0.0.0.0',
+      fs: {
+        // Allow serving files from the public folder directly
+        strict: false,
+      },
     },
     plugins: [react()],
     define: {

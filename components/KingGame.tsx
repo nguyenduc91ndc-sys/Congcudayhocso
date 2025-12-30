@@ -39,7 +39,7 @@ const KingGame: React.FC<KingGameProps> = ({ onBack }) => {
             {/* Game iframe */}
             <iframe
                 ref={iframeRef}
-                src="/king/king/compact/index.html"
+                src="/king_game/game.html"
                 className="w-full border-0"
                 title="Đường đến Ngôi Vua"
                 allow="autoplay"
