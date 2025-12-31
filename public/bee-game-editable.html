@@ -25,6 +25,55 @@
     <!-- KaTeX JS -->
     <script src="https://cdn.jsdelivr.net/npm/katex@0.16.9/dist/katex.min.js"></script>
 
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
+
+    <script>
+        // Firebase Configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyD8b5wDZjI7GMQN0LfdssjSSrDu724LRIk",
+            authDomain: "giaoviencongnghe-3c2a9.firebaseapp.com",
+            projectId: "giaoviencongnghe-3c2a9",
+            storageBucket: "giaoviencongnghe-3c2a9.firebasestorage.app",
+            messagingSenderId: "1098765432100",
+            appId: "1:1098765432100:web:abcdef123456",
+            databaseURL: "https://giaoviencongnghe-3c2a9-default-rtdb.asia-southeast1.firebasedatabase.app"
+        };
+
+        // Initialize Firebase
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const firebaseDb = firebase.database();
+
+        // Firebase Helper Functions
+        async function saveQuizToFirebase(questions) {
+            try {
+                const quizData = {
+                    questions: questions,
+                    createdAt: Date.now()
+                };
+                const newRef = await firebaseDb.ref('bee_game_quizzes').push(quizData);
+                return newRef.key;
+            } catch (error) {
+                console.error('Error saving quiz to Firebase:', error);
+                throw error;
+            }
+        }
+
+        async function getQuizFromFirebase(quizId) {
+            try {
+                const snapshot = await firebaseDb.ref(`bee_game_quizzes/${quizId}`).once('value');
+                const data = snapshot.val();
+                return data ? data.questions : null;
+            } catch (error) {
+                console.error('Error fetching quiz from Firebase:', error);
+                return null;
+            }
+        }
+    </script>
+
     <style>
         body {
             font-family: 'Nunito', sans-serif;
@@ -558,28 +607,26 @@
                 }
 
                 setIsCreatingLink(true);
-                const encoded = encodeQuestions(questions);
-                const longUrl = `${window.location.origin}/bee-game-editable.html?q=${encoded}`;
 
                 try {
-                    // Thử rút gọn bằng TinyURL
-                    const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
-                    const shortUrl = await response.text();
+                    // Lưu câu hỏi vào Firebase và lấy ID
+                    const quizId = await saveQuizToFirebase(questions);
+                    const shareUrl = `${window.location.origin}/bee-game-editable.html?id=${quizId}`;
 
-                    // Kiểm tra xem có phải link hợp lệ không
-                    const finalUrl = shortUrl.startsWith('http') ? shortUrl : longUrl;
-
-                    await navigator.clipboard.writeText(finalUrl);
+                    await navigator.clipboard.writeText(shareUrl);
                     setCopied(true);
-                    setTimeout(() => setCopied(false), 2000);
+                    setTimeout(() => setCopied(false), 3000);
                 } catch (e) {
-                    // Nếu rút gọn thất bại, dùng link gốc
+                    console.error('Lỗi tạo link:', e);
+                    // Fallback: dùng cách mã hóa base64 cũ nếu Firebase lỗi
                     try {
-                        await navigator.clipboard.writeText(longUrl);
+                        const encoded = encodeQuestions(questions);
+                        const fallbackUrl = `${window.location.origin}/bee-game-editable.html?q=${encoded}`;
+                        await navigator.clipboard.writeText(fallbackUrl);
                         setCopied(true);
-                        setTimeout(() => setCopied(false), 2000);
+                        setTimeout(() => setCopied(false), 3000);
                     } catch (clipErr) {
-                        prompt('Copy link này:', longUrl);
+                        alert('Không thể tạo link. Vui lòng thử lại!');
                     }
                 } finally {
                     setIsCreatingLink(false);
@@ -1132,19 +1179,36 @@
 
             const audioRef = useRef(null);
 
-            // Check URL for shared questions
+            // Check URL for shared questions (Firebase ID or base64 encoded)
             useEffect(() => {
-                const urlParams = new URLSearchParams(window.location.search);
-                const sharedData = urlParams.get('q');
+                const loadQuestions = async () => {
+                    const urlParams = new URLSearchParams(window.location.search);
+                    const quizId = urlParams.get('id');
+                    const sharedData = urlParams.get('q');
 
-                if (sharedData) {
-                    const decoded = decodeQuestions(sharedData);
-                    if (decoded && decoded.length >= 1) {
-                        setQuestions(decoded);
-                        setPathPoints(getPathPoints(decoded.length));
-                        setGameState(GameStage.INTRO);
+                    // Ưu tiên kiểm tra Firebase ID trước
+                    if (quizId) {
+                        const firebaseQuestions = await getQuizFromFirebase(quizId);
+                        if (firebaseQuestions && firebaseQuestions.length >= 1) {
+                            setQuestions(firebaseQuestions);
+                            setPathPoints(getPathPoints(firebaseQuestions.length));
+                            setGameState(GameStage.INTRO);
+                            return;
+                        }
                     }
-                }
+
+                    // Fallback: kiểm tra dữ liệu mã hóa base64 (hỗ trợ link cũ)
+                    if (sharedData) {
+                        const decoded = decodeQuestions(sharedData);
+                        if (decoded && decoded.length >= 1) {
+                            setQuestions(decoded);
+                            setPathPoints(getPathPoints(decoded.length));
+                            setGameState(GameStage.INTRO);
+                        }
+                    }
+                };
+
+                loadQuestions();
 
                 audioRef.current = new Audio('https://s2.file2s.com/nhacnengamechotreem.mp3');
                 audioRef.current.loop = true;

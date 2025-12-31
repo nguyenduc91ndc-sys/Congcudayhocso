@@ -81,28 +81,47 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
     const textFadeInRef = useRef(true);
     const autoFireworkTimerRef = useRef(0);
     const animationIdRef = useRef<number>(0);
+    const activeAudiosRef = useRef<HTMLAudioElement[]>([]); // Track all dynamic audio
+
+    // Stop all audio function
+    const stopAllAudio = useCallback(() => {
+        // Stop main background music
+        if (audioRef.current) {
+            audioRef.current.pause();
+            audioRef.current.currentTime = 0;
+        }
+        // Stop voice audio
+        if (voiceAudioRef.current) {
+            voiceAudioRef.current.pause();
+            voiceAudioRef.current.currentTime = 0;
+        }
+        // Stop all dynamic audio (firework sounds)
+        activeAudiosRef.current.forEach(audio => {
+            audio.pause();
+            audio.currentTime = 0;
+        });
+        activeAudiosRef.current = [];
+    }, []);
 
     // Firework sounds
-    const FIREWORK_WHISTLE = 'https://actions.google.com/sounds/v1/cartoon/cartoon_cowbell.ogg';
-    const FIREWORK_EXPLOSION_SOUNDS = [
-        'https://actions.google.com/sounds/v1/impacts/crash_light.ogg',
-        'https://actions.google.com/sounds/v1/impacts/crash.ogg',
-    ];
+    const FIREWORK_WHISTLE = '/sounds/newyear/tieng_phao_hoa_no_tren_bau_troi-www_tiengdong_com.mp3';
 
     // Play whistle sound when firework launches
     const playWhistleSound = useCallback(() => {
         const audio = new Audio(FIREWORK_WHISTLE);
-        audio.volume = 0.25;
+        audio.volume = 0.1; // Reduced volume for softer firework sound
         audio.playbackRate = 1.5; // Speed up for whistle effect
+        activeAudiosRef.current.push(audio); // Track this audio
         audio.play().catch(() => { });
+        // Remove from tracking when finished
+        audio.onended = () => {
+            activeAudiosRef.current = activeAudiosRef.current.filter(a => a !== audio);
+        };
     }, []);
 
-    // Play firework explosion sound
+    // Play firework explosion sound (disabled)
     const playExplosionSound = useCallback(() => {
-        const soundUrl = FIREWORK_EXPLOSION_SOUNDS[Math.floor(Math.random() * FIREWORK_EXPLOSION_SOUNDS.length)];
-        const audio = new Audio(soundUrl);
-        audio.volume = 0.3;
-        audio.play().catch(() => { });
+        // Explosion sound disabled
     }, []);
 
     // Audio files for each message
@@ -551,6 +570,13 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
         };
     }, [isStarted, createStars, createFirework, createExplosion, draw3DText, launchSalvo, speak]);
 
+    // Cleanup audio on unmount only
+    useEffect(() => {
+        return () => {
+            stopAllAudio();
+        };
+    }, [stopAllAudio]);
+
     // Handle start
     const handleStart = useCallback(
         (e: React.MouseEvent | React.TouchEvent) => {
@@ -574,8 +600,8 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                 setShowInstruction(false);
 
                 if (audioRef.current) {
-                    audioRef.current.currentTime = 5; // Skip intro (start from second 5)
-                    audioRef.current.volume = 0.5;
+                    audioRef.current.currentTime = 15; // Skip intro (start from gentle melody)
+                    audioRef.current.volume = 0.8; // Increased volume for background music
                     audioRef.current.play().catch(() => { });
                 }
 
@@ -878,10 +904,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                             whileTap={{ scale: 0.95 }}
                             onClick={(e) => {
                                 e.stopPropagation();
-                                if (voiceAudioRef.current) {
-                                    voiceAudioRef.current.pause();
-                                    voiceAudioRef.current.currentTime = 0;
-                                }
+                                stopAllAudio();
                                 onClose();
                             }}
                             className="flex items-center gap-2 px-6 sm:px-8 py-2.5 sm:py-3 text-sm sm:text-base md:text-lg font-bold text-white bg-gradient-to-r from-gray-600 to-gray-800 rounded-full border-2 border-white/40 uppercase tracking-wider"
@@ -901,10 +924,7 @@ const NewYearWelcome: React.FC<NewYearWelcomeProps> = ({ onClose }) => {
                 <button
                     onClick={(e) => {
                         e.stopPropagation();
-                        if (voiceAudioRef.current) {
-                            voiceAudioRef.current.pause();
-                            voiceAudioRef.current.currentTime = 0;
-                        }
+                        stopAllAudio();
                         onClose();
                     }}
                     className="absolute top-6 sm:top-4 right-3 sm:right-4 flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-1.5 sm:py-2 text-sm sm:text-base text-white font-semibold bg-gradient-to-r from-red-600 to-pink-600 hover:from-red-500 hover:to-pink-500 border-2 border-white/50 rounded-full transition-all hover:scale-105 z-[101]"

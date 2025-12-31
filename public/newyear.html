@@ -367,7 +367,6 @@
         }
 
         function createExplosion(x, y, color) {
-            playSound('explosion');
             for (let i = 0; i < 90; i++) {
                 const angle = Math.random() * Math.PI * 2;
                 const speed = Math.random() * 6 + 1;
@@ -377,8 +376,8 @@
 
         function playSound(type) {
             const sounds = {
-                whistle: 'https://actions.google.com/sounds/v1/cartoon/cartoon_cowbell.ogg',
-                explosion: 'https://actions.google.com/sounds/v1/impacts/crash.ogg'
+                whistle: '/sounds/newyear/tieng_phao_hoa_no_tren_bau_troi-www_tiengdong_com.mp3',
+                explosion: '/sounds/newyear/tieng_phao_hoa_no_tren_bau_troi-www_tiengdong_com.mp3'
             };
             try {
                 const audio = new Audio(sounds[type]);
