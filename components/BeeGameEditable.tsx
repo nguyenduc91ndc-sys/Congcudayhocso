@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { ArrowLeft, Maximize2, Minimize2, Lock, Phone, Crown, CheckCircle } from 'lucide-react';
+import { ArrowLeft, Maximize2, Minimize2, Lock, Phone, Crown, CheckCircle, Loader2 } from 'lucide-react';
 import { upgradeBeeGameToPro } from '../utils/trialUtils';
 import { canUseBeeGameTrialByDevice, useBeeGameTrialByDevice, getDeviceTrialStatus, upgradeDeviceToPro } from '../utils/firebaseDeviceTrial';
+import { validateProKey, activateProForEmail, isEmailPro } from '../utils/firebaseProKeys';
 
 interface BeeGameEditableProps {
     onBack: () => void;
@@ -17,10 +18,19 @@ const BeeGameEditable: React.FC<BeeGameEditableProps> = ({ onBack, userEmail }) 
     const [licenseCode, setLicenseCode] = useState('');
     const [licenseError, setLicenseError] = useState('');
     const [licenseSuccess, setLicenseSuccess] = useState(false);
+    const [isCheckingCode, setIsCheckingCode] = useState(false);
 
     useEffect(() => {
         const checkTrial = async () => {
             if (userEmail) {
+                // Kiểm tra email có phải PRO không
+                const emailIsPro = await isEmailPro(userEmail);
+                if (emailIsPro) {
+                    setTrialStatus({ playsRemaining: 999, totalPlays: 0, isPro: true });
+                    return;
+                }
+
+                // Nếu không, kiểm tra device trial
                 const status = await getDeviceTrialStatus(userEmail);
                 setTrialStatus({ playsRemaining: status.beeGameRemaining, totalPlays: 5 - status.beeGameRemaining, isPro: status.isPro });
 
@@ -64,45 +74,42 @@ const BeeGameEditable: React.FC<BeeGameEditableProps> = ({ onBack, userEmail }) 
         }
     };
 
-    // Kiểm tra mã có hợp lệ không (không gọi activateWithCode để tránh nâng Pro cho Video)
-    const isValidBeeGameCode = (code: string): boolean => {
-        const ADMIN_SECRET_CODE = 'ADMIN-NTD-2024';
-        const FIXED_KEYS = ['PRO-DEMO-2024', 'BEE-PRO-2024'];
-        const inputCode = code.toUpperCase().trim();
-
-        if (inputCode === ADMIN_SECRET_CODE) return true;
-        if (FIXED_KEYS.includes(inputCode)) return true;
-
-        const savedKeys = localStorage.getItem('ntd_admin_keys');
-        if (!savedKeys) return false;
-
-        const keys: { key: string }[] = JSON.parse(savedKeys);
-        return keys.some(k => k.key.toUpperCase() === inputCode);
-    };
-
-    // Xử lý nhập mã nâng cấp
+    // Xử lý nhập mã nâng cấp - Kiểm tra từ Firebase
     const handleActivateCode = async () => {
         if (!licenseCode.trim()) {
             setLicenseError('Vui lòng nhập mã nâng cấp!');
             return;
         }
 
-        // Kiểm tra mã - KHÔNG gọi activateWithCode để tránh nâng Pro cho Video
-        if (isValidBeeGameCode(licenseCode.trim())) {
-            // Mã hợp lệ - CHỈ nâng cấp Bee Game Pro cho user này
-            if (userEmail) {
-                upgradeBeeGameToPro(userEmail);
-                await upgradeDeviceToPro(userEmail); // Upgrade Firebase device
-                setTrialStatus({ playsRemaining: 999, totalPlays: 0, isPro: true });
+        setIsCheckingCode(true);
+        setLicenseError('');
+
+        try {
+            // Kiểm tra mã từ Firebase
+            const result = await validateProKey(licenseCode.trim());
+
+            if (result.valid) {
+                // Mã hợp lệ - Kích hoạt PRO cho Gmail của user
+                if (userEmail) {
+                    await activateProForEmail(userEmail, licenseCode.trim());
+                    upgradeBeeGameToPro(userEmail);
+                    await upgradeDeviceToPro(userEmail);
+                    setTrialStatus({ playsRemaining: 999, totalPlays: 0, isPro: true });
+                }
+                setLicenseSuccess(true);
+                setLicenseError('');
+                setTimeout(() => {
+                    setShowProModal(false);
+                }, 1500);
+            } else {
+                setLicenseError('Mã không hợp lệ! Liên hệ AD: 0975509490');
+                setLicenseSuccess(false);
             }
-            setLicenseSuccess(true);
-            setLicenseError('');
-            setTimeout(() => {
-                setShowProModal(false);
-            }, 1500);
-        } else {
-            setLicenseError('Mã không hợp lệ! Liên hệ AD: 0975509490');
+        } catch (error) {
+            setLicenseError('Lỗi kiểm tra mã! Vui lòng thử lại.');
             setLicenseSuccess(false);
+        } finally {
+            setIsCheckingCode(false);
         }
     };
 
@@ -160,9 +167,17 @@ const BeeGameEditable: React.FC<BeeGameEditableProps> = ({ onBack, userEmail }) 
                                 />
                                 <button
                                     onClick={handleActivateCode}
-                                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl hover:opacity-90 transition-all"
+                                    disabled={isCheckingCode || !licenseCode.trim()}
+                                    className="px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-bold rounded-xl hover:opacity-90 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                                 >
-                                    Kích hoạt
+                                    {isCheckingCode ? (
+                                        <>
+                                            <Loader2 size={18} className="animate-spin" />
+                                            Đang kiểm tra...
+                                        </>
+                                    ) : (
+                                        'Kích hoạt'
+                                    )}
                                 </button>
                             </div>
                             {licenseError && (

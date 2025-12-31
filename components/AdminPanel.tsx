@@ -9,6 +9,7 @@ import { AIVideo, Order } from '../types/videoStoreTypes';
 import { subscribeToVideos, addVideo, updateVideo, deleteVideo } from '../utils/firebaseVideoStore';
 import { subscribeToOrders, confirmOrder, cancelOrder } from '../utils/firebaseOrders';
 import { uploadImage, isValidImage } from '../utils/firebaseStorage';
+import { saveProKey, deleteProKey, subscribeToProKeys, ProKey } from '../utils/firebaseProKeys';
 
 interface AdminPanelProps {
     onBack: () => void;
@@ -22,20 +23,14 @@ const generateRandomKey = (): string => {
     return `PRO-${part1}-${part2}`;
 };
 
-// Lấy danh sách mã từ localStorage
-const getStoredKeys = (): { key: string; createdAt: string; note: string }[] => {
-    const saved = localStorage.getItem('ntd_admin_keys');
-    return saved ? JSON.parse(saved) : [];
-};
-
-// Lưu danh sách mã vào localStorage
-const saveKeys = (keys: { key: string; createdAt: string; note: string }[]) => {
+// Lưu danh sách mã vào localStorage (backup)
+const saveKeysToLocal = (keys: { key: string; createdAt: string; note: string }[]) => {
     localStorage.setItem('ntd_admin_keys', JSON.stringify(keys));
 };
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders'>('analytics');
-    const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string }[]>([]);
+    const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [newNote, setNewNote] = useState('');
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -89,6 +84,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         // Initial load of history
         loadLoginHistory();
 
+        // Subscribe to PRO keys from Firebase
+        const unsubscribeProKeys = subscribeToProKeys((firebaseKeys) => {
+            const formattedKeys = firebaseKeys.map(k => ({
+                key: k.key,
+                createdAt: new Date(k.createdAt).toLocaleDateString('vi-VN'),
+                note: k.note,
+                usedBy: k.usedBy
+            }));
+            setKeys(formattedKeys);
+            // Backup to localStorage
+            saveKeysToLocal(formattedKeys);
+        });
+
         // Subscribe to videos
         const unsubscribeVideos = subscribeToVideos(setVideos);
         // Subscribe to orders
@@ -101,6 +109,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
         return () => {
             clearInterval(interval);
+            unsubscribeProKeys();
             unsubscribeVideos();
             unsubscribeOrders();
         };
@@ -254,16 +263,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
     const filteredOrders = orders.filter(o => orderFilter === 'all' || o.status === orderFilter);
 
-    const handleCreateKey = () => {
+    const handleCreateKey = async () => {
         const newKey = generateRandomKey();
-        const newEntry = {
-            key: newKey,
-            createdAt: new Date().toLocaleDateString('vi-VN'),
-            note: newNote || 'Khách hàng mới',
-        };
-        const updatedKeys = [newEntry, ...keys];
-        setKeys(updatedKeys);
-        saveKeys(updatedKeys);
+        const note = newNote || 'Khách hàng mới';
+
+        // Lưu lên Firebase
+        const success = await saveProKey(newKey, note);
+        if (!success) {
+            alert('Lỗi khi lưu mã lên Firebase!');
+            return;
+        }
+
         setNewNote('');
         setShowCreateForm(false);
         navigator.clipboard.writeText(newKey);
@@ -271,11 +281,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         setTimeout(() => setCopiedKey(null), 2000);
     };
 
-    const handleDeleteKey = (keyToDelete: string) => {
+    const handleDeleteKey = async (keyToDelete: string) => {
         if (window.confirm('Xóa mã này?')) {
-            const updatedKeys = keys.filter(k => k.key !== keyToDelete);
-            setKeys(updatedKeys);
-            saveKeys(updatedKeys);
+            await deleteProKey(keyToDelete);
         }
     };
 
