@@ -4,11 +4,11 @@
  */
 
 
-// Đường dẫn âm thanh (correct/wrong vẫn giữ nguyên)
+// Đường dẫn âm thanh - sử dụng đường dẫn tuyệt đối từ gốc
 const SOUND_PATHS = {
-    correct: '/king/king/compact/music/am-thanh-tra-loi-dung.mp3',
-    wrong: '/king/king/compact/music/am-thanh-tra-loi-sai.mp3',
-    victory: '/king/king/compact/music/am-thanh-duoc-chon.mp3',
+    correct: '/king_game/music/am-thanh-tra-loi-dung.mp3',
+    wrong: '/king_game/music/am-thanh-tra-loi-sai.mp3',
+    victory: '/king_game/music/am-thanh-duoc-chon.mp3',
 };
 
 // Cache các Audio object để tái sử dụng
