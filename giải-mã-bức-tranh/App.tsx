@@ -1,11 +1,11 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, GameConfig, Question, FirebaseUser } from './types';
+import { UserRole, GameConfig, Question } from './types';
 import { INITIAL_CONFIG } from './constants';
-import Login from './components/Login';
 import GameView from './components/GameView';
 import AdminView from './components/AdminView';
 import { getGameConfig } from './utils/firebaseGameConfigs';
+import { getAnonymousUserId } from './utils/quotaUtils';
 
 // Helper to check if URL has gameId parameter
 const getGameIdFromUrl = (): string | null => {
@@ -13,21 +13,104 @@ const getGameIdFromUrl = (): string | null => {
   return params.get('gameId');
 };
 
+// Loading Screen Component - Professional animated intro
+const LoadingScreen: React.FC = () => (
+  <div className="fixed inset-0 z-[100] flex flex-col items-center justify-center bg-gradient-to-br from-indigo-900 via-purple-900 to-violet-900 overflow-hidden">
+    {/* Animated background particles */}
+    <div className="absolute inset-0 overflow-hidden pointer-events-none">
+      {[...Array(20)].map((_, i) => (
+        <div
+          key={i}
+          className="absolute w-2 h-2 bg-white/20 rounded-full animate-float"
+          style={{
+            left: `${Math.random() * 100}%`,
+            top: `${Math.random() * 100}%`,
+            animationDelay: `${Math.random() * 3}s`,
+            animationDuration: `${3 + Math.random() * 4}s`,
+          }}
+        />
+      ))}
+    </div>
+
+    {/* Main content */}
+    <div className="relative z-10 flex flex-col items-center">
+      {/* Animated puzzle icon */}
+      <div className="relative mb-8">
+        {/* Rotating ring */}
+        <div className="absolute inset-0 w-40 h-40 border-4 border-dashed border-indigo-400/30 rounded-full animate-[spin_10s_linear_infinite]" />
+        <div className="absolute inset-2 w-36 h-36 border-2 border-purple-400/40 rounded-full animate-[spin_8s_linear_infinite_reverse]" />
+
+        {/* Center icon */}
+        <div className="w-40 h-40 flex items-center justify-center">
+          <div className="text-8xl animate-bounce" style={{ animationDuration: '1.5s' }}>
+            🧩
+          </div>
+        </div>
+      </div>
+
+      {/* Title */}
+      <h1 className="text-4xl md:text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-indigo-300 via-purple-300 to-pink-300 mb-4 text-center tracking-tight">
+        GIẢI MÃ BỨC TRANH
+      </h1>
+
+      {/* Subtitle */}
+      <p className="text-indigo-200/70 text-lg font-semibold mb-8">
+        Đang tải công cụ tạo quiz...
+      </p>
+
+      {/* Progress bar */}
+      <div className="w-64 h-3 bg-white/10 rounded-full overflow-hidden backdrop-blur-sm">
+        <div
+          className="h-full bg-gradient-to-r from-indigo-400 via-purple-400 to-pink-400 rounded-full animate-[loadingBar_2s_ease-in-out_infinite]"
+          style={{ width: '80%' }}
+        />
+      </div>
+    </div>
+
+    {/* Keyframes in style tag */}
+    <style>{`
+      @keyframes loadingBar {
+        0% { width: 5%; opacity: 1; }
+        50% { width: 95%; opacity: 0.8; }
+        100% { width: 5%; opacity: 1; }
+      }
+    `}</style>
+  </div>
+);
+
 const App: React.FC = () => {
   const gameIdFromUrl = getGameIdFromUrl();
   const isSharedLink = !!gameIdFromUrl;
 
-  const [role, setRole] = useState<UserRole>(UserRole.GUEST);
+  // Không cần login - sử dụng Anonymous User ID
+  const anonymousUserId = getAnonymousUserId();
+
+  // Loading state for initial animation (only for admin, not shared links)
+  const [isInitialLoading, setIsInitialLoading] = useState<boolean>(!isSharedLink);
+
+  const [role, setRole] = useState<UserRole>(() => {
+    // Nếu là shared link thì là GUEST (học sinh), không thì vào thẳng TEACHER (admin)
+    return isSharedLink ? UserRole.GUEST : UserRole.TEACHER;
+  });
   const [studentName, setStudentName] = useState<string>('');
   const [showNameInput, setShowNameInput] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(isSharedLink);
   const [loadError, setLoadError] = useState<string>('');
-  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
 
   const [gameConfig, setGameConfig] = useState<GameConfig>(() => {
     const saved = localStorage.getItem('decode_game_config');
     return saved ? JSON.parse(saved) : INITIAL_CONFIG;
   });
+
+  // Initial loading animation timer (2 seconds)
+  useEffect(() => {
+    if (isInitialLoading) {
+      const timer = setTimeout(() => {
+        setIsInitialLoading(false);
+      }, 2000);
+      return () => clearTimeout(timer);
+    }
+  }, [isInitialLoading]);
 
   // Load config from Firebase if shared link
   useEffect(() => {
@@ -59,16 +142,9 @@ const App: React.FC = () => {
         localStorage.setItem('decode_game_config', JSON.stringify(gameConfig));
       } catch (error) {
         console.error('Error saving to localStorage:', error);
-        // Có thể thêm thông báo lỗi nhẹ ở đây nếu muốn
       }
     }
   }, [gameConfig, isSharedLink]);
-
-  const handleLogin = (selectedRole: UserRole, name?: string, user?: FirebaseUser) => {
-    setRole(selectedRole);
-    if (name) setStudentName(name);
-    if (user) setCurrentUser(user);
-  };
 
   const handleStudentStart = (name: string) => {
     setStudentName(name);
@@ -80,6 +156,11 @@ const App: React.FC = () => {
     setGameConfig(newConfig);
   };
 
+  const handleExit = () => {
+    // Về Dashboard chính
+    window.location.href = '/';
+  };
+
   const logout = () => {
     if (isSharedLink) {
       // Nếu là shared link, quay về màn hình nhập tên
@@ -87,15 +168,21 @@ const App: React.FC = () => {
       setStudentName('');
       setShowNameInput(true);
     } else {
-      setRole(UserRole.GUEST);
-      setStudentName('');
+      // Về trang chủ
+      handleExit();
     }
   };
+
+  // Show loading screen for admin mode
+  if (isInitialLoading) {
+    return <LoadingScreen />;
+  }
 
   return (
     <div className="min-h-screen">
       {/* Background particles */}
       <div className="bg-particles"></div>
+
 
       {/* Loading state */}
       {isLoading && (
@@ -198,9 +285,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* Màn hình login cho Admin (khi không phải shared link) */}
-      {!isSharedLink && role === UserRole.GUEST && <Login onLogin={handleLogin} />}
-
       {/* Game View cho học sinh */}
       {role === UserRole.STUDENT && (
         <GameView
@@ -216,7 +300,6 @@ const App: React.FC = () => {
           config={gameConfig}
           onUpdateConfig={handleUpdateConfig}
           onExit={logout}
-          user={currentUser}
         />
       )}
     </div>

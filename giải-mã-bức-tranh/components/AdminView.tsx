@@ -1,21 +1,117 @@
 
-import React, { useState } from 'react';
-import { GameConfig, Question, QuestionStyles, FirebaseUser } from '../types';
+import React, { useState, useEffect, useRef } from 'react';
+import { GameConfig, Question, QuestionStyles } from '../types';
 import Button from './Button';
+import SymbolToolbar from './SymbolToolbar';
 import { saveGameConfig } from '../utils/firebaseGameConfigs';
+import {
+  getAnonymousUserId,
+  getQuotaInfo,
+  incrementQuizCount,
+  canCreateQuiz,
+  activateProCode,
+  QUOTA_LIMIT
+} from '../utils/quotaUtils';
 
 interface AdminViewProps {
   config: GameConfig;
   onUpdateConfig: (config: GameConfig) => void;
   onExit: () => void;
-  user?: FirebaseUser | null;
 }
 
-const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, user }) => {
+const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit }) => {
   const [localConfig, setLocalConfig] = useState<GameConfig>(config);
   const [successMsg, setSuccessMsg] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
   const [shareLink, setShareLink] = useState('');
+
+  // Quota & Pro code states
+  const [quotaInfo, setQuotaInfo] = useState(getQuotaInfo());
+  const [showProModal, setShowProModal] = useState(false);
+  const [proCodeInput, setProCodeInput] = useState('');
+  const [proError, setProError] = useState('');
+  const [proLoading, setProLoading] = useState(false);
+
+  // Get anonymous user ID
+  const anonymousUserId = getAnonymousUserId();
+
+  // Refresh quota info
+  const refreshQuota = () => setQuotaInfo(getQuotaInfo());
+
+  // Track last focused input for symbol insertion
+  const lastFocusedInputRef = useRef<HTMLTextAreaElement | HTMLInputElement | null>(null);
+  const lastCursorPositionRef = useRef<{ start: number; end: number }>({ start: 0, end: 0 });
+
+  // Track focus on question/answer inputs
+  useEffect(() => {
+    const handleFocusIn = (e: FocusEvent) => {
+      const target = e.target as HTMLElement;
+      if (target instanceof HTMLTextAreaElement || target instanceof HTMLInputElement) {
+        // Check if it's a question or answer input (not the Pro code input)
+        if (target.id?.startsWith('question-') || target.id?.startsWith('option-')) {
+          lastFocusedInputRef.current = target;
+          lastCursorPositionRef.current = {
+            start: target.selectionStart || 0,
+            end: target.selectionEnd || 0
+          };
+        }
+      }
+    };
+
+    const handleSelectionChange = () => {
+      const activeEl = document.activeElement;
+      if (activeEl instanceof HTMLTextAreaElement || activeEl instanceof HTMLInputElement) {
+        if (activeEl.id?.startsWith('question-') || activeEl.id?.startsWith('option-')) {
+          lastCursorPositionRef.current = {
+            start: activeEl.selectionStart || 0,
+            end: activeEl.selectionEnd || 0
+          };
+        }
+      }
+    };
+
+    document.addEventListener('focusin', handleFocusIn);
+    document.addEventListener('selectionchange', handleSelectionChange);
+
+    return () => {
+      document.removeEventListener('focusin', handleFocusIn);
+      document.removeEventListener('selectionchange', handleSelectionChange);
+    };
+  }, []);
+
+  // Handle symbol insertion
+  const handleSymbolInsert = (symbol: string) => {
+    const inputEl = lastFocusedInputRef.current;
+
+    if (!inputEl) {
+      setSuccessMsg('💡 Click vào ô câu hỏi/đáp án trước khi chèn ký hiệu');
+      setTimeout(() => setSuccessMsg(''), 2000);
+      return;
+    }
+
+    const { start, end } = lastCursorPositionRef.current;
+    const value = inputEl.value;
+    const newValue = value.substring(0, start) + symbol + value.substring(end);
+
+    // Trigger React onChange by dispatching input event
+    const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+      inputEl instanceof HTMLTextAreaElement ? window.HTMLTextAreaElement.prototype : window.HTMLInputElement.prototype,
+      'value'
+    )?.set;
+
+    nativeInputValueSetter?.call(inputEl, newValue);
+    inputEl.dispatchEvent(new Event('input', { bubbles: true }));
+
+    // Update cursor position reference
+    const newCursorPos = start + symbol.length;
+    lastCursorPositionRef.current = { start: newCursorPos, end: newCursorPos };
+
+    // Restore focus and cursor position
+    setTimeout(() => {
+      inputEl.focus();
+      inputEl.setSelectionRange(newCursorPos, newCursorPos);
+    }, 10);
+  };
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -48,7 +144,9 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, u
     // 2. Lưu lên Firebase để lấy link
     setIsSaving(true);
     try {
-      const gameId = await saveGameConfig(localConfig, user?.uid);
+      const gameId = await saveGameConfig(localConfig, anonymousUserId);
+      incrementQuizCount();
+      refreshQuota();
       const baseUrl = window.location.origin + window.location.pathname;
       const link = `${baseUrl}?gameId=${gameId}`;
       setShareLink(link);
@@ -69,7 +167,9 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, u
     setIsSaving(true);
     try {
       // Lưu config lên Firebase và lấy gameId ngắn gọn
-      const gameId = await saveGameConfig(localConfig, user?.uid);
+      const gameId = await saveGameConfig(localConfig, anonymousUserId);
+      incrementQuizCount();
+      refreshQuota();
       const baseUrl = window.location.origin + window.location.pathname;
       const link = `${baseUrl}?gameId=${gameId}`;
       setShareLink(link);
@@ -164,12 +264,28 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, u
           >
             🔗 Tạo Link Chia Sẻ
           </button>
+          {/* Quota Display */}
+          <div className="px-4 py-2 bg-white/20 backdrop-blur-sm rounded-xl text-white font-bold text-sm flex items-center gap-2">
+            {quotaInfo.isPro ? (
+              <span className="text-amber-300">👑 PRO - Không giới hạn</span>
+            ) : (
+              <>
+                <span>📊 {quotaInfo.remaining}/{QUOTA_LIMIT} lượt</span>
+                <button
+                  onClick={() => setShowProModal(true)}
+                  className="ml-2 px-2 py-1 bg-amber-400 hover:bg-amber-500 text-gray-900 rounded-lg text-xs font-bold transition-colors"
+                >
+                  🔑 Pro
+                </button>
+              </>
+            )}
+          </div>
           <button
             onClick={onExit}
             className="cute-3d-button px-6"
             style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', boxShadow: '0 6px 0 #d64469, 0 10px 20px rgba(245, 87, 108, 0.4)' }}
           >
-            Đăng xuất
+            Về trang chủ
           </button>
         </div>
       </header>
@@ -228,6 +344,12 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, u
               >
                 + Thêm câu hỏi
               </button>
+            </div>
+
+            {/* Symbol Toolbar - Công thức & Ký hiệu */}
+            <div className="mb-4 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-2xl border-2 border-indigo-100">
+              <p className="text-xs text-indigo-600 font-semibold mb-2">🔤 Chèn ký hiệu (click ô nhập liệu trước):</p>
+              <SymbolToolbar onInsert={handleSymbolInsert} />
             </div>
 
             <div className="flex-1 overflow-y-auto custom-scrollbar pr-2 space-y-6 max-h-[500px]">
@@ -332,7 +454,9 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, u
                   // Save & Open
                   setIsSaving(true);
                   try {
-                    const gameId = await saveGameConfig(localConfig, user?.uid);
+                    const gameId = await saveGameConfig(localConfig, anonymousUserId);
+                    incrementQuizCount();
+                    refreshQuota();
                     const baseUrl = window.location.origin + window.location.pathname;
                     const link = `${baseUrl}?gameId=${gameId}`;
                     setShareLink(link);
@@ -367,7 +491,9 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, u
                   // Save & Copy
                   setIsSaving(true);
                   try {
-                    const gameId = await saveGameConfig(localConfig, user?.uid);
+                    const gameId = await saveGameConfig(localConfig, anonymousUserId);
+                    incrementQuizCount();
+                    refreshQuota();
                     const baseUrl = window.location.origin + window.location.pathname;
                     const link = `${baseUrl}?gameId=${gameId}`;
                     setShareLink(link);
@@ -551,6 +677,107 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, u
             <p style={{ fontSize: '14px', color: '#999', marginTop: '24px' }}>
               💡 Lưu ý: Học sinh chỉ cần mở link và nhập tên để chơi
             </p>
+          </div>
+        </div>
+      )}
+
+      {/* Pro Code Modal */}
+      {showProModal && (
+        <div
+          className="fixed inset-0 z-[10000] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => setShowProModal(false)}
+        >
+          <div
+            className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="text-center mb-6">
+              <div className="text-6xl mb-4">👑</div>
+              <h3 className="text-2xl font-black text-indigo-700">Kích hoạt Pro</h3>
+              <p className="text-gray-500 mt-2">Nhập mã Pro để tạo quiz không giới hạn</p>
+            </div>
+
+            <input
+              type="text"
+              value={proCodeInput}
+              onChange={(e) => setProCodeInput(e.target.value.toUpperCase())}
+              placeholder="VD: PRO-XXXXXXXX"
+              className="w-full px-5 py-4 text-xl font-mono text-center border-2 border-indigo-200 rounded-2xl focus:border-indigo-500 focus:outline-none uppercase tracking-widest"
+              disabled={proLoading}
+            />
+
+            {proError && (
+              <p className="mt-3 text-red-500 text-center font-semibold">{proError}</p>
+            )}
+
+            <div className="flex gap-3 mt-6">
+              <button
+                onClick={() => setShowProModal(false)}
+                className="flex-1 py-3 px-6 bg-gray-200 hover:bg-gray-300 text-gray-700 font-bold rounded-xl transition-colors"
+                disabled={proLoading}
+              >
+                Hủy
+              </button>
+              <button
+                onClick={async () => {
+                  if (!proCodeInput.trim()) {
+                    setProError('Vui lòng nhập mã Pro');
+                    return;
+                  }
+                  setProLoading(true);
+                  setProError('');
+                  try {
+                    await activateProCode(proCodeInput.trim());
+                    refreshQuota();
+                    setShowProModal(false);
+                    setProCodeInput('');
+                    setSuccessMsg('🎉 Kích hoạt Pro thành công!');
+                    setTimeout(() => setSuccessMsg(''), 3000);
+                  } catch (err: any) {
+                    setProError(err.message || 'Mã không hợp lệ');
+                  } finally {
+                    setProLoading(false);
+                  }
+                }}
+                className="flex-1 py-3 px-6 bg-gradient-to-r from-amber-400 to-orange-500 hover:from-amber-500 hover:to-orange-600 text-white font-bold rounded-xl transition-colors disabled:opacity-50"
+                disabled={proLoading}
+              >
+                {proLoading ? '⏳ Đang kiểm tra...' : '✓ Kích hoạt'}
+              </button>
+            </div>
+
+            <p className="mt-6 text-center text-sm text-gray-400">
+              💡 Liên hệ admin để nhận mã Pro
+            </p>
+          </div>
+        </div>
+      )}
+
+      {/* Quota Exceeded Modal */}
+      {!canCreateQuiz() && !quotaInfo.isPro && (
+        <div
+          className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/60 backdrop-blur-sm"
+          onClick={() => { }}
+        >
+          <div className="bg-white rounded-3xl p-8 max-w-md w-full mx-4 shadow-2xl text-center">
+            <div className="text-6xl mb-4">⚠️</div>
+            <h3 className="text-2xl font-black text-red-600">Hết lượt tạo Quiz!</h3>
+            <p className="text-gray-600 mt-3 mb-6">
+              Bạn đã sử dụng hết <strong>{QUOTA_LIMIT} lượt</strong> tạo quiz miễn phí.
+              <br />Nhập mã Pro để tiếp tục không giới hạn.
+            </p>
+            <button
+              onClick={() => setShowProModal(true)}
+              className="w-full py-4 px-6 bg-gradient-to-r from-amber-400 to-orange-500 text-white font-bold text-lg rounded-xl shadow-lg"
+            >
+              🔑 Nhập mã Pro
+            </button>
+            <button
+              onClick={onExit}
+              className="mt-4 text-gray-400 hover:text-gray-600 font-semibold underline"
+            >
+              Về trang chủ
+            </button>
           </div>
         </div>
       )}
