@@ -1,6 +1,6 @@
 
 import React, { useState } from 'react';
-import { GameConfig, Question, QuestionStyles } from '../types';
+import { GameConfig, Question, QuestionStyles, FirebaseUser } from '../types';
 import Button from './Button';
 import { saveGameConfig } from '../utils/firebaseGameConfigs';
 
@@ -8,9 +8,10 @@ interface AdminViewProps {
   config: GameConfig;
   onUpdateConfig: (config: GameConfig) => void;
   onExit: () => void;
+  user?: FirebaseUser | null;
 }
 
-const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit }) => {
+const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit, user }) => {
   const [localConfig, setLocalConfig] = useState<GameConfig>(config);
   const [successMsg, setSuccessMsg] = useState('');
   const [showShareModal, setShowShareModal] = useState(false);
@@ -47,7 +48,7 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
     // 2. Lưu lên Firebase để lấy link
     setIsSaving(true);
     try {
-      const gameId = await saveGameConfig(localConfig);
+      const gameId = await saveGameConfig(localConfig, user?.uid);
       const baseUrl = window.location.origin + window.location.pathname;
       const link = `${baseUrl}?gameId=${gameId}`;
       setShareLink(link);
@@ -68,7 +69,7 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
     setIsSaving(true);
     try {
       // Lưu config lên Firebase và lấy gameId ngắn gọn
-      const gameId = await saveGameConfig(localConfig);
+      const gameId = await saveGameConfig(localConfig, user?.uid);
       const baseUrl = window.location.origin + window.location.pathname;
       const link = `${baseUrl}?gameId=${gameId}`;
       setShareLink(link);
@@ -331,7 +332,7 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
                   // Save & Open
                   setIsSaving(true);
                   try {
-                    const gameId = await saveGameConfig(localConfig);
+                    const gameId = await saveGameConfig(localConfig, user?.uid);
                     const baseUrl = window.location.origin + window.location.pathname;
                     const link = `${baseUrl}?gameId=${gameId}`;
                     setShareLink(link);
@@ -366,7 +367,7 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
                   // Save & Copy
                   setIsSaving(true);
                   try {
-                    const gameId = await saveGameConfig(localConfig);
+                    const gameId = await saveGameConfig(localConfig, user?.uid);
                     const baseUrl = window.location.origin + window.location.pathname;
                     const link = `${baseUrl}?gameId=${gameId}`;
                     setShareLink(link);

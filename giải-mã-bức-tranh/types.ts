@@ -1,4 +1,8 @@
 
+import { User as FirebaseUser } from 'firebase/auth';
+
+export type { FirebaseUser };
+
 export enum UserRole {
   GUEST = 'GUEST',
   STUDENT = 'STUDENT',

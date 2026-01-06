@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
-import { UserRole, GameConfig, Question } from './types';
+import { UserRole, GameConfig, Question, FirebaseUser } from './types';
 import { INITIAL_CONFIG } from './constants';
 import Login from './components/Login';
 import GameView from './components/GameView';
@@ -22,6 +22,7 @@ const App: React.FC = () => {
   const [showNameInput, setShowNameInput] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(isSharedLink);
   const [loadError, setLoadError] = useState<string>('');
+  const [currentUser, setCurrentUser] = useState<FirebaseUser | null>(null);
 
   const [gameConfig, setGameConfig] = useState<GameConfig>(() => {
     const saved = localStorage.getItem('decode_game_config');
@@ -63,9 +64,10 @@ const App: React.FC = () => {
     }
   }, [gameConfig, isSharedLink]);
 
-  const handleLogin = (selectedRole: UserRole, name?: string) => {
+  const handleLogin = (selectedRole: UserRole, name?: string, user?: FirebaseUser) => {
     setRole(selectedRole);
     if (name) setStudentName(name);
+    if (user) setCurrentUser(user);
   };
 
   const handleStudentStart = (name: string) => {
@@ -214,6 +216,7 @@ const App: React.FC = () => {
           config={gameConfig}
           onUpdateConfig={handleUpdateConfig}
           onExit={logout}
+          user={currentUser}
         />
       )}
     </div>
