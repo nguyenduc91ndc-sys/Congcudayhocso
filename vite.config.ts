@@ -23,6 +23,14 @@ export default defineConfig(({ mode }) => {
       alias: {
         '@': path.resolve(__dirname, '.'),
       }
-    }
+    },
+    build: {
+      rollupOptions: {
+        input: {
+          main: path.resolve(__dirname, 'index.html'),
+          'giai-ma-buc-tranh': path.resolve(__dirname, 'giải-mã-bức-tranh/index.html'),
+        },
+      },
+    },
   };
 });

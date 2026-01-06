@@ -1,0 +1,7 @@
+{
+  "name": "Giải Mã Bức Tranh",
+  "description": "Một ứng dụng trò chơi giáo dục giúp học sinh khám phá bức tranh bí ẩn thông qua việc trả lời các câu hỏi trắc nghiệm. Bao gồm trang quản trị cho giáo viên để thiết lập câu hỏi và hình ảnh.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}

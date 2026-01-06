@@ -591,6 +591,24 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 badge="Mới"
                             />
 
+                            <ToolCard
+                                title="Nghề Nghiệp Tương Lai"
+                                description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI"
+                                icon={<span className="text-2xl">👨‍🚀</span>}
+                                accentColor="bg-gradient-to-br from-orange-400 to-amber-500"
+                                onClick={() => window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank')}
+                                badge="AI Studio"
+                            />
+
+                            <ToolCard
+                                title="Giải Mã Bức Tranh"
+                                description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi"
+                                icon={<span className="text-2xl">🧩</span>}
+                                accentColor="bg-gradient-to-br from-purple-500 to-cyan-500"
+                                onClick={() => window.open('/giải-mã-bức-tranh/', '_blank')}
+                                badge="Mới"
+                            />
+
                             {/* Tools sắp ra mắt */}
                             <ToolCard
                                 title="Quiz Game"
@@ -656,6 +674,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 onClick={onCanvaBasics}
                                 badge="Mới"
                             />
+
                         </div>
                     </section>
 
