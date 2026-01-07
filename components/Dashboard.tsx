@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Video, LogOut, Crown, Sparkles, Key, X, CheckCircle, Settings,
     Play, Trash2, Edit3, Share2, Box, Brain, RotateCcw, HelpCircle,
-    Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield, Coffee, ExternalLink
+    Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield, Coffee, ExternalLink, Heart
 } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import WelcomeModal from './WelcomeModal';
@@ -495,6 +495,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                         <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity bg-white blur-xl" />
                     </motion.section>
 
+
+
                     {/* Tools Grid */}
                     <section>
                         <h2 className="text-lg font-semibold text-white mb-4">Công cụ dạy học</h2>
@@ -675,6 +677,22 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 badge="Mới"
                             />
 
+                        </div>
+                    </section>
+
+
+                    {/* Các ứng dụng 3D */}
+                    <section>
+                        <h2 className="text-lg font-semibold text-white mb-4">Các ứng dụng 3D</h2>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                            <ToolCard
+                                title="Hệ tuần hoàn 3D"
+                                description="Mô hình tim và hệ tuần hoàn 3D sống động"
+                                icon={<Heart size={24} className="text-white" />}
+                                accentColor="bg-red-600"
+                                onClick={() => window.open('https://heart-3d-viewer.vercel.app/?v=2', '_blank')}
+                                badge="Mới"
+                            />
                         </div>
                     </section>
 
