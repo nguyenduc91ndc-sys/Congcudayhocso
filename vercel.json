@@ -1,11 +1,7 @@
 {
     "rewrites": [
         {
-            "source": "/giải-mã-bức-tranh/(.*)",
-            "destination": "/giải-mã-bức-tranh/index.html"
-        },
-        {
-            "source": "/lucky-wheel/(.*)",
+            "source": "/lucky-wheel",
             "destination": "/lucky-wheel/index.html"
         },
         {
