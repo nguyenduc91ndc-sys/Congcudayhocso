@@ -1,7 +1,15 @@
 {
     "rewrites": [
         {
-            "source": "/(.*)",
+            "source": "/giải-mã-bức-tranh/(.*)",
+            "destination": "/giải-mã-bức-tranh/index.html"
+        },
+        {
+            "source": "/vòng-quay-may-mắn/(.*)",
+            "destination": "/vòng-quay-may-mắn/index.html"
+        },
+        {
+            "source": "/((?!giải-mã-bức-tranh|vòng-quay-may-mắn|assets|.*\\.[a-z]+$).*)",
             "destination": "/"
         }
     ],
