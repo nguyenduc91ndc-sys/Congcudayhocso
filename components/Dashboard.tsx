@@ -573,7 +573,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Bánh xe quay chọn người may mắn"
                                 icon={<span className="text-2xl">🎡</span>}
                                 accentColor="bg-rose-500"
-                                onClick={onLuckyWheel}
+                                onClick={() => window.open('/lucky-wheel/', '_blank')}
                             />
 
                             <ToolCard

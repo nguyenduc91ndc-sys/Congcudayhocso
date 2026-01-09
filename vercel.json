@@ -5,11 +5,11 @@
             "destination": "/giải-mã-bức-tranh/index.html"
         },
         {
-            "source": "/vòng-quay-may-mắn/(.*)",
-            "destination": "/vòng-quay-may-mắn/index.html"
+            "source": "/lucky-wheel/(.*)",
+            "destination": "/lucky-wheel/index.html"
         },
         {
-            "source": "/((?!giải-mã-bức-tranh|vòng-quay-may-mắn|assets|.*\\.[a-z]+$).*)",
+            "source": "/((?!giải-mã-bức-tranh|lucky-wheel|assets|.*\\.[a-z]+$).*)",
             "destination": "/"
         }
     ],
