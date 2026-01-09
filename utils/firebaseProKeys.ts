@@ -5,8 +5,8 @@
 import { database } from './firebaseConfig';
 import { ref, get, set, remove, push, onValue, query, orderByChild, equalTo } from 'firebase/database';
 
-const PRO_KEYS_REF = 'proKeys';
-const PRO_USERS_REF = 'proUsers';
+const PRO_KEYS_REF = 'decode_pro_codes';
+const PRO_USERS_REF = 'decode_pro_users';
 
 export interface ProKey {
     key: string;
