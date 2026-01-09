@@ -29,6 +29,7 @@ export default defineConfig(({ mode }) => {
         input: {
           main: path.resolve(__dirname, 'index.html'),
           'giai-ma-buc-tranh': path.resolve(__dirname, 'giải-mã-bức-tranh/index.html'),
+          'vong-quay-may-man': path.resolve(__dirname, 'vòng-quay-may-mắn/index.html'),
         },
       },
     },
