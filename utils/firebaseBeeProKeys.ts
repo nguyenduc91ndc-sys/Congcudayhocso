@@ -161,15 +161,24 @@ export const activateBeeProForEmail = async (email: string, keyUsed: string): Pr
 
 /**
  * Kiểm tra email đã là PRO của game Bee chưa
+ * Kiểm tra CẢ path mới (bee_pro_users) VÀ path cũ (proUsers) để backward compatible
  */
 export const isEmailBeePro = async (email: string): Promise<boolean> => {
     const normalizedEmail = email.toLowerCase().trim();
     const emailKey = normalizedEmail.replace(/\./g, '_').replace(/@/g, '_at_');
 
     try {
-        const userRef = ref(database, `${BEE_PRO_USERS_REF}/${emailKey}`);
-        const snapshot = await get(userRef);
-        return snapshot.exists();
+        // 1. Kiểm tra path mới trước
+        const newUserRef = ref(database, `${BEE_PRO_USERS_REF}/${emailKey}`);
+        const newSnapshot = await get(newUserRef);
+        if (newSnapshot.exists()) {
+            return true;
+        }
+
+        // 2. Fallback: Kiểm tra path cũ (proUsers) cho những user đã kích hoạt trước đây
+        const oldUserRef = ref(database, `proUsers/${emailKey}`);
+        const oldSnapshot = await get(oldUserRef);
+        return oldSnapshot.exists();
     } catch (error) {
         console.error('Error checking BEE PRO status:', error);
         return false;
