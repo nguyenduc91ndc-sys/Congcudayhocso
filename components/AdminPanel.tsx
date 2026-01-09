@@ -10,6 +10,7 @@ import { subscribeToVideos, addVideo, updateVideo, deleteVideo } from '../utils/
 import { subscribeToOrders, confirmOrder, cancelOrder } from '../utils/firebaseOrders';
 import { uploadImage, isValidImage } from '../utils/firebaseStorage';
 import { saveProKey, deleteProKey, subscribeToProKeys, ProKey } from '../utils/firebaseProKeys';
+import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode } from '../utils/firebaseBeeProKeys';
 
 interface AdminPanelProps {
     onBack: () => void;
@@ -31,6 +32,8 @@ const saveKeysToLocal = (keys: { key: string; createdAt: string; note: string }[
 const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders'>('analytics');
     const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
+    const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
+    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee'>('pro');
     const [newNote, setNewNote] = useState('');
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -97,6 +100,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             saveKeysToLocal(formattedKeys);
         });
 
+        // Subscribe to BEE PRO keys from Firebase (separate path)
+        const unsubscribeBeeKeys = subscribeToBeeProKeys((firebaseKeys) => {
+            const formattedKeys = firebaseKeys.map(k => ({
+                key: k.key,
+                createdAt: new Date(k.createdAt).toLocaleDateString('vi-VN'),
+                note: k.note,
+                usedBy: k.usedBy
+            }));
+            setBeeKeys(formattedKeys);
+        });
+
         // Subscribe to videos
         const unsubscribeVideos = subscribeToVideos(setVideos);
         // Subscribe to orders
@@ -110,6 +124,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         return () => {
             clearInterval(interval);
             unsubscribeProKeys();
+            unsubscribeBeeKeys();
             unsubscribeVideos();
             unsubscribeOrders();
         };
@@ -291,6 +306,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         navigator.clipboard.writeText(key);
         setCopiedKey(key);
         setTimeout(() => setCopiedKey(null), 2000);
+    };
+
+    // BEE PRO key handlers (separate Firebase path: bee_pro_codes/)
+    const handleCreateBeeKey = async () => {
+        const newKey = generateBeeProCode(); // Generates BEE-XXXXXXXX
+        const note = newNote || 'Khách hàng Ong về Tổ';
+
+        const success = await saveBeeProKey(newKey, note);
+        if (!success) {
+            alert('Lỗi khi lưu mã BEE lên Firebase!');
+            return;
+        }
+
+        setNewNote('');
+        setShowCreateForm(false);
+        navigator.clipboard.writeText(newKey);
+        setCopiedKey(newKey);
+        setTimeout(() => setCopiedKey(null), 2000);
+    };
+
+    const handleDeleteBeeKey = async (keyToDelete: string) => {
+        if (window.confirm('Xóa mã BEE này?')) {
+            await deleteBeeProKey(keyToDelete);
+        }
     };
 
     const handleApproveFeedback = async (id: string) => {
@@ -670,14 +709,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
                     {activeTab === 'keys' && (
                         <div className="h-full flex flex-col">
+                            {/* Sub-tabs for PRO vs BEE keys */}
+                            <div className="flex gap-2 mb-4">
+                                <button
+                                    onClick={() => setKeySubTab('pro')}
+                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'pro'
+                                        ? 'bg-purple-600 text-white shadow-lg'
+                                        : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
+                                        }`}
+                                >
+                                    <Key size={16} /> PRO- Tất cả Game ({keys.length})
+                                </button>
+                                <button
+                                    onClick={() => setKeySubTab('bee')}
+                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'bee'
+                                        ? 'bg-orange-500 text-white shadow-lg'
+                                        : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
+                                        }`}
+                                >
+                                    🐝 BEE- Ong về Tổ ({beeKeys.length})
+                                </button>
+                            </div>
+
                             {/* Nút tạo mã */}
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setShowCreateForm(true)}
-                                className="w-full bg-gradient-to-r from-green-500 to-emerald-600 text-white font-bold py-4 px-6 rounded-2xl shadow-lg mb-4 flex items-center justify-center gap-2"
+                                className={`w-full text-white font-bold py-4 px-6 rounded-2xl shadow-lg mb-4 flex items-center justify-center gap-2 ${keySubTab === 'pro'
+                                        ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                                        : 'bg-gradient-to-r from-orange-500 to-amber-600'
+                                    }`}
                             >
-                                <Plus size={24} /> Tạo mã Pro mới
+                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : 'Tạo mã BEE- (Ong về Tổ)'}
                             </motion.button>
 
                             <AnimatePresence>
@@ -688,15 +752,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         exit={{ opacity: 0, height: 0 }}
                                         className="bg-white rounded-2xl p-4 mb-4 shadow-lg"
                                     >
+                                        <div className={`text-sm font-semibold mb-2 ${keySubTab === 'pro' ? 'text-purple-600' : 'text-orange-600'}`}>
+                                            {keySubTab === 'pro' ? '🔑 Tạo mã PRO- (dùng cho nhiều game)' : '🐝 Tạo mã BEE- (chỉ dùng cho Ong về Tổ)'}
+                                        </div>
                                         <input
                                             type="text"
                                             value={newNote}
                                             onChange={(e) => setNewNote(e.target.value)}
                                             placeholder="Ghi chú (tên khách, SĐT...)"
-                                            className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none mb-3"
+                                            className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none mb-3 ${keySubTab === 'pro'
+                                                    ? 'border-purple-200 focus:border-purple-500'
+                                                    : 'border-orange-200 focus:border-orange-500'
+                                                }`}
                                         />
                                         <div className="flex gap-2">
-                                            <button onClick={handleCreateKey} className="flex-1 bg-purple-600 text-white font-bold py-2 rounded-xl hover:bg-purple-700">
+                                            <button
+                                                onClick={keySubTab === 'pro' ? handleCreateKey : handleCreateBeeKey}
+                                                className={`flex-1 text-white font-bold py-2 rounded-xl ${keySubTab === 'pro'
+                                                        ? 'bg-purple-600 hover:bg-purple-700'
+                                                        : 'bg-orange-500 hover:bg-orange-600'
+                                                    }`}
+                                            >
                                                 Tạo & Copy
                                             </button>
                                             <button onClick={() => setShowCreateForm(false)} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl">
@@ -708,30 +784,62 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                             </AnimatePresence>
 
                             <div className="flex-1 overflow-y-auto space-y-3">
-                                {keys.length === 0 ? (
-                                    <div className="text-center text-gray-500 py-10">
-                                        <Key size={48} className="mx-auto mb-4 opacity-30" />
-                                        <p>Chưa có mã nào</p>
-                                    </div>
-                                ) : keys.map((item) => (
-                                    <motion.div key={item.key} className="bg-white rounded-2xl p-4 shadow-md flex items-center justify-between">
-                                        <div>
-                                            <div className="font-mono text-lg font-bold text-purple-800 flex items-center gap-2">
-                                                {item.key}
-                                                {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
+                                {keySubTab === 'pro' ? (
+                                    // PRO Keys List
+                                    keys.length === 0 ? (
+                                        <div className="text-center text-gray-500 py-10">
+                                            <Key size={48} className="mx-auto mb-4 opacity-30" />
+                                            <p>Chưa có mã PRO nào</p>
+                                        </div>
+                                    ) : keys.map((item) => (
+                                        <motion.div key={item.key} className="bg-white rounded-2xl p-4 shadow-md flex items-center justify-between">
+                                            <div>
+                                                <div className="font-mono text-lg font-bold text-purple-800 flex items-center gap-2">
+                                                    {item.key}
+                                                    {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
+                                                </div>
+                                                <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
+                                                {item.usedBy && <div className="text-xs text-green-600">✅ Đã dùng: {item.usedBy}</div>}
                                             </div>
-                                            <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200">
+                                                    <Copy size={18} />
+                                                </button>
+                                                <button onClick={() => handleDeleteKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    // BEE Keys List
+                                    beeKeys.length === 0 ? (
+                                        <div className="text-center text-gray-500 py-10">
+                                            <span className="text-5xl block mb-4">🐝</span>
+                                            <p>Chưa có mã BEE nào</p>
+                                            <p className="text-sm mt-2">Mã BEE chỉ dùng được cho game "Ong về Tổ (Tự soạn)"</p>
                                         </div>
-                                        <div className="flex gap-2">
-                                            <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200">
-                                                <Copy size={18} />
-                                            </button>
-                                            <button onClick={() => handleDeleteKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200">
-                                                <Trash2 size={18} />
-                                            </button>
-                                        </div>
-                                    </motion.div>
-                                ))}
+                                    ) : beeKeys.map((item) => (
+                                        <motion.div key={item.key} className="bg-gradient-to-r from-orange-50 to-amber-50 rounded-2xl p-4 shadow-md flex items-center justify-between border border-orange-200">
+                                            <div>
+                                                <div className="font-mono text-lg font-bold text-orange-700 flex items-center gap-2">
+                                                    🐝 {item.key}
+                                                    {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
+                                                </div>
+                                                <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
+                                                {item.usedBy && <div className="text-xs text-green-600">✅ Đã dùng: {item.usedBy}</div>}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200">
+                                                    <Copy size={18} />
+                                                </button>
+                                                <button onClick={() => handleDeleteBeeKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    ))
+                                )}
                             </div>
                         </div>
                     )}

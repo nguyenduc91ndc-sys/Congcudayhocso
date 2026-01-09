@@ -1,14 +1,18 @@
 /**
- * Quota Utils - Quản lý giới hạn lượt tạo quiz và Pro code
+ * Quota Utils for Ong Về Tổ - Quản lý giới hạn lượt tạo quiz và Pro code
+ * Uses SEPARATE Firebase paths: bee_pro_codes/
  */
 import { database } from '../../utils/firebaseConfig';
 import { ref, get, set } from 'firebase/database';
 
 // Constants
 const FREE_QUOTA_LIMIT = 5; // Số quiz miễn phí
-const STORAGE_KEY_QUOTA = 'decode_quiz_count';
-const STORAGE_KEY_USER_ID = 'decode_anonymous_user_id';
-const STORAGE_KEY_PRO = 'decode_pro_status';
+const STORAGE_KEY_QUOTA = 'bee_quiz_count';
+const STORAGE_KEY_USER_ID = 'bee_anonymous_user_id';
+const STORAGE_KEY_PRO = 'bee_pro_status';
+
+// Firebase path prefix - UNIQUE FOR THIS GAME
+const PRO_CODES_PATH = 'bee_pro_codes';
 
 /**
  * Tạo UUID ngẫu nhiên
@@ -27,7 +31,7 @@ const generateUUID = (): string => {
 export const getAnonymousUserId = (): string => {
     let id = localStorage.getItem(STORAGE_KEY_USER_ID);
     if (!id) {
-        id = 'ANON_' + generateUUID();
+        id = 'BEE_ANON_' + generateUUID();
         localStorage.setItem(STORAGE_KEY_USER_ID, id);
     }
     return id;
@@ -83,8 +87,8 @@ export const canCreateQuiz = (): boolean => {
  */
 export const activateProCode = async (code: string): Promise<boolean> => {
     try {
-        // Use decode_pro_codes path to match authUtils.ts
-        const codeRef = ref(database, `decode_pro_codes/${code.toUpperCase()}`);
+        // Use bee_pro_codes path - UNIQUE FOR THIS GAME
+        const codeRef = ref(database, `${PRO_CODES_PATH}/${code.toUpperCase()}`);
         const snapshot = await get(codeRef);
 
         if (!snapshot.exists()) {

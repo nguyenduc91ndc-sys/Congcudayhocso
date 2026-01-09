@@ -2,7 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { ArrowLeft, Maximize2, Minimize2, Lock, Phone, Crown, CheckCircle, Loader2 } from 'lucide-react';
 import { upgradeBeeGameToPro } from '../utils/trialUtils';
 import { canUseBeeGameTrialByDevice, useBeeGameTrialByDevice, getDeviceTrialStatus, upgradeDeviceToPro } from '../utils/firebaseDeviceTrial';
-import { validateProKey, activateProForEmail, isEmailPro } from '../utils/firebaseProKeys';
+import { validateBeeProKey, activateBeeProForEmail, isEmailBeePro } from '../utils/firebaseBeeProKeys';
 
 interface BeeGameEditableProps {
     onBack: () => void;
@@ -24,7 +24,7 @@ const BeeGameEditable: React.FC<BeeGameEditableProps> = ({ onBack, userEmail }) 
         const checkTrial = async () => {
             if (userEmail) {
                 // Kiểm tra email có phải PRO không
-                const emailIsPro = await isEmailPro(userEmail);
+                const emailIsPro = await isEmailBeePro(userEmail);
                 if (emailIsPro) {
                     setTrialStatus({ playsRemaining: 999, totalPlays: 0, isPro: true });
                     return;
@@ -86,12 +86,12 @@ const BeeGameEditable: React.FC<BeeGameEditableProps> = ({ onBack, userEmail }) 
 
         try {
             // Kiểm tra mã từ Firebase
-            const result = await validateProKey(licenseCode.trim());
+            const result = await validateBeeProKey(licenseCode.trim());
 
             if (result.valid) {
                 // Mã hợp lệ - Kích hoạt PRO cho Gmail của user
                 if (userEmail) {
-                    await activateProForEmail(userEmail, licenseCode.trim());
+                    await activateBeeProForEmail(userEmail, licenseCode.trim());
                     upgradeBeeGameToPro(userEmail);
                     await upgradeDeviceToPro(userEmail);
                     setTrialStatus({ playsRemaining: 999, totalPlays: 0, isPro: true });
