@@ -689,6 +689,30 @@
         setInterval(spawnMeteor, 3000);
 
         // --- 3. APP LOGIC ---
+        // LocalStorage key
+        const STORAGE_KEY = 'ngoi_sao_student_list';
+
+        // Helper functions for LocalStorage
+        function saveToLocalStorage(studentText) {
+            try {
+                localStorage.setItem(STORAGE_KEY, studentText);
+            } catch (e) {
+                console.error('Error saving to localStorage:', e);
+            }
+        }
+
+        function loadFromLocalStorage() {
+            try {
+                const saved = localStorage.getItem(STORAGE_KEY);
+                if (saved && saved.trim() !== '') {
+                    return saved;
+                }
+            } catch (e) {
+                console.error('Error loading from localStorage:', e);
+            }
+            return null;
+        }
+
         const studentListEl = document.getElementById('studentList');
         const studentCountEl = document.getElementById('studentCount');
         const displayArea = document.getElementById('displayArea');
@@ -703,12 +727,24 @@
         let isSpinning = false;
         let spinInterval;
 
+        // Load saved data on startup
+        const savedData = loadFromLocalStorage();
+        if (savedData) {
+            studentListEl.value = savedData;
+        }
+
         studentListEl.addEventListener('input', updateStudentList);
+
+        // Initial load
+        updateStudentList();
 
         function updateStudentList() {
             const rawText = studentListEl.value.trim();
             students = rawText.split('\n').filter(name => name.trim() !== '');
             studentCountEl.innerText = `${students.length} học sinh`;
+
+            // Auto-save to localStorage
+            saveToLocalStorage(studentListEl.value);
         }
 
         function useSampleData() {
@@ -727,9 +763,12 @@
         }
 
         function clearList() {
-            studentListEl.value = '';
-            updateStudentList();
-            displayArea.innerText = "SẴN SÀNG";
+            if (window.confirm('Bạn có chắc muốn xóa toàn bộ danh sách đã lưu?')) {
+                localStorage.removeItem(STORAGE_KEY);
+                studentListEl.value = '';
+                updateStudentList();
+                displayArea.innerText = "SẴN SÀNG";
+            }
         }
 
         function handleFileUpload(input) {

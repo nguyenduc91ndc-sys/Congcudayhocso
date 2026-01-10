@@ -13,6 +13,7 @@ interface EditModalProps {
     onClose: () => void;
     onSave: (newText: string) => void;
     currentStudents: string[];
+    onClear?: () => void;  // Optional: function to clear all saved data
 }
 
 // Icon for Google Sheets
@@ -24,7 +25,7 @@ const GoogleSheetsIcon = () => (
     </svg>
 );
 
-export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, currentStudents }) => {
+export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, currentStudents, onClear }) => {
     const [editText, setEditText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [importError, setImportError] = useState("");
@@ -206,8 +207,8 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
                         <button
                             onClick={() => setSelectedColumn(0)}
                             className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 0
-                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
-                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
                                 }`}
                         >
                             Cột A (Dòng 1)
@@ -215,8 +216,8 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
                         <button
                             onClick={() => setSelectedColumn(1)}
                             className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 1
-                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
-                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
                                 }`}
                         >
                             Cột B (Dòng 2)
@@ -224,8 +225,8 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
                         <button
                             onClick={() => setSelectedColumn(2)}
                             className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 2
-                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
-                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
                                 }`}
                         >
                             Cột C (Dòng 3)
@@ -269,19 +270,39 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
                     placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;..."
                     spellCheck={false}
                 />
-                <div className="flex justify-end gap-3 mt-6">
-                    <button
-                        onClick={onClose}
-                        className="font-bungee text-sm md:text-base bg-gray-400 hover:bg-gray-500 text-white py-2 px-6 rounded-full shadow-md transform active:scale-95 transition-all"
-                    >
-                        Hủy
-                    </button>
-                    <button
-                        onClick={() => onSave(editText)}
-                        className="font-bungee text-sm md:text-base bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white py-2 px-8 rounded-full shadow-lg transform active:scale-95 transition-all ring-4 ring-pink-200"
-                    >
-                        Lưu Thay Đổi
-                    </button>
+                <div className="flex justify-between gap-3 mt-6">
+                    {/* Delete button - left side */}
+                    {onClear && (
+                        <button
+                            onClick={onClear}
+                            className="font-bungee text-sm md:text-base bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-full shadow-md transform active:scale-95 transition-all flex items-center gap-1"
+                            title="Xóa toàn bộ danh sách đã lưu"
+                        >
+                            <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                                <path d="M6 19c0 1.1.9 2 2 2h8c1.1 0 2-.9 2-2V7H6v12zM19 4h-3.5l-1-1h-5l-1 1H5v2h14V4z" />
+                            </svg>
+                            Xóa
+                        </button>
+                    )}
+
+                    {/* Spacer if no delete button */}
+                    {!onClear && <div></div>}
+
+                    {/* Cancel and Save buttons - right side */}
+                    <div className="flex gap-3">
+                        <button
+                            onClick={onClose}
+                            className="font-bungee text-sm md:text-base bg-gray-400 hover:bg-gray-500 text-white py-2 px-6 rounded-full shadow-md transform active:scale-95 transition-all"
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            onClick={() => onSave(editText)}
+                            className="font-bungee text-sm md:text-base bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white py-2 px-8 rounded-full shadow-lg transform active:scale-95 transition-all ring-4 ring-pink-200"
+                        >
+                            Lưu Thay Đổi
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>

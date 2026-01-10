@@ -4,6 +4,7 @@ import { ArrowLeft } from "lucide-react";
 // ======= VÒNG TRÒN GỌI TÊN – 30 HỌC SINH (BẢN NÂNG CẤP) =======
 
 const SLOT_COUNT_DEFAULT = 30;
+const STORAGE_KEY = 'vong_tron_goi_ten_data'; // Key mới cho ứng dụng này
 
 // Danh sách thử thách và lời khen ngẫu nhiên
 const CHALLENGES = [
@@ -417,9 +418,28 @@ interface VongQuayProps {
 }
 
 export default function VongQuay({ onBack }: VongQuayProps) {
-    const [slotCount, setSlotCount] = useState<number>(SLOT_COUNT_DEFAULT);
+    // Load initial state from LocalStorage
+    const savedData = useMemo(() => {
+        try {
+            const data = localStorage.getItem(STORAGE_KEY);
+            return data ? JSON.parse(data) : null;
+        } catch (e) {
+            console.error("Error loading localStorage", e);
+            return null;
+        }
+    }, []);
+
+    const [slotCount, setSlotCount] = useState<number>(() => {
+        return savedData?.slotCount ?? SLOT_COUNT_DEFAULT;
+    });
+
     const [students, setStudents] = useState<{ id: number; name: string; img?: string }[]>(
-        () => Array.from({ length: SLOT_COUNT_DEFAULT }, (_, i) => ({ id: i, name: `HS ${i + 1}` }))
+        () => {
+            if (savedData?.students && Array.isArray(savedData.students)) {
+                return savedData.students;
+            }
+            return Array.from({ length: SLOT_COUNT_DEFAULT }, (_, i) => ({ id: i, name: `HS ${i + 1}` }));
+        }
     );
     const [highlight, setHighlight] = useState<number | null>(null);
     const [selected, setSelected] = useState<number | null>(null);
@@ -436,6 +456,18 @@ export default function VongQuay({ onBack }: VongQuayProps) {
     const spinTimerRef = useRef<number | null>(null);
     const objectUrls = useMemo(() => students.map((s) => s.img).filter(Boolean) as string[], [students]);
     useObjectUrlsCleaner(objectUrls);
+
+    // Auto-save to LocalStorage
+    useEffect(() => {
+        try {
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({
+                slotCount,
+                students
+            }));
+        } catch (e) {
+            console.error("Error saving localStorage", e);
+        }
+    }, [slotCount, students]);
 
     const containerRef = useRef<HTMLDivElement | null>(null);
 
@@ -493,11 +525,15 @@ export default function VongQuay({ onBack }: VongQuayProps) {
     };
 
     const handleResetAll = () => {
-        setStudents((prev) => prev.map((s) => ({ ...s, img: undefined })));
-        setSelected(null);
-        setHighlight(null);
-        setShowModal(false);
-        setShowFireworks(false);
+        if (confirm("Bạn có chắc muốn xóa tất cả dữ liệu (ảnh, tên) và đặt lại về mặc định không?")) {
+            localStorage.removeItem(STORAGE_KEY);
+            setSlotCount(SLOT_COUNT_DEFAULT);
+            setStudents(Array.from({ length: SLOT_COUNT_DEFAULT }, (_, i) => ({ id: i, name: `HS ${i + 1}` })));
+            setSelected(null);
+            setHighlight(null);
+            setShowModal(false);
+            setShowFireworks(false);
+        }
     };
 
     const handleBulkUpload = (files: FileList | null) => {

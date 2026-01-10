@@ -7,11 +7,50 @@ import { EditModal } from './components/EditModal';
 import { PlayIcon, ResetIcon, SoundOnIcon, SoundOffIcon, EditIcon } from './components/Icons';
 import { STUDENT_LIST_DEFAULT, SOUND_URLS } from './constants';
 
+// LocalStorage key for this app
+const STORAGE_KEY = 'lucky_wheel_student_list';
+
+// Helper functions for LocalStorage
+const saveToLocalStorage = (students: string[]) => {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+  } catch (e) {
+    console.error('Error saving to localStorage:', e);
+  }
+};
+
+const loadFromLocalStorage = (): string[] | null => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (Array.isArray(parsed) && parsed.length > 0) {
+        return parsed;
+      }
+    }
+  } catch (e) {
+    console.error('Error loading from localStorage:', e);
+  }
+  return null;
+};
+
 const App: React.FC = () => {
   // --- State ---
-  const [masterStudentList, setMasterStudentList] = useState<string[]>(STUDENT_LIST_DEFAULT);
-  const [availableStudents, setAvailableStudents] = useState<string[]>(STUDENT_LIST_DEFAULT);
+  // Load from LocalStorage on init, fallback to default list
+  const [masterStudentList, setMasterStudentList] = useState<string[]>(() => {
+    const saved = loadFromLocalStorage();
+    return saved || STUDENT_LIST_DEFAULT;
+  });
+  const [availableStudents, setAvailableStudents] = useState<string[]>(() => {
+    const saved = loadFromLocalStorage();
+    return saved || STUDENT_LIST_DEFAULT;
+  });
   const [winners, setWinners] = useState<string[]>([]);
+
+  // Auto-save to LocalStorage whenever masterStudentList changes
+  useEffect(() => {
+    saveToLocalStorage(masterStudentList);
+  }, [masterStudentList]);
 
   const [isSpinning, setIsSpinning] = useState(false);
   const [gameStarted, setGameStarted] = useState(false);
@@ -139,6 +178,23 @@ const App: React.FC = () => {
     setIsEditModalOpen(false);
   };
 
+  // Clear all saved data
+  const handleClearList = () => {
+    if (window.confirm('Bạn có chắc muốn xóa toàn bộ danh sách đã lưu?')) {
+      localStorage.removeItem(STORAGE_KEY);
+      setMasterStudentList(STUDENT_LIST_DEFAULT);
+      setAvailableStudents(STUDENT_LIST_DEFAULT);
+      setWinners([]);
+      setIsSpinning(false);
+      setGameStarted(false);
+      setSelectedStudent(null);
+      setShowConfetti(false);
+      setShowWinnerModal(false);
+      setRotation(0);
+      setIsEditModalOpen(false);
+    }
+  };
+
   const toggleMute = () => {
     const newMutedState = !isMuted;
     setIsMuted(newMutedState);
@@ -177,6 +233,7 @@ const App: React.FC = () => {
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleSaveList}
         currentStudents={masterStudentList}
+        onClear={handleClearList}
       />
 
       {/* Google Sheets Import Modal */}

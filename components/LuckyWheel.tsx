@@ -1,12 +1,38 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Play, RotateCcw, Volume2, VolumeX, Edit3, Maximize2 } from 'lucide-react';
+import { ArrowLeft, Play, RotateCcw, Volume2, VolumeX, Edit3, Maximize2, Trash2 } from 'lucide-react';
 
 // ===== CONSTANTS =====
+const STORAGE_KEY = 'vong_quay_student_list';
+
 const STUDENT_LIST_DEFAULT = [
     "Học sinh 1", "Học sinh 2", "Học sinh 3", "Học sinh 4", "Học sinh 5",
     "Học sinh 6", "Học sinh 7", "Học sinh 8", "Học sinh 9", "Học sinh 10",
     "Học sinh 11", "Học sinh 12", "Học sinh 13", "Học sinh 14", "Học sinh 15"
 ];
+
+// ===== LOCALSTORAGE HELPERS =====
+const saveToLocalStorage = (students: string[]): void => {
+    try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(students));
+    } catch (error) {
+        console.error('Error saving to LocalStorage:', error);
+    }
+};
+
+const loadFromLocalStorage = (): string[] | null => {
+    try {
+        const saved = localStorage.getItem(STORAGE_KEY);
+        if (saved) {
+            const parsed = JSON.parse(saved);
+            if (Array.isArray(parsed) && parsed.length > 0) {
+                return parsed;
+            }
+        }
+    } catch (error) {
+        console.error('Error loading from LocalStorage:', error);
+    }
+    return null;
+};
 
 const WHEEL_COLORS = [
     "#FF6B6B", "#FF8E72", "#FFA07A", "#FFB6C1",
@@ -170,8 +196,8 @@ const WinnerModal: React.FC<{ isOpen: boolean; winnerName: string | null; onCont
 };
 
 // ===== EDIT MODAL =====
-const EditModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (text: string) => void; currentStudents: string[] }> = ({
-    isOpen, onClose, onSave, currentStudents
+const EditModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (text: string) => void; onClear?: () => void; currentStudents: string[] }> = ({
+    isOpen, onClose, onSave, onClear, currentStudents
 }) => {
     const [editText, setEditText] = useState("");
 
@@ -192,9 +218,20 @@ const EditModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (text:
                     onChange={(e) => setEditText(e.target.value)}
                     placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;..."
                 />
-                <div className="flex justify-end gap-3 mt-4">
-                    <button onClick={onClose} className="px-5 py-2 bg-gray-400 text-white rounded-full font-bold">Hủy</button>
-                    <button onClick={() => onSave(editText)} className="px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full font-bold">Lưu</button>
+                <div className="flex justify-between items-center mt-4">
+                    {onClear && (
+                        <button
+                            onClick={onClear}
+                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full font-bold flex items-center gap-2 transition-colors"
+                            title="Xóa danh sách đã lưu"
+                        >
+                            <Trash2 size={16} /> Xóa
+                        </button>
+                    )}
+                    <div className="flex gap-3 ml-auto">
+                        <button onClick={onClose} className="px-5 py-2 bg-gray-400 text-white rounded-full font-bold">Hủy</button>
+                        <button onClick={() => onSave(editText)} className="px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full font-bold">Lưu</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -219,8 +256,15 @@ interface LuckyWheelProps {
 }
 
 const LuckyWheel: React.FC<LuckyWheelProps> = ({ onBack }) => {
-    const [masterStudentList, setMasterStudentList] = useState<string[]>(STUDENT_LIST_DEFAULT);
-    const [availableStudents, setAvailableStudents] = useState<string[]>(STUDENT_LIST_DEFAULT);
+    // Initialize state from LocalStorage or default
+    const [masterStudentList, setMasterStudentList] = useState<string[]>(() => {
+        const saved = loadFromLocalStorage();
+        return saved || STUDENT_LIST_DEFAULT;
+    });
+    const [availableStudents, setAvailableStudents] = useState<string[]>(() => {
+        const saved = loadFromLocalStorage();
+        return saved || STUDENT_LIST_DEFAULT;
+    });
     const [winners, setWinners] = useState<string[]>([]);
 
     const [isSpinning, setIsSpinning] = useState(false);
@@ -252,6 +296,11 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onBack }) => {
             bgmAudioRef.current?.pause();
         };
     }, []);
+
+    // Auto-save student list to LocalStorage
+    useEffect(() => {
+        saveToLocalStorage(masterStudentList);
+    }, [masterStudentList]);
 
     const playBgm = useCallback(() => {
         if (bgmAudioRef.current && !isMuted && bgmAudioRef.current.paused) {
@@ -330,6 +379,18 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onBack }) => {
         setIsEditModalOpen(false);
     };
 
+    // Clear all saved data from LocalStorage
+    const handleClearList = () => {
+        if (confirm('Bạn có chắc chắn muốn xóa danh sách đã lưu? Danh sách sẽ được đặt lại về mặc định.')) {
+            localStorage.removeItem(STORAGE_KEY);
+            setMasterStudentList(STUDENT_LIST_DEFAULT);
+            setAvailableStudents(STUDENT_LIST_DEFAULT);
+            setWinners([]);
+            setRotation(0);
+            setIsEditModalOpen(false);
+        }
+    };
+
     const toggleMute = () => {
         const newMutedState = !isMuted;
         setIsMuted(newMutedState);
@@ -356,7 +417,7 @@ const LuckyWheel: React.FC<LuckyWheelProps> = ({ onBack }) => {
 
             {showConfetti && <Confetti />}
             <WinnerModal isOpen={showWinnerModal} winnerName={selectedStudent} onContinue={handleContinueAfterWin} />
-            <EditModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSave={handleSaveList} currentStudents={masterStudentList} />
+            <EditModal isOpen={isEditModalOpen} onClose={() => setIsEditModalOpen(false)} onSave={handleSaveList} onClear={handleClearList} currentStudents={masterStudentList} />
 
             {/* Header */}
             <div className="w-full flex items-center justify-between z-20 mb-4">
