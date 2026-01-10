@@ -418,25 +418,29 @@ interface VongQuayProps {
 }
 
 export default function VongQuay({ onBack }: VongQuayProps) {
-    // Load initial state from LocalStorage
-    const savedData = useMemo(() => {
+    // Helper function to load saved data
+    const loadSavedData = () => {
         try {
             const data = localStorage.getItem(STORAGE_KEY);
-            return data ? JSON.parse(data) : null;
+            if (data) {
+                return JSON.parse(data);
+            }
         } catch (e) {
             console.error("Error loading localStorage", e);
-            return null;
         }
-    }, []);
+        return null;
+    };
 
     const [slotCount, setSlotCount] = useState<number>(() => {
-        return savedData?.slotCount ?? SLOT_COUNT_DEFAULT;
+        const saved = loadSavedData();
+        return saved?.slotCount ?? SLOT_COUNT_DEFAULT;
     });
 
     const [students, setStudents] = useState<{ id: number; name: string; img?: string }[]>(
         () => {
-            if (savedData?.students && Array.isArray(savedData.students)) {
-                return savedData.students;
+            const saved = loadSavedData();
+            if (saved?.students && Array.isArray(saved.students) && saved.students.length > 0) {
+                return saved.students;
             }
             return Array.from({ length: SLOT_COUNT_DEFAULT }, (_, i) => ({ id: i, name: `HS ${i + 1}` }));
         }
