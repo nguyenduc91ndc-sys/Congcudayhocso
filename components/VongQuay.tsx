@@ -540,16 +540,37 @@ export default function VongQuay({ onBack }: VongQuayProps) {
         }
     };
 
-    const handleBulkUpload = (files: FileList | null) => {
+    // Helper: Convert File to Base64
+    const fileToBase64 = (file: File): Promise<string> => {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.readAsDataURL(file);
+            reader.onload = () => resolve(reader.result as string);
+            reader.onerror = (error) => reject(error);
+        });
+    };
+
+    const handleBulkUpload = async (files: FileList | null) => {
         if (!files || files.length === 0) return;
+
+        const newImages: string[] = [];
+        for (const file of Array.from(files)) {
+            try {
+                const base64 = await fileToBase64(file);
+                newImages.push(base64);
+            } catch (e) {
+                console.error("Error converting file", file.name, e);
+            }
+        }
+
         setStudents((prev) => {
             const next = [...prev];
-            let idx = next.findIndex((s) => !s.img);
-            for (const file of Array.from(files)) {
-                if (idx === -1) break;
-                const url = URL.createObjectURL(file);
-                next[idx] = { ...next[idx], img: url };
-                idx = next.findIndex((s) => !s.img);
+            let imgIdx = 0;
+            for (let i = 0; i < next.length && imgIdx < newImages.length; i++) {
+                if (!next[i].img) {
+                    next[i] = { ...next[i], img: newImages[imgIdx] };
+                    imgIdx++;
+                }
             }
             return next;
         });
@@ -600,9 +621,13 @@ export default function VongQuay({ onBack }: VongQuayProps) {
         setShowNameInputModal(false);
     };
 
-    const setSlotImage = (i: number, file: File) => {
-        const url = URL.createObjectURL(file);
-        setStudents((prev) => prev.map((s, idx) => (idx === i ? { ...s, img: url } : s)));
+    const setSlotImage = async (i: number, file: File) => {
+        try {
+            const base64 = await fileToBase64(file);
+            setStudents((prev) => prev.map((s, idx) => (idx === i ? { ...s, img: base64 } : s)));
+        } catch (e) {
+            console.error("Error setting slot image", e);
+        }
     };
 
     const clearSlotImage = (i: number) => {
