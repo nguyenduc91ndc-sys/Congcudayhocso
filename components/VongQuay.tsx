@@ -550,7 +550,7 @@ export default function VongQuay({ onBack }: VongQuayProps) {
                 img.src = event.target?.result as string;
                 img.onload = () => {
                     const canvas = document.createElement('canvas');
-                    const MAX_SIZE = 200; // Resize to reasonable size for avatar
+                    const MAX_SIZE = 400; // Tăng lên để ảnh nét hơn
                     let width = img.width;
                     let height = img.height;
 
@@ -569,8 +569,8 @@ export default function VongQuay({ onBack }: VongQuayProps) {
                     canvas.height = height;
                     const ctx = canvas.getContext('2d');
                     ctx?.drawImage(img, 0, 0, width, height);
-                    // Use JPEG with 0.7 quality to save space
-                    resolve(canvas.toDataURL('image/jpeg', 0.7));
+                    // Tăng chất lượng lên 0.8 (vẫn an toàn cho localStorage)
+                    resolve(canvas.toDataURL('image/jpeg', 0.8));
                 };
                 img.onerror = (err) => reject(err);
             };
