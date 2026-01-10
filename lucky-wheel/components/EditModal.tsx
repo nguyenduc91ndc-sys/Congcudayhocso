@@ -187,6 +187,17 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
             <div className="bg-gradient-to-br from-pink-100 to-white p-6 rounded-3xl shadow-2xl w-full max-w-md mx-4 border-4 border-pink-200">
                 <h2 className="text-2xl font-bungee text-pink-500 text-center mb-4 tracking-wider">Chỉnh Sửa Danh Sách</h2>
 
+                {/* Hướng dẫn đăng nhập Google */}
+                <div className="mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                    <div className="flex items-start gap-2">
+                        <span className="text-amber-500 text-lg">💡</span>
+                        <div className="text-xs text-amber-700">
+                            <p className="font-bold mb-1">Lưu ý khi đăng nhập Google:</p>
+                            <p>Nếu thấy cảnh báo <strong>"Google chưa xác minh ứng dụng này"</strong>, hãy nhấn <strong>"Nâng cao"</strong> → <strong>"Truy cập giaoviencn.io.vn"</strong> để tiếp tục.</p>
+                        </div>
+                    </div>
+                </div>
+
                 {/* Google Sheets Import Button */}
                 <button
                     onClick={handleGooglePicker}
