@@ -1,5 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { ArrowLeft } from "lucide-react";
+import { ArrowLeft, Maximize, Minimize } from "lucide-react";
 
 // ======= VÒNG TRÒN GỌI TÊN – 30 HỌC SINH (BẢN NÂNG CẤP) =======
 
@@ -454,6 +454,26 @@ export default function VongQuay({ onBack }: VongQuayProps) {
     const [showFireworks, setShowFireworks] = useState(false);
     const [showNameInputModal, setShowNameInputModal] = useState(false);
     const [randomSuggestion, setRandomSuggestion] = useState<string | null>(null);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    // Fullscreen logic
+    useEffect(() => {
+        const onFullscreenChange = () => {
+            setIsFullscreen(!!document.fullscreenElement);
+        };
+        document.addEventListener("fullscreenchange", onFullscreenChange);
+        return () => document.removeEventListener("fullscreenchange", onFullscreenChange);
+    }, []);
+
+    const toggleFullscreen = () => {
+        if (!document.fullscreenElement) {
+            document.documentElement.requestFullscreen();
+        } else {
+            if (document.exitFullscreen) {
+                document.exitFullscreen();
+            }
+        }
+    };
 
     const { tick, celebrate } = useSound(soundOn);
 
@@ -715,13 +735,15 @@ export default function VongQuay({ onBack }: VongQuayProps) {
             <div className="relative z-10 flex flex-col h-full w-full max-w-6xl mx-auto p-2 md:p-4">
 
                 {/* Header */}
-                <header className="shrink-0 flex items-center gap-4 mb-2">
+                <header className="shrink-0 flex items-center justify-between gap-4 mb-2">
                     <button
                         onClick={onBack}
                         className="p-2 bg-white/80 hover:bg-white rounded-full shadow-md transition-colors"
+                        title="Quay lại"
                     >
                         <ArrowLeft size={20} className="text-slate-600" />
                     </button>
+
                     <div className="text-center flex-1">
                         <h1 className="text-2xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-teal-600 to-rose-600 tracking-wider drop-shadow-sm">
                             VÒNG TRÒN GỌI TÊN
@@ -730,6 +752,14 @@ export default function VongQuay({ onBack }: VongQuayProps) {
                             Kéo thả ảnh hoặc nhấn <span className="font-bold text-rose-500">+</span>. Nhấn <span className="font-bold text-orange-500">Bắt đầu</span> để quay.
                         </p>
                     </div>
+
+                    <button
+                        onClick={toggleFullscreen}
+                        className="p-2 bg-white/80 hover:bg-white rounded-full shadow-md transition-colors text-slate-600 hover:text-teal-600"
+                        title={isFullscreen ? "Thu nhỏ" : "Phóng to toàn màn hình"}
+                    >
+                        {isFullscreen ? <Minimize size={20} /> : <Maximize size={20} />}
+                    </button>
                 </header>
 
                 {/* Thanh điều khiển */}
