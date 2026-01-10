@@ -31,7 +31,7 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
 
     // --- Google Picker Integration ---
     const CLIENT_ID = '270974453484-vpsgvnih68hcmuhm8nn358pok8335e4a.apps.googleusercontent.com';
-    const API_KEY = 'AIzaSyD8b5wDZjI7GMQN0LfdssjSSrDu724LRIk'; // From utils/firebaseConfig
+    const API_KEY = 'AIzaSyC0TqnPxCDWc8HutyBJKL_rbmAF_Ar8QKY'; // From DUAN3 project
 
     const [isGapiLoaded, setIsGapiLoaded] = useState(false);
     const [isGsiLoaded, setIsGsiLoaded] = useState(false);
