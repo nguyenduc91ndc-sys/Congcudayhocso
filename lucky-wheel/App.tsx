@@ -249,19 +249,19 @@ const App: React.FC = () => {
         </div>
       )}
 
+      {/* Home Button - Left Side */}
+      <a
+        href="/"
+        className="absolute top-4 left-6 z-30 p-3 bg-white/90 hover:bg-white backdrop-blur-md rounded-full transition-all border-2 border-pink-300 shadow-lg hover:scale-110"
+        title="Quay về trang chủ"
+      >
+        <svg className="w-6 h-6 text-pink-600" fill="currentColor" viewBox="0 0 24 24">
+          <path d="M10 20v-6h4v6h5v-8h3L12 3 2 12h3v8z" />
+        </svg>
+      </a>
+
       {/* Header Actions */}
       <div className="absolute top-4 right-6 z-30 flex gap-3">
-        {/* Google Sheets Import Button */}
-        <button
-          onClick={() => { setIsGoogleImportOpen(true); setImportError(''); setSheetUrl(''); }}
-          className="p-3 bg-white/90 hover:bg-white backdrop-blur-md rounded-full transition-all border-2 border-green-400 shadow-lg group hover:scale-110"
-          title="Nhập bảng tính Google"
-        >
-          <svg className="w-6 h-6 text-green-600" viewBox="0 0 24 24" fill="currentColor">
-            <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2ZM16 18H8V16H16V18ZM16 14H8V12H16V14ZM13 9V3.5L18.5 9H13Z" />
-          </svg>
-        </button>
-
         <button
           onClick={() => setIsEditModalOpen(true)}
           className="p-3 bg-white/90 hover:bg-white backdrop-blur-md rounded-full transition-all border-2 border-pink-300 shadow-lg group hover:scale-110"
