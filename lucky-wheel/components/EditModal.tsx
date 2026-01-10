@@ -28,6 +28,7 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
     const [editText, setEditText] = useState("");
     const [isLoading, setIsLoading] = useState(false);
     const [importError, setImportError] = useState("");
+    const [selectedColumn, setSelectedColumn] = useState(0); // 0 = Cột A, 1 = Cột B, 2 = Cột C
 
     // --- Google Picker Integration ---
     const CLIENT_ID = '270974453484-vpsgvnih68hcmuhm8nn358pok8335e4a.apps.googleusercontent.com';
@@ -84,17 +85,17 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
         const names: string[] = [];
 
         for (const line of lines) {
-            // Simple CSV parsing - get first cell
+            // CSV parsing - get selected column
             const cells = line.split(',');
-            const firstCell = cells[0]?.trim().replace(/"/g, '');
+            const selectedCell = cells[selectedColumn]?.trim().replace(/"/g, '');
 
-            if (firstCell && firstCell !== '') {
-                names.push(firstCell);
+            if (selectedCell && selectedCell !== '') {
+                names.push(selectedCell);
             }
         }
 
         if (names.length === 0) {
-            throw new Error("Không tìm thấy dữ liệu trong bảng tính!");
+            throw new Error("Không tìm thấy dữ liệu trong cột được chọn!");
         }
 
         setEditText(names.join('\n'));
@@ -195,6 +196,40 @@ export const EditModal: React.FC<EditModalProps> = ({ isOpen, onClose, onSave, c
                             <p className="font-bold mb-1">Lưu ý khi đăng nhập Google:</p>
                             <p>Nếu thấy cảnh báo <strong>"Google chưa xác minh ứng dụng này"</strong>, hãy nhấn <strong>"Nâng cao"</strong> → <strong>"Truy cập giaoviencn.io.vn"</strong> để tiếp tục.</p>
                         </div>
+                    </div>
+                </div>
+
+                {/* Column Selector */}
+                <div className="mb-3">
+                    <label className="block text-sm font-bold text-pink-500 mb-2">Chọn cột dữ liệu từ bảng tính:</label>
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setSelectedColumn(0)}
+                            className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 0
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                }`}
+                        >
+                            Cột A (Dòng 1)
+                        </button>
+                        <button
+                            onClick={() => setSelectedColumn(1)}
+                            className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 1
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                }`}
+                        >
+                            Cột B (Dòng 2)
+                        </button>
+                        <button
+                            onClick={() => setSelectedColumn(2)}
+                            className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 2
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                }`}
+                        >
+                            Cột C (Dòng 3)
+                        </button>
                     </div>
                 </div>
 
