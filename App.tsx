@@ -18,6 +18,7 @@ import InteractiveVideoModule from './components/InteractiveVideoModule';
 import AICourseStore from './components/AICourseStore';
 import AICourseAdmin from './components/AICourseAdmin';
 import CanvaBasics from './components/CanvaBasics';
+import CommunityResourceStore from './components/CommunityResourceStore';
 import NewYearWelcome from './components/NewYearWelcome';
 import Footer from './components/Footer';
 import ZaloBrowserWarning from './components/ZaloBrowserWarning';
@@ -267,6 +268,7 @@ function App() {
                   onInteractiveVideo={() => requireLogin(() => setView('INTERACTIVE_VIDEO'))}
                   onAICourseStore={() => setView('AI_COURSE_STORE')}
                   onCanvaBasics={() => setView('CANVA_BASICS')}
+                  onCommunityResources={() => setView('COMMUNITY_RESOURCES')}
                   onNewYear={() => setShowNewYearWelcome(true)}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
@@ -368,6 +370,15 @@ function App() {
 
           {view === 'CANVA_BASICS' && (
             <CanvaBasics
+              onBack={() => setView('DASHBOARD')}
+              isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
+              isLoggedIn={!!user}
+              onRequireLogin={() => setShowLoginModal(true)}
+            />
+          )}
+
+          {view === 'COMMUNITY_RESOURCES' && (
+            <CommunityResourceStore
               onBack={() => setView('DASHBOARD')}
               isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
               isLoggedIn={!!user}

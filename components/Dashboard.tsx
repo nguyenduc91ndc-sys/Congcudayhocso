@@ -37,6 +37,7 @@ interface DashboardProps {
     onInteractiveVideo: () => void;
     onAICourseStore: () => void;
     onCanvaBasics: () => void;
+    onCommunityResources: () => void;
     onNewYear: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
@@ -241,7 +242,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onNewYear, isAdmin, isGuest
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, isAdmin, isGuest
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -675,6 +676,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 accentColor="bg-gradient-to-br from-teal-500 to-cyan-600"
                                 onClick={onCanvaBasics}
                                 badge="Mới"
+                            />
+
+                            <ToolCard
+                                title="Kho tài nguyên cộng đồng"
+                                description="Kho tài nguyên miễn phí từ cộng đồng"
+                                icon={<Users size={24} className="text-white" />}
+                                accentColor="bg-gradient-to-br from-green-500 to-emerald-600"
+                                onClick={onCommunityResources}
+                                badge="Miễn phí"
                             />
 
                         </div>
