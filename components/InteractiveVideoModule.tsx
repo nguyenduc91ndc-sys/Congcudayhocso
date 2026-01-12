@@ -9,7 +9,7 @@ import { VideoLesson, Question } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import ReactPlayer from 'react-player/youtube';
 import { cleanYouTubeUrl, isValidYouTubeUrl, extractStartTime } from '../utils/youtubeUtils';
-import { createShareUrl, shortenUrl } from '../utils/shareUtils';
+import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareUtils';
 
 interface InteractiveVideoModuleProps {
     lessons: VideoLesson[];
@@ -166,12 +166,13 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         setIsCopyingLink(lesson.id);
 
         try {
-            const longUrl = createShareUrl(lesson);
-            const shortUrl = await shortenUrl(longUrl);
+            // Sử dụng Firebase để tạo link ngắn
+            const shortUrl = await createShortShareUrl(lesson);
             await navigator.clipboard.writeText(shortUrl);
             setCopiedId(lesson.id);
             setTimeout(() => setCopiedId(null), 2000);
         } catch (error) {
+            // Fallback về link dài nếu lỗi
             const longUrl = createShareUrl(lesson);
             await navigator.clipboard.writeText(longUrl);
             setCopiedId(lesson.id);
@@ -688,12 +689,13 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                         if (isCopyingLink) return;
                                         setIsCopyingLink(savedLesson.id);
                                         try {
-                                            const longUrl = createShareUrl(savedLesson);
-                                            const shortUrl = await shortenUrl(longUrl);
+                                            // Sử dụng Firebase để tạo link ngắn
+                                            const shortUrl = await createShortShareUrl(savedLesson);
                                             await navigator.clipboard.writeText(shortUrl);
                                             setCopiedId(savedLesson.id);
                                             setTimeout(() => setCopiedId(null), 3000);
                                         } catch (error) {
+                                            // Fallback về link dài nếu lỗi
                                             const longUrl = createShareUrl(savedLesson);
                                             await navigator.clipboard.writeText(longUrl);
                                             setCopiedId(savedLesson.id);

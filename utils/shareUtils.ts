@@ -5,6 +5,7 @@
 
 import { VideoLesson } from '../types';
 import LZString from 'lz-string';
+import { saveSharedVideo } from './firebaseShareLinks';
 
 /**
  * Nén video lesson thành chuỗi ngắn để đưa vào URL
@@ -98,3 +99,22 @@ export const shortenUrl = async (longUrl: string): Promise<string> => {
         return longUrl; // Fallback nếu lỗi
     }
 };
+
+/**
+ * Tạo URL chia sẻ ngắn bằng cách lưu vào Firebase
+ * Link sẽ có dạng: https://domain.com?v=abc123xy
+ */
+export const createShortShareUrl = async (lesson: VideoLesson): Promise<string> => {
+    try {
+        const shortId = await saveSharedVideo(lesson);
+        if (shortId) {
+            return `${window.location.origin}?v=${shortId}`;
+        }
+        // Fallback về link dài nếu lỗi
+        return createShareUrl(lesson);
+    } catch (error) {
+        console.error('Error creating short share URL:', error);
+        return createShareUrl(lesson);
+    }
+};
+

@@ -12,7 +12,7 @@ import { useTheme } from '../contexts/ThemeContext';
 import { getTrialStatus, activateWithCode, upgradeToPro, useTrialPlay } from '../utils/trialUtils';
 import { playCorrectSound, playIncorrectSound, playMustRewatchSound, playVictorySound, playHoverSound } from '../utils/soundUtils';
 import FeedbackButton from './FeedbackButton';
-import { createShareUrl, shortenUrl } from '../utils/shareUtils';
+import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareUtils';
 import { verifyAdminPassword, isAdminAuthenticated, setAdminAuthenticated } from '../utils/adminAuth';
 import { canUseVideoTrialByDevice, useVideoTrialByDevice, getDeviceTrialStatus } from '../utils/firebaseDeviceTrial';
 import ScrollButtons from './ScrollButtons';
@@ -293,14 +293,14 @@ const Dashboard: React.FC<DashboardProps> = ({
         setIsShorteningId(lesson.id);
 
         try {
-            const longUrl = createShareUrl(lesson);
-            const shortUrl = await shortenUrl(longUrl);
+            // Sử dụng Firebase để tạo link ngắn
+            const shortUrl = await createShortShareUrl(lesson);
             await navigator.clipboard.writeText(shortUrl);
             setCopiedId(lesson.id);
             setTimeout(() => setCopiedId(null), 2000);
         } catch (error) {
             console.error('Share error:', error);
-            // Fallback
+            // Fallback về link dài nếu lỗi
             const longUrl = createShareUrl(lesson);
             await navigator.clipboard.writeText(longUrl);
             setCopiedId(lesson.id);

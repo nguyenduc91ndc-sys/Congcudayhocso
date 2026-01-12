@@ -25,6 +25,7 @@ import ZaloBrowserWarning from './components/ZaloBrowserWarning';
 import { User, ViewState, VideoLesson } from './types';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { decodeVideoData } from './utils/shareUtils';
+import { getSharedVideo } from './utils/firebaseShareLinks';
 import { logVisit } from './utils/analyticsUtils';
 import { incrementVisitCount } from './utils/visitCounter';
 import { logVisitorToFirebase, logLoginHistory, checkAndMigrateIfNeeded } from './utils/firebaseVisitors';
@@ -54,78 +55,98 @@ function App() {
 
     // Kiểm tra param 'v' (nén mới) hoặc 'data' (cũ)
     const sharedData = urlParams.get('v') || urlParams.get('data');
-    if (sharedData) {
-      const decodedLesson = decodeVideoData(sharedData);
-      if (decodedLesson) {
-        setCurrentLesson(decodedLesson);
-        setView('PLAYER');
-        window.history.replaceState({}, document.title, window.location.pathname);
-        return;
+
+    const loadSharedVideo = async () => {
+      if (sharedData) {
+        // Nếu ID ngắn (< 30 ký tự) -> lấy từ Firebase
+        if (sharedData.length < 30) {
+          const firebaseLesson = await getSharedVideo(sharedData);
+          if (firebaseLesson) {
+            setCurrentLesson(firebaseLesson);
+            setView('PLAYER');
+            window.history.replaceState({}, document.title, window.location.pathname);
+            return true;
+          }
+        }
+
+        // Fallback: thử giải nén LZ-String (link dài cũ)
+        const decodedLesson = decodeVideoData(sharedData);
+        if (decodedLesson) {
+          setCurrentLesson(decodedLesson);
+          setView('PLAYER');
+          window.history.replaceState({}, document.title, window.location.pathname);
+          return true;
+        }
       }
-    }
+      return false;
+    };
 
-    // Load saved user
-    const savedUser = localStorage.getItem('ntd_user');
-    if (savedUser) {
-      const parsedUser = JSON.parse(savedUser);
-      setUser(parsedUser);
-      // Load lessons cho user này
-      const userLessonsKey = getLessonsStorageKey(parsedUser.email);
-      const savedLessons = localStorage.getItem(userLessonsKey);
-      if (savedLessons) {
-        setLessons(JSON.parse(savedLessons));
+    loadSharedVideo().then((hasSharedVideo) => {
+      if (hasSharedVideo) return;
+
+      // Load saved user
+      const savedUser = localStorage.getItem('ntd_user');
+      if (savedUser) {
+        const parsedUser = JSON.parse(savedUser);
+        setUser(parsedUser);
+        // Load lessons cho user này
+        const userLessonsKey = getLessonsStorageKey(parsedUser.email);
+        const savedLessons = localStorage.getItem(userLessonsKey);
+        if (savedLessons) {
+          setLessons(JSON.parse(savedLessons));
+        }
+
+        // Check and log history if needed (throttle 30 mins OR new day)
+        const lastLogTime = localStorage.getItem('ntd_last_log_time');
+        const now = Date.now();
+
+        let shouldLog = false;
+        if (!lastLogTime) {
+          shouldLog = true;
+        } else {
+          const lastLogDate = new Date(parseInt(lastLogTime));
+          const currentDate = new Date(now);
+          // Check if different day
+          const isNewDay = lastLogDate.getDate() !== currentDate.getDate() ||
+            lastLogDate.getMonth() !== currentDate.getMonth() ||
+            lastLogDate.getFullYear() !== currentDate.getFullYear();
+          // Check time diff > 30 mins
+          const isTimeElapsed = (now - parseInt(lastLogTime) > 30 * 60 * 1000);
+
+          shouldLog = isNewDay || isTimeElapsed;
+        }
+
+        if (shouldLog) {
+          // Log vào lịch sử
+          logLoginHistory(parsedUser.id, parsedUser.name, parsedUser.email || '', parsedUser.avatar);
+          // Update last log time
+          localStorage.setItem('ntd_last_log_time', now.toString());
+
+          // Log vào visitor logs (cho danh sách hiển thị realtime nếu dùng)
+          incrementVisitCount();
+          logVisitorToFirebase(parsedUser.id, parsedUser.name, parsedUser.avatar, parsedUser.email);
+        }
       }
+      // Always stay on DASHBOARD (default view)
 
-      // Check and log history if needed (throttle 30 mins OR new day)
-      const lastLogTime = localStorage.getItem('ntd_last_log_time');
-      const now = Date.now();
+      // Migration: copy dữ liệu cũ từ visitorLogs sang loginHistory (chỉ chạy 1 lần)
+      checkAndMigrateIfNeeded();
 
-      let shouldLog = false;
-      if (!lastLogTime) {
-        shouldLog = true;
-      } else {
-        const lastLogDate = new Date(parseInt(lastLogTime));
-        const currentDate = new Date(now);
-        // Check if different day
-        const isNewDay = lastLogDate.getDate() !== currentDate.getDate() ||
-          lastLogDate.getMonth() !== currentDate.getMonth() ||
-          lastLogDate.getFullYear() !== currentDate.getFullYear();
-        // Check time diff > 30 mins
-        const isTimeElapsed = (now - parseInt(lastLogTime) > 30 * 60 * 1000);
+      // Auto-show New Year welcome on first visit (trong mùa Tết)
+      const hasSeenNewYear = localStorage.getItem('ntd_seen_new_year_2026');
+      const nowDate = new Date();
+      // Hiển thị từ 15/12 đến hết 28/2 (mùa Tết)
+      const isNewYearSeason = (nowDate.getMonth() === 11 && nowDate.getDate() >= 15) || // 15/12 trở đi
+        nowDate.getMonth() === 0 || // Tháng 1
+        (nowDate.getMonth() === 1 && nowDate.getDate() <= 28); // Đến hết 28/2
 
-        shouldLog = isNewDay || isTimeElapsed;
+      if (!hasSeenNewYear && isNewYearSeason && !sharedData) {
+        setTimeout(() => {
+          setShowNewYearWelcome(true);
+          localStorage.setItem('ntd_seen_new_year_2026', 'true');
+        }, 1000); // Delay 1s để app load xong
       }
-
-      if (shouldLog) {
-        // Log vào lịch sử
-        logLoginHistory(parsedUser.id, parsedUser.name, parsedUser.email || '', parsedUser.avatar);
-        // Update last log time
-        localStorage.setItem('ntd_last_log_time', now.toString());
-
-        // Log vào visitor logs (cho danh sách hiển thị realtime nếu dùng)
-        incrementVisitCount();
-        logVisitorToFirebase(parsedUser.id, parsedUser.name, parsedUser.avatar, parsedUser.email);
-      }
-    }
-    // Always stay on DASHBOARD (default view)
-
-    // Migration: copy dữ liệu cũ từ visitorLogs sang loginHistory (chỉ chạy 1 lần)
-    checkAndMigrateIfNeeded();
-
-    // Auto-show New Year welcome on first visit (trong mùa Tết)
-    const hasSeenNewYear = localStorage.getItem('ntd_seen_new_year_2026');
-    const now = new Date();
-    // Hiển thị từ 15/12 đến hết 28/2 (mùa Tết)
-    const isNewYearSeason = (now.getMonth() === 11 && now.getDate() >= 15) || // 15/12 trở đi
-      now.getMonth() === 0 || // Tháng 1
-      (now.getMonth() === 1 && now.getDate() <= 28); // Đến hết 28/2
-
-    if (!hasSeenNewYear && isNewYearSeason && !sharedData) {
-      setTimeout(() => {
-        setShowNewYearWelcome(true);
-        localStorage.setItem('ntd_seen_new_year_2026', 'true');
-      }, 1000); // Delay 1s để app load xong
-    }
+    });
   }, []);
 
   const handleLogin = (loggedInUser: User) => {

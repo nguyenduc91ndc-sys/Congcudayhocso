@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Save, Play, Plus, Trash2, Clock, Settings, ArrowLeft, AlertCircle, ExternalLink, CheckCircle2, ChevronUp, ChevronDown, Share2, X, Home, Edit3, Copy } from 'lucide-react';
 import ReactPlayer from 'react-player/youtube';
 import { cleanYouTubeUrl, isValidYouTubeUrl, extractStartTime, getYouTubeThumbnailUrl } from '../utils/youtubeUtils';
-import { createShareUrl, shortenUrl } from '../utils/shareUtils';
+import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareUtils';
 
 interface VideoEditorProps {
   lesson?: VideoLesson | null;
@@ -527,12 +527,13 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ lesson, onSave, onCancel, onP
                     if (isCopyingLink) return;
                     setIsCopyingLink(true);
                     try {
-                      const longUrl = createShareUrl(savedLesson);
-                      const shortUrl = await shortenUrl(longUrl);
+                      // Sử dụng Firebase để tạo link ngắn
+                      const shortUrl = await createShortShareUrl(savedLesson);
                       await navigator.clipboard.writeText(shortUrl);
                       setLinkCopied(true);
                       setTimeout(() => setLinkCopied(false), 3000);
                     } catch (error) {
+                      // Fallback về link dài nếu lỗi
                       const longUrl = createShareUrl(savedLesson);
                       await navigator.clipboard.writeText(longUrl);
                       setLinkCopied(true);
@@ -543,8 +544,8 @@ const VideoEditor: React.FC<VideoEditorProps> = ({ lesson, onSave, onCancel, onP
                   }}
                   disabled={isCopyingLink}
                   className={`py-3 px-4 rounded-xl font-bold text-white shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2 disabled:opacity-70 disabled:cursor-wait ${linkCopied
-                      ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                      : 'bg-gradient-to-r from-amber-400 to-orange-500'
+                    ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                    : 'bg-gradient-to-r from-amber-400 to-orange-500'
                     }`}
                 >
                   {isCopyingLink ? (
