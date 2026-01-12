@@ -79,13 +79,18 @@ export const createShareUrl = (lesson: VideoLesson): string => {
 };
 
 /**
- * Rút gọn URL bằng TinyURL API
+ * Rút gọn URL bằng is.gd API (không có quảng cáo)
  */
 export const shortenUrl = async (longUrl: string): Promise<string> => {
     try {
-        const response = await fetch(`https://tinyurl.com/api-create.php?url=${encodeURIComponent(longUrl)}`);
+        // is.gd API không có quảng cáo, miễn phí và đáng tin cậy
+        const response = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
         if (response.ok) {
-            return await response.text();
+            const shortUrl = await response.text();
+            // Kiểm tra xem có phải URL hợp lệ không
+            if (shortUrl.startsWith('https://is.gd/')) {
+                return shortUrl;
+            }
         }
         return longUrl; // Fallback nếu lỗi
     } catch (error) {
