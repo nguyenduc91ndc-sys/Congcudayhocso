@@ -12,6 +12,7 @@ export interface CommunityResource {
     link: string;
     category?: string;
     icon?: string; // Emoji icon for visual appeal
+    source?: string; // Credit nguồn tài nguyên (tùy chọn)
     addedAt: number;
 }
 

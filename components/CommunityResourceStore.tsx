@@ -37,6 +37,7 @@ const CommunityResourceStore: React.FC<CommunityResourceStoreProps> = ({
     const [formLink, setFormLink] = useState('');
     const [formCategory, setFormCategory] = useState('');
     const [formIcon, setFormIcon] = useState('📁');
+    const [formSource, setFormSource] = useState('');
     const [isSaving, setIsSaving] = useState(false);
 
     // Popular emoji icons for resources
@@ -68,7 +69,8 @@ const CommunityResourceStore: React.FC<CommunityResourceStoreProps> = ({
                     description: formDescription.trim(),
                     link: formLink.trim(),
                     category: formCategory.trim(),
-                    icon: formIcon
+                    icon: formIcon,
+                    source: formSource.trim()
                 });
             } else {
                 await addResource({
@@ -77,6 +79,7 @@ const CommunityResourceStore: React.FC<CommunityResourceStoreProps> = ({
                     link: formLink.trim(),
                     category: formCategory.trim(),
                     icon: formIcon,
+                    source: formSource.trim(),
                     addedAt: Date.now()
                 });
             }
@@ -102,6 +105,7 @@ const CommunityResourceStore: React.FC<CommunityResourceStoreProps> = ({
         setFormLink(resource.link);
         setFormCategory(resource.category || '');
         setFormIcon(resource.icon || '📁');
+        setFormSource(resource.source || '');
         setShowAddModal(true);
     };
 
@@ -112,6 +116,7 @@ const CommunityResourceStore: React.FC<CommunityResourceStoreProps> = ({
         setFormLink('');
         setFormCategory('');
         setFormIcon('📁');
+        setFormSource('');
         setShowAddModal(true);
     };
 
@@ -123,6 +128,7 @@ const CommunityResourceStore: React.FC<CommunityResourceStoreProps> = ({
         setFormLink('');
         setFormCategory('');
         setFormIcon('📁');
+        setFormSource('');
     };
 
     return (
@@ -255,8 +261,15 @@ const CommunityResourceStore: React.FC<CommunityResourceStoreProps> = ({
                                     )}
                                 </div>
 
+                                {/* Source */}
+                                {resource.source && (
+                                    <p className="text-xs text-white/50 mt-2 italic">
+                                        Nguồn: {resource.source}
+                                    </p>
+                                )}
+
                                 {/* Date */}
-                                <p className="text-xs text-white/40 mt-3">
+                                <p className="text-xs text-white/40 mt-1">
                                     Thêm: {new Date(resource.addedAt).toLocaleDateString('vi-VN')}
                                 </p>
                             </motion.div>
@@ -373,6 +386,20 @@ const CommunityResourceStore: React.FC<CommunityResourceStoreProps> = ({
                                         value={formCategory}
                                         onChange={(e) => setFormCategory(e.target.value)}
                                         placeholder="VD: Toán, Văn, AI..."
+                                        className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-green-500"
+                                    />
+                                </div>
+
+                                {/* Source */}
+                                <div>
+                                    <label className="block text-sm font-medium text-white/80 mb-1">
+                                        Nguồn (tùy chọn)
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formSource}
+                                        onChange={(e) => setFormSource(e.target.value)}
+                                        placeholder="VD: Cộng đồng GV 4.0, Facebook..."
                                         className="w-full px-4 py-2.5 bg-white/10 border border-white/20 rounded-lg text-white placeholder:text-white/40 focus:outline-none focus:ring-2 focus:ring-green-500"
                                     />
                                 </div>
