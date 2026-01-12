@@ -268,7 +268,7 @@ function App() {
                   onInteractiveVideo={() => requireLogin(() => setView('INTERACTIVE_VIDEO'))}
                   onAICourseStore={() => setView('AI_COURSE_STORE')}
                   onCanvaBasics={() => setView('CANVA_BASICS')}
-                  onCommunityResources={() => setView('COMMUNITY_RESOURCES')}
+                  onCommunityResources={() => requireLogin(() => setView('COMMUNITY_RESOURCES'))}
                   onNewYear={() => setShowNewYearWelcome(true)}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
