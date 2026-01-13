@@ -29,6 +29,7 @@ interface DashboardProps {
     onGeometry3D: () => void;
     onBeeGame: () => void;
     onBeeGameEditable: () => void;
+    onBacteriaGame: () => void;
     onVongQuay: () => void;
     onLuckyWheel: () => void;
     onKingGame: () => void;
@@ -242,7 +243,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, isAdmin, isGuest
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, isAdmin, isGuest
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -542,6 +543,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 icon={<span className="text-2xl">🐝📝</span>}
                                 accentColor="bg-orange-500"
                                 onClick={onBeeGameEditable}
+                                badge="Mới"
+                            />
+
+                            <ToolCard
+                                title="Vi Khuẩn Phiêu Lưu"
+                                description="Game vi khuẩn tìm đường về hũ sữa chua"
+                                icon={<span className="text-2xl">🦠</span>}
+                                accentColor="bg-green-500"
+                                onClick={onBacteriaGame}
                                 badge="Mới"
                             />
 

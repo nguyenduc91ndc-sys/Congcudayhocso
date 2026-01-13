@@ -9,6 +9,7 @@ import AdminPanel from './components/AdminPanel';
 import Geometry3D from './components/Geometry3D';
 import BeeGame from './components/BeeGame';
 import BeeGameEditable from './components/BeeGameEditable';
+import BacteriaGameEditable from './components/BacteriaGameEditable';
 import VongQuay from './components/VongQuay';
 import LuckyWheel from './components/LuckyWheel';
 import KingGame from './components/KingGame';
@@ -281,6 +282,7 @@ function App() {
                   onGeometry3D={() => requireLogin(() => setView('GEOMETRY_3D'))}
                   onBeeGame={() => requireLogin(() => setView('BEE_GAME'))}
                   onBeeGameEditable={() => requireLogin(() => setView('BEE_GAME_EDITABLE'))}
+                  onBacteriaGame={() => requireLogin(() => setView('BACTERIA_GAME'))}
                   onVongQuay={() => requireLogin(() => setView('VONG_QUAY'))}
                   onLuckyWheel={() => requireLogin(() => setView('LUCKY_WHEEL'))}
                   onKingGame={() => requireLogin(() => setView('KING_GAME'))}
@@ -335,6 +337,10 @@ function App() {
 
           {view === 'BEE_GAME_EDITABLE' && (
             <BeeGameEditable onBack={() => setView('DASHBOARD')} userEmail={user?.email} />
+          )}
+
+          {view === 'BACTERIA_GAME' && (
+            <BacteriaGameEditable onBack={() => setView('DASHBOARD')} userEmail={user?.email} />
           )}
 
           {view === 'VONG_QUAY' && (
