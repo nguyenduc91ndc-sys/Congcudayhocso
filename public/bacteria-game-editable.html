@@ -1036,12 +1036,16 @@
                 let interval;
                 if (isTimerRunning && timer > 0) {
                     interval = setInterval(() => {
+                        // Play tick sound each second
+                        const tickAudio = new Audio('https://s2.file2s.com/amthanhhieuung/tick-tock.mp3');
+                        tickAudio.volume = 0.7;
+                        tickAudio.play().catch(() => { });
                         setTimer(prev => prev - 1);
                     }, 1000);
                 } else if (timer === 0 && isTimerRunning) {
                     setIsTimerRunning(false);
-                    // Play 'Time up' sound (Using a distinct bell sound)
-                    const audio = new Audio('https://s2.file2s.com/amthanhhieuung/chuong-reo-het-gio.mp3');
+                    // Play 'Time up' sound (bell/ding sound)
+                    const audio = new Audio('https://s2.file2s.com/amthanhhieuung/ting-ting.mp3');
                     audio.volume = 1.0;
                     audio.play().catch(() => { });
                 }
@@ -1084,10 +1088,10 @@
                                 onClick={handleStartTimer}
                                 disabled={isTimerRunning || timer === 0}
                                 className={`w-20 h-20 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-3xl font-black transition-all transform hover:scale-110 active:scale-95 ${isTimerRunning
-                                        ? 'bg-red-500 text-white animate-pulse'
-                                        : timer === 0
-                                            ? 'bg-gray-400 text-gray-200'
-                                            : 'bg-blue-500 text-white hover:bg-blue-400'
+                                    ? 'bg-red-500 text-white animate-pulse'
+                                    : timer === 0
+                                        ? 'bg-gray-400 text-gray-200'
+                                        : 'bg-blue-500 text-white hover:bg-blue-400'
                                     }`}
                             >
                                 {timer > 0 ? timer : '🔔'}
