@@ -1037,15 +1037,15 @@
                 if (isTimerRunning && timer > 0) {
                     interval = setInterval(() => {
                         // Play tick sound each second
-                        const tickAudio = new Audio('https://s2.file2s.com/amthanhhieuung/tick-tock.mp3');
-                        tickAudio.volume = 0.7;
+                        const tickAudio = new Audio('https://www.soundjay.com/buttons/sounds/button-09a.mp3');
+                        tickAudio.volume = 0.8;
                         tickAudio.play().catch(() => { });
                         setTimer(prev => prev - 1);
                     }, 1000);
                 } else if (timer === 0 && isTimerRunning) {
                     setIsTimerRunning(false);
                     // Play 'Time up' sound (bell/ding sound)
-                    const audio = new Audio('https://s2.file2s.com/amthanhhieuung/ting-ting.mp3');
+                    const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-21.mp3');
                     audio.volume = 1.0;
                     audio.play().catch(() => { });
                 }
@@ -1083,18 +1083,19 @@
                         <div className="absolute -bottom-6 -right-6 text-5xl transform rotate-12 drop-shadow-lg">🍀</div>
 
                         {/* Timer Button */}
-                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50">
+                        <div className="absolute -top-14 left-1/2 -translate-x-1/2 z-50">
                             <button
                                 onClick={handleStartTimer}
                                 disabled={isTimerRunning || timer === 0}
-                                className={`w-20 h-20 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-3xl font-black transition-all transform hover:scale-110 active:scale-95 ${isTimerRunning
+                                className={`w-24 h-24 rounded-full border-4 border-white shadow-2xl flex flex-col items-center justify-center transition-all transform hover:scale-110 active:scale-95 ${isTimerRunning
                                     ? 'bg-red-500 text-white animate-pulse'
                                     : timer === 0
                                         ? 'bg-gray-400 text-gray-200'
-                                        : 'bg-blue-500 text-white hover:bg-blue-400'
+                                        : 'bg-gradient-to-br from-blue-400 to-blue-600 text-white hover:from-blue-300 hover:to-blue-500'
                                     }`}
                             >
-                                {timer > 0 ? timer : '🔔'}
+                                <span className="text-3xl">⏱️</span>
+                                <span className="text-2xl font-black">{timer > 0 ? timer : '🔔'}</span>
                             </button>
                         </div>
 
