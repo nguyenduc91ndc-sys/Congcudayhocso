@@ -1031,23 +1031,16 @@
             const [showFeedback, setShowFeedback] = useState(null);
             const [timer, setTimer] = useState(5);
             const [isTimerRunning, setIsTimerRunning] = useState(false);
+            const countdownAudioRef = useRef(null);
 
             useEffect(() => {
                 let interval;
                 if (isTimerRunning && timer > 0) {
                     interval = setInterval(() => {
-                        // Play tick sound each second
-                        const tickAudio = new Audio('https://www.soundjay.com/buttons/sounds/button-09a.mp3');
-                        tickAudio.volume = 0.8;
-                        tickAudio.play().catch(() => { });
                         setTimer(prev => prev - 1);
                     }, 1000);
                 } else if (timer === 0 && isTimerRunning) {
                     setIsTimerRunning(false);
-                    // Play 'Time up' sound (bell/ding sound)
-                    const audio = new Audio('https://www.soundjay.com/buttons/sounds/button-21.mp3');
-                    audio.volume = 1.0;
-                    audio.play().catch(() => { });
                 }
                 return () => clearInterval(interval);
             }, [isTimerRunning, timer]);
@@ -1055,6 +1048,16 @@
             const handleStartTimer = () => {
                 onPauseMusic(); // Pause background music
                 setIsTimerRunning(true);
+                // Play countdown audio/video
+                if (countdownAudioRef.current) {
+                    countdownAudioRef.current.currentTime = 0;
+                    countdownAudioRef.current.play().catch(() => { });
+                } else {
+                    const audio = new Audio('./sounds/video_dem_nguoc_5s-www_tiengdong_com.mp4');
+                    audio.volume = 1.0;
+                    countdownAudioRef.current = audio;
+                    audio.play().catch(() => { });
+                }
             };
 
             const handleOptionClick = (optionId) => {
