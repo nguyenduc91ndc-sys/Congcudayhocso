@@ -1019,7 +1019,7 @@
                 if (optionId === question.correctAnswerId) {
                     setShowFeedback('correct');
                     playCorrectSound();
-                    setTimeout(() => onAnswer(true), 1500);
+                    // setTimeout(() => onAnswer(true), 1500); // Removed auto-advance
                 } else {
                     setShowFeedback('incorrect');
                     playWrongSound();
@@ -1092,7 +1092,13 @@
 
                                 {showFeedback === 'correct' && (
                                     <div className="absolute inset-0 z-10 flex flex-col items-center justify-center bg-white/95 backdrop-blur-sm rounded-2xl border-4 border-green-300">
-                                        <p className="text-green-600 font-bold text-4xl animate-pulse text-center px-4">🎉 Xuất sắc! Quá giỏi! 🎉</p>
+                                        <p className="text-green-600 font-bold text-3xl animate-bounce mb-6 text-center px-4">🎉 Chính xác! 🎉</p>
+                                        <button
+                                            onClick={() => onAnswer(true)}
+                                            className="px-8 py-3 bg-green-500 text-white rounded-full font-bold text-2xl hover:bg-green-600 transition-colors shadow-lg hover:shadow-xl transform hover:scale-105 active:scale-95 animate-pulse"
+                                        >
+                                            Tiếp tục ➔
+                                        </button>
                                     </div>
                                 )}
                             </div>
@@ -1255,6 +1261,9 @@
                 };
             }, []);
 
+            const [volume, setVolume] = useState(0.35);
+            const [showVolumeControl, setShowVolumeControl] = useState(false);
+
             // Audio control
             useEffect(() => {
                 const playAudio = async () => {
@@ -1262,7 +1271,7 @@
                         const isVideoPlaying = gameState === GameStage.INTRO_VIDEO || gameState === GameStage.OUTRO_VIDEO;
                         if (!isLoading && gameState !== GameStage.INTRO && gameState !== GameStage.SETUP && !isVideoPlaying && !isMusicMuted) {
                             try {
-                                audioRef.current.volume = 0.35;
+                                audioRef.current.volume = volume;
                                 await audioRef.current.play();
                             } catch (e) { }
                         } else {
@@ -1271,7 +1280,14 @@
                     }
                 };
                 playAudio();
-            }, [gameState, isLoading, isMusicMuted]);
+            }, [gameState, isLoading, isMusicMuted, volume]);
+
+            // Update volume when slider changes
+            useEffect(() => {
+                if (audioRef.current) {
+                    audioRef.current.volume = volume;
+                }
+            }, [volume]);
 
             const playCorrectSound = () => {
                 const sfx = new Audio('https://s2.file2s.com/amthanhhieuung/dung-6.mp3');
@@ -1344,7 +1360,16 @@
                 setIsModalOpen(false);
             };
 
-            const toggleMusic = () => setIsMusicMuted(!isMusicMuted);
+            const toggleMusic = () => {
+                if (isMusicMuted) {
+                    setIsMusicMuted(false);
+                    setVolume(0.35); // Restore default volume
+                } else {
+                    setIsMusicMuted(true);
+                }
+            };
+
+            const toggleVolumeControl = () => setShowVolumeControl(!showVolumeControl);
 
             const renderVideoOverlay = (src, onEnded) => (
                 <div className="fixed inset-0 z-[200] bg-black/80 flex items-center justify-center p-4">
@@ -1390,13 +1415,39 @@
                                             </p>
                                         </div>
                                     </div>
-                                    <div className="flex gap-2 pointer-events-auto">
+                                    <div className="flex gap-2 pointer-events-auto relative">
                                         <button onClick={handleBackToSetup} className="w-12 h-12 bg-white/95 backdrop-blur-md rounded-full shadow-xl border-[3px] border-gray-400 flex items-center justify-center transition-all hover:scale-110" title="Quay lại">
                                             ←
                                         </button>
-                                        <button onClick={toggleMusic} className={`w-12 h-12 bg-white/95 backdrop-blur-md rounded-full shadow-xl border-[3px] flex items-center justify-center transition-all hover:scale-110 ${isMusicMuted ? 'border-gray-400 text-gray-500' : 'border-teal-400 text-teal-600'}`} title={isMusicMuted ? "Bật nhạc" : "Tắt nhạc"}>
-                                            {isMusicMuted ? <SoundOffSVG className="w-6 h-6" /> : <SoundOnSVG className="w-6 h-6" />}
-                                        </button>
+
+                                        <div className="relative">
+                                            <button
+                                                onClick={toggleVolumeControl}
+                                                className={`w-12 h-12 bg-white/95 backdrop-blur-md rounded-full shadow-xl border-[3px] flex items-center justify-center transition-all hover:scale-110 ${isMusicMuted ? 'border-gray-400 text-gray-500' : 'border-teal-400 text-teal-600'}`}
+                                                title="Âm lượng"
+                                            >
+                                                {isMusicMuted || volume === 0 ? <SoundOffSVG className="w-6 h-6" /> : <SoundOnSVG className="w-6 h-6" />}
+                                            </button>
+
+                                            {showVolumeControl && (
+                                                <div className="absolute top-14 right-0 w-12 h-32 bg-white/95 backdrop-blur-md rounded-full shadow-xl border-[3px] border-teal-400 flex flex-col items-center justify-center py-2 z-50 animate-slide-in">
+                                                    <input
+                                                        type="range"
+                                                        min="0"
+                                                        max="1"
+                                                        step="0.01"
+                                                        value={isMusicMuted ? 0 : volume}
+                                                        onChange={(e) => {
+                                                            const val = parseFloat(e.target.value);
+                                                            setVolume(val);
+                                                            if (val > 0) setIsMusicMuted(false);
+                                                        }}
+                                                        className="h-24 -rotate-90 origin-center accent-teal-500"
+                                                        style={{ width: '80px' }}
+                                                    />
+                                                </div>
+                                            )}
+                                        </div>
                                     </div>
                                 </div>
 
