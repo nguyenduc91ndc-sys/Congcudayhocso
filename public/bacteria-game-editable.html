@@ -1026,9 +1026,32 @@
         // =========================================================
         // QUESTION MODAL
         // =========================================================
-        const QuestionModal = ({ question, questionIndex, onAnswer, playCorrectSound, playWrongSound }) => {
+        const QuestionModal = ({ question, questionIndex, onAnswer, playCorrectSound, playWrongSound, onPauseMusic }) => {
             const [selectedOption, setSelectedOption] = useState(null);
             const [showFeedback, setShowFeedback] = useState(null);
+            const [timer, setTimer] = useState(5);
+            const [isTimerRunning, setIsTimerRunning] = useState(false);
+
+            useEffect(() => {
+                let interval;
+                if (isTimerRunning && timer > 0) {
+                    interval = setInterval(() => {
+                        setTimer(prev => prev - 1);
+                    }, 1000);
+                } else if (timer === 0 && isTimerRunning) {
+                    setIsTimerRunning(false);
+                    // Play 'Time up' sound (Using a distinct bell sound)
+                    const audio = new Audio('https://s2.file2s.com/amthanhhieuung/chuong-reo-het-gio.mp3');
+                    audio.volume = 1.0;
+                    audio.play().catch(() => { });
+                }
+                return () => clearInterval(interval);
+            }, [isTimerRunning, timer]);
+
+            const handleStartTimer = () => {
+                onPauseMusic(); // Pause background music
+                setIsTimerRunning(true);
+            };
 
             const handleOptionClick = (optionId) => {
                 if (showFeedback === 'correct') return;
@@ -1037,7 +1060,7 @@
                 if (optionId === question.correctAnswerId) {
                     setShowFeedback('correct');
                     playCorrectSound();
-                    // setTimeout(() => onAnswer(true), 1500); // Removed auto-advance
+                    // Removed auto-advance logic
                 } else {
                     setShowFeedback('incorrect');
                     playWrongSound();
@@ -1055,7 +1078,23 @@
                         <div className="absolute -top-6 -left-6 text-5xl transform -rotate-12 drop-shadow-lg">🌸</div>
                         <div className="absolute -bottom-6 -right-6 text-5xl transform rotate-12 drop-shadow-lg">🍀</div>
 
-                        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 p-4 text-center rounded-t-[1.5rem] border-b-4 border-yellow-200 flex-shrink-0">
+                        {/* Timer Button */}
+                        <div className="absolute -top-12 left-1/2 -translate-x-1/2 z-50">
+                            <button
+                                onClick={handleStartTimer}
+                                disabled={isTimerRunning || timer === 0}
+                                className={`w-20 h-20 rounded-full border-4 border-white shadow-xl flex items-center justify-center text-3xl font-black transition-all transform hover:scale-110 active:scale-95 ${isTimerRunning
+                                        ? 'bg-red-500 text-white animate-pulse'
+                                        : timer === 0
+                                            ? 'bg-gray-400 text-gray-200'
+                                            : 'bg-blue-500 text-white hover:bg-blue-400'
+                                    }`}
+                            >
+                                {timer > 0 ? timer : '🔔'}
+                            </button>
+                        </div>
+
+                        <div className="bg-gradient-to-r from-yellow-400 to-orange-400 p-4 text-center rounded-t-[1.5rem] border-b-4 border-yellow-200 flex-shrink-0 pt-10">
                             <h2 className="text-2xl font-extrabold text-white drop-shadow-md tracking-wide">
                                 Câu hỏi số {questionIndex + 1}
                             </h2>
@@ -1282,6 +1321,7 @@
             const [volume, setVolume] = useState(0.35);
             const [showVolumeControl, setShowVolumeControl] = useState(false);
             const [isFullscreen, setIsFullscreen] = useState(false);
+            const [isTempPaused, setIsTempPaused] = useState(false); // New state for Timer pause
 
             const toggleFullscreen = () => {
                 if (!document.fullscreenElement) {
@@ -1300,7 +1340,8 @@
                 const playAudio = async () => {
                     if (audioRef.current) {
                         const isVideoPlaying = gameState === GameStage.INTRO_VIDEO || gameState === GameStage.OUTRO_VIDEO;
-                        if (!isLoading && gameState !== GameStage.INTRO && gameState !== GameStage.SETUP && !isVideoPlaying && !isMusicMuted) {
+                        // Added !isTempPaused to condition
+                        if (!isLoading && gameState !== GameStage.INTRO && gameState !== GameStage.SETUP && !isVideoPlaying && !isMusicMuted && !isTempPaused) {
                             try {
                                 audioRef.current.volume = volume;
                                 await audioRef.current.play();
@@ -1311,7 +1352,7 @@
                     }
                 };
                 playAudio();
-            }, [gameState, isLoading, isMusicMuted, volume]);
+            }, [gameState, isLoading, isMusicMuted, volume, isTempPaused]);
 
             // Update volume when slider changes
             useEffect(() => {
@@ -1372,12 +1413,14 @@
             const handleAnswer = (isCorrect) => {
                 if (isCorrect) {
                     setIsModalOpen(false);
+                    setIsTempPaused(false); // Resume music
                     moveToStation(currentStationIndex + 1);
                 }
             };
 
             const handleRestart = () => {
                 setIsLoading(true);
+                setIsTempPaused(false);
                 setGameState(GameStage.INTRO);
                 setCurrentStationIndex(0);
                 setBeePosition(pathPoints[0] || { x: 10, y: 20 });
@@ -1387,6 +1430,7 @@
 
             const handleBackToSetup = () => {
                 setGameState(GameStage.SETUP);
+                setIsTempPaused(false);
                 setCurrentStationIndex(0);
                 setIsModalOpen(false);
             };
@@ -1567,6 +1611,7 @@
                             onAnswer={handleAnswer}
                             playCorrectSound={playCorrectSound}
                             playWrongSound={playWrongSound}
+                            onPauseMusic={() => setIsTempPaused(true)}
                         />
                     )}
 
