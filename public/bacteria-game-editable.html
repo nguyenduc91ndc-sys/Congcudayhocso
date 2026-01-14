@@ -706,36 +706,80 @@
                 }
             };
 
-            const optionLabels = ['A', 'B', 'C', 'D'];
+            // Hàm tải về HTML hoàn chỉnh với câu hỏi được nhúng sẵn
+            const handleDownloadHTML = async (questionsToDownload) => {
+                if (questionsToDownload.length < 1) {
+                    alert('Cần ít nhất 1 câu hỏi!');
+                    return;
+                }
 
-            return (
-                <div className="min-h-screen bg-gradient-to-b from-green-50 via-teal-50 to-cyan-50 p-4 md:p-8">
-                    <div className="max-w-4xl mx-auto">
-                        {/* Header */}
-                        <div className="text-center mb-6">
-                            <div className="flex justify-center mb-4">
-                                <div className="w-24 h-24"><BacteriaSVG /></div>
-                            </div>
-                            <h1 className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-teal-500">
-                                🦠 Vi Khuẩn Phiêu Lưu - Tự Soạn 📝
-                            </h1>
-                            <p className="text-green-700 mt-2">Tạo câu hỏi của riêng bạn và chia sẻ cho học sinh</p>
-                        </div>
+                try {
+                    // Lấy nội dung HTML hiện tại
+                    const response = await fetch(window.location.href.split('?')[0]);
+                    let htmlContent = await response.text();
 
-                        <div className="grid md:grid-cols-2 gap-6">
-                            {/* Form thêm câu hỏi */}
-                            <div className="bg-white rounded-2xl p-6 shadow-xl border-4 border-green-400">
-                                <h2 className="text-xl font-bold text-green-700 mb-4 flex items-center gap-2">
-                                    {editingIndex !== null ? '✏️ Sửa câu hỏi' : '➕ Thêm câu hỏi'}
-                                </h2>
+                    // Encode câu hỏi thành base64
+                    const encodedQuestions = encodeQuestions(questionsToDownload);
 
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-sm font-bold text-gray-700 mb-1">Nội dung câu hỏi</label>
-                                        <textarea
-                                            ref={questionInputRef}
-                                            value={questionText}
-                                            onChange={(e) => setQuestionText(e.target.value)}
+                    // Chèn script để load câu hỏi ngay khi mở file
+                    const embedScript = `
+    <script>
+        // Câu hỏi được nhúng sẵn
+        window.EMBEDDED_QUESTIONS = ${JSON.stringify(questionsToDownload)};
+        // Tự động chuyển sang chế độ chơi khi mở file
+        window.AUTO_START_GAME = true;
+    </script>
+    </head>`;
+
+    // Thay thế </head> để chèn script
+    htmlContent = htmlContent.replace('</head>', embedScript);
+
+    // Tạo blob và download
+    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `vi-khuan-phieu-luu-${Date.now()}.html`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    } catch (error) {
+    console.error('Lỗi tải file:', error);
+    alert('Không thể tải file HTML. Vui lòng thử lại!');
+    }
+    };
+
+    const optionLabels = ['A', 'B', 'C', 'D'];
+
+    return (
+    <div className="min-h-screen bg-gradient-to-b from-green-50 via-teal-50 to-cyan-50 p-4 md:p-8">
+        <div className="max-w-4xl mx-auto">
+            {/* Header */}
+            <div className="text-center mb-6">
+                <div className="flex justify-center mb-4">
+                    <div className="w-24 h-24">
+                        <BacteriaSVG />
+                    </div>
+                </div>
+                <h1
+                    className="text-3xl md:text-4xl font-extrabold text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-teal-500">
+                    🦠 Vi Khuẩn Phiêu Lưu - Tự Soạn 📝
+                </h1>
+                <p className="text-green-700 mt-2">Tạo câu hỏi của riêng bạn và chia sẻ cho học sinh</p>
+            </div>
+
+            <div className="grid md:grid-cols-2 gap-6">
+                {/* Form thêm câu hỏi */}
+                <div className="bg-white rounded-2xl p-6 shadow-xl border-4 border-green-400">
+                    <h2 className="text-xl font-bold text-green-700 mb-4 flex items-center gap-2">
+                        {editingIndex !== null ? '✏️ Sửa câu hỏi' : '➕ Thêm câu hỏi'}
+                    </h2>
+
+                    <div className="space-y-4">
+                        <div>
+                            <label className="block text-sm font-bold text-gray-700 mb-1">Nội dung câu hỏi</label>
+                            <textarea ref={questionInputRef} value={questionText} onChange={(e)=> setQuestionText(e.target.value)}
                                             onFocus={() => setActiveInputField('question')}
                                             className="w-full px-4 py-3 border-2 border-yellow-300 rounded-xl focus:border-orange-400 focus:outline-none resize-none"
                                             rows={3}
@@ -888,6 +932,17 @@
                                     }`}
                             >
                                 {isCreatingLink ? '⏳ Đang tạo...' : copied ? '✅ Đã copy!' : '🔗 Tạo link ngắn'}
+                            </button>
+
+                            <button
+                                onClick={() => handleDownloadHTML(questions)}
+                                disabled={questions.length < 1}
+                                className={`px-8 py-4 font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${questions.length >= 1
+                                    ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90'
+                                    : 'bg-gray-300 text-gray-500 cursor-not-allowed'
+                                    }`}
+                            >
+                                📥 Tải về HTML
                             </button>
 
                             <button
@@ -1284,6 +1339,17 @@
             // Check URL for shared questions (Firebase ID or base64 encoded)
             useEffect(() => {
                 const loadQuestions = async () => {
+                    // Kiểm tra câu hỏi được nhúng sẵn (từ file HTML tải về)
+                    if (window.EMBEDDED_QUESTIONS && window.EMBEDDED_QUESTIONS.length >= 1) {
+                        setQuestions(window.EMBEDDED_QUESTIONS);
+                        setPathPoints(getPathPoints(window.EMBEDDED_QUESTIONS.length));
+                        // Nếu AUTO_START_GAME = true, chuyển thẳng sang màn hình INTRO
+                        if (window.AUTO_START_GAME) {
+                            setGameState(GameStage.INTRO);
+                        }
+                        return;
+                    }
+
                     const urlParams = new URLSearchParams(window.location.search);
                     const quizId = urlParams.get('id');
                     const sharedData = urlParams.get('q');
