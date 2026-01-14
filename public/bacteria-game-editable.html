@@ -29,6 +29,9 @@
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-database-compat.js"></script>
 
+    <!-- JSZip for ZIP download -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
     <script>
         // Firebase Configuration
         const firebaseConfig = {
@@ -706,49 +709,125 @@
                 }
             };
 
-            // Hàm tải về HTML hoàn chỉnh với câu hỏi được nhúng sẵn
-            const handleDownloadHTML = async (questionsToDownload) => {
+            // State cho download ZIP
+            const [isDownloading, setIsDownloading] = useState(false);
+            const [downloadProgress, setDownloadProgress] = useState('');
+
+            // Hàm tải về ZIP hoàn chỉnh với video, âm thanh để chạy offline
+            const handleDownloadZIP = async (questionsToDownload) => {
                 if (questionsToDownload.length < 1) {
                     alert('Cần ít nhất 1 câu hỏi!');
                     return;
                 }
 
-                try {
-                    // Lấy nội dung HTML hiện tại
-                    const response = await fetch(window.location.href.split('?')[0]);
-                    let htmlContent = await response.text();
+                setIsDownloading(true);
+                setDownloadProgress('Đang chuẩn bị...');
 
-                    // Tạo script embed với câu hỏi
-                    // Tách 'scr' + 'ipt' để tránh đóng sớm thẻ script bên ngoài
+                try {
+                    const zip = new JSZip();
+
+                    // 1. Lấy nội dung HTML và chỉnh sửa đường dẫn
+                    setDownloadProgress('Đang tải HTML...');
+                    const htmlResponse = await fetch(window.location.href.split('?')[0]);
+                    let htmlContent = await htmlResponse.text();
+
+                    // Chỉnh sửa đường dẫn thành relative cho offline
+                    htmlContent = htmlContent.replace(/src="\/video-vi-khuan-dau\.mp4"/g, 'src="video-vi-khuan-dau.mp4"');
+                    htmlContent = htmlContent.replace(/src="\/video-vi-khuan-ket\.mp4"/g, 'src="video-vi-khuan-ket.mp4"');
+                    htmlContent = htmlContent.replace(/\.\/sounds\//g, 'sounds/');
+                    htmlContent = htmlContent.replace(/Audio\(['"]\.\/sounds\//g, "Audio('sounds/");
+                    htmlContent = htmlContent.replace(/new Audio\(['"]https:\/\/s2\.file2s\.com\/nhacnengamechotreem\.mp3['"]\)/g, "new Audio('sounds/nhac-nen.mp3')");
+
+                    // Chèn câu hỏi vào HTML
                     const scriptOpen = '<scr' + 'ipt>';
                     const scriptClose = '</scr' + 'ipt>';
                     const headClose = '</he' + 'ad>';
 
                     const embedScript = `
     ${scriptOpen}
-        // Câu hỏi được nhúng sẵn
         window.EMBEDDED_QUESTIONS = ${JSON.stringify(questionsToDownload)};
-        // Tự động chuyển sang chế độ chơi khi mở file
         window.AUTO_START_GAME = true;
+        window.OFFLINE_MODE = true;
     ${scriptClose}
 ${headClose}`;
-
-                    // Thay thế </head> để chèn script
                     htmlContent = htmlContent.replace(headClose, embedScript);
 
-                    // Tạo blob và download
-                    const blob = new Blob([htmlContent], { type: 'text/html;charset=utf-8' });
-                    const url = URL.createObjectURL(blob);
+                    zip.file('index.html', htmlContent);
+
+                    // 2. Tải video đầu
+                    setDownloadProgress('Đang tải video intro (55MB)...');
+                    try {
+                        const video1 = await fetch('/video-vi-khuan-dau.mp4');
+                        if (video1.ok) {
+                            const video1Blob = await video1.blob();
+                            zip.file('video-vi-khuan-dau.mp4', video1Blob);
+                        }
+                    } catch (e) { console.log('Skip video intro'); }
+
+                    // 3. Tải video kết
+                    setDownloadProgress('Đang tải video outro (2MB)...');
+                    try {
+                        const video2 = await fetch('/video-vi-khuan-ket.mp4');
+                        if (video2.ok) {
+                            const video2Blob = await video2.blob();
+                            zip.file('video-vi-khuan-ket.mp4', video2Blob);
+                        }
+                    } catch (e) { console.log('Skip video outro'); }
+
+                    // 4. Tạo folder sounds và tải các file âm thanh
+                    setDownloadProgress('Đang tải âm thanh...');
+                    const soundsFolder = zip.folder('sounds');
+
+                    // Tải nhạc nền
+                    try {
+                        const bgMusic = await fetch('https://s2.file2s.com/nhacnengamechotreem.mp3');
+                        if (bgMusic.ok) {
+                            const bgMusicBlob = await bgMusic.blob();
+                            soundsFolder.file('nhac-nen.mp3', bgMusicBlob);
+                        }
+                    } catch (e) { console.log('Skip bg music'); }
+
+                    // Tải sound effects (nếu có)
+                    const soundFiles = ['video_dem_nguoc_5s-www_tiengdong_com.mp4'];
+                    for (const soundFile of soundFiles) {
+                        try {
+                            const sound = await fetch('/sounds/' + soundFile);
+                            if (sound.ok) {
+                                const soundBlob = await sound.blob();
+                                soundsFolder.file(soundFile, soundBlob);
+                            }
+                        } catch (e) { }
+                    }
+
+                    // 5. Tạo file ZIP và download
+                    setDownloadProgress('Đang nén file...');
+                    const zipBlob = await zip.generateAsync({
+                        type: 'blob',
+                        compression: 'DEFLATE',
+                        compressionOptions: { level: 6 }
+                    });
+
+                    // Download
+                    const url = URL.createObjectURL(zipBlob);
                     const a = document.createElement('a');
                     a.href = url;
-                    a.download = 'vi-khuan-phieu-luu-' + Date.now() + '.html';
+                    a.download = 'vi-khuan-offline-' + Date.now() + '.zip';
                     document.body.appendChild(a);
                     a.click();
                     document.body.removeChild(a);
                     URL.revokeObjectURL(url);
+
+                    setDownloadProgress('Hoàn thành!');
+                    setTimeout(() => {
+                        setIsDownloading(false);
+                        setDownloadProgress('');
+                    }, 2000);
+
                 } catch (error) {
-                    console.error('Lỗi tải file:', error);
-                    alert('Không thể tải file HTML. Vui lòng thử lại!');
+                    console.error('Lỗi tải ZIP:', error);
+                    alert('Không thể tải file ZIP. Vui lòng thử lại!');
+                    setIsDownloading(false);
+                    setDownloadProgress('');
                 }
             };
 
@@ -937,14 +1016,14 @@ ${headClose}`;
                             </button>
 
                             <button
-                                onClick={() => handleDownloadHTML(questions)}
-                                disabled={questions.length < 1}
-                                className={`px-8 py-4 font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${questions.length >= 1
+                                onClick={() => handleDownloadZIP(questions)}
+                                disabled={questions.length < 1 || isDownloading}
+                                className={`px-8 py-4 font-bold rounded-2xl shadow-lg transition-all flex items-center justify-center gap-2 ${questions.length >= 1 && !isDownloading
                                     ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white hover:opacity-90'
                                     : 'bg-gray-300 text-gray-500 cursor-not-allowed'
                                     }`}
                             >
-                                📥 Tải về HTML
+                                {isDownloading ? `⏳ ${downloadProgress}` : '📦 Tải ZIP Offline'}
                             </button>
 
                             <button
