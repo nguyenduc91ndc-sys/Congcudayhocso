@@ -1170,7 +1170,32 @@ ${headClose}`;
             const [showFeedback, setShowFeedback] = useState(null);
             const [timer, setTimer] = useState(5);
             const [isTimerRunning, setIsTimerRunning] = useState(false);
+            const [isSpeaking, setIsSpeaking] = useState(false);
             const countdownAudioRef = useRef(null);
+
+            // Text-to-Speech function để đọc câu hỏi
+            const speakQuestion = () => {
+                // Dừng đọc nếu đang đọc
+                if (window.speechSynthesis.speaking) {
+                    window.speechSynthesis.cancel();
+                    setIsSpeaking(false);
+                    return;
+                }
+
+                // Tạo text thuần từ câu hỏi (loại bỏ LaTeX)
+                const plainText = question.question.replace(/\$[^$]*\$/g, '').trim();
+
+                const utterance = new SpeechSynthesisUtterance(plainText);
+                utterance.lang = 'vi-VN';
+                utterance.rate = 0.9;
+                utterance.pitch = 1.1;
+
+                utterance.onstart = () => setIsSpeaking(true);
+                utterance.onend = () => setIsSpeaking(false);
+                utterance.onerror = () => setIsSpeaking(false);
+
+                window.speechSynthesis.speak(utterance);
+            };
 
             useEffect(() => {
                 let interval;
@@ -1183,6 +1208,15 @@ ${headClose}`;
                 }
                 return () => clearInterval(interval);
             }, [isTimerRunning, timer]);
+
+            // Dừng đọc khi chuyển câu hỏi hoặc thoát
+            useEffect(() => {
+                return () => {
+                    if (window.speechSynthesis.speaking) {
+                        window.speechSynthesis.cancel();
+                    }
+                };
+            }, [questionIndex]);
 
             const handleStartTimer = () => {
                 onPauseMusic(); // Pause background music
@@ -1248,9 +1282,32 @@ ${headClose}`;
                         </div>
 
                         <div className="flex-1 p-6 py-4 md:py-6 bg-yellow-50/95 flex flex-col justify-center rounded-b-[1.5rem] relative">
-                            <p className="text-xl md:text-2xl text-yellow-900 font-bold mb-4 leading-relaxed text-center">
-                                <LatexRenderer text={question.question} />
-                            </p>
+                            <div className="flex items-start justify-center gap-3 mb-4">
+                                <button
+                                    onClick={speakQuestion}
+                                    className={`flex-shrink-0 w-12 h-12 rounded-full border-3 transition-all transform hover:scale-110 active:scale-95 flex items-center justify-center shadow-lg ${isSpeaking
+                                        ? 'bg-gradient-to-br from-green-400 to-green-600 border-green-300 animate-pulse'
+                                        : 'bg-gradient-to-br from-blue-400 to-blue-600 border-blue-300 hover:from-blue-300 hover:to-blue-500'
+                                        }`}
+                                    title={isSpeaking ? 'Nhấn để dừng đọc' : 'Nhấn để nghe đọc câu hỏi'}
+                                >
+                                    {isSpeaking ? (
+                                        <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="currentColor">
+                                            <rect x="6" y="5" width="4" height="14" rx="1" />
+                                            <rect x="14" y="5" width="4" height="14" rx="1" />
+                                        </svg>
+                                    ) : (
+                                        <svg className="w-6 h-6 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5" />
+                                            <path d="M15.54 8.46a5 5 0 0 1 0 7.07" />
+                                            <path d="M19.07 4.93a10 10 0 0 1 0 14.14" />
+                                        </svg>
+                                    )}
+                                </button>
+                                <p className="text-xl md:text-2xl text-yellow-900 font-bold leading-relaxed text-center flex-1">
+                                    <LatexRenderer text={question.question} />
+                                </p>
+                            </div>
 
                             <div className="space-y-3 relative">
                                 {question.options.map((option) => {
