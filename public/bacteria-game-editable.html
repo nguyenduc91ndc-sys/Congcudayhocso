@@ -734,6 +734,9 @@
                     // Chỉnh sửa đường dẫn thành relative cho offline
                     htmlContent = htmlContent.replace(/src="\/video-vi-khuan-dau\.mp4"/g, 'src="video-vi-khuan-dau.mp4"');
                     htmlContent = htmlContent.replace(/src="\/video-vi-khuan-ket\.mp4"/g, 'src="video-vi-khuan-ket.mp4"');
+                    // Thay đổi constants trong JavaScript để video chạy offline
+                    htmlContent = htmlContent.replace(/const INTRO_VIDEO_URL = "\/video-vi-khuan-dau\.mp4"/g, 'const INTRO_VIDEO_URL = "video-vi-khuan-dau.mp4"');
+                    htmlContent = htmlContent.replace(/const OUTRO_VIDEO_URL = "\/video-vi-khuan-ket\.mp4"/g, 'const OUTRO_VIDEO_URL = "video-vi-khuan-ket.mp4"');
                     htmlContent = htmlContent.replace(/\.\/sounds\//g, 'sounds/');
                     htmlContent = htmlContent.replace(/Audio\(['"]\.\/sounds\//g, "Audio('sounds/");
                     htmlContent = htmlContent.replace(/new Audio\(['"]https:\/\/s2\.file2s\.com\/nhacnengamechotreem\.mp3['"]\)/g, "new Audio('sounds/nhac-nen.mp3')");
