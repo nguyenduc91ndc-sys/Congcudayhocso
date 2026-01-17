@@ -1174,9 +1174,17 @@ ${headClose}`;
             const countdownAudioRef = useRef(null);
             const voiceAudioRef = useRef(null);
 
-            // Mapping câu hỏi sang file âm thanh
+            // Mapping câu hỏi sang file âm thanh (chỉ dùng cho quiz mặc định, không phải quiz được chia sẻ)
             const getVoiceAudioUrl = (index) => {
-                // Hỗ trợ câu 1-3, nếu nhiều hơn sẽ dùng TTS fallback
+                // Kiểm tra nếu là quiz được chia sẻ từ người dùng khác → dùng TTS
+                const urlParams = new URLSearchParams(window.location.search);
+                const isSharedQuiz = urlParams.has('id') || urlParams.has('q');
+
+                if (isSharedQuiz) {
+                    return null; // Sử dụng TTS cho quiz được chia sẻ
+                }
+
+                // Chỉ dùng file WAV cho quiz mặc định (câu 1-3)
                 const audioFiles = {
                     0: '/giong doc vi khuan/c1.wav',
                     1: '/giong doc vi khuan/C2.wav',

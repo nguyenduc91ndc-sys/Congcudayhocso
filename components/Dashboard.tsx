@@ -710,7 +710,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Mô hình tim và hệ tuần hoàn 3D sống động"
                                 icon={<Heart size={24} className="text-white" />}
                                 accentColor="bg-red-600"
-                                onClick={() => window.open('https://heart-3d-viewer.vercel.app/?v=2', '_blank')}
+                                onClick={() => window.open('/trai-tim-3d/heart-3d-viewer/index.html', '_blank')}
                                 badge="Mới"
                             />
                         </div>
