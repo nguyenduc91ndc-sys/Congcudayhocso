@@ -20,17 +20,17 @@ const Geometry3D: React.FC<Geometry3DProps> = ({ onBack }) => {
                     <Box size={20} className="text-white" />
                 </div>
                 <div>
-                    <h1 className="text-lg font-bold text-white">🧊 Hình Học 3D</h1>
-                    <p className="text-xs text-slate-400">Hình hộp chữ nhật tương tác</p>
+                    <h1 className="text-lg font-bold text-white">🧊 Bộ công cụ Hình Học 3D</h1>
+                    <p className="text-xs text-slate-400">Lập phương, hộp, chóp, cầu, trụ tương tác</p>
                 </div>
             </div>
 
-            {/* Iframe container */}
+            {/* Iframe container - using local app */}
             <div className="flex-1 w-full">
                 <iframe
-                    src="https://hinhhoc3d.netlify.app"
+                    src="/hinh-hoc-3d/index.html"
                     className="w-full h-full border-0"
-                    title="Hình học 3D"
+                    title="Bộ công cụ Hình học 3D"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope"
                 />
             </div>

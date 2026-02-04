@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Học Hình Hộp Chữ Nhật 3D</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <style>
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #0f172a;
+            font-family: 'Segoe UI', sans-serif;
+        }
+
+        #canvas-container {
+            width: 100%;
+            height: 100%;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(30, 41, 59, 0.5);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(71, 85, 105, 0.8);
+            border-radius: 10px;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-900 text-slate-200">
+    <div class="flex h-screen">
+        <!-- Controls Panel -->
+        <div class="w-80 bg-slate-800/90 border-r border-slate-700 flex flex-col overflow-hidden shrink-0">
+            <!-- Header -->
+            <div class="p-4 border-b border-slate-700 bg-slate-800/50">
+                <div class="flex items-center gap-3">
+                    <div class="bg-indigo-500 p-2.5 rounded-xl shadow-lg">
+                        <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-lg font-bold text-white">Hình Học 3D</h1>
+                        <p id="shapeType" class="text-xs text-slate-400">Hình Hộp Chữ Nhật</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Tabs -->
+            <div class="flex p-1 bg-slate-800/50 m-4 mb-0 rounded-xl border border-slate-700">
+                <button id="tabExplore" onclick="setTab('explore')"
+                    class="flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 bg-indigo-600 text-white">
+                    👁️ Khám Phá
+                </button>
+                <button id="tabVolume" onclick="setTab('volume')"
+                    class="flex-1 py-2 rounded-lg text-sm font-bold flex items-center justify-center gap-2 text-slate-400 hover:text-white">
+                    📐 Thể Tích
+                </button>
+            </div>
+
+            <!-- Controls -->
+            <div class="p-4 space-y-5 overflow-y-auto custom-scrollbar flex-1">
+                <!-- Size Controls -->
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-wider">
+                        📏 Kích Thước (Đơn vị)
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium text-slate-300">
+                            <span>Chiều dài (a)</span>
+                            <span id="widthVal" class="text-indigo-400">3</span>
+                        </div>
+                        <input type="range" id="widthSlider" min="1" max="5" step="0.5" value="3"
+                            class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium text-slate-300">
+                            <span>Chiều rộng (b)</span>
+                            <span id="depthVal" class="text-indigo-400">2</span>
+                        </div>
+                        <input type="range" id="depthSlider" min="1" max="5" step="0.5" value="2"
+                            class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+
+                    <div class="space-y-1">
+                        <div class="flex justify-between text-xs font-medium text-slate-300">
+                            <span>Chiều cao (c)</span>
+                            <span id="heightVal" class="text-indigo-400">2</span>
+                        </div>
+                        <input type="range" id="heightSlider" min="1" max="5" step="0.5" value="2"
+                            class="w-full h-1.5 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-indigo-500">
+                    </div>
+
+                    <button onclick="setCube()"
+                        class="w-full py-1.5 text-xs font-semibold text-slate-400 border border-slate-700 rounded hover:bg-slate-800 hover:text-white transition-colors">
+                        Đặt về Hình Lập Phương (3x3x3)
+                    </button>
+                </div>
+
+                <div class="h-px bg-slate-700/50"></div>
+
+                <!-- Unfold Controls -->
+                <div class="space-y-3">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-2 text-amber-400 font-bold text-xs uppercase tracking-wider">
+                            🔄 Mở Hình
+                        </div>
+                        <span id="unfoldPercent"
+                            class="text-xs bg-slate-800 px-2 py-0.5 rounded text-amber-400">0%</span>
+                    </div>
+
+                    <input type="range" id="unfoldSlider" min="0" max="100" step="1" value="0"
+                        class="w-full h-2 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-amber-500">
+
+                    <div class="flex gap-2">
+                        <button id="playBtn" onclick="togglePlay()"
+                            class="flex-1 flex items-center justify-center gap-2 py-2 rounded-lg text-xs font-bold bg-slate-700 hover:bg-slate-600 text-white">
+                            ▶️ Tự động
+                        </button>
+                        <button onclick="resetUnfold()"
+                            class="p-2 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300">
+                            🔄
+                        </button>
+                    </div>
+
+                    <div class="flex items-center gap-3 pt-1">
+                        <span class="text-xs font-semibold text-slate-500 w-10">Tốc độ</span>
+                        <input type="range" id="speedSlider" min="0.2" max="3" step="0.1" value="1"
+                            class="flex-1 h-1 bg-slate-700 rounded-lg appearance-none cursor-pointer accent-slate-400">
+                    </div>
+                </div>
+
+                <div class="h-px bg-slate-700/50"></div>
+
+                <!-- Highlight Controls -->
+                <div class="space-y-3">
+                    <div class="flex items-center gap-2 text-emerald-400 font-bold text-xs uppercase tracking-wider">
+                        👁️ Hiển Thị
+                    </div>
+
+                    <div class="grid grid-cols-3 gap-2">
+                        <button id="hlVertices" onclick="setHighlight('vertices')"
+                            class="py-1.5 px-2 rounded border text-xs font-semibold border-slate-700 text-slate-400 hover:bg-slate-700">
+                            Đỉnh
+                        </button>
+                        <button id="hlFaces" onclick="setHighlight('faces')"
+                            class="py-1.5 px-2 rounded border text-xs font-semibold border-slate-700 text-slate-400 hover:bg-slate-700">
+                            Mặt
+                        </button>
+                        <button id="hlEdges" onclick="setHighlight('edges')"
+                            class="py-1.5 px-2 rounded border text-xs font-semibold border-slate-700 text-slate-400 hover:bg-slate-700">
+                            Cạnh
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Volume Panel (hidden by default) -->
+                <div id="volumePanel" class="hidden bg-emerald-900/50 p-4 rounded-xl border border-emerald-500/30">
+                    <h3 class="text-emerald-300 font-bold mb-2">📐 Tính Thể Tích</h3>
+                    <div class="text-sm text-emerald-200/80 mb-2">
+                        Công thức: <span id="formula" class="font-mono font-bold text-white">V = a × b × c</span>
+                    </div>
+                    <div class="bg-black/20 p-3 rounded-lg text-center">
+                        <span id="calculation" class="font-mono text-xl font-bold text-white">3 × 2 × 2 = 12</span>
+                        <span class="ml-1 text-emerald-300 font-bold">đơn vị³</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- 3D Canvas -->
+        <div class="flex-1 relative">
+            <div id="canvas-container"></div>
+            <div class="absolute bottom-4 left-0 w-full text-center pointer-events-none">
+                <p
+                    class="inline-block bg-black/50 backdrop-blur px-4 py-2 rounded-full text-xs text-slate-400 border border-white/10">
+                    <span class="text-indigo-400 font-bold">Mẹo:</span> Kéo chuột để xoay, cuộn để zoom
+                </p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // State
+        let dimensi        { width: 3, height: 2, depth: 2              let unfoldProgress = 0;
+        let isPlaying = fa               let speed = 1;
+        let direction = 1;
+        let highlightMode = 'none'            let activeTab = 'explore';
+
+        // Three.js setup
+        const container = document.getElementById('canvas-c        er');
+        const s         new THREE.Scene(scene.background = new THREE.C            f172a);
+
+        const            = new THREE.PerspectiveCamera(45, innerWidth / window.innerHeight, 0.            ;
+        camera.position.set(8, 8,                  
+        const renderer = new THL({
+            antialias: tru                  renderer.setSize(wn - 320, window.innerHei                  container.appendChild(rende            lement);
+
+            const contr            w THREE.OrbitControls(camera, rendere                   control            Damping = true;
+            controls.minDistance = 5;
+            co            axDistance = 30;
+
+            // Lights
+            scene.add(new THR            ntLight(0xffffff, 0.6)                     dirLight = new THREE.Directi            t(0xffffff                    dir            sition.se        15, scene.add();
+
+            // G                const gri            = new THREE.G            r(20, 20, 0x4755            4155);
+            dd(gridHelper)                    lors for faces
+        const COL        {
+            front: 0xFF6B6B, l Red
+                back: 3,    / 0x4ECDC4,     // Turu                     bottom: 0x298             Strong Blue
+            le            C40F,    //             llow
+            ht: 0x2E / d Green
+        };
+
+        // Cuboid group
+        oidGroup = new THREE.Group();
+        scene.add(cub);
+
+        // Face groups for animation
+        let face             { };
+        let vertexSpheres = [];
+        eLines = [];
+
+        function crea            idth, height, color) {
+            const y = new THREE.PlaneGeo                h, height);
+            const material = new T                    ndardMaterial({
+                color: col                             side: THREE.DoubleSide,
+                ghness: 0.5,
+                metalness: 0.1
+            });
+            const mes                    E.Mesh(geometry, material);
+            
+                          dg                             edges = new THREE.EdgesGeometry(geometry);
+            const            new THREE.LineSegm, new THREE.LineBasicMaterial(x000000 }));
+        mesh;
+
+        r;
+        }
+
+        function boid                                     xisting
+        while (cuboidGroup.children.l                    
+                              idGroup.remove(cuboidGroup.children[0]);
+                                    vertexSphr                                 edgeLines = [aceGroups = {; nst {
+            width, height, det                            ;
+
+            // Bo                             base)
+            tom = createFace                            OLORS.bottom);
+            m.position.set(0, -height / 2, 0);
+            bottom.rotation.x = -Math.PI / 2;
+            bottom);
+
+            // Front group
+            nt = new THREE.Group();
+            faceGroup.                        .se, const                        reateFc                             COLORS.front)
+            tFace.position.set(0, height / 2, 0);
+            faceGroupsf                            ce);
+            cuboidGroup.add(faceGroups.front);
+
+            // Ba                                               ps.back =                    roup();
+            faceGroups.back.po, - height / 2, -depth / 2);
+            const backFace = th, height, COLORS.back);
+        backFace.positio                            2, 0);
+        backFace.rotation.y = M                                faceGroups.back.add(backFace);
+                                   // Top                    ched                              faceGroups.top = ne                    p();
+                                    .posit                            t, 0);
+            cons                             Face(width, depth, COLORS.top);
+        on.set(0, 0, depth / 2                            opFace.rotation.x                                       faceGr                            Face);
+        faceGroups.back.add(faceGro                                  
+            cuboidGroup.add);
+
+        // Left g                                                       = new T                                                    ps.l                    .set(-width/2, -height/2, 0);
+        const lef                    teFace(depth, hei                        ft);
+        leftFace.position.                             0);
+        e.rotation.y = -Math.PI2                                Groups.left.add(leftFace);
+            cub                                roups.left);
+
+        up
+            fa                                ew THREE.Group(); roups.right.position.set(width / 2, -height / 2, 0                                st rightFace = createFace(depth, h                                t);
+        rightFace.position.set(0, height / 2, 0);
+        ace.rotation.y = Math.PI / 2;
+        faceGroups.right.add(rightF                                                              ceGroups                                  //                         spheres                     ht                         c            ner                          [-width/2, -height/2, -depth/2        dth/2, -height/2, -deph                         [-i            height/2, de            [width/2, -h             depth/2],
+        [            , height / 2, -depth / 2], [width / 2, height / 2, -de[-width / 2, height / 2, de[width / 2, height / 2, depth / 2]
+                               corners.forEach(pos =>                       const sphere = new THREE.new THREE.SphereGe            .15, 16, 16),
+            n.MeshBasicMateria                 0xFF0000 })
+                );
+        sphere.po(...pos);
+        sphere.visible = false;
+        cuboidGroup.add(sphere);
+        vertexSpheres.push(sphere);
+                   );
+
+        updateGridPosition();
+        }
+
+        function updateGr() {
+            gridHelper.position.y = -dimensions.height / 2 - 0.01;
+            function updateUnfold() {
+                const t = unfoldProgress / 100;
+                le = (Math.PI / 2) * t;
+
+                if (faceGr) faceGroups.front.rotation.x = angle;
+                if (faceGroups.back)f            s.bac            on.x = -a                        if (faceG                    faceGroups.left.rotation.z = angl                       if (faceGroups.right) faceGroups.right.rotation.z = -angle;
+                roups.top) faceGroups.top.rotation.x = -angle;
+            }
+
+            ght() {
+                vertexSpheres.forEach(s => s.visibl                    tMode === 'vertices');
+                            te edge colors
+                boidGroup.travr                                      i                         f THREE.LineSegmn                                    obj.m                        setHex(highlightMod                    ' ?                     x000000);
+                    obj.material.li                    ghligt                        s' ? 3 : 1;
+                         }
+        });                             // UI Updates
+        functio                                    const { widt, } = dimensions;
+              documet                        d('widthVal').text                        h;
+            document                    yId(                    .textContent = height;
+        t.getElementById('depthVal').t                        epth;
+        document.getEle                        ldPercent) ath.round(unfo                            ';
+                                        st isCube = width === h === depth;
+        entById('shapeType').t extCone                            ình Lập Phương' : ' H ình Hộp Ch                                 document.getElement                            textContent = isCube ? 'V = a³                         × c                         
+            const                          * height * depth;
+              docume n t.getElementById('calcula                            nt = `${wd                                {height} = ${v                                
+
+        functi                                           activeTab = document.getElementBI                                assName = tab === 'e x plore'
+                                'flex-1 py-2 rounded-lg                                 flex items-center justify-cent                            go-                        '
+                                x - 1 py - 2 rounded - lg                        bold flex items - center justi f y - center  g ap - 2 text - slate - 400 hove                                                                      tById('tabVolu                                ab === 'volume'                                  'flex - 1 py - 2 roundd                                old flex items - centr                                p - 2 bg - emerald - 600 t e xt - whie                                : 'flex-1 py-2 rounded-lg t                                lex items-center justify                                -slate-400 hover:text-white';
+                            ment                            'volumePanel').classList.toggle('hidden', tab!                                  }
+
+            function setHighlight(mode) {
+                e = highlg                                    one' : mode;
+                                     s', 'faces', 'e                                    {
+                o                                    etElementById('hl' + Case() + m.slice(1));
+                    ame = highlightMode === m
+                    y - 1.5 px - 2 rounded borde                                    old bg - indigo - 500 / 20 border -in go - rounded b                        font - semibold borde                        xt - slate - 400 hover: bg - sl a te - 700';
+                });
+        u;
+       }                                 setCube() {
+            dimensions = { width: 3, h };
+            tById('widthSlider'.document.getEle                                ider').value = 3;
+                                            ntById('depthSlider').v alue = ldCuboid();
+        }
+
+        function togglePl                                                       sPlaying;
+        cument.getElementByI                        nnerHTML = isPlaying ? ' ⏸️ Dừng' : '▶️ Tự động';
+        do ById('plaB                                sPlaying 
+                                    x - 1 flex items - c                                er gap - 2 py - 2 rounde - ld bg - amber - 500 / 20 te                                r border - amber - 500 / 5 0 '
+                                     1 flex items - center j u stify - c                                ounded - lg text - xs font - b                                over: bg - slate - 600 text - white';                                                       tUnfold()                       isPlayi                ;
+            unfo            ss                      direction = 1;
+            do        .getElementById('unf            r').value = 0;
+                document.getElementById('playBtn').innerHTML = '▶️ Tự                document.ge            ById('playBtn').className = 'flex - 1 flex items - center justify - cent             nded - lg text - xs font - bold            e - 700 hover: bg - slate - 600 text - white';
+            updaten                        updateUI();
+        }
+
+        // Event            rs
+        document.getElementById('wid            ').addEventListener('input', (e) => {
+            di.width = parseFloat(e.target.value);
+            buildCuboid(updateUnfold(); updateUI();
+        });
+        nt.getElementById('heightSlider')            tListener('input', (e) => dimensions.h                rseFloat(e.target.value);
+        uboid();
+            updateU                             updateUI();
+        });
+        tElementById('dept                    dEventListener('i                        {
+            dimensions.depth                            target.value);
+        buildCuboid();
+            updae                                  updateUI();
+        ment.getElementById('unfoldSlider').addEventListener('ip                                      unfoldProgress = parseFloat(e.target.value);
+            = false;
+        ent.                        ('playBtn').innerHTML = '▶️ Tự động';
+            docum                    nt                Btn'                e = 'flex - 1 flex                      justify - center gap - 2 py - 2 rou - xs font - bold bg - slate - 700 hover: bg - slate - 600 text - whit                      updateUnfold();
+        u                           });
+        document.getElementById('                r'                Listener('input                                speed = parseFloat(e.target.value);
+        });
+
+        /                n l                let lastTime = perfor            w();
+        functio            e() {
+            requestAnimationFrame(a                           
+            const formance.now();
+            const delta = (now - la / 10                    lastTime = now                     if (isPlaying) {                       unfoldProgress                 eed * delta * direction;
+                nfoldProgress >= 100) { unfoldProgress = 100; direction = -1; }
+                if (unfoldProgres            { unfoldProgress = 0; direction = 1; }
+                document.getElemen            nfoldSlid = unfoldProgress;
+                updateUnfold();
+                updateUI();
+            }
+
+            controls.updat.render(scene, camera);
+        }                     Resize handler
+        window.addEventListener('resize', () => {
+            c = (window.innerWidth - 320) / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth - 320, window.innerHeight);
+        });n                           buildCuboid();
+        updateUI();
+        animate();
+    </script>
+</body>
+
+</html>

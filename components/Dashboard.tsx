@@ -713,6 +713,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 onClick={() => window.open('/trai-tim-3d/heart-3d-viewer/index.html', '_blank')}
                                 badge="Mới"
                             />
+
+                            <ToolCard
+                                title="Bộ công cụ Hình học 3D"
+                                description="Lập phương, hộp, chóp, cầu, trụ tương tác"
+                                icon={<Box size={24} className="text-white" />}
+                                accentColor="bg-indigo-600"
+                                onClick={onGeometry3D}
+                                badge="Mới"
+                            />
                         </div>
                     </section>
 

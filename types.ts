@@ -2,13 +2,31 @@ export interface Question {
   id: string;
   time: number; // in seconds
   text: string;
-  options: {
-    A: string;
-    B: string;
-    C: string;
-    D: string;
+  options: string[]; // Mảng đáp án linh hoạt (2-4 đáp án)
+  correctOption: number; // Index của đáp án đúng (0, 1, 2, 3)
+}
+
+// Hàm migration: chuyển đổi Question format cũ sang format mới
+export function migrateQuestion(q: any): Question {
+  // Nếu đã là format mới (options là mảng), giữ nguyên
+  if (Array.isArray(q.options)) {
+    return q as Question;
+  }
+  // Chuyển đổi từ format cũ (object {A, B, C, D})
+  const optionKeys = ['A', 'B', 'C', 'D'] as const;
+  return {
+    ...q,
+    options: optionKeys.map(key => q.options[key] || '').filter((opt: string) => opt.trim() !== ''),
+    correctOption: optionKeys.indexOf(q.correctOption as 'A' | 'B' | 'C' | 'D')
   };
-  correctOption: 'A' | 'B' | 'C' | 'D';
+}
+
+// Hàm migration cho toàn bộ VideoLesson
+export function migrateVideoLesson(lesson: any): VideoLesson {
+  return {
+    ...lesson,
+    questions: lesson.questions.map(migrateQuestion)
+  };
 }
 
 export interface VideoLesson {

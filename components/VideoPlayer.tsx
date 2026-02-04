@@ -1,6 +1,6 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useMemo } from 'react';
 import ReactPlayer from 'react-player/youtube';
-import { VideoLesson, Question } from '../types';
+import { VideoLesson, Question, migrateVideoLesson } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, RotateCcw, ArrowLeft, CheckCircle, XCircle, AlertTriangle, ExternalLink, RefreshCw, Star, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -18,7 +18,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const [playedSeconds, setPlayedSeconds] = useState(0);
   const [currentQuestion, setCurrentQuestion] = useState<Question | null>(null);
   const [answeredQuestions, setAnsweredQuestions] = useState<string[]>([]);
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [selectedOption, setSelectedOption] = useState<number | null>(null);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect' | null>(null);
   const [maxPlayed, setMaxPlayed] = useState(0);
   const [videoError, setVideoError] = useState<boolean>(false);
@@ -34,6 +34,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   };
 
   const cleanUrl = getCleanVideoUrl(lesson.youtubeUrl);
+
+  // Migration: chuyển đổi lesson cũ sang format mới
+  const migratedLesson = useMemo(() => migrateVideoLesson(lesson), [lesson]);
+
+  // Nhãn đáp án (A, B, C, D)
+  const optionLabels = ['A', 'B', 'C', 'D'];
 
   // Khởi tạo thời gian bắt đầu
   useEffect(() => {
@@ -56,7 +62,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     }
 
     // Kiểm tra câu hỏi đến giờ xuất hiện
-    const question = lesson.questions.find(
+    const question = migratedLesson.questions.find(
       (q) =>
         Math.abs(q.time - state.playedSeconds) < 1 &&
         !answeredQuestions.includes(q.id)
@@ -69,7 +75,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   };
 
   const handleAnswer = () => {
-    if (!selectedOption || !currentQuestion) return;
+    if (selectedOption === null || !currentQuestion) return;
 
     if (selectedOption === currentQuestion.correctOption) {
       setFeedback('correct');
@@ -250,33 +256,33 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                   </h3>
                 </div>
 
-                {/* Các lựa chọn - kiểu A. B. C. D. */}
+                {/* Các lựa chọn - kiểu A. B. C. D. - Dynamic */}
                 <div className="flex flex-col gap-2 sm:gap-2.5 mb-4 sm:mb-5">
-                  {(['A', 'B', 'C', 'D'] as const).map((opt) => (
+                  {currentQuestion.options.map((optText, optIndex) => (
                     <button
-                      key={opt}
-                      onClick={() => setSelectedOption(opt)}
+                      key={optIndex}
+                      onClick={() => setSelectedOption(optIndex)}
                       className={`py-2.5 sm:py-3 px-4 sm:px-5 rounded-full text-left transition-all relative overflow-hidden w-full
-                        ${selectedOption === opt
+                        ${selectedOption === optIndex
                           ? 'bg-white shadow-lg ring-2 ring-purple-400'
                           : 'bg-white/90 hover:bg-white hover:shadow-md'
                         }
-                        ${feedback === 'correct' && selectedOption === opt ? 'bg-green-100 ring-2 ring-green-500' : ''}
-                        ${feedback === 'incorrect' && selectedOption === opt ? 'bg-red-100 ring-2 ring-red-500' : ''}
+                        ${feedback === 'correct' && selectedOption === optIndex ? 'bg-green-100 ring-2 ring-green-500' : ''}
+                        ${feedback === 'incorrect' && selectedOption === optIndex ? 'bg-red-100 ring-2 ring-red-500' : ''}
                       `}
                     >
                       <span className={`text-sm sm:text-base font-semibold
-                        ${selectedOption === opt ? 'text-purple-800' : 'text-gray-700'}
-                        ${feedback === 'correct' && selectedOption === opt ? '!text-green-800' : ''}
-                        ${feedback === 'incorrect' && selectedOption === opt ? '!text-red-800' : ''}
+                        ${selectedOption === optIndex ? 'text-purple-800' : 'text-gray-700'}
+                        ${feedback === 'correct' && selectedOption === optIndex ? '!text-green-800' : ''}
+                        ${feedback === 'incorrect' && selectedOption === optIndex ? '!text-red-800' : ''}
                       `}>
-                        {opt}. {currentQuestion.options[opt]}
+                        {optionLabels[optIndex]}. {optText}
                       </span>
 
-                      {feedback === 'correct' && selectedOption === opt && (
+                      {feedback === 'correct' && selectedOption === optIndex && (
                         <CheckCircle className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 text-green-500 w-5 h-5" />
                       )}
-                      {feedback === 'incorrect' && selectedOption === opt && (
+                      {feedback === 'incorrect' && selectedOption === optIndex && (
                         <XCircle className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 text-red-500 w-5 h-5" />
                       )}
                     </button>
@@ -287,9 +293,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                 <div className="flex flex-row gap-2 sm:gap-3 justify-center">
                   <button
                     onClick={handleAnswer}
-                    disabled={!selectedOption}
+                    disabled={selectedOption === null}
                     className={`flex-1 py-2.5 sm:py-3 px-4 rounded-full font-bold text-sm sm:text-base text-white shadow-lg transition-all
-                            ${!selectedOption
+                            ${selectedOption === null
                         ? 'bg-gray-400/50 cursor-not-allowed'
                         : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 active:scale-95'
                       }

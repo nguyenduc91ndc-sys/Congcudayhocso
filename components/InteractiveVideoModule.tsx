@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Video, Plus, Save, Play, Trash2, Home, HelpCircle, BookOpen,
     Clock, ChevronUp, ChevronDown, CheckCircle2, AlertCircle, ExternalLink,
-    Share2, Edit3, X, Copy, ArrowLeft
+    Share2, Edit3, X, Copy, ArrowLeft, Minus
 } from 'lucide-react';
 import { VideoLesson, Question } from '../types';
 import { v4 as uuidv4 } from 'uuid';
@@ -79,13 +79,16 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         return cleanYouTubeUrl(rawUrl) || rawUrl;
     };
 
+    // Nhãn cho đáp án (A, B, C, D)
+    const optionLabels = ['A', 'B', 'C', 'D'];
+
     const addQuestion = () => {
         const newQuestion: Question = {
             id: uuidv4(),
             time: 0,
             text: '',
-            options: { A: '', B: '', C: '', D: '' },
-            correctOption: 'A',
+            options: ['', '', '', ''], // 4 đáp án mặc định
+            correctOption: 0,
         };
         setQuestions([...questions, newQuestion]);
     };
@@ -94,10 +97,40 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         setQuestions(questions.map(q => {
             if (q.id === id) {
                 if (field.startsWith('option.')) {
-                    const optionKey = field.split('.')[1] as keyof typeof q.options;
-                    return { ...q, options: { ...q.options, [optionKey]: value } };
+                    const optionIndex = parseInt(field.split('.')[1]);
+                    const newOptions = [...q.options];
+                    newOptions[optionIndex] = value;
+                    return { ...q, options: newOptions };
                 }
                 return { ...q, [field]: value };
+            }
+            return q;
+        }));
+    };
+
+    // Thêm đáp án (tối đa 4)
+    const addOption = (questionId: string) => {
+        setQuestions(questions.map(q => {
+            if (q.id === questionId && q.options.length < 4) {
+                return { ...q, options: [...q.options, ''] };
+            }
+            return q;
+        }));
+    };
+
+    // Xóa đáp án (tối thiểu 2)
+    const removeOption = (questionId: string, optionIndex: number) => {
+        setQuestions(questions.map(q => {
+            if (q.id === questionId && q.options.length > 2) {
+                const newOptions = q.options.filter((_, i) => i !== optionIndex);
+                // Điều chỉnh correctOption nếu cần
+                let newCorrectOption = q.correctOption;
+                if (optionIndex < q.correctOption) {
+                    newCorrectOption = q.correctOption - 1;
+                } else if (optionIndex === q.correctOption) {
+                    newCorrectOption = 0; // Reset về đáp án đầu tiên
+                }
+                return { ...q, options: newOptions, correctOption: newCorrectOption };
             }
             return q;
         }));
@@ -522,36 +555,55 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                                     placeholder="Nhập câu hỏi..."
                                                 />
 
-                                                {/* Options */}
-                                                <div className="grid grid-cols-2 gap-3">
-                                                    {['A', 'B', 'C', 'D'].map((opt) => (
-                                                        <div key={opt} className="relative flex items-center">
-                                                            <span className={`absolute left-3 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${q.correctOption === opt
+                                                {/* Options - Dynamic */}
+                                                <div className="space-y-2">
+                                                    {q.options.map((opt, optIndex) => (
+                                                        <div key={optIndex} className="relative flex items-center gap-2">
+                                                            <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0 ${q.correctOption === optIndex
                                                                 ? 'bg-green-500 text-white'
                                                                 : 'bg-gray-200 text-gray-600'
                                                                 }`}>
-                                                                {opt}
+                                                                {optionLabels[optIndex]}
                                                             </span>
                                                             <input
                                                                 type="text"
-                                                                value={q.options[opt as keyof typeof q.options]}
-                                                                onChange={(e) => updateQuestion(q.id, `option.${opt}`, e.target.value)}
-                                                                className={`w-full pl-11 pr-8 p-2 text-sm rounded-xl border transition-colors ${q.correctOption === opt
+                                                                value={opt}
+                                                                onChange={(e) => updateQuestion(q.id, `option.${optIndex}`, e.target.value)}
+                                                                className={`flex-1 pl-3 pr-8 p-2 text-sm rounded-xl border transition-colors ${q.correctOption === optIndex
                                                                     ? 'border-green-400 bg-green-50'
                                                                     : 'border-gray-200 bg-white focus:border-purple-400'
                                                                     }`}
-                                                                placeholder={`Đáp án ${opt}`}
+                                                                placeholder={`Đáp án ${optionLabels[optIndex]}`}
                                                             />
                                                             <input
                                                                 type="radio"
                                                                 name={`correct-${q.id}`}
-                                                                checked={q.correctOption === opt}
-                                                                onChange={() => updateQuestion(q.id, 'correctOption', opt)}
-                                                                className="absolute right-3 h-4 w-4 accent-green-500 cursor-pointer"
+                                                                checked={q.correctOption === optIndex}
+                                                                onChange={() => updateQuestion(q.id, 'correctOption', optIndex)}
+                                                                className="h-4 w-4 accent-green-500 cursor-pointer flex-shrink-0"
                                                                 title="Chọn làm đáp án đúng"
                                                             />
+                                                            {/* Nút xóa đáp án */}
+                                                            {q.options.length > 2 && (
+                                                                <button
+                                                                    onClick={() => removeOption(q.id, optIndex)}
+                                                                    className="p-1 hover:bg-red-100 text-red-400 hover:text-red-600 rounded-lg transition-colors flex-shrink-0"
+                                                                    title="Xóa đáp án này"
+                                                                >
+                                                                    <Minus size={14} />
+                                                                </button>
+                                                            )}
                                                         </div>
                                                     ))}
+                                                    {/* Nút thêm đáp án */}
+                                                    {q.options.length < 4 && (
+                                                        <button
+                                                            onClick={() => addOption(q.id)}
+                                                            className="w-full py-2 mt-2 text-sm font-medium text-purple-600 hover:text-purple-800 bg-purple-50 hover:bg-purple-100 rounded-xl border border-dashed border-purple-300 transition-colors flex items-center justify-center gap-1"
+                                                        >
+                                                            <Plus size={14} /> Thêm đáp án ({q.options.length}/4)
+                                                        </button>
+                                                    )}
                                                 </div>
                                             </motion.div>
                                         ))}
