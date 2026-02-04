@@ -5,7 +5,7 @@
             "destination": "/lucky-wheel/index.html"
         },
         {
-            "source": "/((?!giải-mã-bức-tranh|lucky-wheel|assets|.*\\.[a-z]+$).*)",
+            "source": "/((?!giải-mã-bức-tranh|lucky-wheel|hinh-hoc-3d|assets|.*\\.[a-z]+$).*)",
             "destination": "/"
         }
     ],
