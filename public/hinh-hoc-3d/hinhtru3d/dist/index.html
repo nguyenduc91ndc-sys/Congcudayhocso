@@ -12,6 +12,28 @@
 
 <body>
   <div id="root"></div>
+  <script>
+    // Listen for messages from parent window to hide control panel
+    window.addEventListener('message', function (event) {
+      if (event.data && event.data.type === 'HIDE_CONTROL_PANEL') {
+        // Hide the control panel sidebar
+        const style = document.createElement('style');
+        style.textContent = `
+          .panel-container,
+          .control-panel {
+            display: none !important;
+          }
+          .app {
+            grid-template-columns: 1fr !important;
+          }
+          .canvas-container {
+            grid-column: 1 !important;
+          }
+        `;
+        document.head.appendChild(style);
+      }
+    });
+  </script>
 </body>
 
 </html>
