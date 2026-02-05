@@ -16,7 +16,7 @@
     // Listen for messages from parent window to hide control panel
     window.addEventListener('message', function (event) {
       if (event.data && event.data.type === 'HIDE_CONTROL_PANEL') {
-        // Hide the control panel sidebar
+        // Hide the control panel sidebar and bottom status bar
         const style = document.createElement('style');
         style.textContent = `
           .panel-container,
@@ -28,6 +28,11 @@
           }
           .canvas-container {
             grid-column: 1 !important;
+          }
+          .bottom-status-track,
+          .bottom-status-container,
+          .status-credit-center {
+            display: none !important;
           }
         `;
         document.head.appendChild(style);
