@@ -1,0 +1,1119 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bản Đồ 34 Tỉnh Thành Việt Nam - Sau sáp nhập 1/7/2025</title>
+    <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        /* CSS Variables for Theme Support */
+        :root {
+            /* Light Theme (Colorful Education) - Default */
+            --bg-gradient: linear-gradient(180deg, #ffecd2 0%, #fcb69f 50%, #ffecd2 100%);
+            --landing-gradient: linear-gradient(180deg, #7dd3d0 0%, #a8e6cf 50%, #c4f0c2 100%);
+            --card-bg: rgba(255, 255, 255, 0.95);
+            --text-primary: #2d3436;
+            --text-secondary: #636e72;
+            --accent-color: #00796b;
+            --header-bg: linear-gradient(135deg, #ff6b6b 0%, #ffa07a 50%, #ffcc5c 100%);
+            --sidebar-bg: rgba(255, 255, 255, 0.95);
+            --border-color: rgba(0, 0, 0, 0.1);
+            --shadow-color: rgba(0, 0, 0, 0.15);
+            --glow-effect: none;
+            --btn-hover-transform: scale(1.05);
+        }
+
+        /* Dark Theme (Premium) */
+        [data-theme="dark"] {
+            --bg-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --landing-gradient: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+            --card-bg: rgba(30, 30, 50, 0.95);
+            --text-primary: #e4e4e4;
+            --text-secondary: #a0a0a0;
+            --accent-color: #00d4aa;
+            --header-bg: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            --sidebar-bg: rgba(20, 20, 40, 0.95);
+            --border-color: rgba(0, 212, 170, 0.3);
+            --shadow-color: rgba(0, 212, 170, 0.2);
+            --glow-effect: 0 0 20px rgba(0, 212, 170, 0.3);
+            --btn-hover-transform: scale(1.05);
+        }
+
+        body {
+            font-family: 'Nunito', sans-serif;
+            min-height: 100vh;
+            overflow: hidden;
+            background: var(--bg-gradient);
+            color: var(--text-primary);
+            transition: all 0.3s ease;
+        }
+
+
+        /* Landing Page */
+        .landing-page {
+            min-height: 100vh;
+            background: linear-gradient(180deg, #7dd3d0 0%, #a8e6cf 50%, #c4f0c2 100%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            padding: 20px;
+        }
+
+        /* Header Controls */
+        .header-controls {
+            position: absolute;
+            top: 15px;
+            right: 20px;
+            display: flex;
+            gap: 10px;
+            z-index: 100;
+        }
+
+        .control-btn {
+            width: 45px;
+            height: 45px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.3);
+            backdrop-filter: blur(10px);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem;
+            transition: all 0.3s ease;
+            color: #2d5a5a;
+        }
+
+        .control-btn:hover {
+            background: rgba(255, 255, 255, 0.8);
+            transform: scale(1.1);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        /* Decorative Lanterns */
+        .lanterns {
+            display: flex;
+            justify-content: center;
+            gap: 30px;
+            margin-top: 30px;
+            margin-bottom: 20px;
+        }
+
+        .lantern {
+            font-size: 2.5rem;
+            animation: swing 2s ease-in-out infinite;
+        }
+
+        .lantern:nth-child(2) {
+            animation-delay: 0.3s;
+        }
+
+        .lantern:nth-child(3) {
+            animation-delay: 0.6s;
+        }
+
+        @keyframes swing {
+
+            0%,
+            100% {
+                transform: rotate(-5deg);
+            }
+
+            50% {
+                transform: rotate(5deg);
+            }
+        }
+
+        /* Title Section */
+        .title-section {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .title-icon {
+            font-size: 2.5rem;
+            margin-bottom: 10px;
+        }
+
+        .main-title {
+            font-size: 2.5rem;
+            font-weight: 800;
+            color: #e65100;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.1);
+            font-style: italic;
+        }
+
+        /* Image Card */
+        .image-card {
+            background: white;
+            border-radius: 20px;
+            padding: 15px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15);
+            margin-bottom: 40px;
+            max-width: 500px;
+            width: 90%;
+        }
+
+        .image-card img {
+            width: 100%;
+            height: 280px;
+            object-fit: cover;
+            border-radius: 12px;
+        }
+
+        .image-placeholder {
+            width: 100%;
+            height: 280px;
+            background: linear-gradient(135deg, #4db6ac 0%, #26a69a 50%, #00897b 100%);
+            border-radius: 12px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.3);
+        }
+
+        .image-placeholder .map-icon {
+            font-size: 5rem;
+            margin-bottom: 15px;
+        }
+
+        .image-placeholder .map-text {
+            font-size: 1.5rem;
+            font-weight: 700;
+        }
+
+        .image-placeholder .map-subtext {
+            font-size: 1rem;
+            opacity: 0.9;
+            margin-top: 5px;
+        }
+
+        /* CTA Button */
+        .cta-button {
+            background: linear-gradient(135deg, #ff8a65 0%, #ff7043 50%, #f4511e 100%);
+            color: white;
+            border: none;
+            padding: 18px 50px;
+            font-size: 1.3rem;
+            font-weight: 800;
+            font-family: inherit;
+            border-radius: 50px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: 0 8px 30px rgba(244, 81, 30, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .cta-button:hover {
+            transform: translateY(-3px) scale(1.02);
+            box-shadow: 0 12px 40px rgba(244, 81, 30, 0.5);
+        }
+
+        .cta-button:active {
+            transform: translateY(0) scale(0.98);
+        }
+
+        /* Chat Button */
+        .chat-button {
+            position: fixed;
+            bottom: 25px;
+            right: 25px;
+            background: linear-gradient(135deg, #ff8a65, #f4511e);
+            color: white;
+            border: none;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            box-shadow: 0 5px 20px rgba(244, 81, 30, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .chat-button:hover {
+            transform: scale(1.05);
+        }
+
+        /* Map Page */
+        .map-page {
+            display: none;
+            width: 100%;
+            height: 100vh;
+        }
+
+        .map-page.active {
+            display: block;
+        }
+
+        .landing-page.hidden {
+            display: none;
+        }
+
+        /* Map Header */
+        .map-header {
+            height: 60px;
+            background: linear-gradient(135deg, #00796b, #26a69a);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0 20px;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+        }
+
+        .map-header-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            color: white;
+        }
+
+        .map-header-title h1 {
+            font-size: 1.2rem;
+            font-weight: 700;
+        }
+
+        .map-header-title .badge {
+            background: rgba(255, 255, 255, 0.25);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .map-header-nav {
+            display: flex;
+            gap: 8px;
+        }
+
+        .map-control-btn {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.2);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.1rem;
+            transition: all 0.3s ease;
+            color: white;
+        }
+
+        .map-control-btn:hover {
+            background: rgba(255, 255, 255, 0.4);
+            transform: scale(1.1);
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: 2px solid rgba(255, 255, 255, 0.5);
+            color: white;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-family: inherit;
+            font-weight: 700;
+            font-size: 0.85rem;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+
+        /* Map iframe */
+        .map-frame {
+            width: 100%;
+            height: calc(100vh - 60px);
+            border: none;
+        }
+
+        /* Toast */
+        .toast {
+            position: fixed;
+            bottom: 30px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: linear-gradient(135deg, #00796b, #26a69a);
+            color: white;
+            padding: 12px 25px;
+            border-radius: 30px;
+            font-weight: 700;
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.2);
+            z-index: 2000;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .toast.show {
+            opacity: 1;
+        }
+
+        /* Mobile */
+        @media (max-width: 600px) {
+            .main-title {
+                font-size: 1.8rem;
+            }
+
+            .lantern {
+                font-size: 2rem;
+            }
+
+            .image-card {
+                max-width: 95%;
+            }
+
+            .cta-button {
+                padding: 15px 35px;
+                font-size: 1.1rem;
+            }
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 320px;
+            background: var(--card-bg);
+            padding: 20px;
+            box-shadow: 2px 0 10px rgba(0, 0, 0, 0.1);
+            overflow-y: auto;
+            z-index: 10;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            transition: background 0.3s;
+        }
+
+        .info-card,
+        .guide-box {
+            background: var(--bg-color);
+            padding: 15px;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            transition: background 0.3s;
+        }
+
+        [data-theme="dark"] .info-card,
+        [data-theme="dark"] .guide-box {
+            border-color: rgba(255, 255, 255, 0.1);
+        }
+
+        .stats-box ul {
+            padding-left: 5px;
+        }
+
+        .stats-box li {
+            margin-bottom: 8px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        /* Responsive Sidebar */
+        @media (max-width: 800px) {
+            .app-container {
+                flex-direction: column;
+            }
+
+            .sidebar {
+                width: 100%;
+                height: auto;
+                max-height: 250px;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+
+            .stats-box {
+                display: none;
+            }
+        }
+
+        /* SVG Map Styles */
+        #vietnamMap {
+            filter: drop-shadow(0 4px 12px rgba(0, 0, 0, 0.15));
+        }
+
+        .province-path {
+            stroke: #fff;
+            stroke-width: 1;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .province-path:hover {
+            stroke-width: 2.5;
+            filter: brightness(1.15);
+            transform-origin: center;
+        }
+
+        .province-path.selected {
+            stroke: #ff6b35;
+            stroke-width: 3;
+            filter: brightness(1.2);
+        }
+
+        [data-theme="dark"] .province-path {
+            stroke: rgba(255, 255, 255, 0.6);
+        }
+
+        [data-theme="dark"] #mapContainer {
+            background: #1a1a2e;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Landing Page -->
+    <div class="landing-page" id="landingPage">
+        <!-- Header Controls -->
+        <div class="header-controls">
+            <button class="control-btn" onclick="window.location.href='/'" title="Về trang chủ">🏠</button>
+            <button class="control-btn" onclick="copyLink()" title="Sao chép link">🔗</button>
+            <button class="control-btn" onclick="toggleFullscreen()" title="Phóng to màn hình">⛶</button>
+        </div>
+
+        <!-- Map Icons -->
+        <div class="lanterns">
+            <span class="lantern">🌏</span>
+            <span class="lantern">📍</span>
+            <span class="lantern">🗺️</span>
+        </div>
+
+        <!-- Title -->
+        <div class="title-section">
+            <h1 class="main-title">Bản Đồ Việt Nam</h1>
+            <p style="font-size: 1.2rem; color: #00796b; font-weight: 600; margin-top: 8px;">(Bản Đồ 34 Tỉnh Thành)</p>
+        </div>
+
+        <!-- Image Card -->
+        <div class="image-card">
+            <img src="anh/images (3).jpg" alt="Việt Nam nhìn từ vũ trụ"
+                style="width: 100%; height: 280px; object-fit: cover; border-radius: 12px;">
+        </div>
+
+        <!-- CTA Button -->
+        <button class="cta-button" onclick="showMap()">
+            <span>🗺️</span>
+            Xem Bản Đồ
+        </button>
+
+        <!-- Chat Button -->
+        <button class="chat-button">
+            <span>💬</span>
+            Hãy hỏi tôi!
+        </button>
+
+        <!-- Author Credit -->
+        <div
+            style="position: absolute; bottom: 15px; left: 20px; font-size: 0.8rem; color: rgba(0,100,80,0.7); font-weight: 600;">
+            Phát triển bởi thầy Thế Đức - Giáo viên yêu công nghệ ❤️
+        </div>
+    </div>
+
+    <!-- Map Page -->
+    <div class="map-page" id="mapPage">
+        <header class="map-header">
+            <div class="map-header-title">
+                <button class="back-btn" onclick="window.location.href='/'" title="Về trang chủ">
+                    <span>🏠</span> Trang chủ
+                </button>
+                <button class="back-btn" onclick="showLanding()">
+                    <span>←</span> Quay lại
+                </button>
+                <span style="font-size: 1.3rem;">🗺️</span>
+                <h1>Bản Đồ Việt Nam</h1>
+                <span class="badge">Sau sáp nhập 1/7/2025</span>
+            </div>
+            <nav class="map-header-nav" style="display: flex; gap: 6px; align-items: center;">
+                <!-- Tab Pills Container -->
+                <div class="tab-pills"
+                    style="display: flex; gap: 4px; padding: 4px; background: rgba(255,255,255,0.15); backdrop-filter: blur(10px); border-radius: 25px; border: 1px solid rgba(255,255,255,0.2);">
+                    <button class="pill-btn active" onclick="setMode('explore')"
+                        style="padding: 8px 18px; border-radius: 20px; border: none; background: linear-gradient(135deg, #667eea, #764ba2); color: white; font-weight: 700; font-size: 0.8rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 6px; box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);">
+                        <span style="font-size: 1rem;">🔍</span> Khám Phá
+                    </button>
+                    <button class="pill-btn" onclick="setMode('quiz')"
+                        style="padding: 8px 18px; border-radius: 20px; border: none; background: transparent; color: var(--text-primary); font-weight: 600; font-size: 0.8rem; cursor: pointer; transition: all 0.3s; display: flex; align-items: center; gap: 6px;">
+                        <span style="font-size: 1rem;">✍️</span> Luyện Tập
+                    </button>
+                </div>
+
+                <div style="width: 1px; height: 28px; background: rgba(255,255,255,0.3); margin: 0 6px;"></div>
+
+                <!-- Control Buttons -->
+                <button class="map-control-btn" onclick="copyLink()" title="Sao chép link">🔗</button>
+                <button class="map-control-btn" onclick="toggleFullscreen()" title="Phóng to màn hình">⛶</button>
+                <button class="map-control-btn theme-toggle" onclick="toggleTheme()" title="Đổi giao diện">🌙</button>
+            </nav>
+        </header>
+
+
+        <!-- Hybrid App Container -->
+        <div class="app-container" style="display: flex; height: calc(100vh - 60px);">
+            <!-- Sidebar - Narrower for larger map -->
+            <aside class="sidebar"
+                style="width: 280px; min-width: 280px; background: var(--sidebar-bg); padding: 16px; box-shadow: 2px 0 15px var(--shadow-color); overflow-y: auto; z-index: 10; display: flex; flex-direction: column; gap: 16px; border-right: 1px solid var(--border-color);">
+
+                <!-- Province Info Card - dlib.vn style -->
+                <div class="info-card" id="provinceInfo"
+                    style="background: var(--card-bg); padding: 20px; border-radius: 16px; border: 2px solid var(--accent-color); box-shadow: var(--glow-effect);">
+                    <div style="text-align: center; margin-bottom: 15px;">
+                        <span style="font-size: 2.5rem;">👋</span>
+                        <h3 style="color: var(--accent-color); margin-top: 8px; font-size: 1.3rem;">Chào mừng bạn!</h3>
+                        <p style="font-size: 0.9rem; color: var(--text-secondary); margin-top: 8px; line-height: 1.5;">
+                            Hãy click vào một tỉnh/thành trên bản đồ để xem thông tin chi tiết.
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Chim Lac Chatbot -->
+                <div class="chat-widget"
+                    style="display: flex; flex-direction: column; background: var(--card-bg); border-radius: 12px; border: 1px solid var(--border-color); overflow: hidden; height: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.05);">
+                    <div class="chat-header"
+                        style="padding: 12px; background: linear-gradient(135deg, var(--accent-color), var(--accent-secondary)); color: white; display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 1.4rem; filter: drop-shadow(0 2px 2px rgba(0,0,0,0.2));">🦩</span>
+                        <div>
+                            <div style="font-weight: 800; font-size: 0.95rem;">Trợ lý Chim Lạc</div>
+                            <div style="font-size: 0.7rem; opacity: 0.9;">Hỏi đáp kiến thức Việt Nam</div>
+                        </div>
+                    </div>
+                    <div class="chat-messages" id="chatMessages"
+                        style="flex: 1; padding: 12px; overflow-y: auto; font-size: 0.85rem; background: var(--bg-color); display: flex; flex-direction: column; gap: 10px;">
+                        <div class="message bot"
+                            style="align-self: flex-start; background: rgba(0,121,107,0.1); color: var(--text-primary); padding: 8px 12px; border-radius: 12px 12px 12px 0; max-width: 85%;">
+                            Xin chào! Em là Chim Lạc 🦩. Em biết tuốt về 34 tỉnh thành Việt Nam mới. Hãy hỏi em nhé!
+                        </div>
+                    </div>
+                    <div class="chat-input-area"
+                        style="padding: 10px; border-top: 1px solid var(--border-color); display: flex; gap: 6px; background: var(--card-bg);">
+                        <input type="text" id="chatInput" onkeypress="handleEnter(event)"
+                            placeholder="Hỏi về tỉnh thành..."
+                            style="flex: 1; padding: 8px 12px; border-radius: 20px; border: 1px solid var(--border-color); font-size: 0.85rem; outline: none; background: var(--input-bg); color: var(--text-primary);">
+                        <button onclick="sendMessage()"
+                            style="background: var(--accent-color); color: white; border: none; border-radius: 50%; width: 34px; height: 34px; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: transform 0.2s;">➤</button>
+                    </div>
+                </div>
+
+                <!-- Stats - Bottom -->
+                <div class="stats-box"
+                    style="margin-top: auto; background: linear-gradient(135deg, var(--accent-color), #00897b); color: white; padding: 14px; border-radius: 12px;">
+                    <h4
+                        style="margin-bottom: 8px; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 5px; font-size: 0.95rem;">
+                        📊 Thống kê</h4>
+                    <ul style="list-style: none; font-size: 0.85rem;">
+                        <li style="margin-bottom: 4px;">📍 Tổng: 34 đơn vị hành chính</li>
+                        <li style="margin-bottom: 4px;">🏙️ 6 Thành phố trực thuộc TW</li>
+                        <li>🏞️ 28 Tỉnh thành mới</li>
+                    </ul>
+                </div>
+            </aside>
+
+
+            <!-- Main Map Area -->
+            <main class="main-content" style="flex: 1; position: relative; overflow: hidden;">
+                <iframe id="mapFrame"
+                    src="https://cdn.dlib.vn/dlibk12/tieuhoc/tvstieuhoc/resources/html/2025/20251231/17677530181204919385.html"
+                    style="width: 100%; height: 100%; border: none;" allow="fullscreen">
+                </iframe>
+            </main>
+
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast" class="toast"></div>
+
+    <script>
+        // Theme Functions
+        function loadTheme() {
+            const savedTheme = localStorage.getItem('vietnam-map-theme') || 'light';
+            document.documentElement.setAttribute('data-theme', savedTheme);
+            updateThemeIcon(savedTheme);
+        }
+
+        function toggleTheme() {
+            const currentTheme = document.documentElement.getAttribute('data-theme') || 'light';
+            const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+            document.documentElement.setAttribute('data-theme', newTheme);
+            localStorage.setItem('vietnam-map-theme', newTheme);
+            updateThemeIcon(newTheme);
+        }
+
+        function updateThemeIcon(theme) {
+            const themeBtn = document.querySelector('.theme-toggle');
+            if (themeBtn) {
+                themeBtn.textContent = theme === 'dark' ? '☀️' : '🌙';
+                themeBtn.title = theme === 'dark' ? 'Chuyển sang sáng' : 'Chuyển sang tối';
+            }
+        }
+
+        // Load theme on page load
+        document.addEventListener('DOMContentLoaded', loadTheme);
+
+        // Province Data
+
+        const vietnamProvinces = {
+            "VN01": { name: "Lai Châu", area: 9068.7, population: 494626, fact: "Vùng đất của trà Shan Tuyết cổ thụ hàng trăm năm tuổi và rượu ngô Sán Chải thơm nồng." },
+            "VN04": { name: "Cao Bằng", area: 6700.4, population: 555809, fact: "Thác Bản Giốc - thác nước biên giới đẹp nhất Đông Nam Á với hạt dẻ Trùng Khánh nổi tiếng." },
+            "VN05": { name: "Sơn La", area: 14109.8, population: 1327430, fact: "Nhà máy thủy điện lớn nhất Việt Nam và cà phê Sơn La với hương vị đặc biệt bởi khí hậu cao nguyên." },
+            "VN09": { name: "Lạng Sơn", area: 8310.2, population: 813978, fact: "Cửa khẩu Hữu Nghị - cửa ngõ thương mại lớn nhất với Trung Quốc, đặc sản vịt quay và khâu nhục nức tiếng." },
+            "VN13": { name: "Quảng Ninh", area: 6207.9, population: 1429841, fact: "Vịnh Hạ Long - Di sản thiên nhiên thế giới với 1969 hòn đảo đá vôi và chả mực trứ danh." },
+            "VN21": { name: "Thanh Hóa", area: 11114.7, population: 3760650, fact: "Bãi biển Sầm Sơn đón hơn 5 triệu du khách mỗi năm, nem chua và chè lam Phủ Quảng ngon nức tiếng." },
+            "VN22": { name: "Nghệ An", area: 16493.7, population: 3470988, fact: "Tỉnh có diện tích lớn thứ 2 cả nước (16.493 km²), quê hương Bác Hồ với cam Xã Đoài ngọt thanh." },
+            "VN23": { name: "Hà Tĩnh", area: 5994.4, population: 1622901, fact: "Quê hương đại thi hào Nguyễn Du, nổi tiếng với kẹo cu đơ và mực nhảy Vũng Áng tươi ngon." },
+            "VN26": { name: "TP Huế", area: 4947.1, population: 1236393, fact: "Thành phố trực thuộc TW thứ 6 - Cố đô với hơn 300 món ăn cung đình tinh tế từ triều Nguyễn." },
+            "VN71": { name: "Điện Biên", area: 9539.9, population: 653422, fact: "Chiến thắng lịch sử Điện Biên Phủ ghi danh sử vàng, đặc sản gà đen và nộm hoa ban thơm dịu." },
+            "VNHN": { name: "TP Hà Nội", area: 3359.8, population: 8718000, fact: "Thủ đô ngàn năm văn hiến với phở Hà Nội, cốm Vòng, lụa Vạn Phúc và gốm sứ Bát Tràng." },
+            "HY_TB": { name: "Hưng Yên", area: 2514.81, population: 3567943, fact: "Sau sáp nhập: Nhãn lồng Hưng Yên ngọt như mật kết hợp canh cá Quỳnh Côi - đặc sản biển Thái Bình." },
+            "BN_BG": { name: "Bắc Ninh", area: 4718.6, population: 3619433, fact: "Cái nôi Quan Họ - Di sản văn hóa phi vật thể thế giới, vải thiều Lục Ngạn và bánh phu thê ngọt ngào." },
+            "HP_HD": { name: "TP Hải Phòng", area: 3194.72, population: 4664124, fact: "Siêu đô thị cảng biển sau sáp nhập: Từ bánh đa cua Hải Phòng đến chả chìa Hải Dương nổi tiếng." },
+            "TN_BK": { name: "Thái Nguyên", area: 8375.21, population: 1799489, fact: "Trung tâm y tế và giáo dục hàng đầu miền Bắc, chè Thái Nguyên thơm ngát khắp thiên hạ." },
+            "PT_VP_HB": { name: "Phú Thọ", area: 9361.38, population: 4022638, fact: "Đất tổ Đền Hùng - cội nguồn dân tộc Việt, bánh tai Phú Thọ và thịt chua Thanh Sơn độc đáo." },
+            "NB_NĐ_HN": { name: "Ninh Bình", area: 3942.62, population: 4412264, fact: "Tràng An - Di sản thế giới kép, dê núi Ninh Bình và nem chua Yên Mạc Nam Định thơm nức mũi." },
+            "LC_YB": { name: "Lào Cai", area: 13256.92, population: 1778785, fact: "Fansipan - Nóc nhà Đông Dương (3143m) và ruộng bậc thang Mù Cang Chải đẹp như tranh vẽ." },
+            "TQ_HG": { name: "Tuyên Quang", area: 13795.5, population: 1865270, fact: "Cao nguyên đá Đồng Văn - Di sản địa chất toàn cầu, cam sành Hàm Yên ngọt mát nổi tiếng." },
+            "QT_QB": { name: "Quảng Trị", area: 12700.0, population: 1870845, fact: "Vương quốc hang động: Từ Thành cổ Quảng Trị đến Sơn Đoòng - hang động lớn nhất hành tinh." },
+            "ĐN_QN": { name: "TP Đà Nẵng", area: 11859.59, population: 3065628, fact: "Hội tụ hiện đại lẫn cổ kính sau sáp nhập: Cầu Vàng Bà Nà và phố cổ Hội An Di sản thế giới." },
+            "QN_KT": { name: "Quảng Ngãi", area: 14832.55, population: 2161755, fact: "Từ đảo Lý Sơn với tỏi và hành tím đến cao nguyên Kon Tum với rượu cần và nhà Rông truyền thống." },
+            "GL_BĐ": { name: "Gia Lai", area: 21576.53, population: 3583693, fact: "Từ Biển Hồ T'nưng - hồ núi lửa đẹp nhất Tây Nguyên đến biển Quy Nhơn xanh ngắt cùng bún chả cá." },
+            "ĐL_PY": { name: "Đắk Lắk", area: 18096.4, population: 3346853, fact: "Thủ phủ cà phê Việt Nam xuất khẩu toàn cầu, sau sáp nhập thêm bãi biển Phú Yên tuyệt đẹp." },
+            "KH_NT": { name: "Khánh Hòa", area: 8555.86, population: 2243554, fact: "Nha Trang - Thành phố biển đón 8 triệu khách/năm, yến sào Khánh Hòa và nho Ninh Thuận ngọt lịm." },
+            "LĐ_ĐN_BT": { name: "Lâm Đồng", area: 24233.07, population: 3872999, fact: "Tỉnh diện tích lớn nhất (24.233 km²): Từ cao nguyên dâu tây Đà Lạt đến mũi Kê Gà Bình Thuận." },
+            "ĐN_BP": { name: "Đồng Nai", area: 12737.18, population: 4491408, fact: "Sân bay quốc tế Long Thành - cửa ngõ hàng không lớn nhất VN, gỏi cá Biên Hòa và hạt điều nức tiếng." },
+            "TN_LA": { name: "Tây Ninh", area: 8536.44, population: 3254170, fact: "Núi Bà Đen - ngọn núi thiêng Nam Bộ, bò tơ Tây Ninh thơm ngon và cửa ngõ sang Campuchia." },
+            "HCM_BRVT_BD": { name: "TP Hồ Chí Minh", area: 6772.59, population: 14002598, fact: "Siêu đô thị 14 triệu dân sau sáp nhập - GDP cao nhất VN, từ Bến Thành đến biển Vũng Tàu." },
+            "ĐT_TG": { name: "Đồng Tháp", area: 5938.64, population: 4370046, fact: "Vườn quốc gia Tràm Chim - thiên đường chim di cư, nem Lai Vung và cá lóc đồng nổi tiếng." },
+            "AN_KG": { name: "An Giang", area: 9888.91, population: 4952238, fact: "Bảy Núi An Giang linh thiêng, đảo Phú Quốc - ngọc đảo với nước mắm và bún kèn đặc sản." },
+            "VL_BT_TV": { name: "Vĩnh Long", area: 6296.2, population: 4257581, fact: "Miệt vườn sông nước: Vĩnh Long trái cây, Bến Tre dừa nước, Trà Vinh khmer độc đáo." },
+            "CM_BL": { name: "Cà Mau", area: 7942.39, population: 2606672, fact: "Mũi Cà Mau - điểm cực Nam Tổ quốc, rừng ngập mặn U Minh và ba khía Bạc Liêu đặc sản." },
+            "CT_ST_HG": { name: "TP Cần Thơ", area: 6360.83, population: 4199824, fact: "Trung tâm Đồng bằng sông Cửu Long sau sáp nhập, chợ nổi Cái Răng và bánh pía Sóc Trăng ngọt thơm." }
+        };
+
+        // UI Logic
+        function showMap() {
+            document.getElementById('landingPage').classList.add('hidden');
+            document.getElementById('mapPage').classList.add('active');
+
+            // Re-check theme on map load
+            const currentTheme = document.body.dataset.theme;
+            if (currentTheme === 'dark') {
+                document.querySelector('.theme-toggle').textContent = '☀️';
+            }
+        }
+
+        function showLanding() {
+            document.getElementById('landingPage').classList.remove('hidden');
+            document.getElementById('mapPage').classList.remove('active');
+        }
+
+        function toggleFullscreen() {
+            if (!document.fullscreenElement) {
+                document.documentElement.requestFullscreen().catch(err => showToast('Lỗi: ' + err.message));
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        function copyLink() {
+            navigator.clipboard.writeText(window.location.href).then(() => showToast('✅ Đã sao chép link!'));
+        }
+
+        function toggleTheme() {
+            const body = document.body;
+            const toggle = document.querySelector('.theme-toggle');
+
+            // Switch theme
+            if (body.dataset.theme === 'dark') {
+                body.dataset.theme = 'light';
+                toggle.textContent = '🌙';
+                localStorage.setItem('theme', 'light');
+            } else {
+                body.dataset.theme = 'dark';
+                toggle.textContent = '☀️';
+                localStorage.setItem('theme', 'dark');
+            }
+        }
+
+        function setMode(mode) {
+            const buttons = document.querySelectorAll('.pill-btn');
+            buttons.forEach(btn => {
+                btn.classList.remove('active');
+                btn.style.background = 'transparent';
+                btn.style.color = 'var(--text-primary)';
+                btn.style.boxShadow = 'none';
+            });
+
+            const activeBtn = event.target.closest('.pill-btn');
+            if (activeBtn) {
+                activeBtn.classList.add('active');
+                activeBtn.style.background = 'linear-gradient(135deg, #667eea, #764ba2)';
+                activeBtn.style.color = 'white';
+                activeBtn.style.boxShadow = '0 4px 15px rgba(102, 126, 234, 0.4)';
+            }
+
+            // Show toast
+            if (mode === 'explore') {
+                showToast('🔍 Chế độ Khám Phá');
+            } else if (mode === 'quiz') {
+                showToast('✍️ Chế độ Luyện Tập - Sắp ra mắt!');
+            }
+        }
+
+
+        function loadTheme() {
+            const saved = localStorage.getItem('theme');
+            if (saved === 'dark') {
+                document.body.dataset.theme = 'dark';
+                document.querySelector('.theme-toggle').textContent = '☀️';
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 2500);
+        }
+
+        // --- CHIM LAC CHATBOT LOGIC ---
+        function handleEnter(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        function sendMessage() {
+            const input = document.getElementById('chatInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            // User message
+            addMessage(message, 'user');
+            input.value = '';
+
+            // Bot processing with typing effect
+            showTyping();
+
+            // Simulate network delay
+            setTimeout(() => {
+                removeTyping();
+                const response = getBotResponse(message);
+                addMessage(response, 'bot');
+            }, 800);
+        }
+
+        function addMessage(text, sender) {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+
+            // Base styles
+            div.style.padding = '8px 12px';
+            div.style.maxWidth = '85%';
+            div.style.fontSize = '0.9rem';
+            div.style.lineHeight = '1.4';
+            div.style.marginBottom = '10px';
+            div.style.transition = 'all 0.3s ease';
+
+            if (sender === 'user') {
+                div.style.alignSelf = 'flex-end';
+                div.style.background = 'var(--accent-color)';
+                div.style.color = 'white';
+                div.style.borderRadius = '12px 12px 0 12px';
+            } else {
+                div.style.alignSelf = 'flex-start';
+                div.style.background = 'var(--bot-bg, rgba(0,121,107,0.1))'; // Fallback or var
+                div.style.color = 'var(--text-primary)';
+                div.style.borderRadius = '12px 12px 12px 0';
+                // Use a different background for dark mode if needed (handled by opacity/vars)
+                if (document.body.dataset.theme === 'dark') {
+                    div.style.background = 'rgba(255,255,255,0.15)';
+                }
+            }
+
+            div.textContent = text;
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function showTyping() {
+            const container = document.getElementById('chatMessages');
+            const div = document.createElement('div');
+            div.id = 'typingIndicator';
+            div.style.alignSelf = 'flex-start';
+            div.style.background = 'rgba(0,0,0,0.05)';
+            div.style.padding = '8px 12px';
+            div.style.borderRadius = '12px 12px 12px 0';
+            div.style.color = 'var(--text-secondary)';
+            div.style.fontSize = '0.8rem';
+            div.style.fontStyle = 'italic';
+            div.textContent = 'Chim Lạc đang soạn tin...';
+
+            if (document.body.dataset.theme === 'dark') {
+                div.style.background = 'rgba(255,255,255,0.1)';
+            }
+
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+        }
+
+        function removeTyping() {
+            const el = document.getElementById('typingIndicator');
+            if (el) el.remove();
+        }
+
+        // Knowledge Base
+        function getBotResponse(input) {
+            const lowerInput = input.toLowerCase();
+
+            // 1. Specific Province Data
+            for (const id in vietnamProvinces) {
+                const p = vietnamProvinces[id];
+                const pName = p.name.toLowerCase();
+
+                if (lowerInput.includes(pName) || lowerInput.includes(pName.replace('tỉnh ', '').replace('thành phố ', ''))) {
+                    // Specific questions about the province
+                    if (lowerInput.includes('diện tích')) {
+                        return `Diện tích của ${p.name} là ${p.area.toLocaleString('vi-VN')} km².`;
+                    }
+                    if (lowerInput.includes('dân số')) {
+                        return `Dân số hiện tại của ${p.name} là khoảng ${p.population.toLocaleString('vi-VN')} người.`;
+                    }
+                    if (lowerInput.includes('nổi bật') || lowerInput.includes('đặc điểm') || lowerInput.includes('có gì')) {
+                        return `Đặc điểm nổi bật: ${p.fact}`;
+                    }
+                    if (lowerInput.includes('gộp') || lowerInput.includes('sáp nhập')) {
+                        const isMerged = p.name.includes('(');
+                        return isMerged ? `${p.name} được sáp nhập từ các tỉnh cũ. Đây là đơn vị hành chính mới.` : `${p.name} giữ nguyên, không sáp nhập.`;
+                    }
+
+                    // General info if no specific question
+                    return `${p.name}: Diện tích ${p.area.toLocaleString('vi-VN')} km², Dân số ${p.population.toLocaleString('vi-VN')} người. \n\n${p.fact}`;
+                }
+            }
+
+            // 2. Vietnam General Knowledge
+            const knowledge = [
+                { keys: ['thủ đô', 'hà nội'], answer: 'Thủ đô của Việt Nam là Hà Nội - trung tâm văn hóa, chính trị, kinh tế của cả nước.' },
+                { keys: ['diện tích việt nam', 'rộng bao nhiêu'], answer: 'Tổng diện tích lãnh thổ Việt Nam là 331.212 km².' },
+                { keys: ['dân số việt nam'], answer: 'Dân số Việt Nam năm 2024 ước tính khoảng 100,5 triệu người.' },
+                { keys: ['bao nhiêu tỉnh', 'tỉnh thành'], answer: 'Theo bản đồ hành chính mới sau sáp nhập 1/7/2025, Việt Nam có 34 đơn vị hành chính cấp tỉnh (giảm so với 63 trước đây).' },
+                { keys: ['biển đông', 'hoàng sa', 'trường sa', 'đảo'], answer: 'Việt Nam có đường bờ biển dài 3.260 km, bao gồm hai quần đảo Hoàng Sa và Trường Sa thuộc chủ quyền không thể tách rời.' },
+                { keys: ['quốc khánh', '2/9'], answer: 'Quốc khánh Việt Nam là ngày 2 tháng 9, kỷ niệm ngày Chủ tịch Hồ Chí Minh đọc Tuyên ngôn độc lập năm 1945.' },
+                { keys: ['tiền tệ', 'đồng'], answer: 'Đơn vị tiền tệ của Việt Nam là Đồng (VND).' },
+                { keys: ['hoa sen', 'quốc hoa'], answer: 'Hoa Sen thường được coi là quốc hoa của Việt Nam, tượng trưng cho sự thanh cao và bất khuất.' },
+                { keys: ['món ăn', 'phở', 'bánh mì'], answer: 'Việt Nam nổi tiếng với Phở, Bánh Mì, Bún Chả và Cà phê sữa đá. Bạn đã thử hết chưa?' }
+            ];
+
+            for (const item of knowledge) {
+                if (item.keys.some(key => lowerInput.includes(key))) {
+                    return item.answer;
+                }
+            }
+
+            // 3. Conversational
+            if (lowerInput.includes('chào') || lowerInput.includes('hello') || lowerInput.includes('hi')) return 'Chào bạn! Mình là Chim Lạc, bạn cần hỏi thông tin gì về Việt Nam không?';
+            if (lowerInput.includes('tên gì') || lowerInput.includes('là ai')) return 'Mình là Trợ lý ảo Chim Lạc, biểu tượng linh thiêng của văn hóa Đông Sơn!';
+            if (lowerInput.includes('cảm ơn')) return 'Rất vui được giúp bạn! 🇻🇳';
+            if (lowerInput.includes('ngu')) return 'Mình vẫn đang học hỏi mà, bạn đừng mắng tội nghiệp... 😢';
+            if (lowerInput.includes('giỏi')) return 'Cảm ơn bạn đã khen! Mình sẽ cố gắng hơn nữa.';
+
+            // Fallback
+            return 'Xin lỗi, Chim Lạc chưa hiểu rõ câu hỏi lắm. Bạn thử hỏi về "diện tích Hà Nội", "dân số Việt Nam" hoặc "Hoàng Sa" xem sao nhé?';
+        }
+
+
+        function showProvinceInfo(id) {
+            const data = vietnamProvinces[id];
+
+            // Default content if no data found
+            if (!data) return;
+
+            // Determine if merged or original
+            const isMerged = data.name.includes('(') || data.name.includes('sáp nhập');
+            const mergeStatus = isMerged ? 'Đã sáp nhập' : 'Giữ nguyên';
+
+            const html = `
+                <div class="province-name" style="font-size: 1.4rem; font-weight: 800; color: var(--accent-color); margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid var(--border-color);">
+                    ${data.name}
+                </div>
+                
+                <div class="info-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: rgba(0,121,107,0.08); border-radius: 8px;">
+                    <span style="font-size: 1.2rem;">🏛️</span>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Gộp từ</div>
+                        <div style="font-weight: 700; color: var(--text-primary);">${mergeStatus}</div>
+                    </div>
+                </div>
+                
+                <div class="info-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: rgba(0,121,107,0.08); border-radius: 8px;">
+                    <span style="font-size: 1.2rem;">📐</span>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Diện tích</div>
+                        <div style="font-weight: 700; color: var(--text-primary);">${data.area.toLocaleString('vi-VN')} km²</div>
+                    </div>
+                </div>
+                
+                <div class="info-item" style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px; padding: 10px; background: rgba(0,121,107,0.08); border-radius: 8px;">
+                    <span style="font-size: 1.2rem;">👥</span>
+                    <div>
+                        <div style="font-size: 0.8rem; color: var(--text-secondary);">Dân số</div>
+                        <div style="font-weight: 700; color: var(--text-primary);">${data.population.toLocaleString('vi-VN')} người</div>
+                    </div>
+                </div>
+                
+                <div class="highlight-box" style="margin-top: 14px; background: linear-gradient(135deg, #fff8e1, #ffecb3); padding: 14px; border-radius: 10px; border-left: 4px solid #ff9800;">
+                    <div class="highlight-title" style="font-weight: 700; color: #e65100; margin-bottom: 6px; font-size: 0.9rem;">🌟 Điểm Nổi Bật</div>
+                    <div class="highlight-text" style="font-size: 0.85rem; line-height: 1.5; color: #5d4037;">${data.fact}</div>
+                </div>
+            `;
+            document.getElementById('provinceInfo').innerHTML = html;
+        }
+
+
+        // Province merger mapping (63 -> 34 provinces)
+        const provinceMergers = {
+            'VNHN': ['hanoi'],
+            'VN01': ['laichau'],
+            'VN04': ['caobang'],
+            'VN05': ['sonla'],
+            'VN09': ['langson'],
+            'VN13': ['quangninh'],
+            'VN21': ['thanhhoa'],
+            'VN22': ['nghean'],
+            'VN23': ['hatinh'],
+            'VN26': ['tthue'],  // Fixed: was 'thuathienhue'
+            'VN71': ['dienbien'],
+            'HY_TB': ['hungyen', 'thaibinh'],
+            'BN_BG': ['bacninh', 'bacgiang'],
+            'HP_HD': ['haiphong', 'haiduong'],
+            'TN_BK': ['thainguyen', 'backan'],
+            'PT_VP_HB': ['phutho', 'vinhphuc', 'hoabinh'],
+            'NB_NĐ_HN': ['ninhbinh', 'namdinh', 'hanam'],
+            'LC_YB': ['laocai', 'yenbai'],
+            'TQ_HG': ['tuyenquang', 'hagiang'],
+            'QT_QB': ['quangtri', 'quangbinh'],
+            'ĐN_QN': ['danang', 'quangnam', 'hoangsa'],  // Added hoangsa (Paracel Islands)
+            'QN_KT': ['quangngai', 'kontum'],
+            'GL_BĐ': ['gialai', 'binhdinh'],
+            'ĐL_PY': ['daklak', 'phuyen'],
+            'KH_NT': ['khanhhoa', 'ninhthuan', 'truongsa'],  // Added truongsa (Spratly Islands)
+            'LĐ_ĐN_BT': ['lamdong', 'daknong', 'binhthuan'],
+            'ĐN_BP': ['dongnai', 'binhphuoc'],
+            'TN_LA': ['tayninh', 'longan'],
+            'HCM_BRVT_BD': ['hcm', 'baria', 'binhduong'],
+            'ĐT_TG': ['dongthap', 'tiengiang'],
+            'AN_KG': ['angiang', 'kiengiang'],
+            'VL_BT_TV': ['vinhlong', 'bentre', 'travinh'],
+            'CM_BL': ['camau', 'baclieu'],
+            'CT_ST_HG': ['cantho', 'soctrang', 'haugiang']
+        };
+
+
+        // Province colors (34 distinct colors)
+        const provinceColors = [
+            '#e74c3c', '#3498db', '#2ecc71', '#f39c12', '#9b59b6',
+            '#1abc9c', '#e91e63', '#00bcd4', '#ff9800', '#8bc34a',
+            '#673ab7', '#03a9f4', '#ffeb3b', '#795548', '#607d8b',
+            '#ff5722', '#4caf50', '#2196f3', '#ff4081', '#00e676',
+            '#651fff', '#00b8d4', '#ffc400', '#8d6e63', '#78909c',
+            '#f44336', '#009688', '#cddc39', '#9c27b0', '#ffab00',
+            '#536dfe', '#69f0ae', '#ea80fc', '#b2ff59'
+        ];
+
+        let svgMapData = null;
+        let selectedProvince = null;
+
+        // Load SVG map data by injecting script tag (avoids CORS issues)
+        function loadMapData() {
+            const script = document.createElement('script');
+            script.src = 'vietnam-svg-paths.js';
+            script.onload = function () {
+                if (window.VIETNAM_MAP_DATA) {
+                    svgMapData = window.VIETNAM_MAP_DATA;
+                    renderMap();
+                }
+            };
+            script.onerror = function () {
+                document.getElementById('mapContainer').innerHTML = '<p style="color:red; text-align:center; padding:20px;">Lỗi tải bản đồ. Vui lòng kiểm tra file vietnam-svg-paths.js</p>';
+            };
+            document.head.appendChild(script);
+        }
+
+        // Create reverse lookup: old province id -> new merged id
+        function createReverseLookup() {
+            const lookup = {};
+            Object.entries(provinceMergers).forEach(([newId, oldIds]) => {
+                oldIds.forEach(oldId => lookup[oldId] = newId);
+            });
+            return lookup;
+        }
+
+        // Render the SVG map
+        function renderMap() {
+            if (!svgMapData) return;
+
+            const svg = document.getElementById('vietnamMap');
+            const lookup = createReverseLookup();
+            const colorMap = {};
+            let colorIndex = 0;
+
+            // Assign colors to each merged province
+            Object.keys(provinceMergers).forEach(newId => {
+                colorMap[newId] = provinceColors[colorIndex % provinceColors.length];
+                colorIndex++;
+            });
+
+            // Render paths
+            svgMapData.locations.forEach(loc => {
+                const newId = lookup[loc.id] || loc.id;
+                const color = colorMap[newId] || '#ccc';
+
+                const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                path.setAttribute('d', loc.path);
+                path.setAttribute('fill', color);
+                path.setAttribute('class', 'province-path');
+                path.setAttribute('data-id', newId);
+                path.setAttribute('data-original-id', loc.id);
+
+                path.addEventListener('click', () => {
+                    // Deselect previous
+                    if (selectedProvince) {
+                        document.querySelectorAll(`.province-path[data-id="${selectedProvince}"]`).forEach(p => p.classList.remove('selected'));
+                    }
+                    // Select all paths of this merged province
+                    selectedProvince = newId;
+                    document.querySelectorAll(`.province-path[data-id="${newId}"]`).forEach(p => p.classList.add('selected'));
+                    showProvinceInfo(newId);
+                });
+
+                svg.appendChild(path);
+            });
+        }
+
+        // Init
+        window.addEventListener('DOMContentLoaded', () => {
+            loadTheme();
+            loadMapData();
+        });
+    </script>
+</body>
+
+</html>

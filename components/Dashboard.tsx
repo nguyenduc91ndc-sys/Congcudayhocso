@@ -722,6 +722,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 onClick={onGeometry3D}
                                 badge="Mới"
                             />
+
+                            <ToolCard
+                                title="Bản đồ Việt Nam"
+                                description="Khám phá 34 tỉnh thành với bản đồ tương tác"
+                                icon={<span className="text-2xl">🗺️</span>}
+                                accentColor="bg-emerald-600"
+                                onClick={() => window.open('/bandoso/vietnam-map-new.html', '_blank')}
+                                badge="Mới"
+                            />
                         </div>
                     </section>
 
