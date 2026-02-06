@@ -728,7 +728,14 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Khám phá 34 tỉnh thành với bản đồ tương tác"
                                 icon={<span className="text-2xl">🗺️</span>}
                                 accentColor="bg-emerald-600"
-                                onClick={() => window.open('/bandoso/vietnam-map-new.html', '_blank')}
+                                onClick={() => {
+                                    if (isGuest) {
+                                        alert('Vui lòng đăng nhập để sử dụng tính năng này!');
+                                        onLogout();
+                                    } else {
+                                        window.open('/bandoso/vietnam-map-new.html', '_blank');
+                                    }
+                                }}
                                 badge="Mới"
                             />
                         </div>
