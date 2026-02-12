@@ -287,10 +287,10 @@ function App() {
                   onLuckyWheel={() => requireLogin(() => setView('LUCKY_WHEEL'))}
                   onKingGame={() => requireLogin(() => setView('KING_GAME'))}
                   onStarWheel={() => requireLogin(() => setView('STAR_WHEEL'))}
-                  onVideoStore={() => setView('VIDEO_STORE')}
+                  onVideoStore={() => requireLogin(() => setView('VIDEO_STORE'))}
                   onInteractiveVideo={() => requireLogin(() => setView('INTERACTIVE_VIDEO'))}
-                  onAICourseStore={() => setView('AI_COURSE_STORE')}
-                  onCanvaBasics={() => setView('CANVA_BASICS')}
+                  onAICourseStore={() => requireLogin(() => setView('AI_COURSE_STORE'))}
+                  onCanvaBasics={() => requireLogin(() => setView('CANVA_BASICS'))}
                   onCommunityResources={() => requireLogin(() => setView('COMMUNITY_RESOURCES'))}
                   onNewYear={() => setShowNewYearWelcome(true)}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
