@@ -198,6 +198,12 @@
     if (window.location.search.includes('data=') || window.location.search.includes('v=')) {
       document.getElementById('loginModal').classList.remove('active');
     }
+
+    // Set view mode immediately to prevent flash
+    const urlParams = new URLSearchParams(window.location.search);
+    if (urlParams.get('data')) {
+      document.body.classList.add('view-mode');
+    }
   </script>
 
   <!-- ===== App Scripts ===== -->

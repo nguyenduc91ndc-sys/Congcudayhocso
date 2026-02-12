@@ -985,6 +985,11 @@ body.view-mode .sidebar {
   display: none;
 }
 
+body.view-mode .app-header,
+body.view-mode .app-footer {
+  display: none;
+}
+
 body.view-mode .preview-area {
   padding: 40px;
   align-items: center;
