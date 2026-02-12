@@ -18,6 +18,9 @@
       <h1>🎊 Mẫu Chúc Tết</h1>
       <span class="subtitle">Tạo thiệp chúc Tết đẹp trong 1 phút</span>
     </div>
+    <a href="/" class="btn btn-home">
+      <span class="btn-icon">🏠</span> Trang chủ
+    </a>
   </header>
 
   <!-- ===== View Mode Bar (shared link) ===== -->
@@ -160,11 +163,12 @@
   </div>
 
   <!-- ===== External Libraries ===== -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"
+    crossorigin="anonymous"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js" crossorigin="anonymous"></script>
   <script>
     // Ensure jsPDF is accessible - fallback for different UMD exports
-    window.addEventListener('load', function() {
+    window.addEventListener('load', function () {
       if (!window.jspdf && !window.jsPDF) {
         console.warn('jsPDF not loaded from CDN, retrying...');
         var s = document.createElement('script');
