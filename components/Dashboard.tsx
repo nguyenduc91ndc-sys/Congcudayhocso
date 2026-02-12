@@ -738,6 +738,15 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 }}
                                 badge="Mới"
                             />
+
+                            <ToolCard
+                                title="Mẫu Chúc Tết"
+                                description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ"
+                                icon={<span className="text-2xl">🎊</span>}
+                                accentColor="bg-gradient-to-br from-red-600 to-yellow-500"
+                                onClick={() => window.open('/chuctettudong/index.html', '_blank')}
+                                badge="Mới"
+                            />
                         </div>
                     </section>
 

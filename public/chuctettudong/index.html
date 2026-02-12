@@ -1,0 +1,186 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mẫu Chúc Tết Tự Động - Tạo thiệp chúc Tết đẹp cho trường học</title>
+  <meta name="description"
+    content="Công cụ tạo thư chúc Tết tự động cho nhà trường. Chọn mẫu đẹp, nhập nội dung, xuất ảnh PNG/PDF và chia sẻ qua link.">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+
+<body>
+
+  <!-- ===== Header ===== -->
+  <header class="app-header">
+    <div style="display:flex;align-items:center;">
+      <h1>🎊 Mẫu Chúc Tết</h1>
+      <span class="subtitle">Tạo thiệp chúc Tết đẹp trong 1 phút</span>
+    </div>
+  </header>
+
+  <!-- ===== View Mode Bar (shared link) ===== -->
+  <div class="view-mode-bar">
+    <span style="margin-right: 10px; opacity: 0.7;">Bạn đang xem thiệp được chia sẻ</span>
+    <button class="btn btn-gold" onclick="exitViewMode()">
+      <span class="btn-icon">✏️</span> Chỉnh sửa
+    </button>
+    <button class="btn btn-primary" onclick="exportToPNG()">
+      <span class="btn-icon">📥</span> Tải PNG
+    </button>
+    <button class="btn btn-green" onclick="exportToPDF()">
+      <span class="btn-icon">📄</span> Tải PDF
+    </button>
+  </div>
+
+  <!-- ===== Main ===== -->
+  <main class="app-main">
+
+    <!-- ===== Sidebar: Form ===== -->
+    <aside class="sidebar">
+
+      <!-- Template Selector -->
+      <div class="section-title"><span class="icon">🎨</span> Chọn mẫu thiệp</div>
+      <div class="template-grid" id="templateGrid">
+        <!-- Rendered by JS -->
+      </div>
+
+      <!-- Sample Text Selector -->
+      <div class="section-title"><span class="icon">📝</span> Bài mẫu có sẵn</div>
+      <div class="sample-selector">
+        <select class="sample-select" id="sampleSelect" onchange="loadSampleText(this.value)">
+          <option value="">— Chọn bài mẫu hoặc tự nhập —</option>
+        </select>
+      </div>
+
+      <!-- Form Fields -->
+      <div class="section-title"><span class="icon">✍️</span> Nội dung thiệp</div>
+
+      <div class="form-group">
+        <label>Tiêu đề</label>
+        <input type="text" id="inputTitle" placeholder="VD: Chúc Mừng Năm Mới" oninput="updatePreview()">
+      </div>
+
+      <div class="form-group">
+        <label>Phụ đề / Năm</label>
+        <input type="text" id="inputSubtitle" placeholder="VD: Xuân Bính Ngọ — 2026" oninput="updatePreview()">
+      </div>
+
+      <div class="form-group">
+        <label>Người nhận</label>
+        <input type="text" id="inputRecipient" placeholder="VD: Kính gửi quý phụ huynh..." oninput="updatePreview()">
+      </div>
+
+      <div class="form-group">
+        <label>Đoạn 1</label>
+        <textarea id="inputPara1" rows="3" placeholder="Nội dung đoạn mở đầu..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Đoạn 2</label>
+        <textarea id="inputPara2" rows="3" placeholder="Nội dung đoạn 2..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Đoạn 3</label>
+        <textarea id="inputPara3" rows="3" placeholder="Nội dung đoạn 3..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Đoạn 4</label>
+        <textarea id="inputPara4" rows="3" placeholder="Nội dung đoạn kết..." oninput="updatePreview()"></textarea>
+      </div>
+
+      <div class="form-group">
+        <label>Lời kết</label>
+        <input type="text" id="inputClosing" placeholder="VD: Trân Trọng." oninput="updatePreview()">
+      </div>
+
+      <div class="form-group">
+        <label>Tên người ký (tuỳ chọn)</label>
+        <input type="text" id="inputSender" placeholder="VD: Ban Giám hiệu" oninput="updatePreview()">
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="actions">
+        <button class="btn btn-primary" id="btnExportPNG" onclick="exportToPNG()">
+          <span class="btn-icon">📥</span> Tải PNG
+        </button>
+        <button class="btn btn-green" id="btnExportPDF" onclick="exportToPDF()">
+          <span class="btn-icon">📄</span> Tải PDF
+        </button>
+        <button class="btn btn-purple btn-full" onclick="showShareModal()">
+          <span class="btn-icon">🔗</span> Chia sẻ qua link
+        </button>
+      </div>
+    </aside>
+
+    <!-- ===== Preview Area ===== -->
+    <section class="preview-area">
+      <div class="card-preview template-1" id="cardPreview">
+        <svg class="card-decorations" id="cardDecorations" xmlns="http://www.w3.org/2000/svg"></svg>
+        <div class="card-inner">
+          <h1 class="card-title" id="previewTitle">Chúc Mừng Năm Mới</h1>
+          <div class="card-subtitle" id="previewSubtitle">Xuân Bính Ngọ — 2026</div>
+          <div class="card-divider">❧ ◆ ❧</div>
+          <p class="card-recipient" id="previewRecipient">Kính gửi quý phụ huynh và các con học sinh thân mến!</p>
+          <div class="card-content" id="previewContent">
+            <p>Nhập nội dung vào form bên trái để xem trước thiệp tại đây...</p>
+          </div>
+          <p class="card-closing" id="previewClosing">Trân Trọng.</p>
+          <p class="card-sender" id="previewSender"></p>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ===== Footer ===== -->
+  <footer class="app-footer">
+    <p>© 2026 Bản quyền thuộc về <strong>thầy Thế Đức</strong> — Giáo viên yêu công nghệ ❤️</p>
+  </footer>
+
+  <!-- ===== Share Modal ===== -->
+  <div class="modal-overlay" id="shareModal" onclick="if(event.target===this)closeShareModal()">
+    <div class="modal-content">
+      <h2 class="modal-title">🔗 Chia sẻ thiệp</h2>
+      <p style="opacity:0.7;font-size:0.85rem;margin-bottom:14px;text-align:center;">Sao chép link bên dưới để gửi cho
+        người khác xem thiệp:</p>
+      <div class="share-url-group">
+        <input type="text" id="shareUrlInput" readonly>
+        <button class="btn btn-gold" onclick="copyShareLink()">
+          <span class="btn-icon">📋</span> Copy
+        </button>
+      </div>
+      <div class="modal-actions">
+        <button class="btn btn-primary" onclick="closeShareModal()">Đóng</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== External Libraries ===== -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.2/jspdf.umd.min.js" crossorigin="anonymous"></script>
+  <script>
+    // Ensure jsPDF is accessible - fallback for different UMD exports
+    window.addEventListener('load', function() {
+      if (!window.jspdf && !window.jsPDF) {
+        console.warn('jsPDF not loaded from CDN, retrying...');
+        var s = document.createElement('script');
+        s.src = 'https://unpkg.com/jspdf@2.5.2/dist/jspdf.umd.min.js';
+        s.crossOrigin = 'anonymous';
+        document.head.appendChild(s);
+      }
+    });
+  </script>
+
+  <!-- ===== App Scripts ===== -->
+  <script src="js/sample-texts.js"></script>
+  <script src="js/templates.js"></script>
+  <script src="js/export.js"></script>
+  <script src="js/share.js"></script>
+  <script src="js/app.js"></script>
+</body>
+
+</html>
