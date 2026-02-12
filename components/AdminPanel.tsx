@@ -571,6 +571,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                             {new Date(entry.loginTime).toLocaleString('vi-VN')}
                                                             <Monitor size={9} className="ml-2" />
                                                             {entry.device}
+                                                            <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] border flex items-center gap-1 ${entry.source === 'ChucTetApp' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
+                                                                {entry.source === 'ChucTetApp' ? '🧧 Chúc Tết' : '🌐 Web chính'}
+                                                            </span>
                                                         </div>
                                                     </div>
                                                 </motion.div>
@@ -737,8 +740,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setShowCreateForm(true)}
                                 className={`w-full text-white font-bold py-4 px-6 rounded-2xl shadow-lg mb-4 flex items-center justify-center gap-2 ${keySubTab === 'pro'
-                                        ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                                        : 'bg-gradient-to-r from-orange-500 to-amber-600'
+                                    ? 'bg-gradient-to-r from-green-500 to-emerald-600'
+                                    : 'bg-gradient-to-r from-orange-500 to-amber-600'
                                     }`}
                             >
                                 <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : 'Tạo mã BEE- (Ong về Tổ)'}
@@ -761,16 +764,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                             onChange={(e) => setNewNote(e.target.value)}
                                             placeholder="Ghi chú (tên khách, SĐT...)"
                                             className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none mb-3 ${keySubTab === 'pro'
-                                                    ? 'border-purple-200 focus:border-purple-500'
-                                                    : 'border-orange-200 focus:border-orange-500'
+                                                ? 'border-purple-200 focus:border-purple-500'
+                                                : 'border-orange-200 focus:border-orange-500'
                                                 }`}
                                         />
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={keySubTab === 'pro' ? handleCreateKey : handleCreateBeeKey}
                                                 className={`flex-1 text-white font-bold py-2 rounded-xl ${keySubTab === 'pro'
-                                                        ? 'bg-purple-600 hover:bg-purple-700'
-                                                        : 'bg-orange-500 hover:bg-orange-600'
+                                                    ? 'bg-purple-600 hover:bg-purple-700'
+                                                    : 'bg-orange-500 hover:bg-orange-600'
                                                     }`}
                                             >
                                                 Tạo & Copy

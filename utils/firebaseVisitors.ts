@@ -111,6 +111,7 @@ export interface LoginHistoryEntry {
     avatar: string;
     loginTime: number; // timestamp
     device: string;
+    source?: string; // e.g. 'ChucTetApp', 'MainApp'
 }
 
 /**
