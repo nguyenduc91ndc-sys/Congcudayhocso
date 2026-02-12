@@ -6,17 +6,19 @@
  */
 async function shortenUrl(longUrl) {
     try {
-        const response = await fetch(`https://is.gd/create.php?format=simple&url=${encodeURIComponent(longUrl)}`);
+        // Call our own API proxy to avoid CORS issues
+        const response = await fetch(`/api/shorten?url=${encodeURIComponent(longUrl)}`);
+
         if (response.ok) {
-            const shortUrl = await response.text();
-            if (shortUrl.startsWith('https://is.gd/')) {
-                return shortUrl;
+            const data = await response.json();
+            if (data.shortUrl) {
+                return data.shortUrl;
             }
         }
-        return longUrl; // Fallback nếu lỗi
+        return longUrl; // Fallback to long URL if failed
     } catch (error) {
         console.error('Error shortening URL:', error);
-        return longUrl; // Fallback nếu lỗi
+        return longUrl; // Fallback
     }
 }
 
