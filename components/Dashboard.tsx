@@ -44,6 +44,9 @@ interface DashboardProps {
     onHeartSystem3D: () => void;
     onVietnamMap: () => void;
     onChucTet: () => void;
+    onPuzzleGame: () => void;
+    onNgheNghiep: () => void;
+    onTreasureHunt: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
 }
@@ -247,7 +250,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, isAdmin, isGuest
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, isAdmin, isGuest
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -588,7 +591,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Bánh xe quay chọn người may mắn"
                                 icon={<span className="text-2xl">🎡</span>}
                                 accentColor="bg-rose-500"
-                                onClick={() => window.open('/lucky-wheel/', '_blank')}
+                                onClick={onLuckyWheel}
                             />
 
                             <ToolCard
@@ -613,7 +616,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI"
                                 icon={<span className="text-2xl">👨‍🚀</span>}
                                 accentColor="bg-gradient-to-br from-orange-400 to-amber-500"
-                                onClick={() => window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank')}
+                                onClick={onNgheNghiep}
                                 badge="AI Studio"
                             />
 
@@ -622,7 +625,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi"
                                 icon={<span className="text-2xl">🧩</span>}
                                 accentColor="bg-gradient-to-br from-purple-500 to-cyan-500"
-                                onClick={() => window.open('/giải-mã-bức-tranh/', '_blank')}
+                                onClick={onPuzzleGame}
+                                badge="Mới"
+                            />
+
+                            <ToolCard
+                                title="Truy Tìm Kho Báu"
+                                description="Game phiêu lưu khám phá, tự soạn câu hỏi"
+                                icon={<span className="text-2xl">🏴‍☠️</span>}
+                                accentColor="bg-gradient-to-br from-orange-500 to-amber-500"
+                                onClick={onTreasureHunt}
                                 badge="Mới"
                             />
 

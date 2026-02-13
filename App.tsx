@@ -11,6 +11,8 @@ import DenHung3D from './components/DenHung3D';
 import HeartSystem3D from './components/HeartSystem3D';
 import VietnamMap from './components/VietnamMap';
 import ChucTet from './components/ChucTet';
+import PuzzleGame from './components/PuzzleGame';
+import TreasureHunt from './components/TreasureHunt';
 import BeeGame from './components/BeeGame';
 import BeeGameEditable from './components/BeeGameEditable';
 import BacteriaGameEditable from './components/BacteriaGameEditable';
@@ -301,6 +303,9 @@ function App() {
                   onHeartSystem3D={() => requireLogin(() => setView('HEART_SYSTEM_3D'))}
                   onVietnamMap={() => requireLogin(() => setView('VIETNAM_MAP'))}
                   onChucTet={() => requireLogin(() => setView('CHUC_TET'))}
+                  onPuzzleGame={() => requireLogin(() => setView('PUZZLE_GAME'))}
+                  onNgheNghiep={() => requireLogin(() => window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank'))}
+                  onTreasureHunt={() => requireLogin(() => setView('TREASURE_HUNT'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                 />
@@ -435,6 +440,14 @@ function App() {
 
           {view === 'CHUC_TET' && (
             <ChucTet onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'PUZZLE_GAME' && (
+            <PuzzleGame onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'TREASURE_HUNT' && (
+            <TreasureHunt onBack={() => setView('DASHBOARD')} />
           )}
 
           {/* Login Modal for guests */}

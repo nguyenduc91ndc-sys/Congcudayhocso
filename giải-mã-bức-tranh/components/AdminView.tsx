@@ -280,13 +280,6 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
               </>
             )}
           </div>
-          <button
-            onClick={onExit}
-            className="cute-3d-button px-6"
-            style={{ background: 'linear-gradient(135deg, #f093fb 0%, #f5576c 100%)', boxShadow: '0 6px 0 #d64469, 0 10px 20px rgba(245, 87, 108, 0.4)' }}
-          >
-            Về trang chủ
-          </button>
         </div>
       </header>
 

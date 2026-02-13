@@ -30,6 +30,7 @@ export default defineConfig(({ mode }) => {
           main: path.resolve(__dirname, 'index.html'),
           'giai-ma-buc-tranh': path.resolve(__dirname, 'giải-mã-bức-tranh/index.html'),
           'lucky-wheel': path.resolve(__dirname, 'lucky-wheel/index.html'),
+          'truy-tim-kho-bau': path.resolve(__dirname, 'truy-tim-kho-bau/index.html'),
         },
       },
     },
