@@ -47,6 +47,7 @@ interface DashboardProps {
     onPuzzleGame: () => void;
     onNgheNghiep: () => void;
     onTreasureHunt: () => void;
+    onVirtualExperiment: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
     hiddenApps?: string[];
@@ -253,7 +254,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = ''
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = ''
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -268,6 +269,8 @@ const Dashboard: React.FC<DashboardProps> = ({
     const [isVerifying, setIsVerifying] = useState(false);
     const [showDonateModal, setShowDonateModal] = useState(false);
     const [showZaloModal, setShowZaloModal] = useState(false);
+    const [activeTab, setActiveTab] = useState('all');
+
 
     useEffect(() => {
         setTrialStatus(getTrialStatus());
@@ -509,277 +512,170 @@ const Dashboard: React.FC<DashboardProps> = ({
 
 
 
-                    {/* Tools Grid */}
-                    <section>
-                        <h2 className="text-lg font-semibold text-white mb-4">Công cụ dạy học</h2>
 
-                        {/* Maintenance Banner */}
-                        {maintenanceMode && !isAdmin && (
-                            <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-400/50 rounded-2xl p-8 text-center mb-6">
-                                <span className="text-5xl mb-4 block">🔧</span>
-                                <h3 className="text-2xl font-bold text-amber-300 mb-2">Đang bảo trì</h3>
-                                <p className="text-white/80 text-lg">{maintenanceMessage || 'Website đang bảo trì, vui lòng quay lại sau. Xin cảm ơn!'}</p>
-                            </div>
-                        )}
 
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
-                            {/* Video tương tác - Direct Link to Module */}
-                            {!hiddenApps.includes('interactiveVideo') && <motion.div
-                                whileHover={{ scale: 1.02 }}
-                                whileTap={{ scale: 0.98 }}
-                                onMouseEnter={() => playHoverSound()}
-                                onClick={onInteractiveVideo}
-                                className="relative group text-left p-6 rounded-2xl border transition-all duration-200 bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl"
-                            >
-                                {/* Badge showing video count */}
-                                <span className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10">
-                                    {lessons.length} video
-                                </span>
-
-                                {/* Icon */}
-                                <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-lg group-hover:shadow-xl transition-shadow">
-                                    <Video size={24} className="text-white" />
-                                </div>
-                                <h3 className="text-lg font-bold text-white mb-1">Video tương tác</h3>
-                                <p className="text-sm text-white/70">Tạo video YouTube với câu hỏi tương tác</p>
-                                <ChevronRight
-                                    size={20}
-                                    className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300"
-                                />
-                            </motion.div>}
-
-                            {!hiddenApps.includes('beeGame') && <ToolCard
-                                title="Ong về Tổ"
-                                description="Game ong về tổ demo sản phẩm"
-                                icon={<span className="text-2xl">🐝</span>}
-                                accentColor="bg-amber-500"
-                                onClick={onBeeGame}
-                            />}
-
-                            {!hiddenApps.includes('beeGameEditable') && <ToolCard
-                                title="Ong về Tổ (Tự soạn)"
-                                description="Tự tạo câu hỏi và chia sẻ cho học sinh"
-                                icon={<span className="text-2xl">🐝📝</span>}
-                                accentColor="bg-orange-500"
-                                onClick={onBeeGameEditable}
-                                badge="Mới"
-                            />}
-
-                            {!hiddenApps.includes('bacteriaGame') && <ToolCard
-                                title="Vi Khuẩn Phiêu Lưu"
-                                description="Game vi khuẩn tìm đường về hũ sữa chua"
-                                icon={<span className="text-2xl">🦠</span>}
-                                accentColor="bg-green-500"
-                                onClick={onBacteriaGame}
-                                badge="Mới"
-                            />}
-
-                            {!hiddenApps.includes('geometry3D') && <ToolCard
-                                title="Hình học 3D"
-                                description="Khám phá hình khối không gian tương tác"
-                                icon={<Box size={24} className="text-white" />}
-                                accentColor="bg-purple-600"
-                                onClick={onGeometry3D}
-                            />}
-
-                            {!hiddenApps.includes('vongQuay') && <ToolCard
-                                title="Vòng quay"
-                                description="Vòng tròn gọi tên học sinh"
-                                icon={<RotateCcw size={24} className="text-white" />}
-                                accentColor="bg-pink-500"
-                                onClick={onVongQuay}
-                            />}
-
-                            {!hiddenApps.includes('kingGame') && <ToolCard
-                                title="Đường đến Ngôi Vua"
-                                description="Gọi tên học sinh kết hợp câu hỏi"
-                                icon={<span className="text-2xl">👑</span>}
-                                accentColor="bg-yellow-500"
-                                onClick={onKingGame}
-                            />}
-
-                            {!hiddenApps.includes('luckyWheel') && <ToolCard
-                                title="Vòng quay may mắn"
-                                description="Bánh xe quay chọn người may mắn"
-                                icon={<span className="text-2xl">🎡</span>}
-                                accentColor="bg-rose-500"
-                                onClick={onLuckyWheel}
-                            />}
-
-                            {!hiddenApps.includes('starWheel') && <ToolCard
-                                title="Vòng Xoay Ngôi Sao"
-                                description="Vòng quay ngôi sao may mắn"
-                                icon={<span className="text-2xl">⭐</span>}
-                                accentColor="bg-indigo-500"
-                                onClick={onStarWheel}
-                            />}
-
-                            {!hiddenApps.includes('videoStore') && <ToolCard
-                                title="Kho Video AI"
-                                description="Video AI giáo dục chất lượng cao"
-                                icon={<span className="text-2xl">🎬</span>}
-                                accentColor="bg-gradient-to-br from-blue-500 to-purple-600"
-                                onClick={onVideoStore}
-                                badge="Mới"
-                            />}
-
-                            {!hiddenApps.includes('ngheNghiep') && <ToolCard
-                                title="Nghề Nghiệp Tương Lai"
-                                description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI"
-                                icon={<span className="text-2xl">👨‍🚀</span>}
-                                accentColor="bg-gradient-to-br from-orange-400 to-amber-500"
-                                onClick={onNgheNghiep}
-                                badge="AI Studio"
-                            />}
-
-                            {!hiddenApps.includes('puzzleGame') && <ToolCard
-                                title="Giải Mã Bức Tranh"
-                                description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi"
-                                icon={<span className="text-2xl">🧩</span>}
-                                accentColor="bg-gradient-to-br from-purple-500 to-cyan-500"
-                                onClick={onPuzzleGame}
-                                badge="Mới"
-                            />}
-
-                            {!hiddenApps.includes('treasureHunt') && <ToolCard
-                                title="Truy Tìm Kho Báu"
-                                description="Game phiêu lưu khám phá, tự soạn câu hỏi"
-                                icon={<span className="text-2xl">🏴‍☠️</span>}
-                                accentColor="bg-gradient-to-br from-orange-500 to-amber-500"
-                                onClick={onTreasureHunt}
-                                badge="Mới"
-                            />}
-
-                            {/* Tools sắp ra mắt */}
-                            <ToolCard
-                                title="Quiz Game"
-                                description="Trắc nghiệm nhanh kiểu Kahoot"
-                                icon={<HelpCircle size={24} className="text-white" />}
-                                accentColor="bg-emerald-600"
-                                onClick={() => { }}
-                                badge="Sắp ra mắt"
-                                disabled
-                            />
-
-                            <ToolCard
-                                title="Thẻ ghi nhớ"
-                                description="Flashcards học từ vựng và công thức"
-                                icon={<Brain size={24} className="text-white" />}
-                                accentColor="bg-orange-500"
-                                onClick={() => { }}
-                                badge="Sắp ra mắt"
-                                disabled
-                            />
-
+                    {/* Maintenance Banner */}
+                    {maintenanceMode && !isAdmin && (
+                        <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-400/50 rounded-2xl p-6 text-center mb-8">
+                            <span className="text-4xl mb-3 block">🔧</span>
+                            <h3 className="text-xl font-bold text-amber-300 mb-1">Đang bảo trì</h3>
+                            <p className="text-white/80">{maintenanceMessage || 'Website đang bảo trì'}</p>
                         </div>
-                    </section>
+                    )}
 
-                    {/* Khóa học AI Section */}
-                    <section>
-                        <h2 className="text-lg font-semibold text-white mb-4">Khóa học AI</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {!hiddenApps.includes('aiCourseStore') && <ToolCard
-                                title="Kho Khóa học AI"
-                                description="Xem demo các khóa học AI cho giáo viên"
-                                icon={<span className="text-2xl">🎓</span>}
-                                accentColor="bg-gradient-to-br from-cyan-500 to-blue-600"
-                                onClick={onAICourseStore}
-                                badge="Mới"
-                            />}
-
-                            <ToolCard
-                                title="Tạo nội dung với AI"
-                                description="Học cách tạo giáo án, bài giảng bằng AI"
-                                icon={<span className="text-2xl">✨</span>}
-                                accentColor="bg-gradient-to-br from-purple-500 to-pink-600"
-                                onClick={() => { }}
-                                badge="Sắp ra mắt"
-                                disabled
-                            />
-
-                            <ToolCard
-                                title="Video AI nâng cao"
-                                description="Tạo video giáo dục chuyên nghiệp với AI"
-                                icon={<span className="text-2xl">🎬</span>}
-                                accentColor="bg-gradient-to-br from-orange-500 to-red-600"
-                                onClick={() => { }}
-                                badge="Sắp ra mắt"
-                                disabled
-                            />
-
-                            {!hiddenApps.includes('canvaBasics') && <ToolCard
-                                title="Canva cơ bản"
-                                description="Video hướng dẫn sử dụng Canva từ cộng đồng"
-                                icon={<span className="text-2xl">🎨</span>}
-                                accentColor="bg-gradient-to-br from-teal-500 to-cyan-600"
-                                onClick={onCanvaBasics}
-                                badge="Mới"
-                            />}
-
-                            {!hiddenApps.includes('communityResources') && <ToolCard
-                                title="Kho tài nguyên cộng đồng"
-                                description="Kho tài nguyên miễn phí từ cộng đồng"
-                                icon={<Users size={24} className="text-white" />}
-                                accentColor="bg-gradient-to-br from-green-500 to-emerald-600"
-                                onClick={onCommunityResources}
-                                badge="Miễn phí"
-                            />}
-
+                    {/* ═══════ TAB NAVIGATION ═══════ */}
+                    <div className="mb-8">
+                        <div className="flex flex-wrap gap-2 p-1.5 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+                            {[
+                                { key: 'all', label: 'Tất cả', emoji: '🏠' },
+                                { key: 'teaching', label: 'Công cụ dạy học', emoji: '⚡' },
+                                { key: 'science', label: 'Mô phỏng khoa học', emoji: '🧪' },
+                                { key: 'ai', label: 'Khóa học & AI', emoji: '🎓' },
+                                { key: '3d', label: 'Ứng dụng 3D', emoji: '📦' },
+                            ].map(tab => (
+                                <button
+                                    key={tab.key}
+                                    onClick={() => setActiveTab(tab.key)}
+                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${activeTab === tab.key ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]' : 'text-white/60 hover:bg-white/10 hover:text-white/90'}`}
+                                >
+                                    <span>{tab.emoji}</span>
+                                    <span className="hidden sm:inline">{tab.label}</span>
+                                </button>
+                            ))}
                         </div>
-                    </section>
+                    </div>
 
+                    {/* ═══════ SECTION CONTENT ═══════ */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
+                        >
 
-                    {/* Các ứng dụng 3D */}
-                    <section>
-                        <h2 className="text-lg font-semibold text-white mb-4">Các ứng dụng 3D</h2>
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                            {!hiddenApps.includes('heartSystem3D') && <ToolCard
-                                title="Hệ tuần hoàn 3D"
-                                description="Mô hình tim và hệ tuần hoàn 3D sống động"
-                                icon={<Heart size={24} className="text-white" />}
-                                accentColor="bg-red-600"
-                                onClick={onHeartSystem3D}
-                                badge="Mới"
-                            />}
+                            {/* ─── SECTION: CÔNG CỤ DẠY HỌC ─── */}
+                            {(activeTab === 'all' || activeTab === 'teaching') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                                <Zap size={20} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Công cụ dạy học</h2>
+                                                <p className="text-xs text-white/50">Game, vòng quay và công cụ tương tác</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('interactiveVideo') && <motion.div
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onMouseEnter={() => playHoverSound()}
+                                            onClick={onInteractiveVideo}
+                                            className="relative group text-left p-6 rounded-2xl border transition-all duration-200 bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl"
+                                        >
+                                            <span className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10">
+                                                {lessons.length} video
+                                            </span>
+                                            <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 group-hover:shadow-xl transition-shadow">
+                                                <Video size={24} className="text-white" />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-white mb-1">Video tương tác</h3>
+                                            <p className="text-sm text-white/70">Tạo video YouTube với câu hỏi tương tác</p>
+                                            <ChevronRight size={20} className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300" />
+                                        </motion.div>}
 
-                            {!hiddenApps.includes('geometry3DTools') && <ToolCard
-                                title="Bộ công cụ Hình học 3D"
-                                description="Lập phương, hộp, chóp, cầu, trụ tương tác"
-                                icon={<Box size={24} className="text-white" />}
-                                accentColor="bg-indigo-600"
-                                onClick={onGeometry3D}
-                                badge="Mới"
-                            />}
+                                        {!hiddenApps.includes('beeGame') && <ToolCard title="Ong về Tổ" description="Game ong về tổ demo sản phẩm" icon={<span className="text-2xl">🐝</span>} accentColor="bg-amber-500" onClick={onBeeGame} />}
+                                        {!hiddenApps.includes('beeGameEditable') && <ToolCard title="Ong về Tổ (Tự soạn)" description="Tự tạo câu hỏi và chia sẻ cho học sinh" icon={<span className="text-2xl">🐝📝</span>} accentColor="bg-orange-500" onClick={onBeeGameEditable} badge="Mới" />}
+                                        {!hiddenApps.includes('bacteriaGame') && <ToolCard title="Vi Khuẩn Phiêu Lưu" description="Game vi khuẩn tìm đường về hũ sữa chua" icon={<span className="text-2xl">🦠</span>} accentColor="bg-green-500" onClick={onBacteriaGame} badge="Mới" />}
+                                        {!hiddenApps.includes('vongQuay') && <ToolCard title="Vòng quay" description="Vòng tròn gọi tên học sinh" icon={<RotateCcw size={24} className="text-white" />} accentColor="bg-pink-500" onClick={onVongQuay} />}
+                                        {!hiddenApps.includes('kingGame') && <ToolCard title="Đường đến Ngôi Vua" description="Gọi tên học sinh kết hợp câu hỏi" icon={<span className="text-2xl">👑</span>} accentColor="bg-yellow-500" onClick={onKingGame} />}
+                                        {!hiddenApps.includes('luckyWheel') && <ToolCard title="Vòng quay may mắn" description="Bánh xe quay chọn người may mắn" icon={<span className="text-2xl">🎡</span>} accentColor="bg-rose-500" onClick={onLuckyWheel} />}
+                                        {!hiddenApps.includes('starWheel') && <ToolCard title="Vòng Xoay Ngôi Sao" description="Vòng quay ngôi sao may mắn" icon={<span className="text-2xl">⭐</span>} accentColor="bg-indigo-500" onClick={onStarWheel} />}
+                                        {!hiddenApps.includes('puzzleGame') && <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" />}
+                                        {!hiddenApps.includes('treasureHunt') && <ToolCard title="Truy Tìm Kho Báu" description="Game phiêu lưu khám phá, tự soạn câu hỏi" icon={<span className="text-2xl">🏴‍☠️</span>} accentColor="bg-gradient-to-br from-orange-500 to-amber-500" onClick={onTreasureHunt} badge="Mới" />}
+                                        {!hiddenApps.includes('videoStore') && <ToolCard title="Kho Video AI" description="Video AI giáo dục chất lượng cao" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-blue-500 to-purple-600" onClick={onVideoStore} badge="Mới" />}
+                                        <ToolCard title="Quiz Game" description="Trắc nghiệm nhanh kiểu Kahoot" icon={<HelpCircle size={24} className="text-white" />} accentColor="bg-emerald-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
+                                        <ToolCard title="Thẻ ghi nhớ" description="Flashcards học từ vựng và công thức" icon={<Brain size={24} className="text-white" />} accentColor="bg-orange-500" onClick={() => { }} badge="Sắp ra mắt" disabled />
+                                    </div>
+                                </section>
+                            )}
 
-                            {!hiddenApps.includes('vietnamMap') && <ToolCard
-                                title="Bản đồ Việt Nam"
-                                description="Khám phá 34 tỉnh thành với bản đồ tương tác"
-                                icon={<span className="text-2xl">🗺️</span>}
-                                accentColor="bg-emerald-600"
-                                onClick={onVietnamMap}
-                                badge="Mới"
-                            />}
+                            {/* ─── SECTION: MÔ PHỎNG KHOA HỌC ─── */}
+                            {(activeTab === 'all' || activeTab === 'science') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                                                <span className="text-xl">🧪</span>
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Mô phỏng khoa học</h2>
+                                                <p className="text-xs text-white/50">Thí nghiệm ảo và mô phỏng tương tác</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('virtualExperiment') && <ToolCard title="Thí nghiệm ảo" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" />}
+                                    </div>
+                                </section>
+                            )}
 
-                            {!hiddenApps.includes('chucTet') && <ToolCard
-                                title="Mẫu Chúc Tết"
-                                description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ"
-                                icon={<span className="text-2xl">🎊</span>}
-                                accentColor="bg-gradient-to-br from-red-600 to-yellow-500"
-                                onClick={onChucTet}
-                                badge="Mới"
-                            />}
+                            {/* ─── SECTION: KHÓA HỌC & AI ─── */}
+                            {(activeTab === 'all' || activeTab === 'ai') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                                                <Brain size={20} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Khóa học & AI</h2>
+                                                <p className="text-xs text-white/50">Khóa học, tài nguyên và công cụ AI</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('aiCourseStore') && <ToolCard title="Kho Khóa học AI" description="Xem demo các khóa học AI cho giáo viên" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-cyan-500 to-blue-600" onClick={onAICourseStore} badge="Mới" />}
+                                        {!hiddenApps.includes('ngheNghiep') && <ToolCard title="Nghề Nghiệp Tương Lai" description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI" icon={<span className="text-2xl">👨‍🚀</span>} accentColor="bg-gradient-to-br from-orange-400 to-amber-500" onClick={onNgheNghiep} badge="AI Studio" />}
+                                        {!hiddenApps.includes('canvaBasics') && <ToolCard title="Canva cơ bản" description="Video hướng dẫn sử dụng Canva từ cộng đồng" icon={<span className="text-2xl">🎨</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onCanvaBasics} badge="Mới" />}
+                                        {!hiddenApps.includes('chucTet') && <ToolCard title="Mẫu Chúc Tết" description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ" icon={<span className="text-2xl">🎊</span>} accentColor="bg-gradient-to-br from-red-600 to-yellow-500" onClick={onChucTet} badge="Mới" />}
+                                        {!hiddenApps.includes('communityResources') && <ToolCard title="Kho tài nguyên cộng đồng" description="Kho tài nguyên miễn phí từ cộng đồng" icon={<Users size={24} className="text-white" />} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onCommunityResources} badge="Miễn phí" />}
+                                        <ToolCard title="Tạo nội dung với AI" description="Học cách tạo giáo án, bài giảng bằng AI" icon={<span className="text-2xl">✨</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
+                                        <ToolCard title="Video AI nâng cao" description="Tạo video giáo dục chuyên nghiệp với AI" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-orange-500 to-red-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
+                                    </div>
+                                </section>
+                            )}
 
-                            {!hiddenApps.includes('denHung3D') && <ToolCard
-                                title="Phòng Tranh 3D - Đền Hùng"
-                                description="Dã ngoại ảo tham quan Đền Hùng với VR 360°"
-                                icon={<span className="text-2xl">🏛️</span>}
-                                accentColor="bg-gradient-to-br from-amber-600 to-red-700"
-                                onClick={onDenHung3D}
-                                badge="Mới"
-                            />}
-                        </div>
-                    </section>
+                            {/* ─── SECTION: ỨNG DỤNG 3D ─── */}
+                            {(activeTab === 'all' || activeTab === '3d') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                                <Box size={20} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Ứng dụng 3D & VR</h2>
+                                                <p className="text-xs text-white/50">Mô hình 3D, bản đồ và thực tế ảo</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('heartSystem3D') && <ToolCard title="Hệ tuần hoàn 3D" description="Mô hình tim và hệ tuần hoàn 3D sống động" icon={<Heart size={24} className="text-white" />} accentColor="bg-red-600" onClick={onHeartSystem3D} badge="Mới" />}
+                                        {!hiddenApps.includes('geometry3D') && <ToolCard title="Hình học 3D" description="Khám phá hình khối không gian tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-purple-600" onClick={onGeometry3D} />}
+                                        {!hiddenApps.includes('geometry3DTools') && <ToolCard title="Bộ công cụ Hình học 3D" description="Lập phương, hộp, chóp, cầu, trụ tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-indigo-600" onClick={onGeometry3D} badge="Mới" />}
+                                        {!hiddenApps.includes('vietnamMap') && <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" />}
+                                        {!hiddenApps.includes('denHung3D') && <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" />}
+                                    </div>
+                                </section>
+                            )}
+
+                        </motion.div>
+                    </AnimatePresence>
 
                     {/* Stats */}
                     <section className="grid grid-cols-2 md:grid-cols-4 gap-4">

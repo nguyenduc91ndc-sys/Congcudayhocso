@@ -13,6 +13,7 @@ import VietnamMap from './components/VietnamMap';
 import ChucTet from './components/ChucTet';
 import PuzzleGame from './components/PuzzleGame';
 import TreasureHunt from './components/TreasureHunt';
+import VirtualExperiment from './components/VirtualExperiment';
 import BeeGame from './components/BeeGame';
 import BeeGameEditable from './components/BeeGameEditable';
 import BacteriaGameEditable from './components/BacteriaGameEditable';
@@ -314,6 +315,7 @@ function App() {
                   onPuzzleGame={() => requireLogin(() => setView('PUZZLE_GAME'))}
                   onNgheNghiep={() => requireLogin(() => window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank'))}
                   onTreasureHunt={() => requireLogin(() => setView('TREASURE_HUNT'))}
+                  onVirtualExperiment={() => requireLogin(() => setView('VIRTUAL_EXPERIMENT'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -459,6 +461,10 @@ function App() {
 
           {view === 'TREASURE_HUNT' && (
             <TreasureHunt onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'VIRTUAL_EXPERIMENT' && (
+            <VirtualExperiment onBack={() => setView('DASHBOARD')} />
           )}
 
           {/* Login Modal for guests */}

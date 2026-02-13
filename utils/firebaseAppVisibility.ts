@@ -5,7 +5,7 @@ import { database } from './firebaseConfig';
 export const ALL_APP_IDS = [
     'interactiveVideo', 'beeGame', 'beeGameEditable', 'bacteriaGame',
     'geometry3D', 'vongQuay', 'kingGame', 'luckyWheel', 'starWheel',
-    'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt',
+    'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
     'aiCourseStore', 'canvaBasics', 'communityResources',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D'
 ] as const;
@@ -27,6 +27,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     ngheNghiep: { name: 'Nghề Nghiệp Tương Lai', icon: '👨‍🚀', section: 'Công cụ dạy học' },
     puzzleGame: { name: 'Giải Mã Bức Tranh', icon: '🧩', section: 'Công cụ dạy học' },
     treasureHunt: { name: 'Truy Tìm Kho Báu', icon: '🏴‍☠️', section: 'Công cụ dạy học' },
+    virtualExperiment: { name: 'Thí nghiệm ảo', icon: '🧪', section: 'Công cụ dạy học' },
     aiCourseStore: { name: 'Kho Khóa học AI', icon: '🎓', section: 'Khóa học AI' },
     canvaBasics: { name: 'Canva cơ bản', icon: '🎨', section: 'Khóa học AI' },
     communityResources: { name: 'Kho tài nguyên cộng đồng', icon: '👥', section: 'Khóa học AI' },
