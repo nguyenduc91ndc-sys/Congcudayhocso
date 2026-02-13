@@ -20,7 +20,9 @@ const provider = new GoogleAuthProvider();
 // Check if viewing shared card
 const params = new URLSearchParams(window.location.search);
 // Check for either 'data' (Chuc Tet shared param) or 'v' (short link param from shareUtils)
-const isSharedView = params.has('data') || params.has('v');
+// Also skip login if embedded in iframe (user already logged in via parent app)
+const isInIframe = window.self !== window.top;
+const isSharedView = params.has('data') || params.has('v') || isInIframe;
 
 const loginModal = document.getElementById('loginModal');
 const btnLogin = document.getElementById('btnLoginGoogle');

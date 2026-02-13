@@ -9,6 +9,7 @@ const Footer: React.FC = () => {
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
     const [visitCount, setVisitCount] = useState(0);
+    const [showZaloTooltip, setShowZaloTooltip] = useState(false);
 
     useEffect(() => {
         loadFeedbacks();
@@ -48,7 +49,13 @@ const Footer: React.FC = () => {
     const socialLinks = [
         {
             name: 'Zalo',
-            href: 'https://zalo.me/g/kvfmke936',
+            href: '#',
+            onClick: () => {
+                setShowZaloTooltip(!showZaloTooltip);
+                if (!showZaloTooltip) {
+                    setTimeout(() => setShowZaloTooltip(false), 4000);
+                }
+            },
             bgColor: 'from-blue-500 to-blue-600',
             hoverColor: 'hover:shadow-blue-500/50',
             icon: (
@@ -218,20 +225,50 @@ const Footer: React.FC = () => {
 
                     {/* Social Links */}
                     <div className="flex items-center gap-3">
-                        {socialLinks.map((link) => (
-                            <motion.a
-                                key={link.name}
-                                href={link.href}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className={`flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r ${link.bgColor} text-white rounded-xl font-semibold text-sm shadow-lg ${link.hoverColor} hover:shadow-xl transition-all`}
-                                whileHover={{ scale: 1.05, y: -2 }}
-                                whileTap={{ scale: 0.95 }}
-                            >
-                                {link.icon}
-                                <span className="hidden sm:inline">{link.name}</span>
-                            </motion.a>
-                        ))}
+                        {socialLinks.map((link) =>
+                            link.onClick ? (
+                                <div key={link.name} className="relative">
+                                    <motion.button
+                                        onClick={link.onClick}
+                                        className={`flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r ${link.bgColor} text-white rounded-xl font-semibold text-sm shadow-lg ${link.hoverColor} hover:shadow-xl transition-all cursor-pointer border-none`}
+                                        whileHover={{ scale: 1.05, y: -2 }}
+                                        whileTap={{ scale: 0.95 }}
+                                    >
+                                        {link.icon}
+                                        <span className="hidden sm:inline">{link.name}</span>
+                                    </motion.button>
+                                    <AnimatePresence>
+                                        {showZaloTooltip && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10, scale: 0.9 }}
+                                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                                exit={{ opacity: 0, y: 10, scale: 0.9 }}
+                                                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 whitespace-nowrap"
+                                            >
+                                                <div className="bg-white text-gray-800 px-5 py-3 rounded-xl shadow-2xl border border-blue-100 text-sm font-medium flex items-center gap-2">
+                                                    <span className="text-blue-500 text-lg">📞</span>
+                                                    <span>Hãy liên hệ tôi - <strong className="text-blue-600">0975509490</strong></span>
+                                                </div>
+                                                <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-blue-100 rotate-45 -mt-1.5" />
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+                            ) : (
+                                <motion.a
+                                    key={link.name}
+                                    href={link.href}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className={`flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r ${link.bgColor} text-white rounded-xl font-semibold text-sm shadow-lg ${link.hoverColor} hover:shadow-xl transition-all`}
+                                    whileHover={{ scale: 1.05, y: -2 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    {link.icon}
+                                    <span className="hidden sm:inline">{link.name}</span>
+                                </motion.a>
+                            )
+                        )}
                     </div>
 
                     {/* Visit Count & Copyright */}

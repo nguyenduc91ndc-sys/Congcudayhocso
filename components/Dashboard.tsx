@@ -40,6 +40,10 @@ interface DashboardProps {
     onCanvaBasics: () => void;
     onCommunityResources: () => void;
     onNewYear: () => void;
+    onDenHung3D: () => void;
+    onHeartSystem3D: () => void;
+    onVietnamMap: () => void;
+    onChucTet: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
 }
@@ -243,7 +247,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, isAdmin, isGuest
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, isAdmin, isGuest
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -416,7 +420,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <button
                                 onClick={() => setShowZaloModal(true)}
                                 className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-500/20 border border-blue-500/30 rounded-full hover:bg-blue-500/30 transition-colors group"
-                                title="Cộng đồng Zalo"
+                                title="Cẩm nang giáo viên 4.0"
                             >
                                 <Users size={14} className="text-blue-400 group-hover:scale-110 transition-transform" />
                                 <span className="text-xs font-medium text-blue-400 hidden sm:inline">Cộng đồng Zalo</span>
@@ -710,7 +714,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Mô hình tim và hệ tuần hoàn 3D sống động"
                                 icon={<Heart size={24} className="text-white" />}
                                 accentColor="bg-red-600"
-                                onClick={() => window.open('/trai-tim-3d/heart-3d-viewer/index.html', '_blank')}
+                                onClick={onHeartSystem3D}
                                 badge="Mới"
                             />
 
@@ -728,14 +732,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Khám phá 34 tỉnh thành với bản đồ tương tác"
                                 icon={<span className="text-2xl">🗺️</span>}
                                 accentColor="bg-emerald-600"
-                                onClick={() => {
-                                    if (isGuest) {
-                                        alert('Vui lòng đăng nhập để sử dụng tính năng này!');
-                                        onLogout();
-                                    } else {
-                                        window.open('/bandoso/vietnam-map-new.html', '_blank');
-                                    }
-                                }}
+                                onClick={onVietnamMap}
                                 badge="Mới"
                             />
 
@@ -744,7 +741,16 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ"
                                 icon={<span className="text-2xl">🎊</span>}
                                 accentColor="bg-gradient-to-br from-red-600 to-yellow-500"
-                                onClick={() => window.open('/chuctettudong/index.html', '_blank')}
+                                onClick={onChucTet}
+                                badge="Mới"
+                            />
+
+                            <ToolCard
+                                title="Phòng Tranh 3D - Đền Hùng"
+                                description="Dã ngoại ảo tham quan Đền Hùng với VR 360°"
+                                icon={<span className="text-2xl">🏛️</span>}
+                                accentColor="bg-gradient-to-br from-amber-600 to-red-700"
+                                onClick={onDenHung3D}
                                 badge="Mới"
                             />
                         </div>

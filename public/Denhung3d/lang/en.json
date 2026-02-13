@@ -1,0 +1,20 @@
+{
+    "welcome_title": "🏛️ Hung King Temple Tour",
+    "start_btn": "🎒 Start Journey!",
+    "guide_welcome": "Hello! I am Hung, your guide. Let's explore the Hung King Temple together!",
+    "popup_play": "▶️ Listen to Guide",
+    "popup_pause": "⏸️ Pause Audio",
+    "quiz_title": "📝 Quiz",
+    "btn_next": "Next Question ➡️",
+    "btn_finish": "Finish ✅",
+    "leaderboard_title": "🏆 Leaderboard",
+    "certificate_title": "🎓 Certificate",
+    "loading": "Loading 3D data...",
+    "btn_quiz": "📝 Take Quiz",
+    "fullscreen_on": "Exit Fullscreen",
+    "fullscreen_off": "Enter Fullscreen",
+    "cert_name_placeholder": "Enter your name...",
+    "cert_generate": "Generate Certificate",
+    "cert_download": "💾 Download",
+    "cert_back": "← Back"
+}

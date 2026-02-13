@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phòng Tranh 3D - Tham Quan Đền Hùng</title>
+    <!-- Pannellum VR 360 Viewer -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
+    <meta name="description"
+        content="Chuyến dã ngoại ảo tham quan Đền Hùng cùng học sinh lớp 4. Học mà chơi - Chơi mà học!">
+    <link rel="stylesheet" href="css/style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Quicksand:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen" class="loading-screen">
+        <div class="loading-content">
+            <div class="loading-lantern">🏮</div>
+            <h2>Đang tải chuyến tham quan...</h2>
+            <div class="loading-bar">
+                <div class="loading-progress"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Welcome Screen -->
+    <div id="welcome-screen" class="screen welcome-screen">
+        <div class="welcome-content">
+            <div class="welcome-lanterns">
+                <span class="lantern">🏮</span>
+                <span class="lantern">🏮</span>
+                <span class="lantern">🏮</span>
+            </div>
+            <h1 class="welcome-title" data-i18n="welcome_title">🏛️ Tham Quan Đền Hùng</h1>
+            <div class="welcome-mascot">
+                <img src="images/cover_bg.png" alt="Cover" class="cover-image">
+            </div>
+            <button id="start-btn" class="btn-start" data-i18n="start_btn">
+                <span class="btn-icon">🎒</span>
+                Bắt đầu chuyến đi!
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Gallery -->
+    <div id="main-gallery" class="screen gallery-screen hidden">
+        <!-- Glowing Particles -->
+        <div class="glow-particles">
+            <span class="glow-dot"></span><span class="glow-dot"></span><span class="glow-dot"></span>
+            <span class="glow-dot"></span><span class="glow-dot"></span><span class="glow-dot"></span>
+            <span class="glow-dot"></span><span class="glow-dot"></span><span class="glow-dot"></span>
+            <span class="glow-dot"></span><span class="glow-dot"></span><span class="glow-dot"></span>
+            <span class="glow-dot"></span><span class="glow-dot"></span><span class="glow-dot"></span>
+        </div>
+        <div class="control-panel">
+            <button id="music-toggle" class="music-toggle" title="Bật/Tắt nhạc nền">🎵</button>
+            <button id="voice-toggle" class="voice-toggle" title="Bật/Tắt giọng đọc">🔊</button>
+            <button id="fullscreen-toggle" class="fullscreen-toggle" title="Phóng to toàn màn hình">⛶</button>
+        </div>
+        <!-- Guide Character -->
+        <div class="guide-character" id="guide">
+            <div class="guide-avatar">🐦</div>
+            <div class="guide-bubble" id="guide-bubble">
+                <p id="guide-text">Xin chào các bạn nhỏ! Mình là Chim Lạc, hôm nay mình sẽ dẫn các bạn đi tham quan Đền
+                    Hùng nhé!</p>
+            </div>
+        </div>
+
+
+
+        <!-- 3D Gallery Room -->
+        <div class="gallery-room">
+            <div class="room-3d" id="room-3d">
+                <!-- Floor with traditional pattern -->
+                <div class="floor"></div>
+
+                <!-- Left Wall with paintings -->
+                <div class="wall wall-left">
+                    <div class="painting" data-location="cong-den">
+                        <img src="images/cong_den_hung.png" alt="Cổng Đền Hùng">
+                        <span class="painting-label">Cổng Đền Hùng</span>
+                        <div class="painting-number">1</div>
+                    </div>
+                    <div class="painting" data-location="den-ha">
+                        <img src="images/den_ha.png" alt="Đền Hạ">
+                        <span class="painting-label">Đền Hạ</span>
+                        <div class="painting-number">2</div>
+                    </div>
+                    <div class="painting" data-location="chua-thien-quang">
+                        <img src="images/bao_tang.png" alt="Chùa Thiên Quang">
+                        <span class="painting-label">Chùa Thiên Quang</span>
+                        <div class="painting-number">3</div>
+                    </div>
+                    <div class="painting" data-location="den-trung">
+                        <img src="images/den_trung.png" alt="Đền Trung">
+                        <span class="painting-label">Đền Trung</span>
+                        <div class="painting-number">4</div>
+                    </div>
+                </div>
+
+                <!-- Right Wall with paintings -->
+                <div class="wall wall-right">
+                    <div class="painting" data-location="den-thuong">
+                        <img src="images/den_thuong.png" alt="Đền Thượng">
+                        <span class="painting-label">Đền Thượng</span>
+                        <div class="painting-number">5</div>
+                    </div>
+                    <div class="painting" data-location="den-gieng">
+                        <img src="images/den_gieng.png" alt="Đền Giếng">
+                        <span class="painting-label">Đền Giếng</span>
+                        <div class="painting-number">6</div>
+                    </div>
+                    <div class="painting" data-location="lang-hung-vuong">
+                        <img src="images/lang_vua_hung.png" alt="Lăng Hùng Vương">
+                        <span class="painting-label">Lăng Hùng Vương</span>
+                        <div class="painting-number">7</div>
+                    </div>
+                    <div class="painting" data-location="den-au-co">
+                        <img src="images/den_mau_au_co.png" alt="Đền Mẫu Âu Cơ">
+                        <span class="painting-label">Đền Mẫu Âu Cơ</span>
+                        <div class="painting-number">8</div>
+                    </div>
+                </div>
+
+                <!-- Back Wall with map -->
+                <div class="wall wall-back">
+                    <div class="map-display">
+                        <h2>🗺️ Bản đồ Đền Hùng</h2>
+                        <img src="images/aerial_map.png" alt="Bản đồ khu di tích Đền Hùng" class="aerial-map">
+                        <button id="main-video-btn" class="main-video-btn">
+                            <span class="video-icon">📹</span>
+                            Nhấn xem video sự tích con Rồng cháu Tiên
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Ceiling with lanterns -->
+                <div class="ceiling">
+                    <div class="lantern-row">
+                        <span class="ceiling-lantern">🏮</span>
+                        <span class="ceiling-lantern">🏮</span>
+                        <span class="ceiling-lantern">🏮</span>
+                        <span class="ceiling-lantern">🏮</span>
+                        <span class="ceiling-lantern">🏮</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Progress Indicator -->
+        <div class="progress-bar">
+            <div class="progress-fill" id="progress-fill"></div>
+            <span class="progress-text" id="progress-text">0/8 địa điểm đã xem</span>
+        </div>
+
+
+    </div>
+
+    <!-- Location Detail Popup -->
+    <div id="location-popup" class="popup hidden">
+        <div class="popup-content">
+            <button class="popup-close" id="popup-close">✕</button>
+
+            <div class="popup-header">
+                <h2 id="popup-title">Tên địa điểm</h2>
+                <div class="popup-number" id="popup-number">1</div>
+            </div>
+
+            <div class="popup-body">
+                <!-- Image Carousel -->
+                <div class="popup-carousel">
+                    <div class="carousel-main" id="carousel-main">
+                        <img id="popup-image" src="" alt="">
+                        <button class="zoom-btn" id="zoom-image" title="Phóng to ảnh">🔍</button>
+                    </div>
+                    <div class="carousel-thumbs" id="carousel-thumbs"></div>
+                </div>
+
+                <!-- Description -->
+                <div class="popup-description" id="popup-description">
+                    <p>Mô tả địa điểm...</p>
+                </div>
+
+                <!-- Audio Player -->
+                <div class="popup-audio">
+                    <button class="audio-play-btn" id="audio-play">
+                        <span class="play-icon">▶️</span>
+                        Nghe thuyết minh
+                    </button>
+                    <div class="audio-progress">
+                        <div class="audio-progress-fill" id="audio-progress-fill"></div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="location-buttons">
+                <button id="btn-vr-360" class="btn-vr-360">
+                    <span class="vr-icon">🥽</span>
+                    Tham quan VR 360°
+                </button>
+                <button class="btn-video" id="btn-video">
+                    <span>📹</span> Xem Video
+                </button>
+                <button class="btn-quiz" id="btn-quiz">
+                    <span>🎯</span> Làm quiz kiến thức!
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Quiz Modal -->
+    <div id="quiz-modal" class="modal hidden">
+        <div class="modal-content quiz-content">
+            <div class="quiz-header">
+                <h3 id="quiz-title">📝 Quiz: Cổng Đền Hùng</h3>
+                <div class="quiz-progress">
+                    <span id="quiz-current">1</span>/<span id="quiz-total">3</span>
+                </div>
+            </div>
+
+            <div class="quiz-body">
+                <p class="quiz-question" id="quiz-question">Câu hỏi sẽ hiển thị ở đây?</p>
+                <div class="quiz-options" id="quiz-options">
+                    <button class="quiz-option" data-answer="a">A. Đáp án A</button>
+                    <button class="quiz-option" data-answer="b">B. Đáp án B</button>
+                    <button class="quiz-option" data-answer="c">C. Đáp án C</button>
+                    <button class="quiz-option" data-answer="d">D. Đáp án D</button>
+                </div>
+            </div>
+
+            <div class="quiz-feedback hidden" id="quiz-feedback">
+                <div class="feedback-icon" id="feedback-icon">🎉</div>
+                <p class="feedback-text" id="feedback-text">Chính xác! Tuyệt vời lắm!</p>
+            </div>
+
+            <div class="quiz-footer">
+                <button class="btn-next hidden" id="btn-next-quiz">Câu tiếp theo →</button>
+                <button class="btn-finish hidden" id="btn-finish-quiz">Hoàn thành 🎊</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Celebration Overlay -->
+    <div id="celebration" class="celebration hidden">
+        <div class="confetti-container" id="confetti"></div>
+        <div class="celebration-content">
+            <h2>🎉 Chúc mừng bạn!</h2>
+            <p id="celebration-message">Bạn đã hoàn thành tuyệt vời!</p>
+            <div class="celebration-stars">⭐⭐⭐</div>
+        </div>
+    </div>
+
+    <!-- Image Lightbox -->
+    <div id="image-lightbox" class="image-lightbox hidden">
+        <div class="lightbox-content">
+            <button class="lightbox-close" id="lightbox-close">✕</button>
+            <img id="lightbox-image" src="" alt="">
+            <p class="lightbox-caption" id="lightbox-caption"></p>
+        </div>
+    </div>
+
+    <!-- Video Modal -->
+    <div id="video-modal" class="video-modal hidden">
+        <div class="video-modal-content">
+            <button class="video-close" id="video-close">✕</button>
+            <div class="video-container">
+                <iframe id="video-frame" width="100%" height="100%" src="" frameborder="0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
+                    allowfullscreen></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- VR 360 Modal -->
+    <div id="vr-modal" class="vr-modal hidden">
+        <div class="vr-modal-content">
+            <button class="vr-close" id="vr-close">✕</button>
+            <h3 id="vr-title" class="vr-title">Tham quan VR 360°</h3>
+            <div id="panorama" class="panorama-container"></div>
+        </div>
+    </div>
+
+    <!-- Background Music -->
+    <audio id="bg-music" loop>
+        <source src="nhac/Dòng Máu Lạc Hồng.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Voice Audio (dynamic) -->
+    <audio id="voice-audio"></audio>
+
+    <!-- Scripts -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/app.js"></script>
+    <script src="js/chatbot.js"></script>
+    <script src="js/leaderboard.js"></script>
+    <script src="js/certificate.js"></script>
+    <!-- Pannellum VR Library -->
+    <script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+    <script src="js/i18n.js"></script>
+
+    <!-- Footer Credit -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+            <span class="footer-icon">✦</span>
+            <p>Thiết kế bởi <strong>Thầy Thế Đức</strong> · GV yêu công nghệ</p>
+            <span class="footer-icon">✦</span>
+        </div>
+    </footer>
+</body>
+
+</html>

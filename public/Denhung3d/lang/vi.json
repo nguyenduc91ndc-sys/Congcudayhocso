@@ -1,0 +1,20 @@
+{
+    "welcome_title": "🏛️ Tham Quan Đền Hùng",
+    "start_btn": "🎒 Bắt đầu chuyến đi!",
+    "guide_welcome": "Xin chào! Mình là Hùng, hướng dẫn viên của bạn. Hãy cùng mình khám phá Đền Hùng nhé!",
+    "popup_play": "▶️ Nghe thuyết minh",
+    "popup_pause": "⏸️ Tạm dừng",
+    "quiz_title": "📝 Trắc nghiệm",
+    "btn_next": "Câu tiếp theo ➡️",
+    "btn_finish": "Hoàn thành ✅",
+    "leaderboard_title": "🏆 Bảng Xếp Hạng",
+    "certificate_title": "🎓 Chứng Chỉ Hoàn Thành",
+    "loading": "Đang tải dữ liệu 3D...",
+    "btn_quiz": "📝 Thử tài kiến thức",
+    "fullscreen_on": "Thoát toàn màn hình",
+    "fullscreen_off": "Phóng to toàn màn hình",
+    "cert_name_placeholder": "Nhập họ và tên...",
+    "cert_generate": "Tạo Chứng Chỉ",
+    "cert_download": "💾 Tải về máy",
+    "cert_back": "← Nhập lại tên"
+}

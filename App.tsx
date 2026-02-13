@@ -7,6 +7,10 @@ import VideoEditor from './components/VideoEditor';
 import VideoPlayer from './components/VideoPlayer';
 import AdminPanel from './components/AdminPanel';
 import Geometry3D from './components/Geometry3D';
+import DenHung3D from './components/DenHung3D';
+import HeartSystem3D from './components/HeartSystem3D';
+import VietnamMap from './components/VietnamMap';
+import ChucTet from './components/ChucTet';
 import BeeGame from './components/BeeGame';
 import BeeGameEditable from './components/BeeGameEditable';
 import BacteriaGameEditable from './components/BacteriaGameEditable';
@@ -293,6 +297,10 @@ function App() {
                   onCanvaBasics={() => requireLogin(() => setView('CANVA_BASICS'))}
                   onCommunityResources={() => requireLogin(() => setView('COMMUNITY_RESOURCES'))}
                   onNewYear={() => setShowNewYearWelcome(true)}
+                  onDenHung3D={() => requireLogin(() => setView('DEN_HUNG_3D'))}
+                  onHeartSystem3D={() => requireLogin(() => setView('HEART_SYSTEM_3D'))}
+                  onVietnamMap={() => requireLogin(() => setView('VIETNAM_MAP'))}
+                  onChucTet={() => requireLogin(() => setView('CHUC_TET'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                 />
@@ -411,6 +419,22 @@ function App() {
               isLoggedIn={!!user}
               onRequireLogin={() => setShowLoginModal(true)}
             />
+          )}
+
+          {view === 'DEN_HUNG_3D' && (
+            <DenHung3D onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'HEART_SYSTEM_3D' && (
+            <HeartSystem3D onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'VIETNAM_MAP' && (
+            <VietnamMap onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'CHUC_TET' && (
+            <ChucTet onBack={() => setView('DASHBOARD')} />
           )}
 
           {/* Login Modal for guests */}
