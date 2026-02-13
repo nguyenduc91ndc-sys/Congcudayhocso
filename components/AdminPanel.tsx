@@ -11,6 +11,7 @@ import { subscribeToOrders, confirmOrder, cancelOrder } from '../utils/firebaseO
 import { uploadImage, isValidImage } from '../utils/firebaseStorage';
 import { saveProKey, deleteProKey, subscribeToProKeys, ProKey } from '../utils/firebaseProKeys';
 import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode } from '../utils/firebaseBeeProKeys';
+import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode } from '../utils/firebaseAppVisibility';
 
 interface AdminPanelProps {
     onBack: () => void;
@@ -30,7 +31,9 @@ const saveKeysToLocal = (keys: { key: string; createdAt: string; note: string }[
 };
 
 const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
-    const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders'>('analytics');
+    const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders' | 'apps'>('analytics');
+    const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
+    const [editMaintenanceMsg, setEditMaintenanceMsg] = useState('');
     const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [keySubTab, setKeySubTab] = useState<'pro' | 'bee'>('pro');
@@ -115,6 +118,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         const unsubscribeVideos = subscribeToVideos(setVideos);
         // Subscribe to orders
         const unsubscribeOrders = subscribeToOrders(setOrders);
+        // Subscribe to app visibility
+        const unsubscribeAppVis = subscribeToAppVisibility((state) => {
+            setAppVisibility(state);
+            setEditMaintenanceMsg(state.maintenanceMessage);
+        });
 
         // Cập nhật thống kê mỗi 30 giây để tránh query quá nhiều
         const interval = setInterval(() => {
@@ -127,6 +135,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             unsubscribeBeeKeys();
             unsubscribeVideos();
             unsubscribeOrders();
+            unsubscribeAppVis();
         };
     }, []);
 
@@ -430,6 +439,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                             <span className="bg-red-500 text-white text-xs px-1.5 py-0.5 rounded-full">{orders.filter(o => o.status === 'pending').length}</span>
                         )}
                     </button>
+                    <button
+                        onClick={() => setActiveTab('apps')}
+                        className={`flex-1 py-2 sm:py-3 px-2 sm:px-4 rounded-xl font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all text-xs sm:text-base whitespace-nowrap ${activeTab === 'apps'
+                            ? 'bg-teal-600 text-white shadow-lg'
+                            : 'bg-white/50 text-teal-700 hover:bg-white/80'
+                            }`}
+                    >
+                        📱 <span className="hidden sm:inline">Ứng dụng</span>
+                    </button>
                 </div>
 
                 {/* Tab Content */}
@@ -571,9 +589,6 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                             {new Date(entry.loginTime).toLocaleString('vi-VN')}
                                                             <Monitor size={9} className="ml-2" />
                                                             {entry.device}
-                                                            <span className={`ml-2 px-1.5 py-0.5 rounded text-[10px] border flex items-center gap-1 ${entry.source === 'ChucTetApp' ? 'bg-red-50 text-red-600 border-red-200' : 'bg-blue-50 text-blue-600 border-blue-200'}`}>
-                                                                {entry.source === 'ChucTetApp' ? '🧧 Chúc Tết' : '🌐 Web chính'}
-                                                            </span>
                                                         </div>
                                                     </div>
                                                 </motion.div>
@@ -1048,6 +1063,91 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                         </>
                     )}
                 </AnimatePresence>
+
+                {activeTab === 'apps' && (
+                    <div className="h-full flex flex-col">
+                        {/* Maintenance Mode */}
+                        <div className={`rounded-2xl p-4 mb-4 shadow-lg transition-all ${appVisibility.maintenanceMode ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-teal-500 to-cyan-500'}`}>
+                            <div className="flex items-center justify-between mb-3">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-2xl">{appVisibility.maintenanceMode ? '🚧' : '✅'}</span>
+                                    <div>
+                                        <h3 className="text-white font-bold">{appVisibility.maintenanceMode ? 'Đang bảo trì' : 'Hệ thống hoạt động'}</h3>
+                                        <p className="text-white/70 text-xs">{appVisibility.maintenanceMode ? 'Tất cả ứng dụng đã tắt, người dùng thấy thông báo bảo trì' : 'Tất cả ứng dụng đang bật bình thường'}</p>
+                                    </div>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        const newMode = !appVisibility.maintenanceMode;
+                                        await setMaintenanceMode(newMode, editMaintenanceMsg);
+                                        if (newMode) await setAllAppsVisible(false);
+                                        else await setAllAppsVisible(true);
+                                    }}
+                                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${appVisibility.maintenanceMode ? 'bg-white text-red-600 hover:bg-red-50' : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'}`}
+                                >
+                                    {appVisibility.maintenanceMode ? '🟢 Bật lại tất cả' : '🔴 Tắt tất cả (Bảo trì)'}
+                                </button>
+                            </div>
+                            <div>
+                                <label className="text-white/80 text-xs font-bold mb-1 block">Thông báo cho người dùng:</label>
+                                <div className="flex gap-2">
+                                    <input
+                                        type="text"
+                                        value={editMaintenanceMsg}
+                                        onChange={e => setEditMaintenanceMsg(e.target.value)}
+                                        className="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 text-sm focus:outline-none focus:border-white/60"
+                                        placeholder="VD: Website đang bảo trì..."
+                                    />
+                                    <button
+                                        onClick={() => setMaintenanceMode(appVisibility.maintenanceMode, editMaintenanceMsg)}
+                                        className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-bold border border-white/30"
+                                    >
+                                        Lưu
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* App List */}
+                        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
+                            {(['Công cụ dạy học', 'Khóa học AI', 'Ứng dụng 3D'] as const).map(section => {
+                                const sectionApps = ALL_APP_IDS.filter(id => APP_INFO[id].section === section);
+                                const allOn = sectionApps.every(id => appVisibility.apps[id] !== false);
+                                return (
+                                    <div key={section} className="mb-3">
+                                        <div className="flex items-center justify-between mb-2">
+                                            <h4 className="font-bold text-purple-800 text-sm">{section}</h4>
+                                            <button
+                                                onClick={() => sectionApps.forEach(id => setAppVisible(id, !allOn))}
+                                                className={`text-xs px-3 py-1 rounded-full font-bold transition-all ${allOn ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-red-100 text-red-700 hover:bg-green-100 hover:text-green-700'}`}
+                                            >
+                                                {allOn ? 'Tắt nhóm' : 'Bật nhóm'}
+                                            </button>
+                                        </div>
+                                        {sectionApps.map(appId => {
+                                            const info = APP_INFO[appId];
+                                            const isVisible = appVisibility.apps[appId] !== false;
+                                            return (
+                                                <div key={appId} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 mb-1 shadow-sm border border-gray-100 hover:border-purple-200 transition-all">
+                                                    <div className="flex items-center gap-3">
+                                                        <span className="text-xl">{info.icon}</span>
+                                                        <span className={`font-medium text-sm ${isVisible ? 'text-gray-800' : 'text-gray-400 line-through'}`}>{info.name}</span>
+                                                    </div>
+                                                    <button
+                                                        onClick={() => setAppVisible(appId, !isVisible)}
+                                                        className={`w-12 h-7 rounded-full relative transition-all duration-300 ${isVisible ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                    >
+                                                        <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ${isVisible ? 'left-5.5' : 'left-0.5'}`} />
+                                                    </button>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                )}
             </div>
         </div>
     );

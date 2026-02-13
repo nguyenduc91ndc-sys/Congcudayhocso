@@ -36,6 +36,7 @@ import { getSharedVideo } from './utils/firebaseShareLinks';
 import { logVisit } from './utils/analyticsUtils';
 import { incrementVisitCount } from './utils/visitCounter';
 import { logVisitorToFirebase, logLoginHistory, checkAndMigrateIfNeeded } from './utils/firebaseVisitors';
+import { AppVisibilityState, subscribeToAppVisibility } from './utils/firebaseAppVisibility';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -48,12 +49,19 @@ function App() {
   const [showLoginModal, setShowLoginModal] = useState(false); // Login modal for guest
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null); // Action after login
   const [showNewYearWelcome, setShowNewYearWelcome] = useState(false); // New Year welcome modal
+  const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
 
   // Lấy storage key theo email user
   const getLessonsStorageKey = (email?: string): string => {
     const userEmail = email || localStorage.getItem('ntd_current_email') || 'guest';
     return `ntd_lessons_${userEmail.toLowerCase().trim()}`;
   };
+
+  // Subscribe to app visibility
+  useEffect(() => {
+    const unsubscribe = subscribeToAppVisibility(setAppVisibility);
+    return () => unsubscribe();
+  }, []);
 
   // Load data from localStorage
   useEffect(() => {
@@ -308,6 +316,9 @@ function App() {
                   onTreasureHunt={() => requireLogin(() => setView('TREASURE_HUNT'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
+                  hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
+                  maintenanceMode={appVisibility.maintenanceMode}
+                  maintenanceMessage={appVisibility.maintenanceMessage}
                 />
               </div>
               <Footer />
