@@ -701,52 +701,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     </AnimatePresence>
 
                     {/* Stats */}
-                    <section className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
-                                    <Video size={18} className="text-blue-400" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-white">{lessons.length}</p>
-                                    <p className="text-xs text-slate-500">Video</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-purple-600/20 rounded-lg flex items-center justify-center">
-                                    <HelpCircle size={18} className="text-purple-400" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-white">{lessons.reduce((sum, l) => sum + l.questions.length, 0)}</p>
-                                    <p className="text-xs text-slate-500">Câu hỏi</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-emerald-600/20 rounded-lg flex items-center justify-center">
-                                    <Zap size={18} className="text-emerald-400" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-white">3</p>
-                                    <p className="text-xs text-slate-500">Công cụ</p>
-                                </div>
-                            </div>
-                        </div>
-                        <div className="bg-slate-800/30 border border-slate-700/30 rounded-xl p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="w-10 h-10 bg-amber-600/20 rounded-lg flex items-center justify-center">
-                                    <Star size={18} className="text-amber-400" />
-                                </div>
-                                <div>
-                                    <p className="text-2xl font-bold text-white">{isPro ? '∞' : remainingTrials}</p>
-                                    <p className="text-xs text-slate-500">Lượt còn</p>
-                                </div>
-                            </div>
-                        </div>
-                    </section>
+
 
                     {/* Zalo Community Card */}
                     <section
