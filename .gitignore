@@ -34,3 +34,7 @@ dist-ssr
 client_secret_*.json
 **/*client_secret_*.json
 MÃ KH MAIL NGUYENDUC 91NDC/
+
+# Large files - GitHub limit 100MB
+*.exe
+*.zip

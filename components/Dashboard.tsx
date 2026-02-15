@@ -48,6 +48,8 @@ interface DashboardProps {
     onNgheNghiep: () => void;
     onTreasureHunt: () => void;
     onVirtualExperiment: () => void;
+    onBangCuuChuong: () => void;
+    onGameTuongTac: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
     hiddenApps?: string[];
@@ -254,7 +256,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = ''
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onBangCuuChuong, onGameTuongTac, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = ''
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -532,6 +534,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 { key: 'science', label: 'Mô phỏng khoa học', emoji: '🧪' },
                                 { key: 'ai', label: 'Khóa học & AI', emoji: '🎓' },
                                 { key: '3d', label: 'Ứng dụng 3D', emoji: '📦' },
+                                { key: 'interactive', label: 'Học liệu tương tác', emoji: '📚' },
                             ].map(tab => (
                                 <button
                                     key={tab.key}
@@ -604,26 +607,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 </section>
                             )}
 
-                            {/* ─── SECTION: MÔ PHỎNG KHOA HỌC ─── */}
-                            {(activeTab === 'all' || activeTab === 'science') && (
-                                <section className="mb-10">
-                                    {activeTab === 'all' && (
-                                        <div className="flex items-center gap-3 mb-6">
-                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
-                                                <span className="text-xl">🧪</span>
-                                            </div>
-                                            <div>
-                                                <h2 className="text-xl font-bold text-white">Mô phỏng khoa học</h2>
-                                                <p className="text-xs text-white/50">Thí nghiệm ảo và mô phỏng tương tác</p>
-                                            </div>
-                                        </div>
-                                    )}
-                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {!hiddenApps.includes('virtualExperiment') && <ToolCard title="Thí nghiệm ảo" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" />}
-                                    </div>
-                                </section>
-                            )}
-
                             {/* ─── SECTION: KHÓA HỌC & AI ─── */}
                             {(activeTab === 'all' || activeTab === 'ai') && (
                                 <section className="mb-10">
@@ -666,10 +649,50 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {!hiddenApps.includes('heartSystem3D') && <ToolCard title="Hệ tuần hoàn 3D" description="Mô hình tim và hệ tuần hoàn 3D sống động" icon={<Heart size={24} className="text-white" />} accentColor="bg-red-600" onClick={onHeartSystem3D} badge="Mới" />}
-                                        {!hiddenApps.includes('geometry3D') && <ToolCard title="Hình học 3D" description="Khám phá hình khối không gian tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-purple-600" onClick={onGeometry3D} />}
                                         {!hiddenApps.includes('geometry3DTools') && <ToolCard title="Bộ công cụ Hình học 3D" description="Lập phương, hộp, chóp, cầu, trụ tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-indigo-600" onClick={onGeometry3D} badge="Mới" />}
                                         {!hiddenApps.includes('vietnamMap') && <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" />}
                                         {!hiddenApps.includes('denHung3D') && <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" />}
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* ─── SECTION: MÔ PHỎNG KHOA HỌC ─── */}
+                            {(activeTab === 'all' || activeTab === 'science') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                                                <span className="text-xl">🧪</span>
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Mô phỏng khoa học</h2>
+                                                <p className="text-xs text-white/50">Thí nghiệm ảo và mô phỏng tương tác</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('virtualExperiment') && <ToolCard title="Thí nghiệm ảo" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" />}
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* ─── SECTION: HỌC LIỆU TƯƠNG TÁC ─── */}
+                            {(activeTab === 'all' || activeTab === 'interactive') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20">
+                                                <span className="text-xl">📚</span>
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Học liệu tương tác</h2>
+                                                <p className="text-xs text-white/50">Nội dung số hóa, tương tác đa phương tiện</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('bangCuuChuong') && <ToolCard title="Bảng Cửu Chương Số" description="Học liệu tương tác bảng cửu chương" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onBangCuuChuong} badge="Mới" />}
+                                        {!hiddenApps.includes('gameTuongTac') && <ToolCard title="Game Tương Tác" description="Học liệu tương tác dạng game vui nhộn" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={onGameTuongTac} badge="Mới" />}
                                     </div>
                                 </section>
                             )}

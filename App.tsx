@@ -14,6 +14,8 @@ import ChucTet from './components/ChucTet';
 import PuzzleGame from './components/PuzzleGame';
 import TreasureHunt from './components/TreasureHunt';
 import VirtualExperiment from './components/VirtualExperiment';
+import BangCuuChuong from './components/BangCuuChuong';
+import GameTuongTac from './components/GameTuongTac';
 import BeeGame from './components/BeeGame';
 import BeeGameEditable from './components/BeeGameEditable';
 import BacteriaGameEditable from './components/BacteriaGameEditable';
@@ -316,6 +318,8 @@ function App() {
                   onNgheNghiep={() => requireLogin(() => window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank'))}
                   onTreasureHunt={() => requireLogin(() => setView('TREASURE_HUNT'))}
                   onVirtualExperiment={() => requireLogin(() => setView('VIRTUAL_EXPERIMENT'))}
+                  onBangCuuChuong={() => requireLogin(() => setView('BANG_CUU_CHUONG'))}
+                  onGameTuongTac={() => requireLogin(() => setView('GAME_TUONG_TAC'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -465,6 +469,14 @@ function App() {
 
           {view === 'VIRTUAL_EXPERIMENT' && (
             <VirtualExperiment onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'BANG_CUU_CHUONG' && (
+            <BangCuuChuong onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'GAME_TUONG_TAC' && (
+            <GameTuongTac onBack={() => setView('DASHBOARD')} />
           )}
 
           {/* Login Modal for guests */}

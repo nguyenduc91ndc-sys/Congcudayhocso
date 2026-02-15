@@ -1,6 +1,6 @@
 import React, { useState, useRef, useCallback, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, RotateCcw, BookOpen, X, CheckCircle, XCircle, ZoomIn, ZoomOut, Maximize, Link2, Check, FlaskConical } from 'lucide-react';
+import { ArrowLeft, RotateCcw, BookOpen, X, CheckCircle, XCircle, ZoomIn, ZoomOut, Maximize, Link2, Check, FlaskConical, Volume2, VolumeX } from 'lucide-react';
 
 interface VirtualExperimentProps {
     onBack: () => void;
@@ -49,10 +49,151 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
     const [quizDone, setQuizDone] = useState(false);
     const [zoom, setZoom] = useState(1);
     const [copySuccess, setCopySuccess] = useState(false);
+    const [soundOn, setSoundOn] = useState(true);
+    const [isFullscreen, setIsFullscreen] = useState(false);
+
+    // ── Audio Context & Sound Effects ──
+    const audioCtxRef = useRef<AudioContext | null>(null);
+    const boilIntervalRef = useRef<number | null>(null);
+
+    const getAudioCtx = () => {
+        if (!audioCtxRef.current) audioCtxRef.current = new AudioContext();
+        if (audioCtxRef.current.state === 'suspended') audioCtxRef.current.resume();
+        return audioCtxRef.current;
+    };
+
+    // Cleanup audio on unmount
+    useEffect(() => {
+        return () => {
+            if (boilIntervalRef.current) clearInterval(boilIntervalRef.current);
+            audioCtxRef.current?.close();
+        };
+    }, []);
+
+    const playTone = (freq: number, duration: number, type: OscillatorType = 'sine', vol = 0.3) => {
+        if (!soundOn) return;
+        const ctx = getAudioCtx();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = type;
+        osc.frequency.setValueAtTime(freq, ctx.currentTime);
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + duration);
+    };
+
+    const playNoise = (duration: number, vol = 0.15) => {
+        if (!soundOn) return;
+        const ctx = getAudioCtx();
+        const bufferSize = ctx.sampleRate * duration;
+        const buffer = ctx.createBuffer(1, bufferSize, ctx.sampleRate);
+        const data = buffer.getChannelData(0);
+        for (let i = 0; i < bufferSize; i++) data[i] = (Math.random() * 2 - 1);
+        const source = ctx.createBufferSource();
+        source.buffer = buffer;
+        const gain = ctx.createGain();
+        const filter = ctx.createBiquadFilter();
+        filter.type = 'lowpass';
+        filter.frequency.setValueAtTime(800, ctx.currentTime);
+        gain.gain.setValueAtTime(vol, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+        source.connect(filter);
+        filter.connect(gain);
+        gain.connect(ctx.destination);
+        source.start();
+        source.stop(ctx.currentTime + duration);
+    };
+
+    // Sound: clink (spoon picks up salt)
+    const playClink = () => {
+        playTone(2200, 0.15, 'sine', 0.2);
+        setTimeout(() => playTone(3300, 0.1, 'sine', 0.15), 60);
+    };
+
+    // Sound: water stirring
+    const playStir = () => {
+        playNoise(2, 0.12);
+        playTone(200, 1.5, 'sine', 0.06);
+    };
+
+    // Sound: pouring water
+    const playPour = () => {
+        playNoise(1.8, 0.18);
+        playTone(300, 1.2, 'sine', 0.08);
+        setTimeout(() => playNoise(1, 0.1), 800);
+    };
+
+    // Sound: fire igniting
+    const playIgnite = () => {
+        playNoise(0.5, 0.25);
+        playTone(150, 0.6, 'sawtooth', 0.08);
+        setTimeout(() => playTone(100, 0.4, 'sawtooth', 0.05), 300);
+    };
+
+    // Sound: boiling bubbles (repeating)
+    const startBoilSound = () => {
+        if (!soundOn) return;
+        const bubble = () => {
+            playTone(250 + Math.random() * 200, 0.2, 'sine', 0.08);
+            playNoise(0.15, 0.05);
+        };
+        bubble();
+        boilIntervalRef.current = window.setInterval(bubble, 400 + Math.random() * 300);
+    };
+
+    const stopBoilSound = () => {
+        if (boilIntervalRef.current) {
+            clearInterval(boilIntervalRef.current);
+            boilIntervalRef.current = null;
+        }
+    };
+
+    // Sound: success chime
+    const playSuccess = () => {
+        playTone(523, 0.3, 'sine', 0.2);
+        setTimeout(() => playTone(659, 0.3, 'sine', 0.2), 150);
+        setTimeout(() => playTone(784, 0.5, 'sine', 0.25), 300);
+    };
+
+    // Sound: correct answer
+    const playCorrect = () => {
+        playTone(880, 0.15, 'sine', 0.2);
+        setTimeout(() => playTone(1100, 0.2, 'sine', 0.25), 100);
+    };
+
+    // Sound: wrong answer
+    const playWrong = () => {
+        playTone(300, 0.25, 'square', 0.15);
+        setTimeout(() => playTone(200, 0.35, 'square', 0.12), 150);
+    };
 
     const zoomIn = () => setZoom(z => Math.min(z + 0.15, 2));
     const zoomOut = () => setZoom(z => Math.max(z - 0.15, 0.5));
     const zoomReset = () => setZoom(1);
+
+    const toggleFullscreen = async () => {
+        try {
+            if (!document.fullscreenElement) {
+                await document.documentElement.requestFullscreen();
+                setIsFullscreen(true);
+            } else {
+                await document.exitFullscreen();
+                setIsFullscreen(false);
+            }
+        } catch (err) {
+            console.error('Fullscreen error:', err);
+        }
+    };
+
+    // Listen for fullscreen changes (e.g. user presses Escape)
+    useEffect(() => {
+        const handler = () => setIsFullscreen(!!document.fullscreenElement);
+        document.addEventListener('fullscreenchange', handler);
+        return () => document.removeEventListener('fullscreenchange', handler);
+    }, []);
 
     const copyLink = async () => {
         try {
@@ -111,19 +252,24 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
     const handlePointerUp = useCallback(() => {
         if (!dragItem) return;
         if (step === 0 && dragItem === 'spoon' && isOverlapping(spoonRef.current, saltJarRef.current)) {
+            playClink();
             setSpoonHasSalt(true); setStep(1);
         } else if (step === 1 && dragItem === 'spoon' && isOverlapping(spoonRef.current, beakerRef.current)) {
+            playStir();
             setStep(2); setIsStirring(true);
             setTimeout(() => { setIsStirring(false); setSpoonHasSalt(false); setStep(3); }, 2500);
         } else if (step === 3 && dragItem === 'beaker' && isOverlapping(beakerRef.current, bowlRef.current)) {
+            playPour();
             setBeakerPouring(true);
             setTimeout(() => { setWaterInBeaker(0); setWaterInBowl(60); setTimeout(() => { setBeakerPouring(false); setStep(4); }, 1200); }, 800);
         } else if (step === 4 && dragItem === 'burner' && isOverlapping(burnerRef.current, tripodRef.current)) {
+            playIgnite();
             setFlameOn(true); setStep(5); setSteamActive(true);
-            setTimeout(() => { setWaterInBowl(0); setSaltVisible(true); setFlameOn(false); setSteamActive(false); setStep(6); }, 7000);
+            startBoilSound();
+            setTimeout(() => { setWaterInBowl(0); setSaltVisible(true); setFlameOn(false); setSteamActive(false); stopBoilSound(); playSuccess(); setStep(6); }, 7000);
         }
         setDragItem(null);
-    }, [dragItem, step]);
+    }, [dragItem, step, soundOn]);
 
     useEffect(() => {
         window.addEventListener('pointermove', handlePointerMove);
@@ -132,6 +278,7 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
     }, [handlePointerMove, handlePointerUp]);
 
     const resetExperiment = () => {
+        stopBoilSound();
         setStep(0); setSpoonHasSalt(false); setIsStirring(false); setWaterInBeaker(65); setWaterInBowl(0);
         setBeakerPouring(false); setFlameOn(false); setSteamActive(false); setSaltVisible(false);
         setPositions({ spoon: { x: 0, y: 0 }, beaker: { x: 0, y: 0 }, burner: { x: 0, y: 0 } });
@@ -140,10 +287,15 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
     const handleAnswer = (idx: number) => {
         if (answered !== null) return;
         setAnswered(idx);
-        if (idx === quizData[currentQ].correct) setScore(s => s + 1);
+        if (idx === quizData[currentQ].correct) {
+            setScore(s => s + 1);
+            playCorrect();
+        } else {
+            playWrong();
+        }
         setTimeout(() => {
             if (currentQ < quizData.length - 1) { setCurrentQ(q => q + 1); setAnswered(null); }
-            else setQuizDone(true);
+            else { setQuizDone(true); playSuccess(); }
         }, 1500);
     };
 
@@ -202,16 +354,16 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
                 borderBottom: '1px solid rgba(255,255,255,0.06)',
                 boxShadow: '0 2px 20px rgba(0,0,0,0.3)'
             }}>
-                <div className="h-full px-3 flex items-center justify-between">
+                <div className="h-full px-3 flex items-center justify-between relative">
                     {/* Back */}
                     <motion.button whileHover={{ scale: 1.05 }} whileTap={{ scale: 0.95 }} onClick={onBack}
-                        className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-white/80 hover:text-white text-sm font-semibold transition"
+                        className="flex items-center gap-2 px-4 py-1.5 rounded-lg text-white/80 hover:text-white text-sm font-semibold transition z-10"
                         style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                         <ArrowLeft size={16} /> Quay lại
                     </motion.button>
 
-                    {/* Title */}
-                    <div className="flex items-center gap-2">
+                    {/* Title - absolutely centered */}
+                    <div className="absolute left-1/2 -translate-x-1/2 flex items-center gap-2">
                         <div className="w-8 h-8 rounded-lg flex items-center justify-center" style={{ background: 'linear-gradient(135deg, #3b82f6, #8b5cf6)' }}>
                             <FlaskConical size={17} className="text-white" />
                         </div>
@@ -222,13 +374,19 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
                     </div>
 
                     {/* Right controls */}
-                    <div className="flex items-center gap-1.5">
+                    <div className="flex items-center gap-1.5 z-10">
                         <div className="flex items-center rounded-lg overflow-hidden" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}>
                             <button onClick={zoomOut} className="w-8 h-8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition"><ZoomOut size={15} /></button>
                             <button onClick={zoomReset} className="h-8 px-2 text-xs font-bold text-white/60 hover:text-white hover:bg-white/10 transition border-x border-white/10 min-w-[44px]">{Math.round(zoom * 100)}%</button>
                             <button onClick={zoomIn} className="w-8 h-8 flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition"><ZoomIn size={15} /></button>
                         </div>
-                        <button onClick={zoomReset} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white transition" style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.08)' }}><Maximize size={15} /></button>
+                        <button onClick={toggleFullscreen} className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white transition" style={{ background: isFullscreen ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.06)', border: isFullscreen ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(255,255,255,0.08)' }} title={isFullscreen ? 'Thoát toàn màn hình' : 'Toàn màn hình'}><Maximize size={15} className={isFullscreen ? 'text-blue-400' : ''} /></button>
+                        <button onClick={() => setSoundOn(s => !s)}
+                            className="w-8 h-8 rounded-lg flex items-center justify-center text-white/50 hover:text-white transition"
+                            style={{ background: soundOn ? 'rgba(59,130,246,0.15)' : 'rgba(255,255,255,0.06)', border: soundOn ? '1px solid rgba(59,130,246,0.3)' : '1px solid rgba(255,255,255,0.08)' }}
+                            title={soundOn ? 'Tắt âm thanh' : 'Bật âm thanh'}>
+                            {soundOn ? <Volume2 size={15} className="text-blue-400" /> : <VolumeX size={15} />}
+                        </button>
                         <motion.button whileTap={{ scale: 0.95 }} onClick={copyLink}
                             className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
                             style={{
@@ -244,7 +402,7 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
 
             {/* ═══════ STATUS BAR ═══════ */}
             <motion.div key={step} initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }}
-                className="absolute top-16 left-1/2 -translate-x-1/2 z-50">
+                className="absolute top-[72px] left-1/2 -translate-x-1/2 z-50">
                 <div className="px-6 py-2 rounded-xl text-sm font-semibold whitespace-nowrap" style={{
                     ...(step === 6
                         ? { background: 'linear-gradient(135deg, rgba(34,197,94,0.2), rgba(16,185,129,0.15))', border: '1px solid rgba(34,197,94,0.4)', color: '#4ade80', boxShadow: '0 0 25px rgba(34,197,94,0.12)' }
@@ -259,7 +417,7 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
             </motion.div>
 
             {/* ═══════ LEFT SIDEBAR: STEP PROGRESS ═══════ */}
-            <div className="absolute left-4 top-1/2 -translate-y-1/2 z-50 flex flex-col items-center gap-1">
+            <div className="absolute left-4 z-50 flex flex-col items-center gap-1" style={{ top: 'calc(50% + 20px)', transform: 'translateY(-50%)' }}>
                 {[
                     { s: 0, label: '1', desc: 'Lấy muối' },
                     { s: 1, label: '2', desc: 'Hòa tan' },
@@ -302,7 +460,7 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
             }}>
 
                 {/* ───── TRIPOD + BOWL (center) ───── */}
-                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ bottom: '150px' }}>
+                <div className="absolute left-1/2 -translate-x-1/2 flex flex-col items-center" style={{ bottom: '13%' }}>
                     <div ref={tripodRef} className="relative flex flex-col items-center">
                         <GlowRing active={shouldGlow('tripod') || shouldGlow('bowl')} color="#60a5fa" />
                         {/* Bowl */}
@@ -369,7 +527,7 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
                 </div>
 
                 {/* ───── SALT JAR (top-right area, static) ───── */}
-                <div ref={saltJarRef} className="absolute flex flex-col items-center z-20" style={{ right: '18%', top: '25%' }}>
+                <div ref={saltJarRef} className="absolute flex flex-col items-center z-20" style={{ right: '22%', top: '20%' }}>
                     <GlowRing active={shouldGlow('saltJar')} color="#f97316" />
                     <div className="relative rounded-2xl flex flex-col items-center" style={{
                         width: 100, height: 130,
@@ -403,7 +561,7 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
                 {/* ───── SPOON (top-center, draggable) ───── */}
                 <div ref={spoonRef} onPointerDown={handlePointerDown('spoon')}
                     className="absolute flex flex-col items-center z-50"
-                    style={{ left: '48%', top: '22%', transform: `translate(${positions.spoon.x}px, ${positions.spoon.y}px)`, cursor: step === 2 || step === 5 ? 'not-allowed' : 'grab' }}>
+                    style={{ left: '42%', top: '18%', transform: `translate(${positions.spoon.x}px, ${positions.spoon.y}px)`, cursor: step === 2 || step === 5 ? 'not-allowed' : 'grab' }}>
                     <GlowRing active={shouldGlow('spoon')} />
                     <motion.div className="flex flex-col items-center"
                         animate={isStirring ? { x: [0, 6, 0, -6, 0], y: [0, 3, 6, 3, 0] } : {}}
@@ -428,7 +586,7 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
                 <div ref={beakerRef} onPointerDown={handlePointerDown('beaker')}
                     className="absolute flex flex-col items-center z-40"
                     style={{
-                        left: '15%', top: '42%',
+                        left: '18%', top: '35%',
                         transform: `translate(${positions.beaker.x}px, ${positions.beaker.y}px) ${beakerPouring ? 'rotate(50deg)' : 'rotate(0deg)'}`,
                         transformOrigin: 'top right', transition: beakerPouring ? 'transform 0.8s ease' : 'none',
                         cursor: step === 2 || step === 5 ? 'not-allowed' : 'grab',
@@ -468,7 +626,7 @@ const VirtualExperiment: React.FC<VirtualExperimentProps> = ({ onBack }) => {
                 {/* ───── BURNER (right side, draggable) ───── */}
                 <div ref={burnerRef} onPointerDown={handlePointerDown('burner')}
                     className="absolute flex flex-col items-center z-40"
-                    style={{ right: '16%', top: '52%', transform: `translate(${positions.burner.x}px, ${positions.burner.y}px)`, cursor: step === 2 || step === 5 ? 'not-allowed' : 'grab' }}>
+                    style={{ right: '20%', top: '48%', transform: `translate(${positions.burner.x}px, ${positions.burner.y}px)`, cursor: step === 2 || step === 5 ? 'not-allowed' : 'grab' }}>
                     <GlowRing active={shouldGlow('burner')} color="#f59e0b" />
                     <div className="flex flex-col items-center">
                         {/* Wick */}

@@ -4,39 +4,47 @@ import { database } from './firebaseConfig';
 // Danh sách tất cả app IDs
 export const ALL_APP_IDS = [
     'interactiveVideo', 'beeGame', 'beeGameEditable', 'bacteriaGame',
-    'geometry3D', 'vongQuay', 'kingGame', 'luckyWheel', 'starWheel',
+    'vongQuay', 'kingGame', 'luckyWheel', 'starWheel',
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
     'aiCourseStore', 'canvaBasics', 'communityResources',
-    'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D'
+    'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D',
+    'bangCuuChuong', 'gameTuongTac'
 ] as const;
 
 export type AppId = typeof ALL_APP_IDS[number];
 
 // Thông tin hiển thị app
 export const APP_INFO: Record<AppId, { name: string; icon: string; section: string }> = {
+    // ── Công cụ dạy học ──
     interactiveVideo: { name: 'Video tương tác', icon: '🎥', section: 'Công cụ dạy học' },
     beeGame: { name: 'Ong về Tổ', icon: '🐝', section: 'Công cụ dạy học' },
     beeGameEditable: { name: 'Ong về Tổ (Tự soạn)', icon: '🐝📝', section: 'Công cụ dạy học' },
     bacteriaGame: { name: 'Vi Khuẩn Phiêu Lưu', icon: '🦠', section: 'Công cụ dạy học' },
-    geometry3D: { name: 'Hình học 3D', icon: '📐', section: 'Công cụ dạy học' },
     vongQuay: { name: 'Vòng quay', icon: '🔄', section: 'Công cụ dạy học' },
     kingGame: { name: 'Đường đến Ngôi Vua', icon: '👑', section: 'Công cụ dạy học' },
     luckyWheel: { name: 'Vòng quay may mắn', icon: '🎡', section: 'Công cụ dạy học' },
     starWheel: { name: 'Vòng Xoay Ngôi Sao', icon: '⭐', section: 'Công cụ dạy học' },
-    videoStore: { name: 'Kho Video AI', icon: '🎬', section: 'Công cụ dạy học' },
-    ngheNghiep: { name: 'Nghề Nghiệp Tương Lai', icon: '👨‍🚀', section: 'Công cụ dạy học' },
     puzzleGame: { name: 'Giải Mã Bức Tranh', icon: '🧩', section: 'Công cụ dạy học' },
     treasureHunt: { name: 'Truy Tìm Kho Báu', icon: '🏴‍☠️', section: 'Công cụ dạy học' },
-    virtualExperiment: { name: 'Thí nghiệm ảo', icon: '🧪', section: 'Công cụ dạy học' },
-    aiCourseStore: { name: 'Kho Khóa học AI', icon: '🎓', section: 'Khóa học AI' },
-    canvaBasics: { name: 'Canva cơ bản', icon: '🎨', section: 'Khóa học AI' },
-    communityResources: { name: 'Kho tài nguyên cộng đồng', icon: '👥', section: 'Khóa học AI' },
-    heartSystem3D: { name: 'Hệ tuần hoàn 3D', icon: '❤️', section: 'Ứng dụng 3D' },
-    geometry3DTools: { name: 'Bộ công cụ Hình học 3D', icon: '📦', section: 'Ứng dụng 3D' },
-    vietnamMap: { name: 'Bản đồ Việt Nam', icon: '🗺️', section: 'Ứng dụng 3D' },
-    chucTet: { name: 'Mẫu Chúc Tết', icon: '🎊', section: 'Ứng dụng 3D' },
-    denHung3D: { name: 'Phòng Tranh 3D - Đền Hùng', icon: '🏛️', section: 'Ứng dụng 3D' },
+    videoStore: { name: 'Kho Video AI', icon: '🎬', section: 'Công cụ dạy học' },
+    // ── Mô phỏng khoa học ──
+    virtualExperiment: { name: 'Thí nghiệm ảo', icon: '🧪', section: 'Mô phỏng khoa học' },
+    // ── Khóa học & AI ──
+    aiCourseStore: { name: 'Kho Khóa học AI', icon: '🎓', section: 'Khóa học & AI' },
+    ngheNghiep: { name: 'Nghề Nghiệp Tương Lai', icon: '👨‍🚀', section: 'Khóa học & AI' },
+    canvaBasics: { name: 'Canva cơ bản', icon: '🎨', section: 'Khóa học & AI' },
+    chucTet: { name: 'Mẫu Chúc Tết', icon: '🎊', section: 'Khóa học & AI' },
+    communityResources: { name: 'Kho tài nguyên cộng đồng', icon: '👥', section: 'Khóa học & AI' },
+    // ── Ứng dụng 3D & VR ──
+    heartSystem3D: { name: 'Hệ tuần hoàn 3D', icon: '❤️', section: 'Ứng dụng 3D & VR' },
+    geometry3DTools: { name: 'Bộ công cụ Hình học 3D', icon: '📦', section: 'Ứng dụng 3D & VR' },
+    vietnamMap: { name: 'Bản đồ Việt Nam', icon: '🗺️', section: 'Ứng dụng 3D & VR' },
+    denHung3D: { name: 'Phòng Tranh 3D - Đền Hùng', icon: '🏛️', section: 'Ứng dụng 3D & VR' },
+    // ── Học liệu tương tác ──
+    bangCuuChuong: { name: 'Bảng Cửu Chương Số', icon: '🔢', section: 'Học liệu tương tác' },
+    gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
 };
+
 
 export interface AppVisibilityState {
     apps: Record<string, boolean>; // appId -> visible

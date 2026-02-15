@@ -34,6 +34,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders' | 'apps'>('analytics');
     const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
     const [editMaintenanceMsg, setEditMaintenanceMsg] = useState('');
+    const [expandedSections, setExpandedSections] = useState<string[]>([]);
     const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [keySubTab, setKeySubTab] = useState<'pro' | 'bee'>('pro');
@@ -1066,16 +1067,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
                 {activeTab === 'apps' && (
                     <div className="h-full flex flex-col">
-                        {/* Maintenance Mode */}
-                        <div className={`rounded-2xl p-4 mb-4 shadow-lg transition-all ${appVisibility.maintenanceMode ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-teal-500 to-cyan-500'}`}>
-                            <div className="flex items-center justify-between mb-3">
-                                <div className="flex items-center gap-2">
-                                    <span className="text-2xl">{appVisibility.maintenanceMode ? '🚧' : '✅'}</span>
-                                    <div>
-                                        <h3 className="text-white font-bold">{appVisibility.maintenanceMode ? 'Đang bảo trì' : 'Hệ thống hoạt động'}</h3>
-                                        <p className="text-white/70 text-xs">{appVisibility.maintenanceMode ? 'Tất cả ứng dụng đã tắt, người dùng thấy thông báo bảo trì' : 'Tất cả ứng dụng đang bật bình thường'}</p>
-                                    </div>
-                                </div>
+                        {/* Maintenance Mode - Compact */}
+                        <div className={`rounded-xl px-3 py-2 mb-2 shadow-md transition-all ${appVisibility.maintenanceMode ? 'bg-gradient-to-r from-red-500 to-orange-500' : 'bg-gradient-to-r from-teal-500 to-cyan-500'}`}>
+                            <div className="flex items-center gap-2">
+                                <span className="text-lg">{appVisibility.maintenanceMode ? '🚧' : '✅'}</span>
+                                <span className="text-white font-bold text-xs flex-shrink-0">{appVisibility.maintenanceMode ? 'Đang bảo trì' : 'Hoạt động'}</span>
+                                <input
+                                    type="text"
+                                    value={editMaintenanceMsg}
+                                    onChange={e => setEditMaintenanceMsg(e.target.value)}
+                                    className="flex-1 px-2 py-1 rounded-md bg-white/20 border border-white/30 text-white placeholder-white/50 text-[11px] focus:outline-none focus:border-white/60 min-w-0"
+                                    placeholder="Thông báo bảo trì..."
+                                />
+                                <button
+                                    onClick={() => setMaintenanceMode(appVisibility.maintenanceMode, editMaintenanceMsg)}
+                                    className="px-2 py-1 bg-white/20 hover:bg-white/30 text-white rounded-md text-[11px] font-bold border border-white/30 flex-shrink-0"
+                                >
+                                    Lưu
+                                </button>
                                 <button
                                     onClick={async () => {
                                         const newMode = !appVisibility.maintenanceMode;
@@ -1083,65 +1092,78 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         if (newMode) await setAllAppsVisible(false);
                                         else await setAllAppsVisible(true);
                                     }}
-                                    className={`px-5 py-2.5 rounded-xl font-bold text-sm transition-all ${appVisibility.maintenanceMode ? 'bg-white text-red-600 hover:bg-red-50' : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'}`}
+                                    className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all flex-shrink-0 ${appVisibility.maintenanceMode ? 'bg-white text-red-600 hover:bg-red-50' : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'}`}
                                 >
-                                    {appVisibility.maintenanceMode ? '🟢 Bật lại tất cả' : '🔴 Tắt tất cả (Bảo trì)'}
+                                    {appVisibility.maintenanceMode ? '🟢 Bật lại' : '🔴 Bảo trì'}
                                 </button>
-                            </div>
-                            <div>
-                                <label className="text-white/80 text-xs font-bold mb-1 block">Thông báo cho người dùng:</label>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="text"
-                                        value={editMaintenanceMsg}
-                                        onChange={e => setEditMaintenanceMsg(e.target.value)}
-                                        className="flex-1 px-3 py-2 rounded-lg bg-white/20 border border-white/30 text-white placeholder-white/50 text-sm focus:outline-none focus:border-white/60"
-                                        placeholder="VD: Website đang bảo trì..."
-                                    />
-                                    <button
-                                        onClick={() => setMaintenanceMode(appVisibility.maintenanceMode, editMaintenanceMsg)}
-                                        className="px-3 py-2 bg-white/20 hover:bg-white/30 text-white rounded-lg text-sm font-bold border border-white/30"
-                                    >
-                                        Lưu
-                                    </button>
-                                </div>
                             </div>
                         </div>
 
-                        {/* App List */}
-                        <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                            {(['Công cụ dạy học', 'Khóa học AI', 'Ứng dụng 3D'] as const).map(section => {
+                        {/* App List - Accordion */}
+                        <div className="flex-1 overflow-y-auto pr-1 space-y-1.5">
+                            {(['Công cụ dạy học', 'Khóa học & AI', 'Ứng dụng 3D & VR', 'Mô phỏng khoa học', 'Học liệu tương tác'] as const).map(section => {
                                 const sectionApps = ALL_APP_IDS.filter(id => APP_INFO[id].section === section);
-                                const allOn = sectionApps.every(id => appVisibility.apps[id] !== false);
+                                if (sectionApps.length === 0) return null;
+                                const enabledCount = sectionApps.filter(id => appVisibility.apps[id] !== false).length;
+                                const allOn = enabledCount === sectionApps.length;
+                                const isExpanded = expandedSections.includes(section);
+                                const sectionIcons: Record<string, string> = {
+                                    'Công cụ dạy học': '⚡', 'Mô phỏng khoa học': '🧪',
+                                    'Khóa học & AI': '🧠', 'Ứng dụng 3D & VR': '📦', 'Học liệu tương tác': '📚'
+                                };
                                 return (
-                                    <div key={section} className="mb-3">
-                                        <div className="flex items-center justify-between mb-2">
-                                            <h4 className="font-bold text-purple-800 text-sm">{section}</h4>
+                                    <div key={section} className="rounded-xl border border-gray-200 overflow-hidden bg-white/60">
+                                        {/* Section Header - Always visible */}
+                                        <div
+                                            className="flex items-center gap-2 px-3 py-2.5 cursor-pointer hover:bg-purple-50/50 transition-colors select-none"
+                                            onClick={() => setExpandedSections(prev => prev.includes(section) ? prev.filter(s => s !== section) : [...prev, section])}
+                                        >
+                                            <span className="text-base">{sectionIcons[section] || '📁'}</span>
+                                            <span className="font-bold text-sm text-purple-900 flex-1">{section}</span>
+                                            <span className={`text-[11px] font-bold px-2 py-0.5 rounded-full ${allOn ? 'bg-green-100 text-green-700' : enabledCount === 0 ? 'bg-red-100 text-red-600' : 'bg-amber-100 text-amber-700'}`}>
+                                                {enabledCount}/{sectionApps.length}
+                                            </span>
                                             <button
-                                                onClick={() => sectionApps.forEach(id => setAppVisible(id, !allOn))}
-                                                className={`text-xs px-3 py-1 rounded-full font-bold transition-all ${allOn ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-red-100 text-red-700 hover:bg-green-100 hover:text-green-700'}`}
+                                                onClick={(e) => { e.stopPropagation(); sectionApps.forEach(id => setAppVisible(id, !allOn)); }}
+                                                className={`text-[10px] px-2 py-0.5 rounded-full font-bold transition-all ${allOn ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-red-100 text-red-700 hover:bg-green-100 hover:text-green-700'}`}
                                             >
-                                                {allOn ? 'Tắt nhóm' : 'Bật nhóm'}
+                                                {allOn ? 'Tắt' : 'Bật'}
                                             </button>
+                                            <svg className={`w-4 h-4 text-gray-400 transition-transform duration-200 ${isExpanded ? 'rotate-180' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
                                         </div>
-                                        {sectionApps.map(appId => {
-                                            const info = APP_INFO[appId];
-                                            const isVisible = appVisibility.apps[appId] !== false;
-                                            return (
-                                                <div key={appId} className="flex items-center justify-between bg-white rounded-xl px-4 py-3 mb-1 shadow-sm border border-gray-100 hover:border-purple-200 transition-all">
-                                                    <div className="flex items-center gap-3">
-                                                        <span className="text-xl">{info.icon}</span>
-                                                        <span className={`font-medium text-sm ${isVisible ? 'text-gray-800' : 'text-gray-400 line-through'}`}>{info.name}</span>
+                                        {/* Expanded Content */}
+                                        <AnimatePresence>
+                                            {isExpanded && (
+                                                <motion.div
+                                                    initial={{ height: 0, opacity: 0 }}
+                                                    animate={{ height: 'auto', opacity: 1 }}
+                                                    exit={{ height: 0, opacity: 0 }}
+                                                    transition={{ duration: 0.2 }}
+                                                    className="overflow-hidden"
+                                                >
+                                                    <div className="grid grid-cols-2 gap-1 px-2 pb-2">
+                                                        {sectionApps.map(appId => {
+                                                            const info = APP_INFO[appId];
+                                                            const isVisible = appVisibility.apps[appId] !== false;
+                                                            return (
+                                                                <div key={appId} className={`flex items-center justify-between rounded-lg px-2.5 py-1.5 border transition-all ${isVisible ? 'bg-white border-gray-100' : 'bg-gray-50 border-gray-100'}`}>
+                                                                    <div className="flex items-center gap-1.5 min-w-0">
+                                                                        <span className="text-sm flex-shrink-0">{info.icon}</span>
+                                                                        <span className={`font-medium text-xs truncate ${isVisible ? 'text-gray-800' : 'text-gray-400 line-through'}`}>{info.name}</span>
+                                                                    </div>
+                                                                    <button
+                                                                        onClick={() => setAppVisible(appId, !isVisible)}
+                                                                        className={`w-9 h-5 rounded-full relative transition-all duration-300 flex-shrink-0 ml-1.5 ${isVisible ? 'bg-green-500' : 'bg-gray-300'}`}
+                                                                    >
+                                                                        <div className={`absolute top-0.5 w-4 h-4 bg-white rounded-full shadow-md transition-all duration-300 ${isVisible ? 'left-[18px]' : 'left-0.5'}`} />
+                                                                    </button>
+                                                                </div>
+                                                            );
+                                                        })}
                                                     </div>
-                                                    <button
-                                                        onClick={() => setAppVisible(appId, !isVisible)}
-                                                        className={`w-12 h-7 rounded-full relative transition-all duration-300 ${isVisible ? 'bg-green-500' : 'bg-gray-300'}`}
-                                                    >
-                                                        <div className={`absolute top-0.5 w-6 h-6 bg-white rounded-full shadow-md transition-all duration-300 ${isVisible ? 'left-5.5' : 'left-0.5'}`} />
-                                                    </button>
-                                                </div>
-                                            );
-                                        })}
+                                                </motion.div>
+                                            )}
+                                        </AnimatePresence>
                                     </div>
                                 );
                             })}
