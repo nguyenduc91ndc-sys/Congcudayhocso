@@ -13,12 +13,7 @@ const BangCuuChuong: React.FC<BangCuuChuongProps> = ({ onBack }) => {
     const IFRAME_PATH = '/bangcuuchuongso/index.html';
 
     const handleDownloadZip = () => {
-        const a = document.createElement('a');
-        a.href = '/bangcuuchuongso.zip';
-        a.download = 'bang-cuu-chuong-so.zip';
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
+        window.open('https://drive.google.com/drive/folders/17J-Dv677c4eznxq2sEiCqFm_66C-R0MW?usp=sharing', '_blank');
     };
 
     const handleCopyLink = async () => {
