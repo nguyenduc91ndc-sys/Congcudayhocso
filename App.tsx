@@ -14,6 +14,7 @@ import ChucTet from './components/ChucTet';
 import PuzzleGame from './components/PuzzleGame';
 import TreasureHunt from './components/TreasureHunt';
 import VirtualExperiment from './components/VirtualExperiment';
+import ClockExperiment from './components/ClockExperiment';
 import BangCuuChuong from './components/BangCuuChuong';
 import GameTuongTac from './components/GameTuongTac';
 import BeeGame from './components/BeeGame';
@@ -318,6 +319,7 @@ function App() {
                   onNgheNghiep={() => requireLogin(() => window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank'))}
                   onTreasureHunt={() => requireLogin(() => setView('TREASURE_HUNT'))}
                   onVirtualExperiment={() => requireLogin(() => setView('VIRTUAL_EXPERIMENT'))}
+                  onClockExperiment={() => requireLogin(() => setView('CLOCK_EXPERIMENT'))}
                   onBangCuuChuong={() => requireLogin(() => setView('BANG_CUU_CHUONG'))}
                   onGameTuongTac={() => requireLogin(() => setView('GAME_TUONG_TAC'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
@@ -469,6 +471,10 @@ function App() {
 
           {view === 'VIRTUAL_EXPERIMENT' && (
             <VirtualExperiment onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'CLOCK_EXPERIMENT' && (
+            <ClockExperiment onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'BANG_CUU_CHUONG' && (
