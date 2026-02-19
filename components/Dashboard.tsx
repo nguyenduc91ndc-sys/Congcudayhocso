@@ -52,6 +52,7 @@ interface DashboardProps {
     onBangCuuChuong: () => void;
     onGameTuongTac: () => void;
     onYogurtExperiment: () => void;
+    onKiemTraDaoVan: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
     hiddenApps?: string[];
@@ -258,7 +259,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = ''
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = ''
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -603,8 +604,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('puzzleGame') && <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" />}
                                         {!hiddenApps.includes('treasureHunt') && <ToolCard title="Truy Tìm Kho Báu" description="Game phiêu lưu khám phá, tự soạn câu hỏi" icon={<span className="text-2xl">🏴‍☠️</span>} accentColor="bg-gradient-to-br from-orange-500 to-amber-500" onClick={onTreasureHunt} badge="Mới" />}
                                         {!hiddenApps.includes('videoStore') && <ToolCard title="Kho Video AI" description="Video AI giáo dục chất lượng cao" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-blue-500 to-purple-600" onClick={onVideoStore} badge="Mới" />}
-                                        <ToolCard title="Quiz Game" description="Trắc nghiệm nhanh kiểu Kahoot" icon={<HelpCircle size={24} className="text-white" />} accentColor="bg-emerald-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
-                                        <ToolCard title="Thẻ ghi nhớ" description="Flashcards học từ vựng và công thức" icon={<Brain size={24} className="text-white" />} accentColor="bg-orange-500" onClick={() => { }} badge="Sắp ra mắt" disabled />
                                     </div>
                                 </section>
                             )}
@@ -629,8 +628,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('canvaBasics') && <ToolCard title="Canva cơ bản" description="Video hướng dẫn sử dụng Canva từ cộng đồng" icon={<span className="text-2xl">🎨</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onCanvaBasics} badge="Mới" />}
                                         {!hiddenApps.includes('chucTet') && <ToolCard title="Mẫu Chúc Tết" description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ" icon={<span className="text-2xl">🎊</span>} accentColor="bg-gradient-to-br from-red-600 to-yellow-500" onClick={onChucTet} badge="Mới" />}
                                         {!hiddenApps.includes('communityResources') && <ToolCard title="Kho tài nguyên cộng đồng" description="Kho tài nguyên miễn phí từ cộng đồng" icon={<Users size={24} className="text-white" />} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onCommunityResources} badge="Miễn phí" />}
-                                        <ToolCard title="Tạo nội dung với AI" description="Học cách tạo giáo án, bài giảng bằng AI" icon={<span className="text-2xl">✨</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
-                                        <ToolCard title="Video AI nâng cao" description="Tạo video giáo dục chuyên nghiệp với AI" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-orange-500 to-red-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
+                                        {!hiddenApps.includes('kiemTraDaoVan') && <ToolCard title="Thẩm Văn AI" description="Kiểm tra đạo văn & phát hiện nội dung AI thông minh" icon={<span className="text-2xl">🔍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onKiemTraDaoVan} badge="Mới" />}
+                                        <ToolCard title="Trợ Lý AI Cho Giáo Viên Tiểu Học" description="Hỗ trợ viết biện pháp, phương pháp dạy học và tài liệu giáo dục" icon={<span className="text-2xl">✨</span>} accentColor="bg-gradient-to-br from-pink-500 to-rose-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
                                     </div>
                                 </section>
                             )}

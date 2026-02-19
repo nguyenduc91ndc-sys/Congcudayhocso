@@ -18,6 +18,7 @@ import ClockExperiment from './components/ClockExperiment';
 import BangCuuChuong from './components/BangCuuChuong';
 import GameTuongTac from './components/GameTuongTac';
 import YogurtExperiment from './components/YogurtExperiment';
+import KiemTraDaoVan from './components/KiemTraDaoVan';
 import BeeGame from './components/BeeGame';
 import BeeGameEditable from './components/BeeGameEditable';
 import BacteriaGameEditable from './components/BacteriaGameEditable';
@@ -324,6 +325,7 @@ function App() {
                   onBangCuuChuong={() => requireLogin(() => setView('BANG_CUU_CHUONG'))}
                   onGameTuongTac={() => requireLogin(() => setView('GAME_TUONG_TAC'))}
                   onYogurtExperiment={() => requireLogin(() => setView('YOGURT_EXPERIMENT'))}
+                  onKiemTraDaoVan={() => requireLogin(() => setView('KIEM_TRA_DAO_VAN'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -489,6 +491,10 @@ function App() {
 
           {view === 'YOGURT_EXPERIMENT' && (
             <YogurtExperiment onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'KIEM_TRA_DAO_VAN' && (
+            <KiemTraDaoVan onBack={() => setView('DASHBOARD')} />
           )}
 
           {/* Login Modal for guests */}

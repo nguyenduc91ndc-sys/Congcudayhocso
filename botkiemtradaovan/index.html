@@ -1,0 +1,478 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thẩm Văn AI - Kiểm Tra Đạo Văn Thông Minh</title>
+    <meta name="description"
+        content="Công cụ kiểm tra đạo văn và phát hiện nội dung AI thông minh, hỗ trợ tiếng Việt. Sử dụng Google Gemini AI.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap"
+        rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+    <!-- Animated Background -->
+    <div class="bg-animation">
+        <div class="bg-grid"></div>
+        <div class="bg-glow bg-glow-1"></div>
+        <div class="bg-glow bg-glow-2"></div>
+        <div class="bg-glow bg-glow-3"></div>
+    </div>
+
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <div class="logo-icon">
+                        <svg viewBox="0 0 40 40" fill="none">
+                            <circle cx="20" cy="20" r="18" stroke="url(#logoGrad)" stroke-width="2.5" fill="none" />
+                            <path d="M13 20l4 4 10-10" stroke="url(#logoGrad)" stroke-width="2.5" stroke-linecap="round"
+                                stroke-linejoin="round" />
+                            <defs>
+                                <linearGradient id="logoGrad" x1="0" y1="0" x2="40" y2="40">
+                                    <stop offset="0%" stop-color="#6366f1" />
+                                    <stop offset="100%" stop-color="#8b5cf6" />
+                                </linearGradient>
+                            </defs>
+                        </svg>
+                    </div>
+                    <div class="logo-text">
+                        <span class="logo-name">Thẩm Văn <span class="logo-ai">AI</span></span>
+                        <span class="logo-tagline">Kiểm Tra Đạo Văn Thông Minh</span>
+                    </div>
+                </div>
+                <div class="header-actions">
+                    <button class="btn-icon" id="historyBtn" title="Lịch sử kiểm tra">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <polyline points="12 6 12 12 16 14" />
+                        </svg>
+                    </button>
+                    <button class="btn-icon" id="settingsBtn" title="Cài đặt API Key">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round">
+                            <circle cx="12" cy="12" r="3" />
+                            <path
+                                d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Settings Panel (Slide-down) -->
+    <div class="settings-panel" id="settingsPanel">
+        <div class="container">
+            <div class="settings-content">
+                <div class="settings-header">
+                    <h3>
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                            stroke-linecap="round" stroke-linejoin="round" width="20" height="20">
+                            <rect x="3" y="11" width="18" height="11" rx="2" ry="2" />
+                            <path d="M7 11V7a5 5 0 0 1 10 0v4" />
+                        </svg>
+                        Cài đặt API
+                    </h3>
+                    <button class="btn-close" id="closeSettings">&times;</button>
+                </div>
+
+                <!-- Provider Selection -->
+                <div class="provider-selector">
+                    <label class="provider-option">
+                        <input type="radio" name="apiProvider" value="gemini" checked>
+                        <div class="provider-card">
+                            <div class="provider-icon gemini-icon">G</div>
+                            <div class="provider-info">
+                                <span class="provider-name">Google Gemini</span>
+                                <span class="provider-desc">15 req/phút (miễn phí)</span>
+                            </div>
+                        </div>
+                    </label>
+                    <label class="provider-option">
+                        <input type="radio" name="apiProvider" value="groq">
+                        <div class="provider-card">
+                            <div class="provider-icon groq-icon">⚡</div>
+                            <div class="provider-info">
+                                <span class="provider-name">Groq</span>
+                                <span class="provider-desc">30 req/phút, siêu nhanh</span>
+                            </div>
+                        </div>
+                    </label>
+                </div>
+
+                <p class="settings-desc" id="settingsDesc">Nhập Google Gemini API Key của bạn. Lấy miễn phí tại
+                    <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" id="apiLink">Google AI
+                        Studio</a>.
+                    Key được lưu trên trình duyệt của bạn, không gửi đến bất kỳ server nào khác.
+                </p>
+                <div class="api-key-input-group">
+                    <div class="input-wrapper">
+                        <input type="password" id="apiKeyInput" placeholder="Dán API Key tại đây..." autocomplete="off">
+                        <button class="btn-toggle-key" id="toggleKeyVisibility" title="Hiện/ẩn key">
+                            <svg id="eyeIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                width="18" height="18">
+                                <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                                <circle cx="12" cy="12" r="3" />
+                            </svg>
+                            <svg id="eyeOffIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                                width="18" height="18" style="display:none">
+                                <path
+                                    d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                                <line x1="1" y1="1" x2="23" y2="23" />
+                            </svg>
+                        </button>
+                    </div>
+                    <button class="btn-primary btn-save-key" id="saveKeyBtn">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                            height="16">
+                            <path d="M19 21H5a2 2 0 01-2-2V5a2 2 0 012-2h11l5 5v11a2 2 0 01-2 2z" />
+                            <polyline points="17 21 17 13 7 13 7 21" />
+                            <polyline points="7 3 7 8 15 8" />
+                        </svg>
+                        Lưu Key
+                    </button>
+                </div>
+                <div class="api-key-status" id="apiKeyStatus"></div>
+            </div>
+        </div>
+    </div>
+
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div class="container">
+            <!-- Hero Section -->
+            <section class="hero" id="heroSection">
+                <div class="hero-badge">
+                    <span class="pulse-dot"></span>
+                    Powered by Gemini & Groq AI
+                </div>
+                <h1 class="hero-title">
+                    Phát hiện <span class="gradient-text">đạo văn</span> & <span class="gradient-text">nội dung
+                        AI</span>
+                </h1>
+                <p class="hero-subtitle">
+                    Phân tích văn bản thông minh với AI — phát hiện sao chép, paraphrase,
+                    và nội dung do AI tạo ra. Hỗ trợ tiếng Việt hoàn toàn.
+                </p>
+            </section>
+
+            <!-- API Key Setup Banner -->
+            <section class="api-key-banner glass-card" id="apiKeyBanner">
+                <div class="api-key-banner-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="32" height="32"
+                        stroke-linecap="round" stroke-linejoin="round">
+                        <path
+                            d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4" />
+                    </svg>
+                </div>
+                <div class="api-key-banner-text">
+                    <h3>⚡ Cần API Key để sử dụng</h3>
+                    <p>Bạn cần nhập API Key (miễn phí) để bắt đầu kiểm tra đạo văn. Xem video hướng dẫn bên dưới rồi
+                        nhấn nút để cài đặt.</p>
+                </div>
+                <div class="banner-video-wrapper">
+                    <iframe src="https://www.youtube.com/embed/St_MPuZ3AGc" title="Hướng dẫn lấy API Key"
+                        frameborder="0"
+                        allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                        allowfullscreen>
+                    </iframe>
+                </div>
+                <button class="btn-primary btn-setup-key" id="setupKeyBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="18" height="18">
+                        <circle cx="12" cy="12" r="3" />
+                        <path
+                            d="M12 1v2m0 18v2M4.22 4.22l1.42 1.42m12.72 12.72l1.42 1.42M1 12h2m18 0h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42" />
+                    </svg>
+                    Cài đặt API Key ngay
+                </button>
+            </section>
+
+            <!-- Input Section -->
+            <section class="input-section" id="inputSection">
+                <div class="input-card glass-card">
+                    <div class="input-card-header">
+                        <div class="input-tabs">
+                            <button class="tab-btn active" data-tab="paste">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                    height="16">
+                                    <path d="M16 4h2a2 2 0 012 2v14a2 2 0 01-2 2H6a2 2 0 01-2-2V6a2 2 0 012-2h2" />
+                                    <rect x="8" y="2" width="8" height="4" rx="1" ry="1" />
+                                </svg>
+                                Dán văn bản
+                            </button>
+                            <button class="tab-btn" data-tab="upload">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                    height="16">
+                                    <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                                    <polyline points="17 8 12 3 7 8" />
+                                    <line x1="12" y1="3" x2="12" y2="15" />
+                                </svg>
+                                Tải file lên
+                            </button>
+                        </div>
+                        <div class="text-stats" id="textStats">
+                            <span id="wordCount">0 từ</span>
+                            <span class="stat-divider">|</span>
+                            <span id="charCount">0 ký tự</span>
+                        </div>
+                    </div>
+
+                    <!-- Paste Tab -->
+                    <div class="tab-content active" id="pasteTab">
+                        <textarea id="inputText"
+                            placeholder="Dán hoặc nhập văn bản cần kiểm tra đạo văn tại đây...&#10;&#10;Mẹo: Nên nhập ít nhất 100 từ để có kết quả chính xác nhất."
+                            spellcheck="false"></textarea>
+                    </div>
+
+                    <!-- Upload Tab -->
+                    <div class="tab-content" id="uploadTab">
+                        <div class="upload-zone" id="uploadZone">
+                            <div class="upload-icon">
+                                <svg viewBox="0 0 64 64" fill="none" width="64" height="64">
+                                    <rect x="8" y="8" width="48" height="48" rx="8" stroke="currentColor"
+                                        stroke-width="2" stroke-dasharray="6 4" />
+                                    <polyline points="24 28 32 20 40 28" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                    <line x1="32" y1="20" x2="32" y2="44" stroke="currentColor" stroke-width="2"
+                                        stroke-linecap="round" />
+                                </svg>
+                            </div>
+                            <p class="upload-text">Kéo thả file vào đây hoặc <span class="upload-link">chọn file</span>
+                            </p>
+                            <p class="upload-hint">Hỗ trợ: .txt, .docx, .pdf (tối đa 20MB)</p>
+                            <input type="file" id="fileInput" accept=".txt,.doc,.docx,.pdf" hidden>
+                        </div>
+                    </div>
+
+                    <!-- Action Bar -->
+                    <div class="action-bar">
+                        <div class="check-options">
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" id="checkPlagiarism" checked>
+                                <span class="checkbox-custom"></span>
+                                <span>Kiểm tra đạo văn</span>
+                            </label>
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" id="checkAI" checked>
+                                <span class="checkbox-custom"></span>
+                                <span>Phát hiện AI</span>
+                            </label>
+                            <label class="checkbox-wrapper">
+                                <input type="checkbox" id="checkStyle">
+                                <span class="checkbox-custom"></span>
+                                <span>Phân tích phong cách</span>
+                            </label>
+                        </div>
+                        <button class="btn-primary btn-scan" id="scanBtn" disabled>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                                height="20">
+                                <circle cx="11" cy="11" r="8" />
+                                <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                            </svg>
+                            <span>Bắt đầu kiểm tra</span>
+                            <div class="btn-loader" style="display:none">
+                                <div class="spinner"></div>
+                            </div>
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Loading State -->
+            <section class="loading-section" id="loadingSection" style="display:none">
+                <div class="loading-card glass-card">
+                    <div class="loading-animation">
+                        <div class="scan-line"></div>
+                        <div class="scan-dots">
+                            <span></span><span></span><span></span>
+                        </div>
+                    </div>
+                    <h3 class="loading-title">Đang phân tích văn bản...</h3>
+                    <p class="loading-desc" id="loadingStatus">Đang gửi đến Gemini AI để phân tích...</p>
+                    <div class="loading-progress">
+                        <div class="progress-bar" id="progressBar"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Results Section -->
+            <section class="results-section" id="resultsSection" style="display:none">
+                <!-- Score Overview -->
+                <div class="score-overview">
+                    <div class="score-card glass-card" id="plagiarismScoreCard">
+                        <div class="score-gauge">
+                            <svg viewBox="0 0 120 120" class="gauge-svg">
+                                <circle cx="60" cy="60" r="52" class="gauge-bg" />
+                                <circle cx="60" cy="60" r="52" class="gauge-fill" id="plagiarismGauge" />
+                            </svg>
+                            <div class="gauge-value">
+                                <span class="gauge-number" id="plagiarismPercent">0</span>
+                                <span class="gauge-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="score-info">
+                            <h3>Mức Đạo Văn</h3>
+                            <p class="score-label" id="plagiarismLabel">Đang tính...</p>
+                        </div>
+                    </div>
+                    <div class="score-card glass-card" id="aiScoreCard">
+                        <div class="score-gauge">
+                            <svg viewBox="0 0 120 120" class="gauge-svg">
+                                <circle cx="60" cy="60" r="52" class="gauge-bg" />
+                                <circle cx="60" cy="60" r="52" class="gauge-fill" id="aiGauge" />
+                            </svg>
+                            <div class="gauge-value">
+                                <span class="gauge-number" id="aiPercent">0</span>
+                                <span class="gauge-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="score-info">
+                            <h3>Nội Dung AI</h3>
+                            <p class="score-label" id="aiLabel">Đang tính...</p>
+                        </div>
+                    </div>
+                    <div class="score-card glass-card" id="originalScoreCard">
+                        <div class="score-gauge">
+                            <svg viewBox="0 0 120 120" class="gauge-svg">
+                                <circle cx="60" cy="60" r="52" class="gauge-bg" />
+                                <circle cx="60" cy="60" r="52" class="gauge-fill gauge-fill-good" id="originalGauge" />
+                            </svg>
+                            <div class="gauge-value">
+                                <span class="gauge-number" id="originalPercent">0</span>
+                                <span class="gauge-unit">%</span>
+                            </div>
+                        </div>
+                        <div class="score-info">
+                            <h3>Nội Dung Gốc</h3>
+                            <p class="score-label" id="originalLabel">Đang tính...</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Detail Tabs -->
+                <div class="results-detail glass-card">
+                    <div class="results-tabs">
+                        <button class="result-tab active" data-result="highlighted">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <path d="M12 20h9" />
+                                <path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z" />
+                            </svg>
+                            Văn bản phân tích
+                        </button>
+                        <button class="result-tab" data-result="details">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <line x1="8" y1="6" x2="21" y2="6" />
+                                <line x1="8" y1="12" x2="21" y2="12" />
+                                <line x1="8" y1="18" x2="21" y2="18" />
+                                <line x1="3" y1="6" x2="3.01" y2="6" />
+                                <line x1="3" y1="12" x2="3.01" y2="12" />
+                                <line x1="3" y1="18" x2="3.01" y2="18" />
+                            </svg>
+                            Chi tiết từng đoạn
+                        </button>
+                        <button class="result-tab" data-result="summary">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z" />
+                                <polyline points="14 2 14 8 20 8" />
+                                <line x1="16" y1="13" x2="8" y2="13" />
+                                <line x1="16" y1="17" x2="8" y2="17" />
+                            </svg>
+                            Tóm tắt & Đề xuất
+                        </button>
+                    </div>
+
+                    <!-- Highlighted Text View -->
+                    <div class="result-content active" id="highlightedContent">
+                        <div class="legend">
+                            <span class="legend-item"><span class="legend-dot high"></span>Nghi ngờ cao</span>
+                            <span class="legend-item"><span class="legend-dot medium"></span>Nghi ngờ trung bình</span>
+                            <span class="legend-item"><span class="legend-dot low"></span>Nghi ngờ thấp</span>
+                            <span class="legend-item"><span class="legend-dot ai"></span>Nội dung AI</span>
+                            <span class="legend-item"><span class="legend-dot clean"></span>Nội dung gốc</span>
+                        </div>
+                        <div class="highlighted-text" id="highlightedText"></div>
+                    </div>
+
+                    <!-- Detail List -->
+                    <div class="result-content" id="detailsContent">
+                        <div class="details-list" id="detailsList"></div>
+                    </div>
+
+                    <!-- Summary -->
+                    <div class="result-content" id="summaryContent">
+                        <div class="summary-text" id="summaryText"></div>
+                    </div>
+
+                    <!-- Export Bar -->
+                    <div class="export-bar">
+                        <button class="btn-secondary" id="exportBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <path d="M21 15v4a2 2 0 01-2 2H5a2 2 0 01-2-2v-4" />
+                                <polyline points="7 10 12 15 17 10" />
+                                <line x1="12" y1="15" x2="12" y2="3" />
+                            </svg>
+                            Tải báo cáo
+                        </button>
+                        <button class="btn-secondary" id="newScanBtn">
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="16"
+                                height="16">
+                                <polyline points="23 4 23 10 17 10" />
+                                <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                            </svg>
+                            Kiểm tra mới
+                        </button>
+                    </div>
+                </div>
+            </section>
+
+            <!-- History Panel -->
+            <section class="history-section" id="historySection" style="display:none">
+                <div class="glass-card">
+                    <div class="history-header">
+                        <h3>
+                            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="20"
+                                height="20">
+                                <circle cx="12" cy="12" r="10" />
+                                <polyline points="12 6 12 12 16 14" />
+                            </svg>
+                            Lịch sử kiểm tra
+                        </h3>
+                        <button class="btn-secondary btn-sm" id="clearHistoryBtn">Xóa tất cả</button>
+                    </div>
+                    <div class="history-list" id="historyList">
+                        <p class="empty-state">Chưa có lịch sử kiểm tra nào.</p>
+                    </div>
+                </div>
+            </section>
+        </div>
+    </main>
+
+    <!-- Toast Notification -->
+    <div class="toast-container" id="toastContainer"></div>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <p>Thẩm Văn AI — Công cụ kiểm tra đạo văn thông minh. Hỗ trợ Google Gemini & Groq API.</p>
+            <p class="footer-note">Dữ liệu của bạn chỉ được xử lý qua API đã chọn và không được lưu trữ trên bất
+                kỳ server nào khác.</p>
+        </div>
+    </footer>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.8.0/mammoth.browser.min.js"></script>
+    <script src="app.js"></script>
+</body>
+
+</html>
