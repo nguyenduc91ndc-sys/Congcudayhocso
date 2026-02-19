@@ -6,6 +6,7 @@ export const ALL_APP_IDS = [
     'interactiveVideo', 'beeGame', 'beeGameEditable', 'bacteriaGame',
     'vongQuay', 'kingGame', 'luckyWheel', 'starWheel',
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
+    'clockExperiment', 'yogurtExperiment',
     'aiCourseStore', 'canvaBasics', 'communityResources',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D',
     'bangCuuChuong', 'gameTuongTac'
@@ -28,7 +29,9 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     treasureHunt: { name: 'Truy Tìm Kho Báu', icon: '🏴‍☠️', section: 'Công cụ dạy học' },
     videoStore: { name: 'Kho Video AI', icon: '🎬', section: 'Công cụ dạy học' },
     // ── Mô phỏng khoa học ──
-    virtualExperiment: { name: 'Thí nghiệm ảo', icon: '🧪', section: 'Mô phỏng khoa học' },
+    virtualExperiment: { name: 'Thí nghiệm ảo tách muối', icon: '🧪', section: 'Mô phỏng khoa học' },
+    clockExperiment: { name: 'Xem Giờ Trên Đồng Hồ', icon: '⏰', section: 'Mô phỏng khoa học' },
+    yogurtExperiment: { name: 'Thí nghiệm làm Sữa chua', icon: '🧫', section: 'Mô phỏng khoa học' },
     // ── Khóa học & AI ──
     aiCourseStore: { name: 'Kho Khóa học AI', icon: '🎓', section: 'Khóa học & AI' },
     ngheNghiep: { name: 'Nghề Nghiệp Tương Lai', icon: '👨‍🚀', section: 'Khóa học & AI' },
