@@ -213,3 +213,687 @@ body {
   scrollbar-width: auto;
   scrollbar-color: #d97706 #1a1a2e;
 }
+
+/* ═══════════════════════════════════════════
+   YOGURT EXPERIMENT STYLES
+   All prefixed with .yogurt- to avoid conflicts
+═══════════════════════════════════════════ */
+
+.yogurt-app-container {
+  height: 100vh;
+  max-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 20px;
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+}
+
+.yogurt-app-container::before {
+  content: '';
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image:
+    radial-gradient(circle at 20% 80%, rgba(255, 255, 255, 0.15) 0%, transparent 50%),
+    radial-gradient(circle at 80% 20%, rgba(255, 255, 255, 0.1) 0%, transparent 40%),
+    radial-gradient(circle at 40% 40%, rgba(255, 255, 255, 0.08) 0%, transparent 30%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.yogurt-app-container>* {
+  position: relative;
+  z-index: 1;
+}
+
+.yogurt-back-btn {
+  position: fixed;
+  top: 15px;
+  left: 15px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 20px;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 12px;
+  color: white;
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  z-index: 1000;
+  transition: all 0.3s ease;
+}
+
+.yogurt-back-btn:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
+
+.yogurt-fullscreen-btn {
+  position: fixed;
+  top: 15px;
+  right: 15px;
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  border: none;
+  background: linear-gradient(145deg, #ffffff, #e6e6e6);
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.2), -3px -3px 10px rgba(255, 255, 255, 0.8), inset 1px 1px 2px rgba(255, 255, 255, 0.5);
+  cursor: pointer;
+  font-size: 1.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+}
+
+.yogurt-fullscreen-btn:hover {
+  box-shadow: 8px 8px 20px rgba(0, 0, 0, 0.3), -5px -5px 15px rgba(255, 255, 255, 0.9);
+}
+
+.yogurt-header {
+  text-align: center;
+  margin-bottom: 20px;
+  transform-style: preserve-3d;
+}
+
+.yogurt-title-3d {
+  font-size: 2.8rem;
+  background: linear-gradient(135deg, #fff 0%, #f0f0f0 50%, #fff 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  margin-bottom: 10px;
+  filter: drop-shadow(2px 4px 6px rgba(0, 0, 0, 0.3));
+}
+
+.yogurt-step-indicator {
+  font-size: 1.1rem;
+  color: white;
+  background: rgba(255, 255, 255, 0.2);
+  backdrop-filter: blur(10px);
+  padding: 5px 18px;
+  border-radius: 30px;
+  display: inline-block;
+  box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+}
+
+.yogurt-progress-bar {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 8px 15px;
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  border-radius: 50px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.2);
+}
+
+.yogurt-progress-step {
+  width: 35px;
+  height: 35px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: bold;
+  font-size: 0.85rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  box-shadow: 3px 3px 8px rgba(0, 0, 0, 0.2), -2px -2px 6px rgba(255, 255, 255, 0.1);
+}
+
+.yogurt-progress-step.completed {
+  background: linear-gradient(145deg, #34d399, #10b981);
+  color: white;
+  box-shadow: 0 4px 15px rgba(16, 185, 129, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.yogurt-progress-step.current {
+  background: linear-gradient(145deg, #60a5fa, #2563eb);
+  color: white;
+  transform: scale(1.15);
+  box-shadow: 0 0 25px rgba(37, 99, 235, 0.6), 0 8px 25px rgba(37, 99, 235, 0.4);
+  animation: yogurt-glow 2s ease-in-out infinite alternate;
+}
+
+@keyframes yogurt-glow {
+  from {
+    box-shadow: 0 0 20px rgba(37, 99, 235, 0.5), 0 8px 25px rgba(37, 99, 235, 0.3);
+  }
+
+  to {
+    box-shadow: 0 0 35px rgba(37, 99, 235, 0.8), 0 8px 30px rgba(37, 99, 235, 0.5);
+  }
+}
+
+.yogurt-progress-step.pending {
+  background: rgba(255, 255, 255, 0.3);
+  color: white;
+  backdrop-filter: blur(5px);
+}
+
+.yogurt-main-content {
+  width: 100%;
+  max-width: 1100px;
+  flex: 1;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.85));
+  backdrop-filter: blur(20px);
+  border-radius: 20px;
+  box-shadow: 0 15px 50px rgba(0, 0, 0, 0.15), 0 5px 20px rgba(0, 0, 0, 0.1), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  padding: 15px 25px;
+  position: relative;
+  overflow-y: auto;
+  overflow-x: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  display: flex;
+  flex-direction: column;
+}
+
+.yogurt-main-content::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 3px;
+  background: linear-gradient(90deg, #667eea, #764ba2, #f093fb, #667eea);
+  background-size: 300% 100%;
+  animation: yogurt-shimmer 3s linear infinite;
+}
+
+@keyframes yogurt-shimmer {
+  0% {
+    background-position: 0% 50%;
+  }
+
+  100% {
+    background-position: 300% 50%;
+  }
+}
+
+.yogurt-step-title {
+  font-size: 1.3rem;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-align: center;
+  margin-bottom: 10px;
+  font-weight: 700;
+}
+
+.yogurt-drag-items-panel {
+  background: linear-gradient(145deg, rgba(240, 249, 255, 0.9), rgba(224, 242, 254, 0.9));
+  backdrop-filter: blur(10px);
+  border-radius: 15px;
+  padding: 12px 20px;
+  margin-bottom: 10px;
+  border: 2px dashed rgba(96, 165, 250, 0.5);
+  box-shadow: inset 0 2px 10px rgba(255, 255, 255, 0.8), 0 4px 15px rgba(0, 0, 0, 0.05);
+}
+
+.yogurt-drag-hint {
+  text-align: center;
+  color: #667eea;
+  margin-bottom: 8px;
+  font-size: 1rem;
+  font-weight: 600;
+}
+
+.yogurt-drag-items {
+  display: flex;
+  justify-content: center;
+  gap: 15px;
+  flex-wrap: wrap;
+}
+
+.yogurt-draggable-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 5px;
+  padding: 10px 18px;
+  background: linear-gradient(145deg, #ffffff, #f3f4f6);
+  border-radius: 15px;
+  box-shadow: 5px 5px 15px rgba(0, 0, 0, 0.1), -3px -3px 10px rgba(255, 255, 255, 0.9), inset 0 1px 0 rgba(255, 255, 255, 0.8);
+  cursor: grab;
+  transition: all 0.3s;
+  border: 2px solid transparent;
+  position: relative;
+}
+
+.yogurt-draggable-item::before {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 17px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  z-index: -1;
+  opacity: 0.7;
+}
+
+.yogurt-draggable-item:hover {
+  transform: translateY(-5px) scale(1.05);
+}
+
+.yogurt-draggable-item.dragging {
+  opacity: 0.3 !important;
+  cursor: grabbing;
+}
+
+.yogurt-draggable-item.disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  border-color: #22c55e;
+  background: #f0fdf4;
+}
+
+.yogurt-item-image {
+  font-size: 2.2rem;
+}
+
+.yogurt-item-label {
+  font-weight: 600;
+  color: #4b5563;
+  font-size: 0.8rem;
+}
+
+.yogurt-drag-overlay {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  padding: 12px 20px;
+  background: linear-gradient(145deg, #ffffff, #f3f4f6);
+  border-radius: 16px;
+  box-shadow: 0 15px 40px rgba(0, 0, 0, 0.25), 0 5px 15px rgba(102, 126, 234, 0.3);
+  border: 2px solid #667eea;
+  cursor: grabbing;
+  z-index: 99999;
+  pointer-events: none;
+  transform: scale(1.1) rotate(-2deg);
+}
+
+.yogurt-drag-overlay-icon {
+  font-size: 2.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.yogurt-drag-overlay-label {
+  font-weight: 700;
+  color: #667eea;
+  font-size: 0.85rem;
+}
+
+.yogurt-lab-bench {
+  background: linear-gradient(180deg, #e0f2fe 0%, #f0f9ff 50%, #d4a574 50%, #c9986a 100%);
+  border-radius: 12px;
+  flex: 1;
+  min-height: 200px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  padding: 10px;
+  margin: 10px 0;
+}
+
+.yogurt-drop-zone {
+  position: relative;
+  padding: 10px;
+  border: 3px dashed #60a5fa;
+  border-radius: 15px;
+  min-width: 250px;
+  min-height: 180px;
+  max-height: 240px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s;
+  background: rgba(255, 255, 255, 0.8);
+}
+
+.yogurt-drop-zone.over {
+  border-color: #22c55e;
+  background: rgba(240, 253, 244, 0.9);
+  box-shadow: 0 0 30px rgba(34, 197, 94, 0.4);
+}
+
+.yogurt-drop-zone.complete {
+  border-color: #22c55e;
+  border-style: solid;
+  background: rgba(240, 253, 244, 0.95);
+}
+
+.yogurt-drop-zone-label {
+  position: absolute;
+  bottom: 10px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  color: #2563eb;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+}
+
+.yogurt-check-mark {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 40px;
+  height: 40px;
+  background: #22c55e;
+  color: white;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  font-weight: bold;
+}
+
+.yogurt-step-image {
+  max-width: 100%;
+  max-height: 180px;
+  object-fit: contain;
+  border-radius: 10px;
+  transition: transform 0.3s;
+  filter: drop-shadow(0 4px 6px rgba(0, 0, 0, 0.1));
+}
+
+.yogurt-step-image.landscape-mode {
+  max-height: 250px;
+  width: auto;
+  max-width: 95%;
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.15);
+  margin: 10px 0;
+}
+
+.yogurt-step-image-container {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+}
+
+.yogurt-success-overlay {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: rgba(16, 185, 129, 0.95);
+  color: white;
+  padding: 20px 40px;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  font-size: 1.3rem;
+  font-weight: bold;
+}
+
+.yogurt-success-emoji {
+  font-size: 3rem;
+}
+
+.yogurt-dropped-jars-container {
+  position: absolute;
+  bottom: 35%;
+  left: 0;
+  right: 0;
+  height: 50px;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.yogurt-dropped-jar {
+  position: absolute;
+  font-size: 2rem;
+  filter: drop-shadow(0 3px 6px rgba(0, 0, 0, 0.2));
+}
+
+/* Animation containers */
+.yogurt-steam-container {
+  position: absolute;
+  top: 20%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 100px;
+  height: 80px;
+  pointer-events: none;
+}
+
+.yogurt-steam-particle {
+  position: absolute;
+  width: 20px;
+  height: 20px;
+  background: rgba(255, 255, 255, 0.8);
+  border-radius: 50%;
+  filter: blur(5px);
+}
+
+.yogurt-bubbles-container {
+  position: absolute;
+  bottom: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 150px;
+  height: 100px;
+  pointer-events: none;
+}
+
+.yogurt-bubble {
+  position: absolute;
+  bottom: 0;
+  background: rgba(255, 255, 255, 0.7);
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.9);
+}
+
+.yogurt-bacteria-container {
+  position: absolute;
+  top: 30%;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 200px;
+  height: 150px;
+  pointer-events: none;
+}
+
+.yogurt-bacterium {
+  position: absolute;
+  width: 20px;
+  height: 10px;
+  background: linear-gradient(135deg, #10b981, #059669);
+  border-radius: 50%;
+  box-shadow: 0 0 5px rgba(16, 185, 129, 0.5);
+}
+
+.yogurt-multiply-text {
+  position: absolute;
+  bottom: -30px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: white;
+  padding: 8px 16px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  white-space: nowrap;
+}
+
+.yogurt-snowflakes-container {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.yogurt-snowflake {
+  position: absolute;
+  top: 0;
+  font-size: 1.5rem;
+}
+
+.yogurt-pouring-container {
+  position: absolute;
+  top: 10%;
+  left: 45%;
+  width: 100px;
+  height: 150px;
+  pointer-events: none;
+  z-index: 10;
+}
+
+.yogurt-milk-stream {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  width: 12px;
+  height: 100px;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.9), rgba(255, 253, 240, 0.95), rgba(255, 255, 255, 0.8));
+  border-radius: 6px;
+  transform: translateX(-50%);
+  transform-origin: top center;
+  box-shadow: 0 0 10px rgba(255, 255, 255, 0.8), 0 0 20px rgba(255, 253, 240, 0.5);
+}
+
+.yogurt-milk-drop {
+  position: absolute;
+  top: 60px;
+  width: 8px;
+  height: 12px;
+  background: radial-gradient(ellipse, rgba(255, 255, 255, 0.95), rgba(255, 253, 240, 0.9));
+  border-radius: 50% 50% 50% 50% / 60% 60% 40% 40%;
+}
+
+.yogurt-milk-splash {
+  position: absolute;
+  width: 15px;
+  height: 15px;
+  background: radial-gradient(circle, rgba(255, 255, 255, 0.9) 0%, rgba(255, 253, 240, 0.6) 70%, transparent 100%);
+  border-radius: 50%;
+}
+
+.yogurt-science-info {
+  background: linear-gradient(135deg, #fef3c7, #fde68a);
+  border-left: 4px solid #f59e0b;
+  padding: 10px 15px;
+  border-radius: 0 10px 10px 0;
+  margin-top: 10px;
+}
+
+.yogurt-science-info h3 {
+  color: #b45309;
+  margin-bottom: 4px;
+  font-size: 0.95rem;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.yogurt-science-info p {
+  color: #92400e;
+  line-height: 1.4;
+  font-size: 0.9rem;
+}
+
+.yogurt-step-description {
+  text-align: center;
+  color: #6b7280;
+  font-size: 1rem;
+  margin-top: 8px;
+  font-weight: 500;
+}
+
+.yogurt-controls {
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.yogurt-btn {
+  padding: 12px 28px;
+  border: none;
+  border-radius: 12px;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  position: relative;
+  overflow: hidden;
+}
+
+.yogurt-btn-secondary {
+  background: linear-gradient(145deg, #8b5cf6, #7c3aed, #6d28d9);
+  color: white;
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.yogurt-btn-secondary:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.yogurt-btn-primary {
+  background: linear-gradient(145deg, #3b82f6, #2563eb, #1d4ed8);
+  color: white;
+  box-shadow: 0 4px 15px rgba(37, 99, 235, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+}
+
+.yogurt-btn-disabled {
+  background: linear-gradient(145deg, #cbd5e1, #94a3b8);
+  color: white;
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.yogurt-btn-check {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  margin: 20px auto;
+  padding: 14px 35px;
+  background: linear-gradient(145deg, #fbbf24, #f59e0b, #d97706);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 1.1rem;
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: 0 4px 15px rgba(245, 158, 11, 0.4);
+}
+
+.yogurt-complete-animation {
+  text-align: center;
+  padding: 40px 20px;
+}
+
+.yogurt-emoji {
+  font-size: 4rem;
+  margin-bottom: 20px;
+}
