@@ -383,7 +383,36 @@ function processFile(file) {
         };
         reader.readAsArrayBuffer(file);
     } else if (file.name.endsWith('.pdf')) {
-        showToast('File PDF hiện chưa được hỗ trợ đọc tự động. Vui lòng copy-paste nội dung văn bản.', 'info');
+        showToast('Đang đọc file PDF...', 'info');
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            try {
+                const typedArray = new Uint8Array(e.target.result);
+                const pdf = await pdfjsLib.getDocument(typedArray).promise;
+                let fullText = '';
+
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const textContent = await page.getTextContent();
+                    const pageText = textContent.items.map(item => item.str).join(' ');
+                    fullText += pageText + '\n\n';
+                }
+
+                const content = fullText.trim();
+                if (!content) {
+                    showToast('File PDF không chứa nội dung văn bản (có thể là PDF dạng ảnh/scan).', 'error');
+                    return;
+                }
+                els.inputText.value = content;
+                onTextInput();
+                $$('.tab-btn')[0].click();
+                showToast(`Đã tải thành công: ${file.name} (${pdf.numPages} trang)`, 'success');
+            } catch (err) {
+                console.error('PDF read error:', err);
+                showToast('Không thể đọc file PDF. Vui lòng thử copy-paste nội dung.', 'error');
+            }
+        };
+        reader.readAsArrayBuffer(file);
     } else {
         showToast('Định dạng file không được hỗ trợ. Vui lòng dùng .txt, .docx hoặc copy-paste.', 'error');
     }
@@ -446,6 +475,11 @@ async function startScan() {
         // Save to history
         saveToHistory(text, result);
 
+        // Auto-search sources for flagged segments (Gemini only)
+        if (state.provider === 'gemini' && result.segments) {
+            searchSourcesOnline(result.segments);
+        }
+
     } catch (error) {
         console.error('Scan error:', error);
         let errorMsg = 'Có lỗi xảy ra khi phân tích. ';
@@ -467,6 +501,118 @@ async function startScan() {
         state.isScanning = false;
         els.scanBtn.classList.remove('scanning');
         updateScanButton();
+    }
+}
+
+// ========================
+// SOURCE SEARCH (Gemini Grounding)
+// ========================
+async function searchSourcesOnline(segments) {
+    const flaggedSegments = segments
+        .map((seg, i) => ({ ...seg, originalIndex: i }))
+        .filter(seg => seg.level && seg.level !== 'clean');
+
+    if (flaggedSegments.length === 0) return;
+
+    // Show loading in each flagged detail card
+    const allCards = document.querySelectorAll('.detail-card');
+    flaggedSegments.forEach(seg => {
+        const card = allCards[seg.originalIndex];
+        if (card) {
+            const loader = document.createElement('div');
+            loader.className = 'source-search-status';
+            loader.innerHTML = '<span class="source-loading"><span class="source-spinner"></span> Đang tìm nguồn trên Internet...</span>';
+            card.appendChild(loader);
+        }
+    });
+
+    try {
+        // Build search prompt with all flagged segments
+        const searchParts = flaggedSegments.map((seg, i) =>
+            `[Đoạn ${seg.originalIndex + 1}]: "${seg.text.substring(0, 200)}"`
+        ).join('\n\n');
+
+        const prompt = `Tôi cần tìm nguồn gốc trên internet cho các đoạn văn bản sau đây bị nghi ngờ đạo văn. Hãy tìm kiếm và cho biết các trang web, bài viết, hoặc tài liệu có nội dung trùng hoặc tương tự:\n\n${searchParts}\n\nVới mỗi đoạn, hãy liệt kê:\n- Tên nguồn (trang web/tài liệu)\n- URL cụ thể nếu tìm được\n- Mức độ tương đồng (cao/trung bình/thấp)`;
+
+        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${getCurrentKey()}`;
+
+        const response = await fetch(apiUrl, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                contents: [{ parts: [{ text: prompt }] }],
+                tools: [{ google_search: {} }],
+                generationConfig: {
+                    temperature: 0.1,
+                    maxOutputTokens: 4096,
+                },
+            }),
+        });
+
+        if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+        const data = await response.json();
+        const groundingMeta = data.candidates?.[0]?.groundingMetadata;
+        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
+
+        // Extract grounding chunks (real web sources)
+        const webSources = [];
+        if (groundingMeta?.groundingChunks) {
+            groundingMeta.groundingChunks.forEach(chunk => {
+                if (chunk.web) {
+                    webSources.push({
+                        title: chunk.web.title || 'Nguồn không xác định',
+                        uri: chunk.web.uri || '',
+                    });
+                }
+            });
+        }
+
+        // Remove duplicates by URI
+        const uniqueSources = [];
+        const seenUris = new Set();
+        webSources.forEach(src => {
+            if (src.uri && !seenUris.has(src.uri)) {
+                seenUris.add(src.uri);
+                uniqueSources.push(src);
+            }
+        });
+
+        // Update UI: show sources in each flagged card
+        flaggedSegments.forEach(seg => {
+            const card = allCards[seg.originalIndex];
+            if (!card) return;
+
+            const statusEl = card.querySelector('.source-search-status');
+            if (!statusEl) return;
+
+            if (uniqueSources.length > 0) {
+                let html = '<div class="source-results">';
+                html += '<strong>🌐 Nguồn tìm thấy trên Internet:</strong>';
+                html += '<ul>';
+                uniqueSources.forEach(src => {
+                    const domain = src.uri ? new URL(src.uri).hostname.replace('www.', '') : '';
+                    html += `<li><a href="${escapeHtml(src.uri)}" target="_blank" rel="noopener">${escapeHtml(src.title)}</a> <span class="source-domain">${escapeHtml(domain)}</span></li>`;
+                });
+                html += '</ul></div>';
+                statusEl.innerHTML = html;
+            } else {
+                statusEl.innerHTML = '<span class="source-not-found">✅ Không tìm thấy nguồn trùng lặp trên Internet.</span>';
+            }
+        });
+
+        if (uniqueSources.length > 0) {
+            showToast(`Tìm thấy ${uniqueSources.length} nguồn có thể liên quan!`, 'info');
+        } else {
+            showToast('Không tìm thấy nguồn trùng lặp trên Internet.', 'success');
+        }
+
+    } catch (err) {
+        console.error('Source search error:', err);
+        // Remove loading, show fallback
+        document.querySelectorAll('.source-search-status').forEach(el => {
+            el.innerHTML = '<span class="source-not-found">⚠ Không thể tìm nguồn tự động. Hãy dùng nút "Tìm nguồn trên Google" ở trên.</span>';
+        });
     }
 }
 
