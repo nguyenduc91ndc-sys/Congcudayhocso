@@ -147,6 +147,36 @@ function init() {
     // Check scan button state
     updateScanButton();
     renderHistory();
+
+    // Help popup
+    const helpBtn = $('#helpBtn');
+    const helpOverlay = $('#helpOverlay');
+    const closeHelp = $('#closeHelp');
+    const helpVideoIframe = $('#helpVideoIframe');
+    const TUTORIAL_VIDEO_URL = 'https://www.youtube.com/embed/St_MPuZ3AGc';
+
+    if (helpBtn && helpOverlay) {
+        helpBtn.addEventListener('click', () => {
+            helpOverlay.classList.add('open');
+            // Lazy-load: only set src when opened
+            if (helpVideoIframe && !helpVideoIframe.src.includes('youtube')) {
+                helpVideoIframe.src = TUTORIAL_VIDEO_URL;
+            }
+        });
+
+        closeHelp.addEventListener('click', () => {
+            helpOverlay.classList.remove('open');
+            // Stop video playback
+            if (helpVideoIframe) helpVideoIframe.src = '';
+        });
+
+        helpOverlay.addEventListener('click', (e) => {
+            if (e.target === helpOverlay) {
+                helpOverlay.classList.remove('open');
+                if (helpVideoIframe) helpVideoIframe.src = '';
+            }
+        });
+    }
 }
 
 // ========================
@@ -621,7 +651,8 @@ ${text}
       "text": "<nội dung đoạn văn gốc - giữ nguyên>",
       "level": "<high | medium | low | ai-detected | clean>",
       "type": "<plagiarism | ai | style | clean>",
-      "reason": "<giải thích chi tiết bằng tiếng Việt tại sao đoạn này bị đánh dấu>"
+      "reason": "<giải thích chi tiết bằng tiếng Việt tại sao đoạn này bị đánh dấu>",
+      "possible_sources": ["<tên nguồn/website có thể là gốc, ví dụ: Wikipedia tiếng Việt, Luận văn XYZ, Báo Tuổi Trẻ...>"] 
     }
   ],
   "summary": {
@@ -632,7 +663,10 @@ ${text}
   }
 }
 
-Lưu ý: Tất cả nội dung phải bằng tiếng Việt. Phần "text" trong segments phải giữ nguyên văn bản gốc, không sửa đổi.`;
+Lưu ý: 
+- Tất cả nội dung phải bằng tiếng Việt. Phần "text" trong segments phải giữ nguyên văn bản gốc, không sửa đổi.
+- Với các đoạn nghi ngờ đạo văn (level: high, medium, low), hãy cố gắng gợi ý nguồn gốc có thể trong "possible_sources" (tên website, sách, luận văn...). Nếu là đoạn clean hoặc ai-detected thì để mảng rỗng [].
+- possible_sources là mảng string, có thể có 0-3 phần tử.`;
 }
 
 // ========================
@@ -771,6 +805,29 @@ function renderDetailCards(segments) {
     segments.forEach((seg, i) => {
         const level = seg.level || 'clean';
         const typeLabel = getTypeLabel(level, seg.type);
+        const isFlagged = level !== 'clean';
+
+        // Render possible sources from AI
+        let sourcesHtml = '';
+        if (seg.possible_sources && seg.possible_sources.length > 0) {
+            sourcesHtml = `<div class="detail-sources">
+                <strong>📚 Nguồn có thể:</strong>
+                <ul>${seg.possible_sources.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
+            </div>`;
+        }
+
+        // Google search button for flagged segments
+        let searchBtn = '';
+        if (isFlagged) {
+            const searchText = seg.text.substring(0, 150);
+            const searchUrl = `https://www.google.com/search?q=%22${encodeURIComponent(searchText)}%22`;
+            searchBtn = `<a class="btn-search-source" href="${searchUrl}" target="_blank" rel="noopener">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" width="14" height="14">
+                    <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+                </svg>
+                Tìm nguồn trên Google
+            </a>`;
+        }
 
         html += `
         <div class="detail-card ${level}">
@@ -780,6 +837,8 @@ function renderDetailCards(segments) {
             </div>
             <div class="detail-text">${escapeHtml(seg.text)}</div>
             <div class="detail-reason"><strong>Lý do:</strong> ${escapeHtml(seg.reason || 'Không có ghi chú')}</div>
+            ${sourcesHtml}
+            ${searchBtn}
         </div>`;
     });
 
