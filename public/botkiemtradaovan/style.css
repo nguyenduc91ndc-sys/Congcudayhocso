@@ -2145,6 +2145,213 @@ body {
 }
 
 /* ======================== */
+/* SOURCE SUMMARY PANEL      */
+/* ======================== */
+.source-summary-panel {
+    margin-bottom: var(--space-xl);
+}
+
+.source-summary-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-md);
+}
+
+.source-summary-header h3 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.source-summary-header h3 svg {
+    color: var(--accent);
+}
+
+.source-count-badge {
+    font-size: 0.75rem;
+    font-weight: 600;
+    padding: 4px 10px;
+    border-radius: 12px;
+    background: var(--accent-gradient);
+    color: white;
+}
+
+.source-summary-loading {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: var(--space-md);
+    font-size: 0.85rem;
+    color: var(--accent-hover);
+}
+
+.source-summary-empty {
+    font-size: 0.85rem;
+    padding: var(--space-md);
+    color: var(--text-secondary);
+}
+
+.source-summary-stats {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: var(--space-md);
+    padding-bottom: var(--space-md);
+    border-bottom: 1px solid var(--border);
+}
+
+.source-stat {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.8rem;
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid var(--border);
+    color: var(--text-secondary);
+}
+
+.source-stat strong {
+    color: var(--text-primary);
+}
+
+.source-stat-dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.source-stat.high .source-stat-dot {
+    background: var(--high);
+}
+
+.source-stat.medium .source-stat-dot {
+    background: var(--medium);
+}
+
+.source-stat.low .source-stat-dot {
+    background: var(--low, #60a5fa);
+}
+
+.source-stat.ai .source-stat-dot {
+    background: var(--ai-detected, #a78bfa);
+}
+
+.source-summary-list {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.source-summary-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(255, 255, 255, 0.02);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+    transition: all var(--transition);
+}
+
+.source-summary-item:hover {
+    background: rgba(99, 102, 241, 0.06);
+    border-color: var(--border-hover);
+}
+
+.source-summary-index {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: var(--accent-gradient);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 700;
+    flex-shrink: 0;
+}
+
+.source-summary-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.source-summary-title {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 500;
+    color: #60a5fa;
+    text-decoration: none;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.source-summary-title:hover {
+    color: #93c5fd;
+    text-decoration: underline;
+}
+
+.source-summary-domain {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+}
+
+.source-link-icon {
+    color: var(--text-muted);
+    flex-shrink: 0;
+    opacity: 0.5;
+    transition: opacity 0.2s;
+}
+
+.source-summary-item:hover .source-link-icon {
+    opacity: 1;
+    color: var(--accent);
+}
+
+.source-level-badge {
+    font-size: 0.65rem;
+    font-weight: 700;
+    padding: 2px 8px;
+    border-radius: 8px;
+    flex-shrink: 0;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.source-level-badge.high {
+    background: rgba(239, 68, 68, 0.15);
+    color: #f87171;
+    border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.source-level-badge.medium {
+    background: rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.source-level-badge.low {
+    background: rgba(59, 130, 246, 0.15);
+    color: #60a5fa;
+    border: 1px solid rgba(59, 130, 246, 0.3);
+}
+
+.source-level-badge.ai-detected {
+    background: rgba(167, 139, 250, 0.15);
+    color: #a78bfa;
+    border: 1px solid rgba(167, 139, 250, 0.3);
+}
+
+/* ======================== */
 /* SOURCE SEARCH RESULTS     */
 /* ======================== */
 .source-search-status {

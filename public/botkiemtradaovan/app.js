@@ -475,11 +475,6 @@ async function startScan() {
         // Save to history
         saveToHistory(text, result);
 
-        // Auto-search sources for flagged segments (Gemini only)
-        if (state.provider === 'gemini' && result.segments) {
-            searchSourcesOnline(result.segments);
-        }
-
     } catch (error) {
         console.error('Scan error:', error);
         let errorMsg = 'Có lỗi xảy ra khi phân tích. ';
@@ -504,117 +499,6 @@ async function startScan() {
     }
 }
 
-// ========================
-// SOURCE SEARCH (Gemini Grounding)
-// ========================
-async function searchSourcesOnline(segments) {
-    const flaggedSegments = segments
-        .map((seg, i) => ({ ...seg, originalIndex: i }))
-        .filter(seg => seg.level && seg.level !== 'clean');
-
-    if (flaggedSegments.length === 0) return;
-
-    // Show loading in each flagged detail card
-    const allCards = document.querySelectorAll('.detail-card');
-    flaggedSegments.forEach(seg => {
-        const card = allCards[seg.originalIndex];
-        if (card) {
-            const loader = document.createElement('div');
-            loader.className = 'source-search-status';
-            loader.innerHTML = '<span class="source-loading"><span class="source-spinner"></span> Đang tìm nguồn trên Internet...</span>';
-            card.appendChild(loader);
-        }
-    });
-
-    try {
-        // Build search prompt with all flagged segments
-        const searchParts = flaggedSegments.map((seg, i) =>
-            `[Đoạn ${seg.originalIndex + 1}]: "${seg.text.substring(0, 200)}"`
-        ).join('\n\n');
-
-        const prompt = `Tôi cần tìm nguồn gốc trên internet cho các đoạn văn bản sau đây bị nghi ngờ đạo văn. Hãy tìm kiếm và cho biết các trang web, bài viết, hoặc tài liệu có nội dung trùng hoặc tương tự:\n\n${searchParts}\n\nVới mỗi đoạn, hãy liệt kê:\n- Tên nguồn (trang web/tài liệu)\n- URL cụ thể nếu tìm được\n- Mức độ tương đồng (cao/trung bình/thấp)`;
-
-        const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${getCurrentKey()}`;
-
-        const response = await fetch(apiUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-                contents: [{ parts: [{ text: prompt }] }],
-                tools: [{ google_search: {} }],
-                generationConfig: {
-                    temperature: 0.1,
-                    maxOutputTokens: 4096,
-                },
-            }),
-        });
-
-        if (!response.ok) throw new Error(`HTTP ${response.status}`);
-
-        const data = await response.json();
-        const groundingMeta = data.candidates?.[0]?.groundingMetadata;
-        const responseText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
-
-        // Extract grounding chunks (real web sources)
-        const webSources = [];
-        if (groundingMeta?.groundingChunks) {
-            groundingMeta.groundingChunks.forEach(chunk => {
-                if (chunk.web) {
-                    webSources.push({
-                        title: chunk.web.title || 'Nguồn không xác định',
-                        uri: chunk.web.uri || '',
-                    });
-                }
-            });
-        }
-
-        // Remove duplicates by URI
-        const uniqueSources = [];
-        const seenUris = new Set();
-        webSources.forEach(src => {
-            if (src.uri && !seenUris.has(src.uri)) {
-                seenUris.add(src.uri);
-                uniqueSources.push(src);
-            }
-        });
-
-        // Update UI: show sources in each flagged card
-        flaggedSegments.forEach(seg => {
-            const card = allCards[seg.originalIndex];
-            if (!card) return;
-
-            const statusEl = card.querySelector('.source-search-status');
-            if (!statusEl) return;
-
-            if (uniqueSources.length > 0) {
-                let html = '<div class="source-results">';
-                html += '<strong>🌐 Nguồn tìm thấy trên Internet:</strong>';
-                html += '<ul>';
-                uniqueSources.forEach(src => {
-                    const domain = src.uri ? new URL(src.uri).hostname.replace('www.', '') : '';
-                    html += `<li><a href="${escapeHtml(src.uri)}" target="_blank" rel="noopener">${escapeHtml(src.title)}</a> <span class="source-domain">${escapeHtml(domain)}</span></li>`;
-                });
-                html += '</ul></div>';
-                statusEl.innerHTML = html;
-            } else {
-                statusEl.innerHTML = '<span class="source-not-found">✅ Không tìm thấy nguồn trùng lặp trên Internet.</span>';
-            }
-        });
-
-        if (uniqueSources.length > 0) {
-            showToast(`Tìm thấy ${uniqueSources.length} nguồn có thể liên quan!`, 'info');
-        } else {
-            showToast('Không tìm thấy nguồn trùng lặp trên Internet.', 'success');
-        }
-
-    } catch (err) {
-        console.error('Source search error:', err);
-        // Remove loading, show fallback
-        document.querySelectorAll('.source-search-status').forEach(el => {
-            el.innerHTML = '<span class="source-not-found">⚠ Không thể tìm nguồn tự động. Hãy dùng nút "Tìm nguồn trên Google" ở trên.</span>';
-        });
-    }
-}
 
 // Auto-retry with exponential backoff
 async function callAIWithRetry(text, checkPlagiarism, checkAI, checkStyle, maxRetries = 2) {
@@ -797,8 +681,7 @@ ${text}
       "text": "<nội dung đoạn văn gốc - giữ nguyên>",
       "level": "<high | medium | low | ai-detected | clean>",
       "type": "<plagiarism | ai | style | clean>",
-      "reason": "<giải thích chi tiết bằng tiếng Việt tại sao đoạn này bị đánh dấu>",
-      "possible_sources": ["<tên nguồn/website có thể là gốc, ví dụ: Wikipedia tiếng Việt, Luận văn XYZ, Báo Tuổi Trẻ...>"] 
+      "reason": "<giải thích chi tiết bằng tiếng Việt tại sao đoạn này bị đánh dấu>"
     }
   ],
   "summary": {
@@ -809,10 +692,7 @@ ${text}
   }
 }
 
-Lưu ý: 
-- Tất cả nội dung phải bằng tiếng Việt. Phần "text" trong segments phải giữ nguyên văn bản gốc, không sửa đổi.
-- Với các đoạn nghi ngờ đạo văn (level: high, medium, low), hãy cố gắng gợi ý nguồn gốc có thể trong "possible_sources" (tên website, sách, luận văn...). Nếu là đoạn clean hoặc ai-detected thì để mảng rỗng [].
-- possible_sources là mảng string, có thể có 0-3 phần tử.`;
+Lưu ý: Tất cả nội dung phải bằng tiếng Việt. Phần "text" trong segments phải giữ nguyên văn bản gốc, không sửa đổi.`;
 }
 
 // ========================
@@ -821,7 +701,7 @@ Lưu ý:
 function displayResults(result, originalText) {
     state.lastResults = result;
 
-    // Hide loading, show results
+    // Show loading, show results
     els.loadingSection.style.display = 'none';
     els.resultsSection.style.display = 'block';
 
@@ -953,15 +833,6 @@ function renderDetailCards(segments) {
         const typeLabel = getTypeLabel(level, seg.type);
         const isFlagged = level !== 'clean';
 
-        // Render possible sources from AI
-        let sourcesHtml = '';
-        if (seg.possible_sources && seg.possible_sources.length > 0) {
-            sourcesHtml = `<div class="detail-sources">
-                <strong>📚 Nguồn có thể:</strong>
-                <ul>${seg.possible_sources.map(s => `<li>${escapeHtml(s)}</li>`).join('')}</ul>
-            </div>`;
-        }
-
         // Google search button for flagged segments
         let searchBtn = '';
         if (isFlagged) {
@@ -983,7 +854,6 @@ function renderDetailCards(segments) {
             </div>
             <div class="detail-text">${escapeHtml(seg.text)}</div>
             <div class="detail-reason"><strong>Lý do:</strong> ${escapeHtml(seg.reason || 'Không có ghi chú')}</div>
-            ${sourcesHtml}
             ${searchBtn}
         </div>`;
     });
