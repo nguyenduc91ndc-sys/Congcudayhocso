@@ -347,7 +347,16 @@ function handleFileSelect(e) {
 
 function processFile(file) {
     if (file.size > 20 * 1024 * 1024) {
-        showToast('File quá lớn! Tối đa 20MB.', 'error');
+        showToast('⚠️ File quá lớn! Tối đa 20MB.', 'error');
+        // Hiện cảnh báo cố định trong vùng tải file
+        let warning = document.getElementById('fileSizeWarning');
+        if (!warning) {
+            warning = document.createElement('div');
+            warning.id = 'fileSizeWarning';
+            warning.style.cssText = 'margin-top:12px;padding:14px 16px;background:linear-gradient(135deg,#fef2f2,#fff1f2);border:2px solid #fca5a5;border-radius:12px;color:#dc2626;font-size:14px;line-height:1.6;font-weight:500;';
+            warning.innerHTML = '⚠️ <strong>File vượt quá 20MB!</strong><br>💡 <strong>Hướng dẫn:</strong> Nếu bài của bạn có nhiều hình ảnh, hãy xóa bớt hình ảnh hoặc giảm kích thước hình ảnh rồi tải lại file.';
+            els.uploadZone.parentElement.appendChild(warning);
+        }
         return;
     }
 
