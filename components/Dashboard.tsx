@@ -382,7 +382,7 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* Header */}
             <header className="border-b border-white/10 sticky top-0 z-50 bg-black/20 backdrop-blur-xl">
-                <div className="max-w-6xl mx-auto px-6 py-4">
+                <div className="max-w-6xl mx-auto px-3 sm:px-6 py-3 sm:py-4">
                     <div className="flex items-center justify-between">
                         {/* Logo & User - 3D Style */}
                         <div className="flex items-center gap-4">
@@ -407,7 +407,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             {/* 3D Text */}
                             <div>
                                 <h1
-                                    className="font-outfit font-bold text-lg bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent"
+                                    className="font-outfit font-bold text-sm sm:text-lg bg-gradient-to-r from-white via-purple-200 to-pink-200 bg-clip-text text-transparent"
                                     style={{
                                         textShadow: '0 2px 4px rgba(0,0,0,0.3), 0 4px 8px rgba(168, 85, 247, 0.2)',
                                         letterSpacing: '0.5px'
@@ -443,18 +443,18 @@ const Dashboard: React.FC<DashboardProps> = ({
                             {isGuest ? (
                                 <button
                                     onClick={onLogout}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white font-medium text-sm rounded-lg transition-colors"
+                                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-green-600 hover:bg-green-500 text-white font-medium text-sm rounded-lg transition-colors"
                                 >
                                     <LogOut size={16} className="rotate-180" />
-                                    <span>Đăng nhập</span>
+                                    <span className="hidden sm:inline">Đăng nhập</span>
                                 </button>
                             ) : (
                                 <button
                                     onClick={onLogout}
-                                    className="flex items-center gap-1.5 px-3 py-1.5 bg-red-600/80 hover:bg-red-500 text-white font-medium text-sm rounded-lg transition-colors"
+                                    className="flex items-center gap-1.5 px-2 sm:px-3 py-1.5 bg-red-600/80 hover:bg-red-500 text-white font-medium text-sm rounded-lg transition-colors"
                                 >
                                     <LogOut size={16} />
-                                    <span>Đăng xuất</span>
+                                    <span className="hidden sm:inline">Đăng xuất</span>
                                 </button>
                             )}
                         </div>
@@ -463,56 +463,61 @@ const Dashboard: React.FC<DashboardProps> = ({
             </header>
 
             {/* Main Content */}
-            <main className="max-w-6xl mx-auto px-6 py-8">
+            <main className="max-w-6xl mx-auto px-3 sm:px-6 py-4 sm:py-8">
                 <motion.div
                     key="tools"
                     initial={{ opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-8"
                 >
-                    {/* 🎆 Banner Chào Xuân 2026 */}
+                    {/* 🎓 Banner Chào mừng */}
                     <motion.section
-                        onClick={onNewYear}
-                        whileHover={{ scale: 1.01 }}
-                        whileTap={{ scale: 0.99 }}
-                        className="relative mb-6 cursor-pointer group overflow-hidden rounded-2xl"
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="relative mb-6 overflow-hidden rounded-2xl"
                     >
-                        {/* Animated background */}
-                        <div className="absolute inset-0 bg-gradient-to-r from-red-600 via-yellow-500 to-red-600 bg-[length:200%_100%] animate-[shimmer_3s_linear_infinite]" />
+                        {/* Background gradient */}
+                        <div className="absolute inset-0 bg-gradient-to-r from-teal-600 via-cyan-500 to-blue-600" />
 
-                        {/* Overlay pattern */}
-                        <div className="absolute inset-0 opacity-20" style={{
-                            backgroundImage: 'url("data:image/svg+xml,%3Csvg width="20" height="20" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"%3E%3Cg fill="%23fff" fill-opacity="0.4"%3E%3Cpath d="M10 0l2.94 6.56L20 7.64l-5 4.36 1.18 6.88L10 15.4l-6.18 3.48L5 12 0 7.64l7.06-1.08z"/%3E%3C/g%3E%3C/svg%3E")',
+                        {/* Subtle pattern overlay */}
+                        <div className="absolute inset-0 opacity-10" style={{
+                            backgroundImage: 'radial-gradient(circle at 20% 50%, white 1px, transparent 1px), radial-gradient(circle at 80% 50%, white 1px, transparent 1px)',
+                            backgroundSize: '30px 30px',
                         }} />
 
+                        {/* Glow blobs */}
+                        <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                        <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+
                         {/* Content */}
-                        <div className="relative px-6 py-4 flex items-center justify-between">
+                        <div className="relative px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                             <div className="flex items-center gap-4">
-                                {/* Firework icon */}
-                                <div className="text-4xl animate-bounce">
-                                    🎆
-                                </div>
+                                <div className="text-4xl">🎓</div>
                                 <div>
-                                    <h3 className="text-white font-bold text-lg drop-shadow-lg flex items-center gap-2">
-                                        <span className="animate-pulse">✨</span>
-                                        Chào Xuân 2026
-                                        <span className="animate-pulse">✨</span>
+                                    <h3 className="text-white font-bold text-base sm:text-lg drop-shadow-sm">
+                                        Chào mừng đến với Công cụ dạy học số!
                                     </h3>
-                                    <p className="text-white/90 text-sm">
-                                        Nhấn để xem hiệu ứng pháo hoa đặc biệt! 🧧🎊
+                                    <p className="text-white/80 text-sm mt-0.5">
+                                        Nền tảng công nghệ giáo dục dành cho <span className="font-semibold text-white">giáo viên</span>
                                     </p>
                                 </div>
                             </div>
 
-                            {/* Arrow */}
-                            <div className="flex items-center gap-2">
-                                <span className="text-2xl">🧧</span>
-                                <ChevronRight size={24} className="text-white group-hover:translate-x-2 transition-transform" />
+                            {/* Tags - ẩn trên mobile, hiện từ sm trở lên */}
+                            <div className="hidden sm:flex flex-wrap gap-2 sm:flex-nowrap sm:flex-shrink-0">
+                                {[
+                                    { emoji: '✨', label: 'Đa dạng công cụ' },
+                                    { emoji: '🎮', label: 'Trò chơi tương tác' },
+                                    { emoji: '🔬', label: 'Mô phỏng khoa học' },
+                                    { emoji: '🔍', label: 'Kiểm tra đạo văn' },
+                                ].map(tag => (
+                                    <span key={tag.label} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full text-white text-xs font-medium whitespace-nowrap">
+                                        <span>{tag.emoji}</span>
+                                        <span className="hidden lg:inline">{tag.label}</span>
+                                    </span>
+                                ))}
                             </div>
                         </div>
-
-                        {/* Glow effect on hover */}
-                        <div className="absolute inset-0 opacity-0 group-hover:opacity-30 transition-opacity bg-white blur-xl" />
                     </motion.section>
 
 
@@ -521,16 +526,16 @@ const Dashboard: React.FC<DashboardProps> = ({
 
                     {/* Maintenance Banner */}
                     {maintenanceMode && !isAdmin && (
-                        <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-400/50 rounded-2xl p-6 text-center mb-8">
-                            <span className="text-4xl mb-3 block">🔧</span>
-                            <h3 className="text-xl font-bold text-amber-300 mb-1">Đang bảo trì</h3>
-                            <p className="text-white/80">{maintenanceMessage || 'Website đang bảo trì'}</p>
+                        <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-400/50 rounded-2xl p-3 sm:p-6 text-center mb-4 sm:mb-8">
+                            <span className="text-2xl sm:text-4xl mb-1 sm:mb-3 block">🔧</span>
+                            <h3 className="text-base sm:text-xl font-bold text-amber-300 mb-1">Đang bảo trì</h3>
+                            <p className="text-white/80 text-sm sm:text-base">{maintenanceMessage || 'Website đang bảo trì'}</p>
                         </div>
                     )}
 
                     {/* ═══════ TAB NAVIGATION ═══════ */}
-                    <div className="mb-8">
-                        <div className="flex flex-wrap gap-2 p-1.5 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10">
+                    <div className="mb-4 sm:mb-8">
+                        <div className="flex gap-1.5 sm:gap-2 p-1.5 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-x-auto">
                             {[
                                 { key: 'all', label: 'Tất cả', emoji: '🏠' },
                                 { key: 'teaching', label: 'Công cụ dạy học', emoji: '⚡' },
@@ -542,10 +547,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 <button
                                     key={tab.key}
                                     onClick={() => setActiveTab(tab.key)}
-                                    className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold transition-all duration-300 whitespace-nowrap ${activeTab === tab.key ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]' : 'text-white/60 hover:bg-white/10 hover:text-white/90'}`}
+                                    className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap flex-shrink-0 ${activeTab === tab.key ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]' : 'text-white/60 hover:bg-white/10 hover:text-white/90'}`}
                                 >
                                     <span>{tab.emoji}</span>
-                                    <span className="hidden sm:inline">{tab.label}</span>
+                                    <span className="inline">{tab.label}</span>
                                 </button>
                             ))}
                         </div>
