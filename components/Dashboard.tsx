@@ -537,7 +537,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                     <div className="mb-4 sm:mb-8">
                         <div className="relative">
                             {/* Gradient fade gợi ý scroll ngang - chỉ hiện trên mobile */}
-                            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-black/40 to-transparent rounded-r-2xl z-10 sm:hidden" />
+                            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#0a0a1a]/90 via-[#0a0a1a]/50 to-transparent rounded-r-2xl z-10 sm:hidden" />
                             <div className="flex gap-1.5 sm:gap-2 p-1.5 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-x-auto scrollbar-hide">
                                 {[
                                     { key: 'all', label: 'Tất cả', emoji: '🏠' },
