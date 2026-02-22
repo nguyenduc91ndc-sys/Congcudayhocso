@@ -111,6 +111,19 @@ function App() {
 
       // Load saved user
       const savedUser = localStorage.getItem('ntd_user');
+      let defaultView: ViewState = 'DASHBOARD';
+
+      // Parse ?app= from URL
+      const appParam = urlParams.get('app');
+      if (appParam) {
+        switch (appParam.toLowerCase()) {
+          case 'tham_van_ai':
+            defaultView = 'KIEM_TRA_DAO_VAN';
+            break;
+          // Có thể thêm case cho các app khác ở đây sau
+        }
+      }
+
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
@@ -152,7 +165,9 @@ function App() {
           logVisitorToFirebase(parsedUser.id, parsedUser.name, parsedUser.avatar, parsedUser.email);
         }
       }
-      // Always stay on DASHBOARD (default view)
+
+      // Set the default view based on URL param or DASHBOARD
+      setView(defaultView);
 
       // Migration: copy dữ liệu cũ từ visitorLogs sang loginHistory (chỉ chạy 1 lần)
       checkAndMigrateIfNeeded();
