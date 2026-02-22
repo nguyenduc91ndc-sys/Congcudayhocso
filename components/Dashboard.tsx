@@ -16,6 +16,7 @@ import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareU
 import { verifyAdminPassword, isAdminAuthenticated, setAdminAuthenticated } from '../utils/adminAuth';
 import { canUseVideoTrialByDevice, useVideoTrialByDevice, getDeviceTrialStatus } from '../utils/firebaseDeviceTrial';
 import ScrollButtons from './ScrollButtons';
+import { BlogSection } from './BlogSection';
 
 interface DashboardProps {
     user: User;
@@ -67,6 +68,7 @@ export const DASHBOARD_TABS = [
     { key: 'ai', label: 'Khóa học & AI', emoji: '🎓' },
     { key: '3d', label: 'Ứng dụng 3D', emoji: '📦' },
     { key: 'interactive', label: 'Học liệu tương tác', emoji: '📚' },
+    { key: 'blog', label: 'Cẩm nang & Chia sẻ', emoji: '✍️' },
 ];
 
 const MAX_TRIAL_COUNT = 3;
@@ -519,7 +521,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                             <div className="relative">
                                 {/* Gradient fade gợi ý scroll ngang - chỉ hiện trên mobile */}
                                 <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-blue-600/90 to-transparent rounded-r-xl z-10 sm:hidden" />
-                                <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mb-1">
+                                <div className="flex gap-1.5 sm:gap-2 overflow-x-auto thin-scrollbar pb-2 -mb-2">
                                     {DASHBOARD_TABS.map(tab => (
                                         <button
                                             key={tab.key}
@@ -693,6 +695,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                                 </section>
                             )}
 
+                            {/* ─── SECTION: BLOG & CẨM NANG ─── */}
+                            {(activeTab === 'all' || activeTab === 'blog') && (
+                                <section className="mb-10 mt-8 relative z-10">
+                                    <BlogSection />
+                                </section>
+                            )}
                         </motion.div>
                     </AnimatePresence>
 

@@ -4,7 +4,11 @@ import { Star, ChevronLeft, ChevronRight, MessageCircle, Zap, Heart, ExternalLin
 import { getApprovedFeedbacks, Feedback } from '../utils/feedbackUtils';
 import { getVisitStats } from '../utils/visitCounter';
 
-const Footer: React.FC = () => {
+interface FooterProps {
+    onViewChange?: (view: string) => void;
+}
+
+const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [isLoading, setIsLoading] = useState(true);
@@ -274,8 +278,7 @@ const Footer: React.FC = () => {
                         )}
                     </div>
 
-                    {/* Visit Count & Copyright */}
-                    <div className="flex flex-col items-center md:items-end gap-2 pb-16 md:pb-0">
+                    <div className="flex flex-col items-center md:items-end gap-3 pb-16 md:pb-0">
                         {visitCount > 0 && (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full">
                                 <Eye size={14} className="text-emerald-400" />
@@ -283,7 +286,29 @@ const Footer: React.FC = () => {
                                 <span className="text-xs text-purple-300/70">lượt truy cập</span>
                             </div>
                         )}
-                        <p className="text-sm text-purple-300/70">
+                        <div className="flex items-center gap-4 text-sm text-purple-300/70 mt-2">
+                            <button
+                                onClick={() => onViewChange && onViewChange('ABOUT')}
+                                className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
+                            >
+                                Về chúng tôi
+                            </button>
+                            <span>|</span>
+                            <button
+                                onClick={() => onViewChange && onViewChange('PRIVACY')}
+                                className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
+                            >
+                                Chính sách bảo mật
+                            </button>
+                            <span>|</span>
+                            <button
+                                onClick={() => onViewChange && onViewChange('CONTACT')}
+                                className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
+                            >
+                                Liên hệ
+                            </button>
+                        </div>
+                        <p className="text-sm text-purple-300/70 mt-2">
                             © 2025 Thầy Thế Đức. All rights reserved.
                         </p>
                     </div>
