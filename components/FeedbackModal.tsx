@@ -12,7 +12,7 @@ interface FeedbackModalProps {
 
 const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) => {
     const [rating, setRating] = useState(5);
-    const [teacherName, setTeacherName] = useState(user.name || '');
+    const [teacherName, setTeacherName] = useState('');
     const [schoolName, setSchoolName] = useState('');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -137,7 +137,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
                                                 type="text"
                                                 value={teacherName}
                                                 onChange={(e) => setTeacherName(e.target.value)}
-                                                placeholder="Tên giáo viên"
+                                                placeholder="Họ và tên bạn"
                                                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm"
                                             />
                                         </div>
