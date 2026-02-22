@@ -156,10 +156,8 @@ function App() {
       // Auto-show New Year welcome on first visit (trong mùa Tết)
       const hasSeenNewYear = localStorage.getItem('ntd_seen_new_year_2026');
       const nowDate = new Date();
-      // Hiển thị từ 15/12 đến hết 28/2 (mùa Tết)
-      const isNewYearSeason = (nowDate.getMonth() === 11 && nowDate.getDate() >= 15) || // 15/12 trở đi
-        nowDate.getMonth() === 0 || // Tháng 1
-        (nowDate.getMonth() === 1 && nowDate.getDate() <= 28); // Đến hết 28/2
+      // Hiển thị từ 15/12 đến hết 28/2 (mùa Tết) - ĐÃ TẮT THEO YÊU CẦU
+      const isNewYearSeason = false;
 
       if (!hasSeenNewYear && isNewYearSeason && !sharedData) {
         setTimeout(() => {
