@@ -60,6 +60,15 @@ interface DashboardProps {
     maintenanceMessage?: string;
 }
 
+export const DASHBOARD_TABS = [
+    { key: 'all', label: 'Tất cả', emoji: '🏠' },
+    { key: 'teaching', label: 'Công cụ dạy học', emoji: '⚡' },
+    { key: 'science', label: 'Mô phỏng khoa học', emoji: '🧪' },
+    { key: 'ai', label: 'Khóa học & AI', emoji: '🎓' },
+    { key: '3d', label: 'Ứng dụng 3D', emoji: '📦' },
+    { key: 'interactive', label: 'Học liệu tương tác', emoji: '📚' },
+];
+
 const MAX_TRIAL_COUNT = 3;
 
 // Professional Tool Card Component
@@ -470,11 +479,11 @@ const Dashboard: React.FC<DashboardProps> = ({
                     animate={{ opacity: 1, y: 0 }}
                     className="space-y-8"
                 >
-                    {/* 🎓 Banner Chào mừng */}
+                    {/* 🎓 Banner Chào mừng & Tabs */}
                     <motion.section
                         initial={{ opacity: 0, y: -10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="relative mb-6 overflow-hidden rounded-2xl"
+                        className="relative mb-6 sm:mb-8 overflow-hidden rounded-2xl flex flex-col"
                     >
                         {/* Background gradient */}
                         <div className="absolute inset-0 bg-gradient-to-r from-teal-600 via-cyan-500 to-blue-600" />
@@ -486,43 +495,45 @@ const Dashboard: React.FC<DashboardProps> = ({
                         }} />
 
                         {/* Glow blobs */}
-                        <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
-                        <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-white/10 rounded-full blur-2xl" />
+                        <div className="absolute -top-6 -right-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
+                        <div className="absolute -bottom-6 -left-6 w-32 h-32 bg-white/10 rounded-full blur-2xl pointer-events-none" />
 
-                        {/* Content */}
-                        <div className="relative px-6 py-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                            <div className="flex items-center gap-4">
-                                <div className="text-4xl">🎓</div>
-                                <div>
-                                    <h3 className="text-white font-bold text-base sm:text-lg drop-shadow-sm">
-                                        Chào mừng đến với Công cụ dạy học số!
-                                    </h3>
-                                    <p className="text-white/80 text-sm mt-0.5">
-                                        Nền tảng công nghệ giáo dục dành cho <span className="font-semibold text-white">giáo viên</span>
-                                    </p>
-                                </div>
+                        {/* Top Content: Welcome */}
+                        <div className="relative px-6 py-5 sm:py-6 flex items-center gap-4">
+                            <div className="text-4xl sm:text-5xl drop-shadow-md">🎓</div>
+                            <div>
+                                <h3 className="text-white font-bold text-lg sm:text-xl md:text-2xl drop-shadow-sm mb-1">
+                                    Chào mừng đến với Công cụ dạy học số!
+                                </h3>
+                                <p className="text-white/80 text-sm sm:text-base">
+                                    Nền tảng công nghệ giáo dục dành cho <span className="font-semibold text-white">giáo viên</span>
+                                </p>
                             </div>
+                        </div>
 
-                            {/* Tags - ẩn trên mobile, hiện từ sm trở lên */}
-                            <div className="hidden sm:flex flex-wrap gap-2 sm:flex-nowrap sm:flex-shrink-0">
-                                {[
-                                    { emoji: '✨', label: 'Đa dạng công cụ' },
-                                    { emoji: '🎮', label: 'Trò chơi tương tác' },
-                                    { emoji: '🔬', label: 'Mô phỏng khoa học' },
-                                    { emoji: '🔍', label: 'Kiểm tra đạo văn' },
-                                ].map(tag => (
-                                    <span key={tag.label} className="flex items-center gap-1.5 px-3 py-1.5 bg-white/15 backdrop-blur-sm border border-white/20 rounded-full text-white text-xs font-medium whitespace-nowrap">
-                                        <span>{tag.emoji}</span>
-                                        <span className="hidden lg:inline">{tag.label}</span>
-                                    </span>
-                                ))}
+                        {/* Divider Line */}
+                        <div className="relative h-px w-full bg-white/10" />
+
+                        {/* Bottom Content: Tabs */}
+                        <div className="relative px-3 sm:px-6 py-3 sm:py-4">
+                            <div className="relative">
+                                {/* Gradient fade gợi ý scroll ngang - chỉ hiện trên mobile */}
+                                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-12 bg-gradient-to-l from-blue-600/90 to-transparent rounded-r-xl z-10 sm:hidden" />
+                                <div className="flex gap-1.5 sm:gap-2 overflow-x-auto scrollbar-hide pb-1 -mb-1">
+                                    {DASHBOARD_TABS.map(tab => (
+                                        <button
+                                            key={tab.key}
+                                            onClick={() => setActiveTab(tab.key)}
+                                            className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap flex-shrink-0 border ${activeTab === tab.key ? 'bg-white/25 border-white/40 text-white shadow-lg backdrop-blur-md' : 'bg-white/5 border-white/10 text-white/80 hover:bg-white/15 hover:text-white backdrop-blur-sm'}`}
+                                        >
+                                            <span className="text-sm sm:text-base">{tab.emoji}</span>
+                                            <span className="inline drop-shadow-sm">{tab.label}</span>
+                                        </button>
+                                    ))}
+                                </div>
                             </div>
                         </div>
                     </motion.section>
-
-
-
-
 
                     {/* Maintenance Banner */}
                     {maintenanceMode && !isAdmin && (
@@ -533,217 +544,191 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                     )}
 
-                    {/* ═══════ TAB NAVIGATION ═══════ */}
-                    <div className="mb-4 sm:mb-8">
-                        <div className="relative">
-                            {/* Gradient fade gợi ý scroll ngang - chỉ hiện trên mobile */}
-                            <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-16 bg-gradient-to-l from-[#0a0a1a]/90 via-[#0a0a1a]/50 to-transparent rounded-r-2xl z-10 sm:hidden" />
-                            <div className="flex gap-1.5 sm:gap-2 p-1.5 bg-white/5 backdrop-blur-sm rounded-2xl border border-white/10 overflow-x-auto scrollbar-hide">
-                                {[
-                                    { key: 'all', label: 'Tất cả', emoji: '🏠' },
-                                    { key: 'teaching', label: 'Công cụ dạy học', emoji: '⚡' },
-                                    { key: 'science', label: 'Mô phỏng khoa học', emoji: '🧪' },
-                                    { key: 'ai', label: 'Khóa học & AI', emoji: '🎓' },
-                                    { key: '3d', label: 'Ứng dụng 3D', emoji: '📦' },
-                                    { key: 'interactive', label: 'Học liệu tương tác', emoji: '📚' },
-                                ].map(tab => (
-                                    <button
-                                        key={tab.key}
-                                        onClick={() => setActiveTab(tab.key)}
-                                        className={`flex items-center gap-1.5 sm:gap-2 px-3 sm:px-4 py-2 sm:py-2.5 rounded-xl text-xs sm:text-sm font-semibold transition-all duration-300 whitespace-nowrap flex-shrink-0 ${activeTab === tab.key ? 'bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg shadow-blue-500/25 scale-[1.02]' : 'text-white/60 hover:bg-white/10 hover:text-white/90'}`}
-                                    >
-                                        <span>{tab.emoji}</span>
-                                        <span className="inline">{tab.label}</span>
-                                    </button>
-                                ))}
-                            </div>
-                        </div>
-
-                        {/* ═══════ SECTION CONTENT ═══════ */}
-                        <AnimatePresence mode="wait">
-                            <motion.div
-                                key={activeTab}
-                                initial={{ opacity: 0, y: 12 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -12 }}
-                                transition={{ duration: 0.25, ease: 'easeOut' }}
-                            >
-
-                                {/* ─── SECTION: CÔNG CỤ DẠY HỌC ─── */}
-                                {(activeTab === 'all' || activeTab === 'teaching') && (
-                                    <section className="mb-10">
-                                        {activeTab === 'all' && (
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
-                                                    <Zap size={20} className="text-white" />
-                                                </div>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-white">Công cụ dạy học</h2>
-                                                    <p className="text-xs text-white/50">Game, vòng quay và công cụ tương tác</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {!hiddenApps.includes('interactiveVideo') && <motion.div
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onMouseEnter={() => playHoverSound()}
-                                                onClick={onInteractiveVideo}
-                                                className="relative group text-left p-6 rounded-2xl border transition-all duration-200 bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl"
-                                            >
-                                                <span className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10">
-                                                    {lessons.length} video
-                                                </span>
-                                                <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 group-hover:shadow-xl transition-shadow">
-                                                    <Video size={24} className="text-white" />
-                                                </div>
-                                                <h3 className="text-lg font-bold text-white mb-1">Video tương tác</h3>
-                                                <p className="text-sm text-white/70">Tạo video YouTube với câu hỏi tương tác</p>
-                                                <ChevronRight size={20} className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300" />
-                                            </motion.div>}
-
-                                            {!hiddenApps.includes('beeGame') && <ToolCard title="Ong về Tổ" description="Game ong về tổ demo sản phẩm" icon={<span className="text-2xl">🐝</span>} accentColor="bg-amber-500" onClick={onBeeGame} />}
-                                            {!hiddenApps.includes('beeGameEditable') && <ToolCard title="Ong về Tổ (Tự soạn)" description="Tự tạo câu hỏi và chia sẻ cho học sinh" icon={<span className="text-2xl">🐝📝</span>} accentColor="bg-orange-500" onClick={onBeeGameEditable} badge="Mới" />}
-                                            {!hiddenApps.includes('bacteriaGame') && <ToolCard title="Vi Khuẩn Phiêu Lưu" description="Game vi khuẩn tìm đường về hũ sữa chua" icon={<span className="text-2xl">🦠</span>} accentColor="bg-green-500" onClick={onBacteriaGame} badge="Mới" />}
-                                            {!hiddenApps.includes('vongQuay') && <ToolCard title="Vòng quay" description="Vòng tròn gọi tên học sinh" icon={<RotateCcw size={24} className="text-white" />} accentColor="bg-pink-500" onClick={onVongQuay} />}
-                                            {!hiddenApps.includes('kingGame') && <ToolCard title="Đường đến Ngôi Vua" description="Gọi tên học sinh kết hợp câu hỏi" icon={<span className="text-2xl">👑</span>} accentColor="bg-yellow-500" onClick={onKingGame} />}
-                                            {!hiddenApps.includes('luckyWheel') && <ToolCard title="Vòng quay may mắn" description="Bánh xe quay chọn người may mắn" icon={<span className="text-2xl">🎡</span>} accentColor="bg-rose-500" onClick={onLuckyWheel} />}
-                                            {!hiddenApps.includes('starWheel') && <ToolCard title="Vòng Xoay Ngôi Sao" description="Vòng quay ngôi sao may mắn" icon={<span className="text-2xl">⭐</span>} accentColor="bg-indigo-500" onClick={onStarWheel} />}
-                                            {!hiddenApps.includes('puzzleGame') && <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" />}
-                                            {!hiddenApps.includes('treasureHunt') && <ToolCard title="Truy Tìm Kho Báu" description="Game phiêu lưu khám phá, tự soạn câu hỏi" icon={<span className="text-2xl">🏴‍☠️</span>} accentColor="bg-gradient-to-br from-orange-500 to-amber-500" onClick={onTreasureHunt} badge="Mới" />}
-                                            {!hiddenApps.includes('videoStore') && <ToolCard title="Kho Video AI" description="Video AI giáo dục chất lượng cao" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-blue-500 to-purple-600" onClick={onVideoStore} badge="Mới" />}
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* ─── SECTION: KHÓA HỌC & AI ─── */}
-                                {(activeTab === 'all' || activeTab === 'ai') && (
-                                    <section className="mb-10">
-                                        {activeTab === 'all' && (
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
-                                                    <Brain size={20} className="text-white" />
-                                                </div>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-white">Khóa học & AI</h2>
-                                                    <p className="text-xs text-white/50">Khóa học, tài nguyên và công cụ AI</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {!hiddenApps.includes('aiCourseStore') && <ToolCard title="Kho Khóa học AI" description="Xem demo các khóa học AI cho giáo viên" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-cyan-500 to-blue-600" onClick={onAICourseStore} badge="Mới" />}
-                                            {!hiddenApps.includes('ngheNghiep') && <ToolCard title="Nghề Nghiệp Tương Lai" description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI" icon={<span className="text-2xl">👨‍🚀</span>} accentColor="bg-gradient-to-br from-orange-400 to-amber-500" onClick={onNgheNghiep} badge="AI Studio" />}
-                                            {!hiddenApps.includes('canvaBasics') && <ToolCard title="Canva cơ bản" description="Video hướng dẫn sử dụng Canva từ cộng đồng" icon={<span className="text-2xl">🎨</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onCanvaBasics} badge="Mới" />}
-                                            {!hiddenApps.includes('chucTet') && <ToolCard title="Mẫu Chúc Tết" description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ" icon={<span className="text-2xl">🎊</span>} accentColor="bg-gradient-to-br from-red-600 to-yellow-500" onClick={onChucTet} badge="Mới" />}
-                                            {!hiddenApps.includes('communityResources') && <ToolCard title="Kho tài nguyên cộng đồng" description="Kho tài nguyên miễn phí từ cộng đồng" icon={<Users size={24} className="text-white" />} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onCommunityResources} badge="Miễn phí" />}
-                                            {!hiddenApps.includes('kiemTraDaoVan') && <ToolCard title="Thẩm Văn AI" description="Kiểm tra đạo văn & phát hiện nội dung AI thông minh" icon={<span className="text-2xl">🔍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onKiemTraDaoVan} badge="Mới" />}
-                                            <ToolCard title="Trợ Lý AI Cho Giáo Viên Tiểu Học" description="Hỗ trợ viết biện pháp, phương pháp dạy học và tài liệu giáo dục" icon={<span className="text-2xl">✨</span>} accentColor="bg-gradient-to-br from-pink-500 to-rose-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* ─── SECTION: ỨNG DỤNG 3D ─── */}
-                                {(activeTab === 'all' || activeTab === '3d') && (
-                                    <section className="mb-10">
-                                        {activeTab === 'all' && (
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
-                                                    <Box size={20} className="text-white" />
-                                                </div>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-white">Ứng dụng 3D & VR</h2>
-                                                    <p className="text-xs text-white/50">Mô hình 3D, bản đồ và thực tế ảo</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {!hiddenApps.includes('heartSystem3D') && <ToolCard title="Hệ tuần hoàn 3D" description="Mô hình tim và hệ tuần hoàn 3D sống động" icon={<Heart size={24} className="text-white" />} accentColor="bg-red-600" onClick={onHeartSystem3D} badge="Mới" />}
-                                            {!hiddenApps.includes('geometry3DTools') && <ToolCard title="Bộ công cụ Hình học 3D" description="Lập phương, hộp, chóp, cầu, trụ tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-indigo-600" onClick={onGeometry3D} badge="Mới" />}
-                                            {!hiddenApps.includes('vietnamMap') && <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" />}
-                                            {!hiddenApps.includes('denHung3D') && <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" />}
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* ─── SECTION: MÔ PHỎNG KHOA HỌC ─── */}
-                                {(activeTab === 'all' || activeTab === 'science') && (
-                                    <section className="mb-10">
-                                        {activeTab === 'all' && (
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
-                                                    <span className="text-xl">🧪</span>
-                                                </div>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-white">Mô phỏng khoa học</h2>
-                                                    <p className="text-xs text-white/50">Thí nghiệm ảo và mô phỏng tương tác</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {!hiddenApps.includes('virtualExperiment') && <ToolCard title="Thí nghiệm ảo tách muối ra khỏi dung dịch" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" />}
-                                            {!hiddenApps.includes('clockExperiment') && <ToolCard title="Xem Giờ Trên Đồng Hồ" description="Học cách xem giờ trên đồng hồ kim và đồng hồ số" icon={<span className="text-2xl">⏰</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onClockExperiment} badge="Mới" />}
-                                            {!hiddenApps.includes('yogurtExperiment') && <ToolCard title="Thí nghiệm làm Sữa chua" description="Mô phỏng thí nghiệm làm sữa chua với vi khuẩn lactic" icon={<span className="text-2xl">🥛</span>} accentColor="bg-gradient-to-br from-pink-500 to-purple-600" onClick={onYogurtExperiment} badge="Mới" />}
-                                        </div>
-                                    </section>
-                                )}
-
-                                {/* ─── SECTION: HỌC LIỆU TƯƠNG TÁC ─── */}
-                                {(activeTab === 'all' || activeTab === 'interactive') && (
-                                    <section className="mb-10">
-                                        {activeTab === 'all' && (
-                                            <div className="flex items-center gap-3 mb-6">
-                                                <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20">
-                                                    <span className="text-xl">📚</span>
-                                                </div>
-                                                <div>
-                                                    <h2 className="text-xl font-bold text-white">Học liệu tương tác</h2>
-                                                    <p className="text-xs text-white/50">Nội dung số hóa, tương tác đa phương tiện</p>
-                                                </div>
-                                            </div>
-                                        )}
-                                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                            {!hiddenApps.includes('bangCuuChuong') && <ToolCard title="Bảng Cửu Chương Số" description="Học liệu tương tác bảng cửu chương" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onBangCuuChuong} badge="Mới" />}
-                                            {!hiddenApps.includes('gameTuongTac') && <ToolCard title="Game Tương Tác" description="Học liệu tương tác dạng game vui nhộn" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={onGameTuongTac} badge="Mới" />}
-                                        </div>
-                                    </section>
-                                )}
-
-                            </motion.div>
-                        </AnimatePresence>
-
-                        {/* Stats */}
-
-
-                        {/* Zalo Community Card */}
-                        <section
-                            onClick={() => setShowZaloModal(true)}
-                            className="mt-6 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border border-blue-500/30 rounded-2xl p-4 cursor-pointer hover:border-blue-400/50 transition-all group relative ring-2 ring-blue-500/30 animate-pulse hover:animate-none"
+                    {/* ═══════ SECTION CONTENT ═══════ */}
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key={activeTab}
+                            initial={{ opacity: 0, y: 12 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -12 }}
+                            transition={{ duration: 0.25, ease: 'easeOut' }}
                         >
-                            <div className="flex items-center gap-4">
-                                {/* QR Code nhỏ */}
-                                <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform p-1">
-                                    <img
-                                        src="/zalo-group-qr.png"
-                                        alt="QR Zalo Group"
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
 
-                                {/* Text */}
-                                <div className="flex-1 min-w-0">
-                                    <h3 className="text-blue-300 font-bold text-sm flex items-center gap-2">
-                                        <Users size={16} className="text-blue-400" />
-                                        Tham gia Cộng đồng Giáo viên 4.0
-                                    </h3>
-                                    <p className="text-white/70 text-xs mt-1 line-clamp-2">
-                                        Quét QR hoặc bấm vào đây để tham gia nhóm Zalo chia sẻ kinh nghiệm và tài liệu!
-                                    </p>
-                                </div>
+                            {/* ─── SECTION: CÔNG CỤ DẠY HỌC ─── */}
+                            {(activeTab === 'all' || activeTab === 'teaching') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-blue-500/20">
+                                                <Zap size={20} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Công cụ dạy học</h2>
+                                                <p className="text-xs text-white/50">Game, vòng quay và công cụ tương tác</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('interactiveVideo') && <motion.div
+                                            whileHover={{ scale: 1.02 }}
+                                            whileTap={{ scale: 0.98 }}
+                                            onMouseEnter={() => playHoverSound()}
+                                            onClick={onInteractiveVideo}
+                                            className="relative group text-left p-6 rounded-2xl border transition-all duration-200 bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl"
+                                        >
+                                            <span className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10">
+                                                {lessons.length} video
+                                            </span>
+                                            <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 group-hover:shadow-xl transition-shadow">
+                                                <Video size={24} className="text-white" />
+                                            </div>
+                                            <h3 className="text-lg font-bold text-white mb-1">Video tương tác</h3>
+                                            <p className="text-sm text-white/70">Tạo video YouTube với câu hỏi tương tác</p>
+                                            <ChevronRight size={20} className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300" />
+                                        </motion.div>}
 
-                                {/* Arrow */}
-                                <ChevronRight size={20} className="text-blue-400/50 group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                                        {!hiddenApps.includes('beeGame') && <ToolCard title="Ong về Tổ" description="Game ong về tổ demo sản phẩm" icon={<span className="text-2xl">🐝</span>} accentColor="bg-amber-500" onClick={onBeeGame} />}
+                                        {!hiddenApps.includes('beeGameEditable') && <ToolCard title="Ong về Tổ (Tự soạn)" description="Tự tạo câu hỏi và chia sẻ cho học sinh" icon={<span className="text-2xl">🐝📝</span>} accentColor="bg-orange-500" onClick={onBeeGameEditable} badge="Mới" />}
+                                        {!hiddenApps.includes('bacteriaGame') && <ToolCard title="Vi Khuẩn Phiêu Lưu" description="Game vi khuẩn tìm đường về hũ sữa chua" icon={<span className="text-2xl">🦠</span>} accentColor="bg-green-500" onClick={onBacteriaGame} badge="Mới" />}
+                                        {!hiddenApps.includes('vongQuay') && <ToolCard title="Vòng quay" description="Vòng tròn gọi tên học sinh" icon={<RotateCcw size={24} className="text-white" />} accentColor="bg-pink-500" onClick={onVongQuay} />}
+                                        {!hiddenApps.includes('kingGame') && <ToolCard title="Đường đến Ngôi Vua" description="Gọi tên học sinh kết hợp câu hỏi" icon={<span className="text-2xl">👑</span>} accentColor="bg-yellow-500" onClick={onKingGame} />}
+                                        {!hiddenApps.includes('luckyWheel') && <ToolCard title="Vòng quay may mắn" description="Bánh xe quay chọn người may mắn" icon={<span className="text-2xl">🎡</span>} accentColor="bg-rose-500" onClick={onLuckyWheel} />}
+                                        {!hiddenApps.includes('starWheel') && <ToolCard title="Vòng Xoay Ngôi Sao" description="Vòng quay ngôi sao may mắn" icon={<span className="text-2xl">⭐</span>} accentColor="bg-indigo-500" onClick={onStarWheel} />}
+                                        {!hiddenApps.includes('puzzleGame') && <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" />}
+                                        {!hiddenApps.includes('treasureHunt') && <ToolCard title="Truy Tìm Kho Báu" description="Game phiêu lưu khám phá, tự soạn câu hỏi" icon={<span className="text-2xl">🏴‍☠️</span>} accentColor="bg-gradient-to-br from-orange-500 to-amber-500" onClick={onTreasureHunt} badge="Mới" />}
+                                        {!hiddenApps.includes('videoStore') && <ToolCard title="Kho Video AI" description="Video AI giáo dục chất lượng cao" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-blue-500 to-purple-600" onClick={onVideoStore} badge="Mới" />}
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* ─── SECTION: KHÓA HỌC & AI ─── */}
+                            {(activeTab === 'all' || activeTab === 'ai') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-purple-500 to-pink-500 flex items-center justify-center shadow-lg shadow-purple-500/20">
+                                                <Brain size={20} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Khóa học & AI</h2>
+                                                <p className="text-xs text-white/50">Khóa học, tài nguyên và công cụ AI</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('aiCourseStore') && <ToolCard title="Kho Khóa học AI" description="Xem demo các khóa học AI cho giáo viên" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-cyan-500 to-blue-600" onClick={onAICourseStore} badge="Mới" />}
+                                        {!hiddenApps.includes('ngheNghiep') && <ToolCard title="Nghề Nghiệp Tương Lai" description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI" icon={<span className="text-2xl">👨‍🚀</span>} accentColor="bg-gradient-to-br from-orange-400 to-amber-500" onClick={onNgheNghiep} badge="AI Studio" />}
+                                        {!hiddenApps.includes('canvaBasics') && <ToolCard title="Canva cơ bản" description="Video hướng dẫn sử dụng Canva từ cộng đồng" icon={<span className="text-2xl">🎨</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onCanvaBasics} badge="Mới" />}
+                                        {!hiddenApps.includes('chucTet') && <ToolCard title="Mẫu Chúc Tết" description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ" icon={<span className="text-2xl">🎊</span>} accentColor="bg-gradient-to-br from-red-600 to-yellow-500" onClick={onChucTet} badge="Mới" />}
+                                        {!hiddenApps.includes('communityResources') && <ToolCard title="Kho tài nguyên cộng đồng" description="Kho tài nguyên miễn phí từ cộng đồng" icon={<Users size={24} className="text-white" />} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onCommunityResources} badge="Miễn phí" />}
+                                        {!hiddenApps.includes('kiemTraDaoVan') && <ToolCard title="Thẩm Văn AI" description="Kiểm tra đạo văn & phát hiện nội dung AI thông minh" icon={<span className="text-2xl">🔍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onKiemTraDaoVan} badge="Mới" />}
+                                        <ToolCard title="Trợ Lý AI Cho Giáo Viên Tiểu Học" description="Hỗ trợ viết biện pháp, phương pháp dạy học và tài liệu giáo dục" icon={<span className="text-2xl">✨</span>} accentColor="bg-gradient-to-br from-pink-500 to-rose-600" onClick={() => { }} badge="Sắp ra mắt" disabled />
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* ─── SECTION: ỨNG DỤNG 3D ─── */}
+                            {(activeTab === 'all' || activeTab === '3d') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+                                                <Box size={20} className="text-white" />
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Ứng dụng 3D & VR</h2>
+                                                <p className="text-xs text-white/50">Mô hình 3D, bản đồ và thực tế ảo</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('heartSystem3D') && <ToolCard title="Hệ tuần hoàn 3D" description="Mô hình tim và hệ tuần hoàn 3D sống động" icon={<Heart size={24} className="text-white" />} accentColor="bg-red-600" onClick={onHeartSystem3D} badge="Mới" />}
+                                        {!hiddenApps.includes('geometry3DTools') && <ToolCard title="Bộ công cụ Hình học 3D" description="Lập phương, hộp, chóp, cầu, trụ tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-indigo-600" onClick={onGeometry3D} badge="Mới" />}
+                                        {!hiddenApps.includes('vietnamMap') && <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" />}
+                                        {!hiddenApps.includes('denHung3D') && <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" />}
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* ─── SECTION: MÔ PHỎNG KHOA HỌC ─── */}
+                            {(activeTab === 'all' || activeTab === 'science') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-teal-500 to-emerald-500 flex items-center justify-center shadow-lg shadow-teal-500/20">
+                                                <span className="text-xl">🧪</span>
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Mô phỏng khoa học</h2>
+                                                <p className="text-xs text-white/50">Thí nghiệm ảo và mô phỏng tương tác</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('virtualExperiment') && <ToolCard title="Thí nghiệm ảo tách muối ra khỏi dung dịch" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" />}
+                                        {!hiddenApps.includes('clockExperiment') && <ToolCard title="Xem Giờ Trên Đồng Hồ" description="Học cách xem giờ trên đồng hồ kim và đồng hồ số" icon={<span className="text-2xl">⏰</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onClockExperiment} badge="Mới" />}
+                                        {!hiddenApps.includes('yogurtExperiment') && <ToolCard title="Thí nghiệm làm Sữa chua" description="Mô phỏng thí nghiệm làm sữa chua với vi khuẩn lactic" icon={<span className="text-2xl">🥛</span>} accentColor="bg-gradient-to-br from-pink-500 to-purple-600" onClick={onYogurtExperiment} badge="Mới" />}
+                                    </div>
+                                </section>
+                            )}
+
+                            {/* ─── SECTION: HỌC LIỆU TƯƠNG TÁC ─── */}
+                            {(activeTab === 'all' || activeTab === 'interactive') && (
+                                <section className="mb-10">
+                                    {activeTab === 'all' && (
+                                        <div className="flex items-center gap-3 mb-6">
+                                            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-green-500 to-emerald-600 flex items-center justify-center shadow-lg shadow-green-500/20">
+                                                <span className="text-xl">📚</span>
+                                            </div>
+                                            <div>
+                                                <h2 className="text-xl font-bold text-white">Học liệu tương tác</h2>
+                                                <p className="text-xs text-white/50">Nội dung số hóa, tương tác đa phương tiện</p>
+                                            </div>
+                                        </div>
+                                    )}
+                                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('bangCuuChuong') && <ToolCard title="Bảng Cửu Chương Số" description="Học liệu tương tác bảng cửu chương" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onBangCuuChuong} badge="Mới" />}
+                                        {!hiddenApps.includes('gameTuongTac') && <ToolCard title="Game Tương Tác" description="Học liệu tương tác dạng game vui nhộn" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={onGameTuongTac} badge="Mới" />}
+                                    </div>
+                                </section>
+                            )}
+
+                        </motion.div>
+                    </AnimatePresence>
+
+                    {/* Stats */}
+
+
+                    {/* Zalo Community Card */}
+                    <section
+                        onClick={() => setShowZaloModal(true)}
+                        className="mt-6 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border border-blue-500/30 rounded-2xl p-4 cursor-pointer hover:border-blue-400/50 transition-all group relative ring-2 ring-blue-500/30 animate-pulse hover:animate-none"
+                    >
+                        <div className="flex items-center gap-4">
+                            {/* QR Code nhỏ */}
+                            <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform p-1">
+                                <img
+                                    src="/zalo-group-qr.png"
+                                    alt="QR Zalo Group"
+                                    className="w-full h-full object-contain"
+                                />
                             </div>
-                        </section>
+
+                            {/* Text */}
+                            <div className="flex-1 min-w-0">
+                                <h3 className="text-blue-300 font-bold text-sm flex items-center gap-2">
+                                    <Users size={16} className="text-blue-400" />
+                                    Tham gia Cộng đồng Giáo viên 4.0
+                                </h3>
+                                <p className="text-white/70 text-xs mt-1 line-clamp-2">
+                                    Quét QR hoặc bấm vào đây để tham gia nhóm Zalo chia sẻ kinh nghiệm và tài liệu!
+                                </p>
+                            </div>
+
+                            {/* Arrow */}
+                            <ChevronRight size={20} className="text-blue-400/50 group-hover:text-blue-400 group-hover:translate-x-1 transition-all flex-shrink-0" />
+                        </div>
+                    </section>
                 </motion.div>
             </main>
 

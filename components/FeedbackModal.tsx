@@ -12,19 +12,23 @@ interface FeedbackModalProps {
 
 const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) => {
     const [rating, setRating] = useState(5);
+    const [teacherName, setTeacherName] = useState(user.name || '');
+    const [schoolName, setSchoolName] = useState('');
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
     const [hoveredStar, setHoveredStar] = useState(0);
 
     const handleSubmit = async () => {
-        if (!message.trim()) return;
+        if (!message.trim() || !teacherName.trim() || !schoolName.trim()) return;
 
         setIsSubmitting(true);
         const success = await submitFeedback(
             user.id,
             user.name,
             user.avatar,
+            teacherName.trim(),
+            schoolName.trim(),
             message.trim(),
             rating
         );
@@ -36,6 +40,8 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
             setTimeout(() => {
                 setIsSuccess(false);
                 setMessage('');
+                setTeacherName(user.name || '');
+                setSchoolName('');
                 setRating(5);
                 onClose();
             }, 2000);
@@ -124,6 +130,28 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
                                         </div>
                                     </div>
 
+                                    {/* 2-Column Inputs */}
+                                    <div className="flex gap-3 mb-3">
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                value={teacherName}
+                                                onChange={(e) => setTeacherName(e.target.value)}
+                                                placeholder="Tên giáo viên"
+                                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm"
+                                            />
+                                        </div>
+                                        <div className="flex-1">
+                                            <input
+                                                type="text"
+                                                value={schoolName}
+                                                onChange={(e) => setSchoolName(e.target.value)}
+                                                placeholder="Cơ quan, địa chỉ..."
+                                                className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm"
+                                            />
+                                        </div>
+                                    </div>
+
                                     {/* Message */}
                                     <div className="mb-3">
                                         <textarea
@@ -138,8 +166,8 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
                                     {/* Submit Button - LUÔN HIỆN RÕ */}
                                     <button
                                         onClick={handleSubmit}
-                                        disabled={!message.trim() || isSubmitting}
-                                        className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-base ${message.trim() && !isSubmitting
+                                        disabled={!message.trim() || !teacherName.trim() || !schoolName.trim() || isSubmitting}
+                                        className={`w-full py-3 rounded-xl font-bold flex items-center justify-center gap-2 transition-all text-base ${message.trim() && teacherName.trim() && schoolName.trim() && !isSubmitting
                                             ? 'bg-gradient-to-r from-purple-600 to-pink-500 text-white hover:shadow-lg active:scale-[0.98]'
                                             : 'bg-gray-200 text-gray-400 cursor-not-allowed'
                                             }`}

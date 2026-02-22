@@ -359,16 +359,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         await loadFeedbacks();
     };
 
+    const [editTeacherName, setEditTeacherName] = useState('');
+    const [editSchoolName, setEditSchoolName] = useState('');
+
     const handleEditFeedback = (feedback: Feedback) => {
         setEditingFeedback(feedback);
         setEditMessage(feedback.message);
+        setEditTeacherName(feedback.teacherName || '');
+        setEditSchoolName(feedback.schoolName || '');
     };
 
     const handleSaveEdit = async () => {
         if (!editingFeedback || !editMessage.trim()) return;
-        await updateFeedback(editingFeedback.id, editMessage.trim());
+        await updateFeedback(editingFeedback.id, editMessage.trim(), undefined, editTeacherName.trim(), editSchoolName.trim());
         setEditingFeedback(null);
         setEditMessage('');
+        setEditTeacherName('');
+        setEditSchoolName('');
         await loadFeedbacks();
     };
 
@@ -662,7 +669,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                             className="w-10 h-10 rounded-full object-cover border-2 border-purple-200"
                                                         />
                                                         <div className="flex-1">
-                                                            <div className="font-bold text-gray-800">{feedback.userName}</div>
+                                                            <div className="font-bold text-gray-800">
+                                                                {feedback.teacherName || feedback.userName}
+                                                            </div>
+                                                            {feedback.schoolName && (
+                                                                <div className="text-xs text-purple-600 mb-0.5">{feedback.schoolName}</div>
+                                                            )}
                                                             <div className="flex items-center gap-1">
                                                                 {[1, 2, 3, 4, 5].map((star) => (
                                                                     <Star
@@ -1039,9 +1051,26 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                     />
                                     <span className="font-semibold text-purple-800">{editingFeedback.userName}</span>
                                 </div>
+                                <div className="flex gap-2 mb-3">
+                                    <input
+                                        type="text"
+                                        value={editTeacherName}
+                                        onChange={(e) => setEditTeacherName(e.target.value)}
+                                        placeholder="Tên giáo viên"
+                                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm"
+                                    />
+                                    <input
+                                        type="text"
+                                        value={editSchoolName}
+                                        onChange={(e) => setEditSchoolName(e.target.value)}
+                                        placeholder="Đơn vị công tác"
+                                        className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm"
+                                    />
+                                </div>
                                 <textarea
                                     value={editMessage}
                                     onChange={(e) => setEditMessage(e.target.value)}
+                                    placeholder="Nội dung bình luận"
                                     className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none resize-none mb-4"
                                     rows={3}
                                 />

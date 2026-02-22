@@ -145,7 +145,10 @@ const Footer: React.FC = () => {
                                                     className="w-12 h-12 rounded-full border-2 border-purple-400/50 object-cover"
                                                 />
                                                 <div className="text-left">
-                                                    <p className="font-semibold text-white">{currentFeedback.userName}</p>
+                                                    <p className="font-semibold text-white">{currentFeedback.teacherName || currentFeedback.userName}</p>
+                                                    {currentFeedback.schoolName && (
+                                                        <p className="text-xs text-purple-200/80 mb-0.5">{currentFeedback.schoolName}</p>
+                                                    )}
                                                     <div className="flex gap-0.5">
                                                         {[1, 2, 3, 4, 5].map((star) => (
                                                             <Star
@@ -218,8 +221,8 @@ const Footer: React.FC = () => {
                             />
                         </div>
                         <div>
-                            <h3 className="font-bold text-white text-lg">Giáo viên yêu công nghệ</h3>
-                            <p className="text-purple-300 text-sm">Đức Nguyễn</p>
+                            <h3 className="font-bold text-white text-lg">Công cụ dạy học số</h3>
+                            <p className="text-purple-300 text-sm">Phát triển bởi: Đức Nguyễn</p>
                         </div>
                     </motion.div>
 
@@ -272,7 +275,7 @@ const Footer: React.FC = () => {
                     </div>
 
                     {/* Visit Count & Copyright */}
-                    <div className="flex flex-col items-center md:items-end gap-2">
+                    <div className="flex flex-col items-center md:items-end gap-2 pb-16 md:pb-0">
                         {visitCount > 0 && (
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full">
                                 <Eye size={14} className="text-emerald-400" />

@@ -10,6 +10,8 @@ export interface Feedback {
     userId: string;
     userName: string;
     userAvatar: string;
+    teacherName: string;
+    schoolName: string;
     message: string;
     rating: number; // 1-5 sao
     status: 'pending' | 'approved' | 'rejected';
@@ -25,6 +27,8 @@ export const submitFeedback = async (
     userId: string,
     userName: string,
     userAvatar: string,
+    teacherName: string,
+    schoolName: string,
     message: string,
     rating: number
 ): Promise<boolean> => {
@@ -36,6 +40,8 @@ export const submitFeedback = async (
             userId,
             userName,
             userAvatar,
+            teacherName,
+            schoolName,
             message,
             rating,
             status: 'pending',
@@ -152,14 +158,17 @@ export const deleteFeedback = async (feedbackId: string): Promise<boolean> => {
 export const updateFeedback = async (
     feedbackId: string,
     newMessage: string,
-    newRating?: number
+    newRating?: number,
+    newTeacherName?: string,
+    newSchoolName?: string
 ): Promise<boolean> => {
     try {
         const feedbackRef = ref(database, `${FEEDBACKS_REF}/${feedbackId}`);
-        const updateData: { message: string; rating?: number } = { message: newMessage };
-        if (newRating !== undefined) {
-            updateData.rating = newRating;
-        }
+        const updateData: { message: string; rating?: number; teacherName?: string; schoolName?: string } = { message: newMessage };
+        if (newRating !== undefined) updateData.rating = newRating;
+        if (newTeacherName !== undefined) updateData.teacherName = newTeacherName;
+        if (newSchoolName !== undefined) updateData.schoolName = newSchoolName;
+
         await update(feedbackRef, updateData);
         return true;
     } catch (error) {
