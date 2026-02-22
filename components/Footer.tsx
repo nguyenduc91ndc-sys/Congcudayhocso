@@ -222,7 +222,7 @@ const Footer: React.FC = () => {
                         </div>
                         <div>
                             <h3 className="font-bold text-white text-lg">Công cụ dạy học số</h3>
-                            <p className="text-purple-300 text-sm">Phát triển bởi: Đức Nguyễn</p>
+                            <p className="text-purple-300 text-sm">Phát triển bởi: Thầy Thế Đức</p>
                         </div>
                     </motion.div>
 
@@ -284,7 +284,7 @@ const Footer: React.FC = () => {
                             </div>
                         )}
                         <p className="text-sm text-purple-300/70">
-                            © 2025 Đức Nguyễn. All rights reserved.
+                            © 2025 Thầy Thế Đức. All rights reserved.
                         </p>
                     </div>
                 </div>
