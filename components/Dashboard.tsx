@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Video, LogOut, Crown, Sparkles, Key, X, CheckCircle, Settings,
     Play, Trash2, Edit3, Share2, Box, Brain, RotateCcw, HelpCircle,
-    Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield, Coffee, ExternalLink, Heart
+    Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield, Coffee, ExternalLink, Heart, MessageCircle
 } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import WelcomeModal from './WelcomeModal';
@@ -937,13 +937,27 @@ const Dashboard: React.FC<DashboardProps> = ({
 
             {/* Floating Action Buttons - Nhóm dọc gọn gàng */}
             <div className="fixed bottom-6 right-6 z-40 flex flex-col gap-3">
-                {/* Nút Gửi phản hồi */}
+                {/* Nút Gửi phản hồi - yêu cầu đăng nhập */}
                 <motion.div
                     initial={{ scale: 0, opacity: 0 }}
                     animate={{ scale: 1, opacity: 1 }}
                     transition={{ delay: 0.2 }}
                 >
-                    <FeedbackButton user={user} />
+                    {isGuest ? (
+                        <motion.button
+                            onClick={onLogout}
+                            whileHover={{ scale: 1.05 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-4 py-3 rounded-full shadow-lg hover:shadow-xl transition-shadow flex items-center gap-2 relative"
+                            title="Đăng nhập để gửi phản hồi"
+                        >
+                            <MessageCircle size={22} />
+                            <span className="font-bold text-sm">Gửi phản hồi</span>
+                            <span className="absolute inset-0 rounded-full bg-pink-400 animate-ping opacity-20" />
+                        </motion.button>
+                    ) : (
+                        <FeedbackButton user={user} />
+                    )}
                 </motion.div>
             </div>
         </div >

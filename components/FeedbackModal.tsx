@@ -17,6 +17,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
     const [message, setMessage] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [error, setError] = useState('');
     const [hoveredStar, setHoveredStar] = useState(0);
 
     const handleSubmit = async () => {
@@ -37,14 +38,17 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
 
         if (success) {
             setIsSuccess(true);
+            setError('');
             setTimeout(() => {
                 setIsSuccess(false);
                 setMessage('');
-                setTeacherName(user.name || '');
+                setTeacherName('');
                 setSchoolName('');
                 setRating(5);
                 onClose();
             }, 2000);
+        } else {
+            setError('Không thể gửi phản hồi. Vui lòng kiểm tra lại kết nối hoặc quyền truy cập Database.');
         }
     };
 
@@ -156,12 +160,21 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
                                     <div className="mb-3">
                                         <textarea
                                             value={message}
-                                            onChange={(e) => setMessage(e.target.value)}
+                                            onChange={(e) => {
+                                                setMessage(e.target.value);
+                                                setError('');
+                                            }}
                                             placeholder="Viết nhận xét của bạn..."
                                             rows={2}
                                             className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none resize-none text-sm"
                                         />
                                     </div>
+
+                                    {error && (
+                                        <div className="mb-3 p-2 bg-red-50 border border-red-200 text-red-600 rounded-lg text-xs font-medium">
+                                            {error}
+                                        </div>
+                                    )}
 
                                     {/* Submit Button - LUÔN HIỆN RÕ */}
                                     <button
