@@ -42,7 +42,7 @@ const Footer: React.FC = () => {
         if (feedbacks.length <= 1) return;
         const timer = setInterval(nextFeedback, 5000);
         return () => clearInterval(timer);
-    }, [feedbacks.length]);
+    }, [feedbacks.length, currentIndex]);
 
     const currentFeedback = feedbacks[currentIndex];
 
@@ -128,7 +128,7 @@ const Footer: React.FC = () => {
                         </div>
 
                         <div className="relative max-w-xl mx-auto">
-                            <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
+                            <div className="relative bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl p-6">
                                 <AnimatePresence mode="wait">
                                     {currentFeedback && (
                                         <motion.div
@@ -169,14 +169,14 @@ const Footer: React.FC = () => {
                                 {feedbacks.length > 1 && (
                                     <>
                                         <button
-                                            onClick={prevFeedback}
-                                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                                            onClick={(e) => { e.preventDefault(); prevFeedback(); }}
+                                            className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-50 cursor-pointer"
                                         >
                                             <ChevronLeft size={18} className="text-white" />
                                         </button>
                                         <button
-                                            onClick={nextFeedback}
-                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors"
+                                            onClick={(e) => { e.preventDefault(); nextFeedback(); }}
+                                            className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-50 cursor-pointer"
                                         >
                                             <ChevronRight size={18} className="text-white" />
                                         </button>
@@ -185,12 +185,12 @@ const Footer: React.FC = () => {
                             </div>
 
                             {feedbacks.length > 1 && (
-                                <div className="flex justify-center gap-1.5 mt-4">
+                                <div className="relative z-50 flex justify-center gap-1.5 mt-4">
                                     {feedbacks.slice(0, 5).map((_, idx) => (
                                         <button
                                             key={idx}
-                                            onClick={() => setCurrentIndex(idx)}
-                                            className={`h-1.5 rounded-full transition-all ${idx === currentIndex ? 'bg-purple-400 w-6' : 'bg-white/30 w-1.5 hover:bg-white/50'
+                                            onClick={(e) => { e.preventDefault(); setCurrentIndex(idx); }}
+                                            className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === currentIndex ? 'bg-purple-400 w-6' : 'bg-white/30 w-1.5 hover:bg-white/50'
                                                 }`}
                                         />
                                     ))}
