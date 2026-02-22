@@ -8,6 +8,7 @@ export const ALL_APP_IDS = [
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
     'clockExperiment', 'yogurtExperiment',
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
+    'aiAssistant', // New toggle for AI Assistant
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D',
     'bangCuuChuong', 'gameTuongTac'
 ] as const;
@@ -39,6 +40,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     chucTet: { name: 'Mẫu Chúc Tết', icon: '🎊', section: 'Khóa học & AI' },
     communityResources: { name: 'Kho tài nguyên cộng đồng', icon: '👥', section: 'Khóa học & AI' },
     kiemTraDaoVan: { name: 'Thẩm Văn AI', icon: '🔍', section: 'Khóa học & AI' },
+    aiAssistant: { name: 'Trợ Lý AI Cho Giáo Viên Tiểu Học', icon: '✨', section: 'Khóa học & AI' },
     // ── Ứng dụng 3D & VR ──
     heartSystem3D: { name: 'Hệ tuần hoàn 3D', icon: '❤️', section: 'Ứng dụng 3D & VR' },
     geometry3DTools: { name: 'Bộ công cụ Hình học 3D', icon: '📦', section: 'Ứng dụng 3D & VR' },
