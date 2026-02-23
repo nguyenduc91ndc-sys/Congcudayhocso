@@ -19,6 +19,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
     const [isSuccess, setIsSuccess] = useState(false);
     const [error, setError] = useState('');
     const [hoveredStar, setHoveredStar] = useState(0);
+    const [showSchoolHint, setShowSchoolHint] = useState(false);
 
     const handleSubmit = async () => {
         if (!message.trim() || !teacherName.trim() || !schoolName.trim()) return;
@@ -135,7 +136,7 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
                                     </div>
 
                                     {/* 2-Column Inputs */}
-                                    <div className="flex gap-3 mb-3">
+                                    <div className="flex gap-3 mb-1">
                                         <div className="flex-1">
                                             <input
                                                 type="text"
@@ -150,11 +151,19 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
                                                 type="text"
                                                 value={schoolName}
                                                 onChange={(e) => setSchoolName(e.target.value)}
+                                                onFocus={() => setShowSchoolHint(true)}
+                                                onBlur={() => setShowSchoolHint(false)}
                                                 placeholder="Cơ quan, địa chỉ..."
                                                 className="w-full px-3 py-2 border-2 border-gray-200 rounded-xl focus:border-purple-500 focus:outline-none text-sm"
                                             />
                                         </div>
                                     </div>
+                                    {showSchoolHint && (
+                                        <p className="text-xs text-purple-500 italic mb-3 px-1">
+                                            💜 Nhờ thầy cô ghi dùm địa chỉ để minh chứng tính chân thật cho trang, ngoài ra không có mục đích gì khác. Xin cảm ơn thầy cô ạ!
+                                        </p>
+                                    )}
+                                    {!showSchoolHint && <div className="mb-3" />}
 
                                     {/* Message */}
                                     <div className="mb-3">

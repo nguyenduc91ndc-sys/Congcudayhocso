@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Star, ChevronLeft, ChevronRight, MessageCircle, Zap, Heart, ExternalLink, Eye } from 'lucide-react';
 import { getApprovedFeedbacks, Feedback } from '../utils/feedbackUtils';
@@ -11,9 +11,11 @@ interface FooterProps {
 const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
+    const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
     const [isLoading, setIsLoading] = useState(true);
     const [visitCount, setVisitCount] = useState(0);
     const [showZaloTooltip, setShowZaloTooltip] = useState(false);
+    const autoPlayTimer = useRef<ReturnType<typeof setInterval> | null>(null);
 
     useEffect(() => {
         loadFeedbacks();
@@ -34,19 +36,43 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
         setIsLoading(false);
     };
 
-    const nextFeedback = () => {
+    // Reset auto-play timer khi user bấm thủ công
+    const resetAutoPlay = useCallback(() => {
+        if (autoPlayTimer.current) {
+            clearInterval(autoPlayTimer.current);
+        }
+        autoPlayTimer.current = setInterval(() => {
+            setDirection(1);
+            setCurrentIndex((prev) => (prev + 1) % Math.max(feedbacks.length, 1));
+        }, 5000);
+    }, [feedbacks.length]);
+
+    const nextFeedback = useCallback(() => {
+        setDirection(1);
         setCurrentIndex((prev) => (prev + 1) % feedbacks.length);
-    };
+        resetAutoPlay();
+    }, [feedbacks.length, resetAutoPlay]);
 
-    const prevFeedback = () => {
+    const prevFeedback = useCallback(() => {
+        setDirection(-1);
         setCurrentIndex((prev) => (prev - 1 + feedbacks.length) % feedbacks.length);
-    };
+        resetAutoPlay();
+    }, [feedbacks.length, resetAutoPlay]);
 
+    const goToFeedback = useCallback((idx: number) => {
+        setDirection(idx > currentIndex ? 1 : -1);
+        setCurrentIndex(idx);
+        resetAutoPlay();
+    }, [currentIndex, resetAutoPlay]);
+
+    // Auto-play timer
     useEffect(() => {
         if (feedbacks.length <= 1) return;
-        const timer = setInterval(nextFeedback, 5000);
-        return () => clearInterval(timer);
-    }, [feedbacks.length, currentIndex]);
+        resetAutoPlay();
+        return () => {
+            if (autoPlayTimer.current) clearInterval(autoPlayTimer.current);
+        };
+    }, [feedbacks.length, resetAutoPlay]);
 
     const currentFeedback = feedbacks[currentIndex];
 
@@ -173,13 +199,13 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                                 {feedbacks.length > 1 && (
                                     <>
                                         <button
-                                            onClick={(e) => { e.preventDefault(); prevFeedback(); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); prevFeedback(); }}
                                             className="absolute left-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-50 cursor-pointer"
                                         >
                                             <ChevronLeft size={18} className="text-white" />
                                         </button>
                                         <button
-                                            onClick={(e) => { e.preventDefault(); nextFeedback(); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); nextFeedback(); }}
                                             className="absolute right-2 top-1/2 -translate-y-1/2 p-2 rounded-full bg-white/10 hover:bg-white/20 transition-colors z-50 cursor-pointer"
                                         >
                                             <ChevronRight size={18} className="text-white" />
@@ -193,7 +219,7 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                                     {feedbacks.slice(0, 5).map((_, idx) => (
                                         <button
                                             key={idx}
-                                            onClick={(e) => { e.preventDefault(); setCurrentIndex(idx); }}
+                                            onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToFeedback(idx); }}
                                             className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === currentIndex ? 'bg-purple-400 w-6' : 'bg-white/30 w-1.5 hover:bg-white/50'
                                                 }`}
                                         />
