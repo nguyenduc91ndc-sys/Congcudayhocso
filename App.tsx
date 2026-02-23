@@ -120,8 +120,14 @@ function App() {
           case 'tham_van_ai':
             defaultView = 'KIEM_TRA_DAO_VAN';
             break;
+          case 'bang_cuu_chuong':
+            defaultView = 'BANG_CUU_CHUONG';
+            break;
           // Có thể thêm case cho các app khác ở đây sau
         }
+        // Dọn sạch URL: chỉ giữ ?app=..., xóa fbclid, utm_*, aem_* v.v.
+        const cleanUrl = `${window.location.pathname}?app=${appParam}`;
+        window.history.replaceState({}, document.title, cleanUrl);
       }
 
       if (savedUser) {
