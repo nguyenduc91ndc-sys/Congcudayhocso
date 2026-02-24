@@ -554,8 +554,8 @@ async function callGeminiAPI(text, checkPlagiarism, checkAI, checkStyle) {
         body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
-                temperature: 0.2,
-                topP: 0.8,
+                temperature: 0,
+                topP: 1,
                 maxOutputTokens: 8192,
                 responseMimeType: 'application/json',
             },
@@ -601,8 +601,9 @@ async function callGroqAPI(text, checkPlagiarism, checkAI, checkStyle) {
                 },
                 { role: 'user', content: prompt }
             ],
-            temperature: 0.2,
+            temperature: 0,
             max_tokens: 8192,
+            seed: 42,
             response_format: { type: 'json_object' },
         }),
     });
@@ -743,6 +744,16 @@ function displayResults(result, originalText) {
     renderSummary(summary);
 
     showToast('Phân tích hoàn tất!', 'success');
+
+    // Add disclaimer note
+    let disclaimer = $('#resultDisclaimer');
+    if (!disclaimer) {
+        disclaimer = document.createElement('div');
+        disclaimer.id = 'resultDisclaimer';
+        disclaimer.style.cssText = 'margin:16px 0 0 0;padding:12px 16px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1px solid #bfdbfe;border-radius:10px;font-size:13px;color:#1e40af;line-height:1.6;text-align:center;';
+        disclaimer.innerHTML = '⚠️ <strong>Lưu ý:</strong> Kết quả phân tích dựa trên AI và mang tính tham khảo. Có thể có sai số nhỏ (±3-5%) giữa các lần kiểm tra do bản chất xử lý ngôn ngữ của AI.';
+        els.resultsSection.appendChild(disclaimer);
+    }
 }
 
 function getColorForPercent(percent, mode) {
