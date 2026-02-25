@@ -22,7 +22,7 @@ export const blogPosts: BlogPost[] = [
         date: '22/02/2026',
         category: 'Phương pháp giảng dạy',
         readTime: '5 phút',
-        imageUrl: 'https://images.unsplash.com/photo-1509062522246-3755977927d7?q=80&w=600&auto=format&fit=crop',
+        imageUrl: '/anhmoitaphuan.jpg',
         content: (
             <div className="space-y-6 text-slate-300 leading-relaxed">
                 <p>
