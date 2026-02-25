@@ -328,6 +328,13 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                             </button>
                             <span>|</span>
                             <button
+                                onClick={() => onViewChange && onViewChange('TERMS')}
+                                className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
+                            >
+                                Điều khoản sử dụng
+                            </button>
+                            <span>|</span>
+                            <button
                                 onClick={() => onViewChange && onViewChange('CONTACT')}
                                 className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
                             >
