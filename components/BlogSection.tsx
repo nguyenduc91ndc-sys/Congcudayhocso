@@ -122,6 +122,122 @@ export const blogPosts: BlogPost[] = [
                 </p>
             </div>
         )
+    },
+    {
+        id: '4',
+        title: 'Kho Prompt Gemini & Veo 3 dành cho Giáo viên: Tạo Infographic, Phiếu bài tập, Video chỉ trong vài phút',
+        excerpt: 'Tổng hợp các câu lệnh (Prompt) thực tế giúp giáo viên tạo infographic, sơ đồ tư duy, phiếu bài tập và video tình huống bằng Gemini AI & Veo 3 — kèm mẹo xử lý lỗi font tiếng Việt.',
+        date: '26/02/2026',
+        category: 'AI trong giáo dục',
+        readTime: '8 phút',
+        imageUrl: '/Chuyendoiso.jpg',
+        content: (
+            <div className="space-y-6 text-slate-300 leading-relaxed">
+                <p>
+                    Bạn đã biết <strong className="text-white">Google Gemini</strong> có thể chat hỏi đáp, nhưng bạn có biết nó còn có thể <strong>tạo hình ảnh infographic, phiếu bài tập có minh họa, sơ đồ tư duy</strong> và thậm chí <strong>tạo video tình huống dạy học</strong> với Veo 3? Bài viết này tổng hợp các Prompt "chuẩn chỉ" mà bạn có thể copy và dùng ngay!
+                </p>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">📊 1. Tạo Infographic bằng Gemini</h3>
+                <p>
+                    Gemini có thể tạo infographic trực quan, chuyên nghiệp cho bài giảng. Chỉ cần mô tả nội dung và phong cách mong muốn:
+                </p>
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl mt-4">
+                    <p className="text-sm text-purple-300 font-semibold mb-2">💡 Prompt mẫu - Infographic:</p>
+                    <p className="text-sm italic text-slate-400">
+                        "Tạo infographic cho 'Vòng tuần hoàn của nước trong tự nhiên', phong cách sinh động, chuyên nghiệp, có các icon dễ thương cho học sinh tiểu học."
+                    </p>
+                </div>
+                <div className="bg-amber-900/20 border border-amber-500/30 p-4 rounded-xl mt-4">
+                    <p className="text-sm text-amber-300 font-semibold mb-1">⚠️ Lưu ý quan trọng: Lỗi font tiếng Việt</p>
+                    <p className="text-sm text-amber-100/70">
+                        Gemini đôi khi tạo ảnh bị lỗi font tiếng Việt. <strong>Giải pháp:</strong> Tải ảnh lên <strong>Canva</strong> → dùng công cụ chỉnh sửa để sửa lại phần văn bản. Cách này vừa giữ được hình ảnh đẹp AI tạo, vừa đảm bảo chữ tiếng Việt chuẩn.
+                    </p>
+                </div>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">🧠 2. Tạo Sơ đồ tư duy</h3>
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
+                    <p className="text-sm text-purple-300 font-semibold mb-2">💡 Prompt mẫu - Sơ đồ tư duy:</p>
+                    <p className="text-sm italic text-slate-400">
+                        "Dựa trên nội dung sau, hãy giúp tôi tạo prompt để vẽ sơ đồ tư duy cho phù hợp, sinh động với học sinh lớp 4: [Dán nội dung bài học vào đây]"
+                    </p>
+                </div>
+                <p className="mt-3 text-sm text-slate-400">
+                    Mẹo: Cho Gemini đọc nội dung bài học trước, rồi yêu cầu nó tự tạo prompt vẽ sơ đồ tư duy — kết quả sẽ chính xác hơn rất nhiều!
+                </p>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">📝 3. Tạo Phiếu bài tập có hình ảnh</h3>
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
+                    <p className="text-sm text-purple-300 font-semibold mb-2">💡 Prompt mẫu - Phiếu bài tập:</p>
+                    <p className="text-sm italic text-slate-400">
+                        "Dựa vào chính xác nội dung sau, hãy viết cho tôi 1 prompt tạo phiếu bài tập cho học sinh lớp 4, phong cách sinh động, có icon minh họa dễ thương: [Dán nội dung bài học]"
+                    </p>
+                </div>
+                <p className="mt-3">
+                    <strong>Quy trình 2 bước hiệu quả:</strong>
+                </p>
+                <ol className="list-decimal pl-6 space-y-2 mt-2">
+                    <li><strong>Bước 1:</strong> Cho Gemini đọc nội dung bài → yêu cầu nó viết prompt tạo phiếu bài tập.</li>
+                    <li><strong>Bước 2:</strong> Copy prompt đó, dán lại vào Gemini → nhận được phiếu bài tập hoàn chỉnh có hình ảnh.</li>
+                </ol>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">🎬 4. Tạo Video tình huống với Veo 3</h3>
+                <p>
+                    <strong className="text-purple-300">Veo 3</strong> (truy cập qua <strong>Google Labs → Flow</strong>) cho phép tạo video ngắn chất lượng cao. Dưới đây là các prompt đã được thử nghiệm thành công:
+                </p>
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl mt-4 space-y-4">
+                    <div>
+                        <p className="text-sm text-green-300 font-semibold mb-1">🏆 Video vật thể 3D:</p>
+                        <p className="text-sm italic text-slate-400">
+                            "Chiếc cúp đặt trên đế tròn kim loại vàng, có vòng đèn LED trắng hắt sáng ở chân đế. Bối cảnh studio sạch sẽ, mờ ảo, ánh sáng phản chiếu lấp lánh. Chất lượng 8K, siêu thực."
+                        </p>
+                    </div>
+                    <div className="border-t border-white/10 pt-4">
+                        <p className="text-sm text-blue-300 font-semibold mb-1">👨‍👩‍👧 Video tình huống dạy học:</p>
+                        <p className="text-sm italic text-slate-400">
+                            "Tạo video cậu bé hỏi bà về khối lượng gạo nếp và đậu xanh. Camera giữ góc nhìn ổn định, chuyển động nhẹ. Bối cảnh nhà bếp Việt Nam, ánh sáng tự nhiên ấm áp."
+                        </p>
+                    </div>
+                </div>
+
+                <div className="bg-red-900/20 border border-red-500/30 p-4 rounded-xl mt-4">
+                    <p className="text-sm text-red-300 font-semibold mb-1">🎭 Mẹo kiểm soát nhân vật trong video:</p>
+                    <p className="text-sm text-red-100/70">
+                        Thêm dòng này vào prompt để nhân vật <strong>không nói, không cử động miệng</strong> sai ý đồ: <em>"TUYỆT ĐỐI KHÔNG NÓI, KHÔNG lip-sync, môi luôn khép kín, biểu cảm tĩnh, chỉ mỉm cười nhẹ và quan sát."</em>
+                    </p>
+                </div>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">🔑 5. Bí quyết dùng Prompt hiệu quả</h3>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4">
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+                        <h4 className="font-bold text-green-400 mb-2">✅ Nên làm</h4>
+                        <ul className="text-sm space-y-1.5">
+                            <li>• Mô tả <strong>chi tiết</strong>: lớp, môn, phong cách</li>
+                            <li>• Dán nội dung bài học trước để AI hiểu</li>
+                            <li>• Dùng từ khóa: "8K", "sinh động", "chuyên nghiệp"</li>
+                            <li>• Kết hợp Gemini + Canva để sửa font</li>
+                            <li>• Tải PDF sách giáo khoa cho AI phân tích</li>
+                        </ul>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+                        <h4 className="font-bold text-red-400 mb-2">❌ Không nên</h4>
+                        <ul className="text-sm space-y-1.5">
+                            <li>• Prompt quá ngắn, thiếu ngữ cảnh</li>
+                            <li>• Dùng ảnh AI có lỗi font mà không sửa</li>
+                            <li>• Copy kết quả mà không kiểm tra lại</li>
+                            <li>• Bỏ qua bước biên tập nội dung</li>
+                            <li>• Quên ghi lại prompt hay để dùng lại</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div className="bg-indigo-900/30 border border-indigo-500/30 p-6 rounded-xl mt-8">
+                    <h4 className="text-xl text-indigo-300 font-semibold mb-2">🚀 Bắt đầu ngay!</h4>
+                    <p className="text-indigo-100/80">
+                        Truy cập <strong>gemini.google.com</strong> để tạo ảnh và phiếu bài tập. Truy cập <strong>labs.google.com</strong> (tìm "Flow") để tạo video. Tất cả đều <strong>miễn phí</strong> với tài khoản Google. Copy các prompt ở trên và thử ngay hôm nay!
+                    </p>
+                </div>
+            </div>
+        )
     }
 ];
 
