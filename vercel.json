@@ -9,7 +9,23 @@
             "destination": "/chuctettudong/index.html"
         },
         {
-            "source": "/((?!giải-mã-bức-tranh|lucky-wheel|hinh-hoc-3d|chuctettudong|assets|.*\\.[a-z]+$).*)",
+            "source": "/about",
+            "destination": "/about/index.html"
+        },
+        {
+            "source": "/privacy",
+            "destination": "/privacy/index.html"
+        },
+        {
+            "source": "/terms",
+            "destination": "/terms/index.html"
+        },
+        {
+            "source": "/contact",
+            "destination": "/contact/index.html"
+        },
+        {
+            "source": "/((?!giải-mã-bức-tranh|lucky-wheel|hinh-hoc-3d|chuctettudong|about|privacy|terms|contact|assets|.*\\.[a-z]+$).*)",
             "destination": "/"
         }
     ],

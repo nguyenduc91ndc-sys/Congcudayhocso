@@ -314,28 +314,28 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                         )}
                         <div className="flex items-center gap-4 text-sm text-purple-300/70 mt-2">
                             <button
-                                onClick={() => onViewChange && onViewChange('ABOUT')}
+                                onClick={() => { window.history.pushState({}, '', '/about'); onViewChange && onViewChange('ABOUT'); }}
                                 className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
                             >
                                 Về chúng tôi
                             </button>
                             <span>|</span>
                             <button
-                                onClick={() => onViewChange && onViewChange('PRIVACY')}
+                                onClick={() => { window.history.pushState({}, '', '/privacy'); onViewChange && onViewChange('PRIVACY'); }}
                                 className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
                             >
                                 Chính sách bảo mật
                             </button>
                             <span>|</span>
                             <button
-                                onClick={() => onViewChange && onViewChange('TERMS')}
+                                onClick={() => { window.history.pushState({}, '', '/terms'); onViewChange && onViewChange('TERMS'); }}
                                 className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
                             >
                                 Điều khoản sử dụng
                             </button>
                             <span>|</span>
                             <button
-                                onClick={() => onViewChange && onViewChange('CONTACT')}
+                                onClick={() => { window.history.pushState({}, '', '/contact'); onViewChange && onViewChange('CONTACT'); }}
                                 className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
                             >
                                 Liên hệ

@@ -1,0 +1,1882 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Phòng Trưng Bày 3D — Triển lãm ảo</title>
+    <meta name="google" content="notranslate">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <script
+        type="importmap">{"imports":{"three":"https://unpkg.com/three@0.160.0/build/three.module.js","three/addons/":"https://unpkg.com/three@0.160.0/examples/jsm/"}}</script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: #0c0c14;
+            color: #f0e8d8;
+            overflow: hidden;
+            height: 100vh
+        }
+
+        .screen {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            position: absolute;
+            top: 0;
+            left: 0
+        }
+
+        .screen.active {
+            display: flex
+        }
+
+        /* === DASHBOARD LAYOUT === */
+        #welcome {
+            flex-direction: row;
+            background: radial-gradient(ellipse at 20% 50%, rgba(180, 120, 40, .06) 0%, transparent 50%),
+                linear-gradient(160deg, #0c0c14 0%, #14100a 50%, #0c0c14 100%);
+            position: relative
+        }
+
+        .sidebar {
+            width: 240px;
+            height: 100vh;
+            background: rgba(20, 18, 14, .95);
+            border-right: 1px solid rgba(245, 200, 66, .08);
+            display: flex;
+            flex-direction: column;
+            padding: 1.5rem 1rem;
+            flex-shrink: 0
+        }
+
+        .sidebar-logo {
+            display: flex;
+            align-items: center;
+            gap: .6rem;
+            padding: 0 .5rem;
+            margin-bottom: 2rem
+        }
+
+        .sidebar-logo .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: linear-gradient(135deg, #f5c842, #e8913a);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.2rem
+        }
+
+        .sidebar-logo h2 {
+            font-size: .95rem;
+            font-weight: 600;
+            color: #f0e8d8;
+            line-height: 1.2
+        }
+
+        .sidebar-logo h2 small {
+            display: block;
+            font-size: .7rem;
+            font-weight: 400;
+            color: rgba(245, 232, 210, .4);
+            margin-top: 2px
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: .3rem;
+            flex: 1
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: .7rem;
+            padding: .7rem .8rem;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all .2s;
+            font-size: .85rem;
+            color: rgba(245, 232, 210, .5);
+            border: none;
+            background: none;
+            font-family: inherit;
+            width: 100%;
+            text-align: left
+        }
+
+        .nav-item:hover {
+            background: rgba(245, 200, 66, .06);
+            color: rgba(245, 232, 210, .8)
+        }
+
+        .nav-item.active {
+            background: rgba(245, 200, 66, .1);
+            color: #f5c842;
+            font-weight: 600
+        }
+
+        .nav-item .nav-icon {
+            font-size: 1.1rem;
+            width: 24px;
+            text-align: center
+        }
+
+        .nav-divider {
+            height: 1px;
+            background: rgba(245, 200, 66, .06);
+            margin: .8rem 0
+        }
+
+        .sidebar-footer {
+            padding: .5rem;
+            font-size: .7rem;
+            color: rgba(245, 232, 210, .2);
+            text-align: center
+        }
+
+        .main-content {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow-y: auto;
+            padding: 2rem 3rem
+        }
+
+        .main-header {
+            display: flex;
+            align-items: flex-start;
+            justify-content: space-between;
+            margin-bottom: 2rem
+        }
+
+        .main-header h1 {
+            font-size: 1.5rem;
+            font-weight: 600;
+            color: #f0e8d8
+        }
+
+        .main-header p {
+            font-size: .85rem;
+            color: rgba(245, 232, 210, .4);
+            margin-top: .25rem
+        }
+
+        .room-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+            gap: 1.2rem
+        }
+
+        .room-card {
+            background: rgba(255, 255, 255, .03);
+            border: 1px solid rgba(245, 200, 66, .08);
+            border-radius: 16px;
+            overflow: hidden;
+            transition: all .2s;
+            cursor: pointer
+        }
+
+        .room-card:hover {
+            border-color: rgba(245, 200, 66, .25);
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, .3)
+        }
+
+        .room-card-preview {
+            height: 120px;
+            background: linear-gradient(135deg, rgba(245, 200, 66, .08), rgba(232, 145, 58, .05));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem
+        }
+
+        .room-card-body {
+            padding: 1rem
+        }
+
+        .room-card-body h4 {
+            font-size: .95rem;
+            margin-bottom: .25rem;
+            color: #f0e8d8
+        }
+
+        .room-card-body p {
+            font-size: .75rem;
+            color: rgba(245, 232, 210, .35)
+        }
+
+        .room-card-actions {
+            display: flex;
+            gap: .4rem;
+            padding: 0 1rem .8rem
+        }
+
+        .room-card-actions button {
+            padding: .3rem .7rem;
+            font-size: .75rem;
+            border: 1px solid rgba(245, 200, 66, .12);
+            background: none;
+            color: rgba(245, 232, 210, .6);
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: inherit;
+            transition: all .2s
+        }
+
+        .room-card-actions button:hover {
+            background: rgba(245, 200, 66, .1);
+            color: #f5c842
+        }
+
+        .room-card-actions .del-btn:hover {
+            background: rgba(239, 68, 68, .1);
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, .2)
+        }
+
+        .empty-dashboard {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center
+        }
+
+        .empty-dashboard .empty-icon {
+            width: 100px;
+            height: 100px;
+            background: rgba(245, 200, 66, .06);
+            border: 2px dashed rgba(245, 200, 66, .15);
+            border-radius: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            margin-bottom: 1.5rem
+        }
+
+        .empty-dashboard h3 {
+            font-size: 1.2rem;
+            margin-bottom: .5rem;
+            color: rgba(245, 232, 210, .7)
+        }
+
+        .empty-dashboard p {
+            font-size: .85rem;
+            color: rgba(245, 232, 210, .3);
+            margin-bottom: 1.5rem;
+            max-width: 300px
+        }
+
+        .btn-create {
+            padding: .7rem 1.8rem;
+            background: linear-gradient(135deg, #e8913a, #d4603a);
+            color: #fff;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: .9rem;
+            font-weight: 600;
+            transition: all .2s;
+            display: flex;
+            align-items: center;
+            gap: .5rem
+        }
+
+        .btn-create:hover {
+            box-shadow: 0 6px 24px rgba(232, 145, 58, .3);
+            transform: translateY(-2px)
+        }
+
+        /* === EDITOR === */
+        #editor {
+            flex-direction: column;
+            background: #0e0e16
+        }
+
+        .editor-toolbar {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: .75rem 1.5rem;
+            background: rgba(255, 255, 255, .03);
+            border-bottom: 1px solid rgba(255, 255, 255, .06)
+        }
+
+        .toolbar-left,
+        .toolbar-right {
+            display: flex;
+            gap: .5rem;
+            align-items: center
+        }
+
+        .btn {
+            padding: .5rem 1.2rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: .85rem;
+            font-weight: 500;
+            transition: all .2s
+        }
+
+        .btn-ghost {
+            background: transparent;
+            color: #f5c842;
+            border: 1px solid rgba(245, 200, 66, .3)
+        }
+
+        .btn-ghost:hover {
+            background: rgba(245, 200, 66, .1)
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #e8913a, #d4603a);
+            color: #fff
+        }
+
+        .btn-primary:hover {
+            opacity: .9;
+            box-shadow: 0 4px 20px rgba(232, 145, 58, .4)
+        }
+
+        .btn-danger {
+            background: rgba(239, 68, 68, .1);
+            color: #ef4444;
+            border: 1px solid rgba(239, 68, 68, .2)
+        }
+
+        .btn-danger:hover {
+            background: rgba(239, 68, 68, .2)
+        }
+
+        .editor-steps {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0;
+            padding: .75rem;
+            background: rgba(255, 255, 255, .02)
+        }
+
+        .step-item {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .5rem 1.2rem;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all .2s;
+            font-size: .85rem;
+            color: rgba(255, 255, 255, .4)
+        }
+
+        .step-item.active {
+            background: rgba(245, 200, 66, .12);
+            color: #f5c842;
+            font-weight: 600
+        }
+
+        .step-item.done {
+            color: #34d399
+        }
+
+        .step-sep {
+            width: 40px;
+            height: 1px;
+            background: rgba(255, 255, 255, .1)
+        }
+
+        .editor-body {
+            flex: 1;
+            overflow-y: auto;
+            padding: 2rem
+        }
+
+        .editor-section {
+            max-width: 900px;
+            margin: 0 auto;
+            display: none
+        }
+
+        .editor-section.active {
+            display: block
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem
+        }
+
+        .form-label {
+            display: block;
+            font-size: .85rem;
+            color: rgba(255, 255, 255, .6);
+            margin-bottom: .5rem;
+            font-weight: 500
+        }
+
+        .form-input {
+            width: 100%;
+            padding: .75rem 1rem;
+            background: rgba(255, 255, 255, .05);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            color: #fff;
+            font-family: inherit;
+            font-size: .9rem;
+            outline: none;
+            transition: border-color .2s
+        }
+
+        .form-input:focus {
+            border-color: rgba(245, 200, 66, .5)
+        }
+
+        textarea.form-input {
+            resize: vertical;
+            min-height: 80px
+        }
+
+        /* Room presets */
+        .preset-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 1rem
+        }
+
+        .preset-card {
+            background: rgba(255, 255, 255, .03);
+            border: 2px solid rgba(255, 255, 255, .06);
+            border-radius: 16px;
+            padding: 1.2rem;
+            cursor: pointer;
+            transition: all .2s;
+            text-align: center
+        }
+
+        .preset-card.selected {
+            border-color: #e8913a;
+            box-shadow: 0 0 20px rgba(232, 145, 58, .2)
+        }
+
+        .preset-card:hover {
+            border-color: rgba(245, 200, 66, .3)
+        }
+
+        .preset-preview {
+            width: 100%;
+            height: 80px;
+            border-radius: 10px;
+            margin-bottom: .75rem
+        }
+
+        .preset-card span {
+            font-size: .8rem;
+            font-weight: 500
+        }
+
+        .color-row {
+            display: flex;
+            gap: 1rem;
+            flex-wrap: wrap;
+            margin-top: .5rem
+        }
+
+        .color-pick {
+            display: flex;
+            align-items: center;
+            gap: .5rem
+        }
+
+        .color-pick label {
+            font-size: .8rem;
+            color: rgba(255, 255, 255, .5)
+        }
+
+        .color-pick input[type=color] {
+            width: 40px;
+            height: 30px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            background: transparent
+        }
+
+        /* Images panel */
+        .img-toolbar {
+            display: flex;
+            gap: .5rem;
+            flex-wrap: wrap;
+            margin-bottom: 1rem
+        }
+
+        .img-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            gap: 1rem
+        }
+
+        .img-card {
+            background: rgba(255, 255, 255, .03);
+            border: 1px solid rgba(255, 255, 255, .06);
+            border-radius: 14px;
+            overflow: hidden;
+            position: relative
+        }
+
+        .img-card img {
+            width: 100%;
+            height: 140px;
+            object-fit: cover
+        }
+
+        .img-card .img-info {
+            padding: .75rem
+        }
+
+        .img-card .img-info input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid rgba(255, 255, 255, .1);
+            color: #fff;
+            font-family: inherit;
+            padding: .25rem 0;
+            outline: none;
+            font-size: .85rem
+        }
+
+        .img-card .img-remove {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: rgba(0, 0, 0, .6);
+            color: #ef4444;
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem;
+            color: rgba(255, 255, 255, .3)
+        }
+
+        .empty-state .icon {
+            font-size: 3rem;
+            margin-bottom: 1rem
+        }
+
+        /* Add image modal */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, .7);
+            z-index: 100;
+            align-items: center;
+            justify-content: center
+        }
+
+        .modal-overlay.show {
+            display: flex
+        }
+
+        .modal {
+            background: #1a1610;
+            border: 1px solid rgba(245, 200, 66, .12);
+            border-radius: 20px;
+            padding: 2rem;
+            width: 90%;
+            max-width: 500px
+        }
+
+        .modal h3 {
+            margin-bottom: 1.5rem;
+            font-size: 1.1rem
+        }
+
+        .modal-actions {
+            display: flex;
+            gap: .5rem;
+            justify-content: flex-end;
+            margin-top: 1.5rem
+        }
+
+        /* === VIEWER === */
+        #viewer {
+            background: #000;
+            position: relative
+        }
+
+        #viewer canvas {
+            width: 100% !important;
+            height: 100% !important
+        }
+
+        .viewer-hud {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 10
+        }
+
+        .hud-exit {
+            position: absolute;
+            top: 1rem;
+            left: 1rem;
+            pointer-events: all
+        }
+
+        .hud-controls {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: rgba(0, 0, 0, .6);
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            padding: .75rem 1rem;
+            font-size: .75rem;
+            line-height: 1.8;
+            pointer-events: all
+        }
+
+        .hud-minimap {
+            position: absolute;
+            bottom: 1rem;
+            right: 1rem;
+            pointer-events: all
+        }
+
+        .hud-minimap canvas {
+            border: 1px solid rgba(255, 255, 255, .2);
+            border-radius: 8px
+        }
+
+        .hud-bottom {
+            position: absolute;
+            bottom: 1rem;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: .5rem;
+            pointer-events: all
+        }
+
+        .hud-btn {
+            padding: .4rem 1rem;
+            background: rgba(0, 0, 0, .5);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, .15);
+            border-radius: 10px;
+            color: #fff;
+            cursor: pointer;
+            font-family: inherit;
+            font-size: .8rem
+        }
+
+        .hud-btn:hover {
+            background: rgba(255, 255, 255, .1)
+        }
+
+        .hud-btn.active {
+            background: rgba(232, 145, 58, .4);
+            border-color: #e8913a
+        }
+
+        .click-to-start {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            pointer-events: all;
+            cursor: pointer;
+            z-index: 20
+        }
+
+        .click-to-start h2 {
+            font-size: 1.5rem;
+            margin-bottom: .5rem
+        }
+
+        .click-to-start p {
+            color: rgba(255, 255, 255, .5);
+            font-size: .9rem
+        }
+
+        /* Painting info popup */
+        .painting-popup {
+            display: none;
+            position: absolute;
+            bottom: 5rem;
+            left: 1.5rem;
+            transform: none;
+            background: rgba(0, 0, 0, .88);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, .15);
+            border-radius: 16px;
+            padding: 1.2rem 1.5rem;
+            pointer-events: all;
+            min-width: 220px;
+            max-width: 320px;
+            text-align: center;
+            z-index: 30;
+            animation: popupSlide .3s ease
+        }
+
+        @keyframes popupSlide {
+            from {
+                opacity: 0;
+                transform: translateX(-30px);
+            }
+
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+
+        .painting-popup.show {
+            display: block
+        }
+
+        .painting-popup h4 {
+            font-size: 1.1rem;
+            margin-bottom: .5rem;
+            color: #f5c842
+        }
+
+        .painting-popup p {
+            font-size: .85rem;
+            color: rgba(255, 255, 255, .6);
+            line-height: 1.4
+        }
+
+        /* FPS crosshair */
+        .fps-crosshair {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 20px;
+            height: 20px;
+            pointer-events: none;
+            z-index: 15;
+            display: none
+        }
+
+        .fps-crosshair::before,
+        .fps-crosshair::after {
+            content: '';
+            position: absolute;
+            background: rgba(255, 255, 255, .6)
+        }
+
+        .fps-crosshair::before {
+            width: 2px;
+            height: 100%;
+            left: 50%;
+            transform: translateX(-50%)
+        }
+
+        .fps-crosshair::after {
+            height: 2px;
+            width: 100%;
+            top: 50%;
+            transform: translateY(-50%)
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(245, 200, 66, .3);
+            border-radius: 3px
+        }
+
+        .usage-badge {
+            display: flex;
+            align-items: center;
+            gap: .5rem;
+            padding: .5rem .8rem;
+            margin-bottom: 1rem;
+            background: rgba(245, 200, 66, .08);
+            border: 1px solid rgba(245, 200, 66, .12);
+            border-radius: 10px;
+            font-size: .75rem;
+            color: #f5c842
+        }
+
+        .usage-badge .usage-bar {
+            flex: 1;
+            height: 4px;
+            background: rgba(245, 200, 66, .15);
+            border-radius: 4px;
+            overflow: hidden
+        }
+
+        .usage-badge .usage-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #f5c842, #e8913a);
+            border-radius: 4px;
+            transition: width .3s
+        }
+
+        .usage-badge.full {
+            color: #ef4444;
+            border-color: rgba(239, 68, 68, .2);
+            background: rgba(239, 68, 68, .06)
+        }
+
+        .usage-badge.full .usage-fill {
+            background: #ef4444
+        }
+    </style>
+</head>
+
+<body>
+
+    <!-- === DASHBOARD SCREEN === -->
+    <div id="welcome" class="screen active">
+        <div class="sidebar">
+            <div class="sidebar-logo">
+                <div class="logo-icon">🏛</div>
+                <h2>Triển lãm ảo<small>Phòng trưng bày 3D</small></h2>
+            </div>
+            <div class="sidebar-nav">
+                <div class="usage-badge" id="usageBadge">
+                    <span id="usageText">🚀 Đã dùng 0/3 lượt</span>
+                    <div class="usage-bar">
+                        <div class="usage-fill" id="usageFill" style="width:0%"></div>
+                    </div>
+                </div>
+                <button class="nav-item" onclick="startNew()">
+                    <span class="nav-icon">➕</span> Tạo phòng mới
+                </button>
+                <div class="nav-divider"></div>
+                <button class="nav-item active">
+                    <span class="nav-icon">🖼</span> Phòng của tôi
+                </button>
+                <button class="nav-item" onclick="loadFile()">
+                    <span class="nav-icon">📂</span> Mở dự án
+                </button>
+            </div>
+            <div class="sidebar-footer">© 2025 Phòng Trưng Bày 3D</div>
+        </div>
+        <div class="main-content">
+            <div class="main-header">
+                <div>
+                    <h1>🖼 Phòng của tôi</h1>
+                    <p>Quản lý các triển lãm 3D của bạn</p>
+                </div>
+            </div>
+            <div class="empty-dashboard">
+                <div class="empty-icon">🎨</div>
+                <h3>Chưa có triển lãm nào</h3>
+                <p>Bắt đầu bằng cách tạo phòng trưng bày 3D đầu tiên của bạn</p>
+                <button class="btn-create" onclick="startNew()">✨ Tạo Triển Lãm Đầu Tiên</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- === EDITOR SCREEN === -->
+    <div id="editor" class="screen">
+        <div class="editor-toolbar">
+            <div class="toolbar-left">
+                <button class="btn btn-ghost" onclick="saveAndGoBack()" style="font-weight:600">← Lưu phòng & Quay
+                    lại</button>
+            </div>
+            <div class="toolbar-right">
+                <button class="btn btn-ghost" onclick="toggleEditorFullscreen()" title="Toàn màn hình">⛶</button>
+                <button class="btn btn-ghost" onclick="shareLink()">🔗 Tạo link</button>
+                <button class="btn btn-primary" onclick="enterViewer()">🚀 Xem triển lãm 3D</button>
+            </div>
+        </div>
+        <div class="editor-steps">
+            <div class="step-item active" data-step="1" onclick="goStep(1)">① Thông tin</div>
+            <div class="step-sep"></div>
+            <div class="step-item" data-step="2" onclick="goStep(2)">② Không gian</div>
+            <div class="step-sep"></div>
+            <div class="step-item" data-step="3" onclick="goStep(3)">③ Tác phẩm</div>
+        </div>
+        <div class="editor-body">
+            <!-- Step 1 -->
+            <div class="editor-section active" data-section="1">
+                <div class="form-group">
+                    <label class="form-label">Tên phòng trưng bày</label>
+                    <input class="form-input" id="galleryTitle" placeholder="VD: Triển lãm tranh lớp 5A..." value="">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Mô tả (tuỳ chọn)</label>
+                    <textarea class="form-input" id="galleryDesc" placeholder="Mô tả ngắn về bộ sưu tập..."></textarea>
+                </div>
+            </div>
+            <!-- Step 2 -->
+            <div class="editor-section" data-section="2">
+                <div class="form-group">
+                    <label class="form-label">Chọn phong cách phòng</label>
+                    <div class="preset-grid" id="presetGrid"></div>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Tuỳ chỉnh màu sắc</label>
+                    <div class="color-row">
+                        <div class="color-pick"><label>Sàn</label><input type="color" id="colorFloor" value="#8B7355">
+                        </div>
+                        <div class="color-pick"><label>Tường</label><input type="color" id="colorWall" value="#f5f0e8">
+                        </div>
+                        <div class="color-pick"><label>Trần</label><input type="color" id="colorCeiling"
+                                value="#ffffff"></div>
+                    </div>
+                </div>
+            </div>
+            <!-- Step 3 -->
+            <div class="editor-section" data-section="3">
+                <div class="img-toolbar">
+                    <button class="btn btn-primary" onclick="showAddModal()">＋ Thêm ảnh</button>
+                    <button class="btn btn-ghost" onclick="addFromURL()">🔗 Thêm từ URL</button>
+                    <label class="btn btn-ghost" style="cursor:pointer">📁 Chọn file <input type="file" accept="image/*"
+                            multiple hidden onchange="handleFiles(event)"></label>
+                    <button class="btn btn-danger" onclick="clearAll()" style="margin-left:auto">🗑 Xoá tất cả</button>
+                </div>
+                <div id="imgList" class="img-list"></div>
+                <div id="emptyState" class="empty-state">
+                    <div class="icon">🖼️</div>
+                    <p>Chưa có hình ảnh nào. Hãy thêm ảnh để bắt đầu!</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- === VIEWER SCREEN === -->
+    <div id="viewer" class="screen">
+        <div id="viewerContainer" style="width:100%;height:100%"></div>
+        <div class="viewer-hud" id="viewerHud">
+            <div class="hud-exit"><button class="hud-btn" onclick="exitViewer()">← Thoát</button></div>
+            <div class="hud-controls" id="hudControls">
+                <div><b>WASD</b> / Mũi tên — Di chuyển</div>
+                <div><b>Chuột</b> — Xoay camera</div>
+                <div><b>ESC</b> — Thoát chuột</div>
+            </div>
+            <div class="hud-minimap"><canvas id="minimapCanvas" width="150" height="120"></canvas></div>
+            <div class="hud-bottom">
+                <button class="hud-btn" id="btnOrbit" onclick="setOrbitMode()">🖱 Xoay</button>
+                <button class="hud-btn active" id="btnFPS" onclick="setFPSMode()">🚶 Đi bộ</button>
+                <button class="hud-btn" id="btnTour" onclick="startTour()">▶ Dạo phòng</button>
+                <button class="hud-btn" onclick="toggleFullscreen()">⛶ Toàn màn hình</button>
+            </div>
+            <div class="click-to-start" id="clickStart" onclick="lockPointer()">
+                <h2>🖱️ Click để bắt đầu</h2>
+                <p>Dùng WASD để di chuyển, chuột để nhìn xung quanh</p>
+            </div>
+            <div class="painting-popup" id="paintingPopup">
+                <h4 id="popupTitle"></h4>
+                <p id="popupDesc"></p>
+            </div>
+            <div class="fps-crosshair" id="fpsCrosshair"></div>
+        </div>
+    </div>
+
+    <!-- Add URL Modal -->
+    <div class="modal-overlay" id="urlModal">
+        <div class="modal">
+            <h3>Thêm ảnh từ URL</h3>
+            <div class="form-group"><label class="form-label">URL hình ảnh</label><input class="form-input"
+                    id="urlInput" placeholder="https://..."></div>
+            <div class="form-group"><label class="form-label">Tiêu đề</label><input class="form-input" id="urlTitle"
+                    placeholder="Tên bức ảnh"></div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeModal()">Huỷ</button>
+                <button class="btn btn-primary" onclick="confirmURL()">Thêm</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Share Modal -->
+    <div class="modal-overlay" id="shareModal">
+        <div class="modal">
+            <h3>🔗 Chia sẻ triển lãm</h3>
+            <p style="color:rgba(245,232,210,.5);font-size:.85rem;margin-bottom:1rem">Sao chép đường dẫn bên dưới để
+                chia sẻ triển lãm của bạn</p>
+            <div style="display:flex;gap:.5rem">
+                <input class="form-input" id="shareUrl" readonly onclick="this.select()" style="flex:1">
+                <button class="btn btn-primary" onclick="copyShareLink()" id="copyBtn">📋 Sao chép</button>
+            </div>
+            <div class="modal-actions">
+                <button class="btn btn-ghost" onclick="closeShareModal()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
+    <input type="file" id="loadFileInput" accept=".json" hidden onchange="handleLoadFile(event)">
+
+    <script type="module">
+        import * as THREE from 'three';
+        import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+        import { PointerLockControls } from 'three/addons/controls/PointerLockControls.js';
+
+        // ============ STATE ============
+        const PRESETS = [
+            { id: 'white', name: 'White Gallery', floor: '#e8e0d0', wall: '#f8f5f0', ceil: '#ffffff', accent: '#d4c5a9', ambient: 0.7 },
+            { id: 'warm', name: 'Warm Wood', floor: '#8B6914', wall: '#f5e6c8', ceil: '#faf3e0', accent: '#b8860b', ambient: 0.6 },
+            { id: 'dark', name: 'Dark Modern', floor: '#1a1a2e', wall: '#2d2d44', ceil: '#16213e', accent: '#0f3460', ambient: 0.3 },
+            { id: 'industrial', name: 'Industrial', floor: '#4a4a4a', wall: '#6b6b6b', ceil: '#3d3d3d', accent: '#8b8b8b', ambient: 0.5 },
+            { id: 'pastel', name: 'Pastel Dream', floor: '#f0e4d7', wall: '#fce4ec', ceil: '#f3e5f5', accent: '#e1bee7', ambient: 0.8 },
+            { id: 'neon', name: 'Neon Night', floor: '#0a0a0a', wall: '#1a0a2e', ceil: '#0a0a1a', accent: '#7c3aed', ambient: 0.2 }
+        ];
+
+        let state = {
+            title: '', desc: '', preset: 'white',
+            colors: { floor: '#8B7355', wall: '#f5f0e8', ceil: '#ffffff' },
+            images: [] // {id, url, title, desc}
+        };
+
+        let viewer3D = null; // Three.js state
+
+        const MAX_ROOMS = 3;
+        function getRoomCount() { return JSON.parse(localStorage.getItem('gallery3d_rooms') || '[]').length; }
+        function updateUsageBadge() {
+            const count = getRoomCount();
+            const badge = document.getElementById('usageBadge');
+            const text = document.getElementById('usageText');
+            const fill = document.getElementById('usageFill');
+            if (!badge) return;
+            text.textContent = `🚀 Đã dùng ${count}/${MAX_ROOMS} lượt`;
+            fill.style.width = `${Math.min(count / MAX_ROOMS * 100, 100)}%`;
+            badge.classList.toggle('full', count >= MAX_ROOMS);
+            if (count >= MAX_ROOMS) text.textContent = `⚠ Hết lượt miễn phí`;
+        }
+
+        // ============ SCREENS ============
+        window.goWelcome = () => switchScreen('welcome');
+        window.saveAndGoBack = async () => {
+            try {
+                // Compress images before saving to localStorage
+                const compressedState = { ...state, images: [] };
+                for (const img of state.images) {
+                    if (img.url && img.url.startsWith('data:') && img.url.length > 50000) {
+                        // Compress large data URLs
+                        const compressed = await compressImage(img.url, 400, 0.6);
+                        compressedState.images.push({ ...img, url: compressed });
+                    } else {
+                        compressedState.images.push(img);
+                    }
+                }
+                const saved = JSON.parse(localStorage.getItem('gallery3d_rooms') || '[]');
+                const existing = saved.findIndex(r => r.title === compressedState.title && compressedState.title);
+                const roomData = { ...compressedState, savedAt: new Date().toISOString() };
+                if (existing >= 0) saved[existing] = roomData; else saved.push(roomData);
+                localStorage.setItem('gallery3d_rooms', JSON.stringify(saved));
+                switchScreen('welcome');
+                loadRoomList();
+                updateUsageBadge();
+            } catch (e) {
+                console.error('Save error:', e);
+                // If still too large, save without images
+                try {
+                    const saved = JSON.parse(localStorage.getItem('gallery3d_rooms') || '[]');
+                    const lite = { ...state, images: state.images.map(i => ({ ...i, url: '' })), savedAt: new Date().toISOString() };
+                    const existing = saved.findIndex(r => r.title === lite.title && lite.title);
+                    if (existing >= 0) saved[existing] = lite; else saved.push(lite);
+                    localStorage.setItem('gallery3d_rooms', JSON.stringify(saved));
+                    alert('⚠ Ảnh quá lớn, đã lưu phòng nhưng không giữ được ảnh. Dùng "Tạo link" để chia sẻ đầy đủ!');
+                } catch { alert('Không thể lưu! Bộ nhớ đầy.'); }
+                switchScreen('welcome');
+                loadRoomList();
+                updateUsageBadge();
+            }
+        };
+        function compressImage(dataUrl, maxSize, quality) {
+            return new Promise((resolve) => {
+                const img = new Image();
+                img.onload = () => {
+                    const scale = Math.min(maxSize / img.width, maxSize / img.height, 1);
+                    const c = document.createElement('canvas');
+                    c.width = img.width * scale; c.height = img.height * scale;
+                    c.getContext('2d').drawImage(img, 0, 0, c.width, c.height);
+                    resolve(c.toDataURL('image/jpeg', quality));
+                };
+                img.onerror = () => resolve(dataUrl);
+                img.src = dataUrl;
+            });
+        }
+        window.toggleEditorFullscreen = () => {
+            if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+            else document.exitFullscreen();
+        };
+        window.shareLink = async () => {
+            const shareUrl = document.getElementById('shareUrl');
+            const modal = document.getElementById('shareModal');
+            shareUrl.value = 'Đang tạo link...';
+            modal.classList.add('show');
+            try {
+                const res = await fetch('https://api.jsonbin.io/v3/b', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json', 'X-Master-Key': '$2a$10$KQZ9dGMa4LWoYgqcwzPKsOMifbPo/sXFvBFCz5dZcbUOGiwXpmy5e', 'X-Bin-Private': 'false' },
+                    body: JSON.stringify(state)
+                });
+                const json = await res.json();
+                if (json.metadata && json.metadata.id) {
+                    const url = location.origin + location.pathname + '#bin=' + json.metadata.id;
+                    shareUrl.value = url;
+                } else {
+                    shareUrl.value = 'Lỗi tạo link!';
+                }
+            } catch (e) {
+                console.error(e);
+                shareUrl.value = 'Lỗi kết nối. Thử lại sau!';
+            }
+        };
+        window.copyShareLink = () => {
+            const input = document.getElementById('shareUrl');
+            input.select(); navigator.clipboard.writeText(input.value);
+            document.getElementById('copyBtn').textContent = '✅ Đã sao chép!';
+            setTimeout(() => document.getElementById('copyBtn').textContent = '📋 Sao chép', 2000);
+        };
+        window.closeShareModal = () => document.getElementById('shareModal').classList.remove('show');
+        window.startNew = () => {
+            if (getRoomCount() >= MAX_ROOMS) {
+                alert('🔒 Bạn đã sử dụng hết ' + MAX_ROOMS + ' lượt tạo phòng miễn phí!\n\nĐể nâng cấp lên Pro (không giới hạn), vui lòng liên hệ Admin.\n\n📧 Email: admin@giaoviencn.vn');
+                return;
+            }
+            state = { title: '', desc: '', preset: 'white', colors: { floor: '#e8e0d0', wall: '#f8f5f0', ceil: '#ffffff' }, images: [] };
+            syncEditor(); switchScreen('editor');
+        };
+        window.loadFile = () => document.getElementById('loadFileInput').click();
+        window.handleLoadFile = (e) => {
+            const f = e.target.files[0]; if (!f) return;
+            const r = new FileReader(); r.onload = (ev) => {
+                try { state = JSON.parse(ev.target.result); syncEditor(); switchScreen('editor'); } catch { alert('File không hợp lệ!'); }
+            }; r.readAsText(f); e.target.value = '';
+        };
+
+        function switchScreen(id) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if (id === 'welcome') { loadRoomList(); }
+            if (id === 'viewer') initViewer();
+            if (id !== 'viewer' && viewer3D) destroyViewer();
+        }
+
+        // ============ ROOM LIST ============
+        function initParticles() { /* no-op */ }
+        function loadRoomList() {
+            const saved = JSON.parse(localStorage.getItem('gallery3d_rooms') || '[]');
+            const container = document.querySelector('.main-content');
+            const emptyEl = container.querySelector('.empty-dashboard');
+            // Remove old room grid if any
+            const oldGrid = container.querySelector('.room-grid');
+            if (oldGrid) oldGrid.remove();
+            if (saved.length === 0) {
+                if (emptyEl) emptyEl.style.display = 'flex';
+                return;
+            }
+            if (emptyEl) emptyEl.style.display = 'none';
+            const grid = document.createElement('div');
+            grid.className = 'room-grid';
+            saved.forEach((room, idx) => {
+                const imgCount = room.images ? room.images.length : 0;
+                const presetName = room.preset || 'white';
+                const date = room.savedAt ? new Date(room.savedAt).toLocaleDateString('vi-VN') : '';
+                grid.innerHTML += `
+                    <div class="room-card">
+                        <div class="room-card-preview">🏠</div>
+                        <div class="room-card-body">
+                            <h4>${room.title || 'Ch\u01b0a \u0111\u1eb7t t\u00ean'}</h4>
+                            <p>${imgCount} \u1ea3nh \u2022 ${presetName} \u2022 ${date}</p>
+                        </div>
+                        <div class="room-card-actions">
+                            <button onclick="openRoom(${idx})">\u270f S\u1eeda</button>
+                            <button onclick="viewRoom(${idx})">\ud83d\udc41 Xem 3D</button>
+                            <button class="del-btn" onclick="deleteRoom(${idx})">\ud83d\uddd1</button>
+                        </div>
+                    </div>`;
+            });
+            container.appendChild(grid);
+        }
+        window.openRoom = (idx) => {
+            const saved = JSON.parse(localStorage.getItem('gallery3d_rooms') || '[]');
+            if (saved[idx]) { state = saved[idx]; syncEditor(); switchScreen('editor'); }
+        };
+        window.viewRoom = (idx) => {
+            const saved = JSON.parse(localStorage.getItem('gallery3d_rooms') || '[]');
+            if (saved[idx]) { state = saved[idx]; syncEditor(); switchScreen('viewer'); }
+        };
+        window.deleteRoom = (idx) => {
+            if (!confirm('X\u00f3a tri\u1ec3n l\u00e3m n\u00e0y?')) return;
+            const saved = JSON.parse(localStorage.getItem('gallery3d_rooms') || '[]');
+            saved.splice(idx, 1);
+            localStorage.setItem('gallery3d_rooms', JSON.stringify(saved));
+            loadRoomList();
+            updateUsageBadge();
+        };
+
+        // ============ EDITOR ============
+        window.goStep = (n) => {
+            document.querySelectorAll('.step-item').forEach(s => { s.classList.remove('active'); if (parseInt(s.dataset.step) < n) s.classList.add('done'); });
+            document.querySelector(`.step-item[data-step="${n}"]`).classList.add('active');
+            document.querySelectorAll('.editor-section').forEach(s => s.classList.remove('active'));
+            document.querySelector(`.editor-section[data-section="${n}"]`).classList.add('active');
+        };
+
+        function syncEditor() {
+            document.getElementById('galleryTitle').value = state.title;
+            document.getElementById('galleryDesc').value = state.desc;
+            document.getElementById('colorFloor').value = state.colors.floor;
+            document.getElementById('colorWall').value = state.colors.wall;
+            document.getElementById('colorCeiling').value = state.colors.ceil;
+            renderPresets(); renderImages(); goStep(1);
+        }
+
+        function renderPresets() {
+            const g = document.getElementById('presetGrid'); g.innerHTML = '';
+            PRESETS.forEach(p => {
+                const d = document.createElement('div'); d.className = 'preset-card' + (state.preset === p.id ? ' selected' : '');
+                d.innerHTML = `<div class="preset-preview" style="background:linear-gradient(180deg,${p.ceil} 0%,${p.wall} 50%,${p.floor} 100%)"></div><span>${p.name}</span>`;
+                d.onclick = () => {
+                    state.preset = p.id; state.colors = { floor: p.floor, wall: p.wall, ceil: p.ceil };
+                    document.getElementById('colorFloor').value = p.floor; document.getElementById('colorWall').value = p.wall; document.getElementById('colorCeiling').value = p.ceil;
+                    renderPresets();
+                };
+                g.appendChild(d);
+            });
+        }
+
+        function renderImages() {
+            const list = document.getElementById('imgList'), empty = document.getElementById('emptyState');
+            list.innerHTML = ''; empty.style.display = state.images.length ? 'none' : 'block';
+            state.images.forEach((img, i) => {
+                const d = document.createElement('div'); d.className = 'img-card';
+                d.innerHTML = `<img src="${img.url}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 width=%22200%22 height=%22140%22><rect fill=%22%23333%22 width=%22200%22 height=%22140%22/><text x=%2250%25%22 y=%2250%25%22 fill=%22%23888%22 text-anchor=%22middle%22 dy=%22.3em%22>Lỗi ảnh</text></svg>'">
+      <button class="img-remove" onclick="removeImg(${i})">✕</button>
+      <div class="img-info"><input value="${img.title || ''}" placeholder="Tiêu đề..." onchange="updateImgTitle(${i},this.value)"></div>`;
+                list.appendChild(d);
+            });
+        }
+
+        window.removeImg = (i) => { state.images.splice(i, 1); renderImages(); };
+        window.updateImgTitle = (i, v) => { state.images[i].title = v; };
+        window.clearAll = () => { if (confirm('Xoá tất cả ảnh?')) { state.images = []; renderImages(); } };
+        window.handleFiles = (e) => {
+            Array.from(e.target.files).forEach(f => {
+                const r = new FileReader(); r.onload = (ev) => { state.images.push({ id: Date.now() + '' + Math.random(), url: ev.target.result, title: f.name.replace(/\.[^.]+$/, ''), desc: '' }); renderImages(); }; r.readAsDataURL(f);
+            }); e.target.value = '';
+        };
+        window.addFromURL = () => { document.getElementById('urlModal').classList.add('show'); };
+        window.showAddModal = window.addFromURL;
+        window.closeModal = () => { document.getElementById('urlModal').classList.remove('show'); document.getElementById('urlInput').value = ''; document.getElementById('urlTitle').value = ''; };
+        window.confirmURL = () => {
+            const url = document.getElementById('urlInput').value.trim(), title = document.getElementById('urlTitle').value.trim();
+            if (!url) { alert('Nhập URL ảnh!'); return; } state.images.push({ id: Date.now() + '', url, title: title || 'Untitled', desc: '' }); renderImages(); closeModal();
+        };
+
+        // Save state from form
+        function syncState() {
+            state.title = document.getElementById('galleryTitle').value;
+            state.desc = document.getElementById('galleryDesc').value;
+            state.colors.floor = document.getElementById('colorFloor').value;
+            state.colors.wall = document.getElementById('colorWall').value;
+            state.colors.ceil = document.getElementById('colorCeiling').value;
+        }
+
+        window.saveJSON = () => {
+            syncState(); const blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+            const a = document.createElement('a'); a.href = URL.createObjectURL(blob); a.download = (state.title || 'gallery') + '.json'; a.click();
+        };
+        window.shareLink = () => {
+            syncState(); const data = btoa(unescape(encodeURIComponent(JSON.stringify(state))));
+            if (data.length > 2000) { const t = document.createElement('textarea'); t.value = JSON.stringify(state); document.body.appendChild(t); t.select(); document.execCommand('copy'); document.body.removeChild(t); alert('Dữ liệu quá lớn để tạo link. Đã copy JSON vào clipboard!'); }
+            else { const url = location.href.split('#')[0] + '#data=' + data; navigator.clipboard.writeText(url); alert('Đã copy link chia sẻ!'); }
+        };
+        window.enterViewer = () => { syncState(); if (!state.images.length) { alert('Thêm ít nhất 1 ảnh!'); return; } switchScreen('viewer'); };
+        window.exitViewer = () => { switchScreen('editor'); };
+
+        // ============ 3D VIEWER ============
+        function destroyViewer() {
+            if (!viewer3D) return;
+            cancelAnimationFrame(viewer3D.animId);
+            viewer3D.renderer.dispose();
+            viewer3D.orbitCtrl?.dispose();
+            if (viewer3D.fpsCtrl?.isLocked) viewer3D.fpsCtrl.unlock();
+            viewer3D.fpsCtrl?.dispose();
+            const c = document.getElementById('viewerContainer'); c.innerHTML = '';
+            viewer3D = null;
+        }
+
+        function initViewer() {
+            destroyViewer();
+            const container = document.getElementById('viewerContainer');
+            const W = container.clientWidth, H = container.clientHeight;
+
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(65, W / H, 0.1, 200);
+            camera.position.set(0, 2.5, 8);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
+            renderer.setSize(W, H); renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+            renderer.toneMapping = THREE.ACESFilmicToneMapping; renderer.toneMappingExposure = 1.2;
+            container.appendChild(renderer.domElement);
+
+            // Fog
+            const p = PRESETS.find(x => x.id === state.preset) || PRESETS[0];
+            scene.fog = new THREE.FogExp2(new THREE.Color(state.colors.wall).getHex(), 0.015);
+            scene.background = new THREE.Color(state.colors.ceil);
+
+            // Controls
+            const orbitCtrl = new OrbitControls(camera, renderer.domElement);
+            orbitCtrl.enableDamping = true; orbitCtrl.dampingFactor = 0.08;
+            orbitCtrl.target.set(0, 2, 0); orbitCtrl.minDistance = 2; orbitCtrl.maxDistance = 40;
+            orbitCtrl.enabled = false;
+
+            let fpsCtrl = null;
+            try { fpsCtrl = new PointerLockControls(camera, renderer.domElement); } catch (e) { console.warn('FPS controls unavailable'); }
+
+            const keys = {};
+            const onKeyDown = (e) => { keys[e.code] = true; };
+            const onKeyUp = (e) => { keys[e.code] = false; };
+            document.addEventListener('keydown', onKeyDown);
+            document.addEventListener('keyup', onKeyUp);
+
+            // Lighting
+            scene.add(new THREE.AmbientLight(0xffffff, p.ambient || 0.5));
+            scene.add(new THREE.HemisphereLight(0xffffff, new THREE.Color(state.colors.floor).getHex(), 0.3));
+            const dLight = new THREE.DirectionalLight(0xffffff, 0.4); dLight.position.set(8, 12, 8); dLight.castShadow = true; scene.add(dLight);
+
+            // === COMPLEX ROOM GENERATION (L-SHAPED CORRIDORS) ===
+            const imgs = state.images, count = imgs.length;
+            const wallH = 6;
+
+            // Dimensions for Main Hall (Z axis)
+            const mainW = 12;
+            const mainD = Math.max(30, count * 2); // Scales with paintings
+
+            // Dimensions for Side Corridor / Wing (X axis, branching right)
+            const wingW = 20;
+            const wingD = 12;
+
+            const minX = -mainW / 2;
+            const maxX = minX + mainW + wingW;
+            const maxZ = mainD / 2;
+            const minZ = maxZ - mainD;
+
+            // Materials
+            const floorMat = new THREE.MeshStandardMaterial({ color: state.colors.floor, roughness: 0.6, metalness: 0.05 });
+            const wallMat = new THREE.MeshStandardMaterial({ color: state.colors.wall, roughness: 0.85 });
+            const cMat = new THREE.MeshStandardMaterial({ color: state.colors.ceil, roughness: 1 });
+            const bbMat = new THREE.MeshStandardMaterial({ color: new THREE.Color(state.colors.wall).multiplyScalar(0.7) });
+            const pillarMat = new THREE.MeshStandardMaterial({ color: state.colors.wall, roughness: 0.4, metalness: 0.1 });
+
+            // 1. Floors
+            const floorMain = new THREE.Mesh(new THREE.PlaneGeometry(mainW, mainD), floorMat);
+            floorMain.rotation.x = -Math.PI / 2; floorMain.position.set(0, 0, 0); floorMain.receiveShadow = true; scene.add(floorMain);
+
+            const floorWing = new THREE.Mesh(new THREE.PlaneGeometry(wingW, wingD), floorMat);
+            floorWing.rotation.x = -Math.PI / 2; floorWing.position.set(mainW / 2 + wingW / 2, 0, minZ + wingD / 2); floorWing.receiveShadow = true; scene.add(floorWing);
+
+            // 2. Ceilings
+            const ceilMain = new THREE.Mesh(new THREE.PlaneGeometry(mainW, mainD), cMat);
+            ceilMain.rotation.x = Math.PI / 2; ceilMain.position.set(0, wallH, 0); scene.add(ceilMain);
+
+            const ceilWing = new THREE.Mesh(new THREE.PlaneGeometry(wingW, wingD), cMat);
+            ceilWing.rotation.x = Math.PI / 2; ceilWing.position.set(mainW / 2 + wingW / 2, wallH, minZ + wingD / 2); scene.add(ceilWing);
+
+            // 3. Walls
+            const createWall = (w, x, z, ry) => {
+                const wall = new THREE.Mesh(new THREE.PlaneGeometry(w, wallH), wallMat);
+                wall.position.set(x, wallH / 2, z);
+                wall.rotation.y = ry;
+                scene.add(wall);
+
+                const bb = new THREE.Mesh(new THREE.PlaneGeometry(w, 0.2), bbMat);
+                bb.position.set(x, 0.1, z);
+                bb.rotation.y = ry;
+                const normal = new THREE.Vector3(0, 0, 1).applyAxisAngle(new THREE.Vector3(0, 1, 0), ry);
+                bb.position.add(normal.multiplyScalar(0.01));
+                scene.add(bb);
+
+                // For placing paintings later:
+                // We use nx, nz to step OFF the wall.
+                // startX/startZ are the left edge of the wall (when facing it)
+                return {
+                    len: w,
+                    cx: x, cz: z,
+                    nx: normal.x, nz: normal.z,
+                    ry: ry, y: wallH * 0.5,
+                    vx: -normal.z, vz: normal.x // vector along the wall to the right
+                };
+            };
+
+            const walls = []; // We will place paintings on these
+
+            // Left long wall of main hall (faces Right, +X)
+            walls.push(createWall(mainD, minX, 0, Math.PI / 2));
+
+            // Front wall (spawn is near maxZ, faces -Z)
+            walls.push(createWall(mainW, 0, maxZ, Math.PI));
+
+            // Right wall of main hall (bottom part, faces Left, -X)
+            walls.push(createWall(mainD - wingD, mainW / 2, maxZ - (mainD - wingD) / 2, -Math.PI / 2));
+
+            // Inner corner wall facing towards spawn (+Z)
+            walls.push(createWall(wingW, mainW / 2 + wingW / 2, minZ + wingD, 0));
+
+            // Right end of the wing (faces Left, -X)
+            walls.push(createWall(wingD, maxX, minZ + wingD / 2, -Math.PI / 2));
+
+            // Back wall traversing both main hall and wing (faces Forward, +Z)
+            walls.push(createWall(mainW + wingW, minX + (mainW + wingW) / 2, minZ, 0));
+
+            // 4. Pillars
+            const pGeo = new THREE.CylinderGeometry(0.2, 0.25, wallH, 12);
+            [
+                [minX + 0.3, maxZ - 0.3], [mainW / 2 - 0.3, maxZ - 0.3], // Front
+                [minX + 0.3, minZ + 0.3], [maxX - 0.3, minZ + 0.3], // Back
+                [mainW / 2 - 0.3, minZ + wingD - 0.3], [maxX - 0.3, minZ + wingD - 0.3] // Inner corners
+            ].forEach(([px, pz]) => {
+                const pil = new THREE.Mesh(pGeo, pillarMat); pil.position.set(px, wallH / 2, pz); scene.add(pil);
+            });
+
+            // 5. Ceiling Lights
+            const addLights = (w, d, cx, cz) => {
+                const pX = Math.ceil(w / 8), pZ = Math.ceil(d / 10);
+                for (let ix = 0; ix < pX; ix++) for (let iz = 0; iz < pZ; iz++) {
+                    const lx = cx - w / 2 + 4 + ix * 8, lz = cz - d / 2 + 5 + iz * 10;
+                    const pl = new THREE.PointLight(0xfff5e6, 0.5, 18); pl.position.set(lx, wallH - 0.3, lz); scene.add(pl);
+                    const panel = new THREE.Mesh(new THREE.PlaneGeometry(2, 1), new THREE.MeshStandardMaterial({ color: 0xffffff, emissive: 0xfff8e1, emissiveIntensity: 0.8 }));
+                    panel.rotation.x = Math.PI / 2; panel.position.set(lx, wallH - 0.02, lz); scene.add(panel);
+                }
+            };
+            addLights(mainW, mainD, 0, 0);
+            addLights(wingW, wingD, mainW / 2 + wingW / 2, minZ + wingD / 2);
+
+            // === PAINTINGS DISTRIBUTION ===
+            const paintMap = new Map();
+            const places = [];
+
+            // Sort walls by length (longest walls get paintings first)
+            const availableWalls = [...walls].sort((a, b) => b.len - a.len);
+
+            // Distribute images evenly
+            const imgsPerWall = Array(availableWalls.length).fill(0);
+            let wIdx = 0;
+            for (let i = 0; i < count; i++) {
+                // Ensure we don't put too many on short walls
+                if (imgsPerWall[wIdx] * 4 > availableWalls[wIdx].len - 2) {
+                    wIdx = (wIdx + 1) % availableWalls.length;
+                }
+                imgsPerWall[wIdx]++;
+                wIdx = (wIdx + 1) % availableWalls.length;
+            }
+
+            let imgCursor = 0;
+            availableWalls.forEach((w, idx) => {
+                const countOnWall = imgsPerWall[idx];
+                if (countOnWall === 0) return;
+
+                const spacing = w.len / (countOnWall + 1);
+
+                // Calculate start edge point (left side when facing the wall)
+                const startX = w.cx - w.vx * w.len / 2;
+                const startZ = w.cz - w.vz * w.len / 2;
+
+                for (let i = 0; i < countOnWall; i++) {
+                    const img = imgs[imgCursor++];
+
+                    // Center of this painting on the wall
+                    const px = startX + w.vx * spacing * (i + 1);
+                    const pz = startZ + w.vz * spacing * (i + 1);
+
+                    const finalX = px + w.nx * 0.05;
+                    const finalZ = pz + w.nz * 0.05;
+
+                    // Frame
+                    const fGeo = new THREE.BoxGeometry(2.2, 1.8, 0.08);
+                    const fMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.3, metalness: 0.5 });
+                    const frame = new THREE.Mesh(fGeo, fMat);
+                    frame.position.set(finalX, w.y, finalZ); frame.rotation.y = w.ry; scene.add(frame);
+                    paintMap.set(frame, img); // Register frame for click
+
+                    // Image Texture via Canvas (reliable for data URLs)
+                    try {
+                        const imgEl = new Image();
+                        if (!img.url.startsWith('data:')) imgEl.crossOrigin = 'anonymous';
+                        imgEl.onload = () => {
+                            // Draw onto a power-of-2 canvas for WebGL compatibility
+                            const cvs = document.createElement('canvas');
+                            cvs.width = 512; cvs.height = 512;
+                            const ctx2 = cvs.getContext('2d');
+                            // Fill black background
+                            ctx2.fillStyle = '#000';
+                            ctx2.fillRect(0, 0, 512, 512);
+                            // Draw image centered/fitted
+                            const scale = Math.min(512 / imgEl.width, 512 / imgEl.height);
+                            const dw = imgEl.width * scale, dh = imgEl.height * scale;
+                            ctx2.drawImage(imgEl, (512 - dw) / 2, (512 - dh) / 2, dw, dh);
+
+                            const tex = new THREE.CanvasTexture(cvs);
+                            tex.colorSpace = THREE.SRGBColorSpace;
+                            tex.needsUpdate = true;
+                            const iMat = new THREE.MeshBasicMaterial({ map: tex });
+                            const iMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.5), iMat);
+                            iMesh.position.set(finalX + w.nx * 0.045, w.y, finalZ + w.nz * 0.045);
+                            iMesh.rotation.y = w.ry; scene.add(iMesh);
+                            paintMap.set(iMesh, img);
+                        };
+                        imgEl.onerror = () => console.warn('Failed to load image:', img.title);
+                        imgEl.src = img.url;
+                    } catch (e) { console.warn('Image load error:', e); }
+
+                    // Spotlight
+                    const sl = new THREE.SpotLight(0xfff5e6, 1.5, 8, Math.PI / 6, 0.5);
+                    sl.position.set(finalX + w.nx * 2.5, wallH - 0.5, finalZ + w.nz * 2.5);
+                    sl.target.position.set(finalX, w.y, finalZ); scene.add(sl); scene.add(sl.target);
+
+                    // Label Plate
+                    const lCanvas = document.createElement('canvas'); lCanvas.width = 512; lCanvas.height = 64;
+                    const lCtx = lCanvas.getContext('2d'); lCtx.fillStyle = 'rgba(0,0,0,0)'; lCtx.fillRect(0, 0, 512, 64);
+                    lCtx.font = '24px Outfit,sans-serif'; lCtx.fillStyle = '#ccc'; lCtx.textAlign = 'center';
+                    lCtx.fillText(img.title || `Tác phẩm ${imgCursor}`, 256, 40);
+                    const lTex = new THREE.CanvasTexture(lCanvas);
+                    const lMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.22), new THREE.MeshBasicMaterial({ map: lTex, transparent: true }));
+                    lMesh.position.set(finalX + w.nx * 0.05, w.y - 1.15, finalZ + w.nz * 0.05);
+                    lMesh.rotation.y = w.ry;
+                    scene.add(lMesh);
+
+                    places.push({ x: finalX, y: w.y, z: finalZ, img, nx: w.nx, nz: w.nz });
+                }
+            });
+
+            // Boundary variables for minimap scaling
+            const roomW = mainW + wingW;
+            const roomD = mainD;
+
+            // Raycaster for click - works in both Orbit and FPS mode
+            const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
+            const onClick = (e) => {
+                let clickX, clickY;
+                if (isLocked) {
+                    mouse.x = 0; mouse.y = 0;
+                    clickX = W / 2; clickY = H / 2;
+                } else {
+                    mouse.x = (e.clientX / W) * 2 - 1; mouse.y = -(e.clientY / H) * 2 + 1;
+                    clickX = e.clientX; clickY = e.clientY;
+                }
+                raycaster.setFromCamera(mouse, camera);
+                const hits = raycaster.intersectObjects(scene.children);
+                for (const h of hits) { const d = paintMap.get(h.object); if (d) { showPopup(d, clickX, clickY); return; } }
+                hidePopup();
+            };
+            renderer.domElement.addEventListener('click', onClick);
+
+            // Hover cursor: show pointer hand when hovering over a painting
+            const hoverMouse = new THREE.Vector2();
+            renderer.domElement.addEventListener('mousemove', (e) => {
+                if (isLocked) return; // Skip in FPS mode (cursor is hidden anyway)
+                hoverMouse.x = (e.clientX / W) * 2 - 1;
+                hoverMouse.y = -(e.clientY / H) * 2 + 1;
+                raycaster.setFromCamera(hoverMouse, camera);
+                const hits = raycaster.intersectObjects(scene.children);
+                let found = false;
+                for (const h of hits) {
+                    if (paintMap.has(h.object)) { found = true; break; }
+                }
+                renderer.domElement.style.cursor = found ? 'pointer' : 'default';
+            });
+
+            // Popup with image preview - appears at click position
+            let popupTimer = null;
+            function showPopup(d, cx, cy) {
+                const popup = document.getElementById('paintingPopup');
+                document.getElementById('popupTitle').textContent = d.title || 'Không có tiêu đề';
+                document.getElementById('popupDesc').textContent = d.desc || '';
+                // Show image preview
+                let preview = document.getElementById('popupImg');
+                if (!preview) { preview = document.createElement('img'); preview.id = 'popupImg'; preview.style.cssText = 'max-width:200px;max-height:150px;border-radius:8px;margin-bottom:8px;display:block;margin-left:auto;margin-right:auto;'; popup.insertBefore(preview, popup.firstChild); }
+                preview.src = d.url || '';
+                preview.style.display = d.url ? 'block' : 'none';
+                // Position near click
+                popup.style.left = Math.min(cx + 15, W - 340) + 'px';
+                popup.style.bottom = 'auto';
+                popup.style.top = Math.max(cy - 100, 10) + 'px';
+                popup.classList.add('show');
+                if (popupTimer) clearTimeout(popupTimer);
+                popupTimer = setTimeout(() => popup.classList.remove('show'), 8000);
+            }
+            function hidePopup() { document.getElementById('paintingPopup').classList.remove('show'); }
+
+            // Minimap
+            const mapC = document.getElementById('minimapCanvas'), mapCtx = mapC.getContext('2d');
+            function drawMiniMap() {
+                const mw = mapC.width, mh = mapC.height;
+                mapCtx.fillStyle = 'rgba(0,0,0,.8)'; mapCtx.fillRect(0, 0, mw, mh);
+                // Scale based on combined bounding box + margin
+                const sx = mw / (roomW + 6), sz = mh / (roomD + 6);
+                // Offset so (0,0) in 3D world is centered horizontally, but we shift it so the whole L fits
+                const ox = mw / 2 - (wingW / 2) * sx, oz = mh / 2;
+
+                mapCtx.strokeStyle = 'rgba(255,255,255,.3)'; mapCtx.lineWidth = 1;
+
+                // Draw Main Hall
+                mapCtx.strokeRect(ox + minX * sx, oz - maxZ * sz, mainW * sx, mainD * sz);
+                // Draw Wing
+                mapCtx.strokeRect(ox + (mainW / 2) * sx, oz + minZ * sz, wingW * sx, wingD * sz);
+
+                // paintings
+                places.forEach(p => { mapCtx.fillStyle = '#f5c842'; mapCtx.fillRect(ox + p.x * sx - 2, oz + p.z * sz - 2, 4, 4); });
+                // player
+                const cx = ox + camera.position.x * sx, cz = oz + camera.position.z * sz;
+                mapCtx.fillStyle = '#ef4444'; mapCtx.beginPath(); mapCtx.arc(cx, cz, 4, 0, Math.PI * 2); mapCtx.fill();
+                const dir = new THREE.Vector3(); camera.getWorldDirection(dir);
+                mapCtx.strokeStyle = '#ef4444'; mapCtx.lineWidth = 2; mapCtx.beginPath();
+                mapCtx.moveTo(cx, cz); mapCtx.lineTo(cx + dir.x * 15, cz + dir.z * 15); mapCtx.stroke();
+            }
+
+            // Mode
+            let mode = 'fps';
+            const clickStartEl = document.getElementById('clickStart');
+            const hudCtrl = document.getElementById('hudControls');
+
+            // Custom FPS Controls State
+            let euler = new THREE.Euler(0, 0, 0, 'YXZ');
+            const PI_2 = Math.PI / 2;
+            let isLocked = false;
+
+            window.setOrbitMode = () => {
+                mode = 'orbit'; orbitCtrl.enabled = true;
+                if (isLocked) document.exitPointerLock();
+                document.getElementById('btnOrbit').classList.add('active');
+                document.getElementById('btnFPS').classList.remove('active');
+                clickStartEl.style.display = 'none'; hudCtrl.style.display = 'none';
+            };
+            window.setFPSMode = () => {
+                mode = 'fps'; orbitCtrl.enabled = false;
+                document.getElementById('btnOrbit').classList.remove('active');
+                document.getElementById('btnFPS').classList.add('active');
+                clickStartEl.style.display = 'block'; hudCtrl.style.display = 'block';
+            };
+
+            // Pointer Lock Event Listeners
+            document.addEventListener('pointerlockchange', () => {
+                isLocked = document.pointerLockElement === document.body;
+                if (mode === 'fps') clickStartEl.style.display = isLocked ? 'none' : 'block';
+                const ch = document.getElementById('fpsCrosshair');
+                if (ch) ch.style.display = isLocked ? 'block' : 'none';
+            });
+
+            window.lockPointer = () => {
+                if (mode === 'fps') document.body.requestPointerLock();
+            };
+
+            // Mouse Move Event for Looking Around
+            document.addEventListener('mousemove', (event) => {
+                if (isLocked && mode === 'fps') {
+                    const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
+                    const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
+
+                    euler.setFromQuaternion(camera.quaternion);
+
+                    euler.y -= movementX * 0.002;
+                    euler.x -= movementY * 0.002;
+
+                    euler.x = Math.max(-PI_2, Math.min(PI_2, euler.x));
+
+                    camera.quaternion.setFromEuler(euler);
+                }
+            });
+
+            // Tour path calculation
+            let tourTarget = null, tourLookAt = null, tourIdx = 0, tourTimer = 0, touring = false;
+
+            // Build a smart queue of waypoints for the tour
+            const tourWaypoints = [];
+            // Add a junction waypoint if traversing into the wing
+            const junctionPt = new THREE.Vector3(mainW / 2 - 2, 2.5, minZ + wingD / 2);
+
+            places.forEach((p, index) => {
+                let sx = p.x + p.nx * 2.5, sz = p.z + p.nz * 2.5;
+                // Clamp stand position inside walkable area
+                if (!inBounds(sx, sz)) {
+                    sx = Math.max(minX + 1.5, Math.min(maxX - 1.5, sx));
+                    sz = Math.max(minZ + 1.5, Math.min(maxZ - 1.5, sz));
+                }
+                const standPos = new THREE.Vector3(sx, 2.5, sz);
+                const lookPos = new THREE.Vector3(p.x, p.y, p.z);
+
+                // If crossing between main hall and wing, add junction waypoint
+                if (index > 0) {
+                    const prevP = places[index - 1];
+                    const prevInWing = prevP.x > mainW / 2;
+                    const currInWing = p.x > mainW / 2;
+                    if (prevInWing !== currInWing) {
+                        tourWaypoints.push({
+                            target: junctionPt.clone(),
+                            lookAt: lookPos
+                        });
+                    }
+                }
+
+                tourWaypoints.push({ target: standPos, lookAt: lookPos });
+            });
+
+            window.startTour = () => {
+                if (!tourWaypoints.length) return;
+                touring = true; tourIdx = 0; orbitCtrl.enabled = false;
+                if (isLocked) document.exitPointerLock();
+                tourTarget = tourWaypoints[0].target;
+                tourLookAt = tourWaypoints[0].lookAt;
+                tourTimer = 0; clickStartEl.style.display = 'none';
+                document.getElementById('btnTour').classList.add('active');
+            };
+
+            // Fullscreen
+            window.toggleFullscreen = () => {
+                if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+                else document.exitFullscreen();
+            };
+
+            // Resize
+            const onResize = () => { const w2 = container.clientWidth, h2 = container.clientHeight; camera.aspect = w2 / h2; camera.updateProjectionMatrix(); renderer.setSize(w2, h2); };
+            window.addEventListener('resize', onResize);
+
+            // Animation
+            const clock = new THREE.Clock();
+            const direction = new THREE.Vector3();
+            let animId = 0;
+
+            // Collision check function for L-shape
+            const inBounds = (x, z) => {
+                const padding = 1.0; // Wall padding
+                const inMain = (x > minX + padding && x < mainW / 2 - padding && z > minZ + padding && z < maxZ - padding);
+                const inWing = (x >= mainW / 2 - padding && x < maxX - padding && z > minZ + padding && z < minZ + wingD - padding);
+                const inJunction = (x > minX + padding && x < maxX - padding && z > minZ + padding && z < minZ + wingD - padding);
+                // Allow crossing the boundary between main and wing
+                return inMain || inWing || inJunction;
+            };
+
+            function animate() {
+                animId = requestAnimationFrame(animate);
+                const delta = Math.min(clock.getDelta(), 0.05);
+
+                if (mode === 'fps' && isLocked) {
+                    const speed = 6 * delta;
+                    direction.set(0, 0, 0);
+
+                    if (keys['KeyW'] || keys['ArrowUp']) direction.z -= 1;
+                    if (keys['KeyS'] || keys['ArrowDown']) direction.z += 1;
+                    if (keys['KeyA'] || keys['ArrowLeft']) direction.x -= 1;
+                    if (keys['KeyD'] || keys['ArrowRight']) direction.x += 1;
+
+                    direction.normalize();
+
+                    if (direction.length() > 0) {
+                        const forward = new THREE.Vector3(0, 0, -1).applyQuaternion(camera.quaternion);
+                        forward.y = 0; forward.normalize();
+
+                        const right = new THREE.Vector3(1, 0, 0).applyQuaternion(camera.quaternion);
+                        right.y = 0; right.normalize();
+
+                        const moveX = (forward.x * -direction.z + right.x * direction.x) * speed;
+                        const moveZ = (forward.z * -direction.z + right.z * direction.x) * speed;
+
+                        // Try moving X
+                        let nextX = camera.position.x + moveX;
+                        if (inBounds(nextX, camera.position.z)) {
+                            camera.position.x = nextX;
+                        }
+
+                        // Try moving Z
+                        let nextZ = camera.position.z + moveZ;
+                        if (inBounds(camera.position.x, nextZ)) {
+                            camera.position.z = nextZ;
+                        }
+                    }
+
+                    camera.position.y = 2.5; // Lock camera height
+                }
+
+                if (touring && tourTarget && tourLookAt) {
+                    camera.position.lerp(tourTarget, 2 * delta);
+                    const cd = new THREE.Vector3(); camera.getWorldDirection(cd);
+                    const td = tourLookAt.clone().sub(camera.position).normalize();
+                    cd.lerp(td, 2 * delta); camera.lookAt(camera.position.clone().add(cd));
+
+                    if (camera.position.distanceTo(tourTarget) < 0.3) {
+                        tourTimer += delta;
+                        if (tourTimer > 3) {
+                            tourTimer = 0; tourIdx++;
+                            if (tourIdx < tourWaypoints.length) {
+                                tourTarget = tourWaypoints[tourIdx].target;
+                                tourLookAt = tourWaypoints[tourIdx].lookAt;
+                            }
+                            else {
+                                touring = false; tourTarget = null; tourLookAt = null;
+                                document.getElementById('btnTour').classList.remove('active');
+                                setFPSMode();
+                            }
+                        }
+                    }
+                }
+
+                if (mode === 'orbit') orbitCtrl.update();
+                drawMiniMap();
+                renderer.render(scene, camera);
+            }
+            animate();
+
+            viewer3D = { scene, camera, renderer, orbitCtrl, fpsCtrl, animId };
+        }
+
+        // ============ INIT ============
+        const hash = location.hash;
+        if (hash.startsWith('#bin=')) {
+            // Load from JSONBin API
+            const binId = hash.slice(5);
+            fetch('https://api.jsonbin.io/v3/b/' + binId + '/latest', {
+                headers: { 'X-Master-Key': '$2a$10$KQZ9dGMa4LWoYgqcwzPKsOMifbPo/sXFvBFCz5dZcbUOGiwXpmy5e' }
+            }).then(r => r.json()).then(json => {
+                if (json.record) { state = json.record; syncEditor(); switchScreen('viewer'); }
+            }).catch(() => { alert('Không tải được triển lãm!'); });
+        } else if (hash.startsWith('#data=')) {
+            try { const d = JSON.parse(decodeURIComponent(escape(atob(hash.slice(6))))); state = d; syncEditor(); switchScreen('editor'); }
+            catch { /* ignore */ }
+        }
+
+        renderPresets();
+        updateUsageBadge();
+        loadRoomList();
+    </script>
+</body>
+
+</html>
