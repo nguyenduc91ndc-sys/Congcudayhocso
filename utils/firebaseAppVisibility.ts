@@ -10,7 +10,8 @@ export const ALL_APP_IDS = [
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
     'aiAssistant', // New toggle for AI Assistant
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D',
-    'bangCuuChuong', 'gameTuongTac'
+    'bangCuuChuong', 'gameTuongTac',
+    'phongTranh3D', // Phòng Tranh 3D tùy chỉnh
 ] as const;
 
 export type AppId = typeof ALL_APP_IDS[number];
@@ -49,6 +50,8 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     // ── Học liệu tương tác ──
     bangCuuChuong: { name: 'Bảng Cửu Chương Số', icon: '🔢', section: 'Học liệu tương tác' },
     gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
+    // ── Phòng Tranh 3D ──
+    phongTranh3D: { name: 'Phòng Tranh 3D', icon: '🖼️', section: 'Ứng dụng 3D & VR' },
 };
 
 
