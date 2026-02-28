@@ -246,3 +246,45 @@ export function parseChartData(aiResponse: string): ChartData | null {
     }
     return null;
 }
+
+// Validate chart data against class size
+export function validateChartData(
+    data: { labels: string[]; values: number[] },
+    classSize: string | undefined,
+    chartType: 'bar' | 'pie'
+): { valid: boolean; message: string } {
+    if (!data.labels.length || !data.values.length) {
+        return { valid: false, message: 'Chưa có dữ liệu' };
+    }
+    if (data.labels.length !== data.values.length) {
+        return { valid: false, message: 'Số nhãn và giá trị không khớp' };
+    }
+    if (data.values.some(v => isNaN(v) || v < 0)) {
+        return { valid: false, message: 'Giá trị phải là số >= 0' };
+    }
+
+    const total = data.values.reduce((a, b) => a + b, 0);
+
+    if (chartType === 'pie') {
+        if (Math.abs(total - 100) > 0.5) {
+            return { valid: false, message: `Tổng % = ${total.toFixed(1)}% (phải = 100%)` };
+        }
+        return { valid: true, message: `✓ Tổng = ${total.toFixed(1)}%` };
+    }
+
+    // Bar chart
+    if (classSize && classSize.trim()) {
+        const size = parseInt(classSize);
+        if (!isNaN(size) && size > 0) {
+            if (total !== size) {
+                return { valid: false, message: `Tổng = ${total} (phải = ${size} theo sĩ số lớp)` };
+            }
+            return { valid: true, message: `✓ Tổng = ${total} = sĩ số lớp` };
+        }
+    }
+
+    if (total <= 0) {
+        return { valid: false, message: 'Tổng giá trị phải > 0' };
+    }
+    return { valid: true, message: `Tổng = ${total}` };
+}

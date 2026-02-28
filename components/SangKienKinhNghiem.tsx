@@ -16,7 +16,7 @@ import {
     buildTopicSuggestionPrompt
 } from '../utils/groqApi';
 import { exportToWord } from '../utils/wordExport';
-import { generateBarChart, generatePieChart, parseChartData } from '../utils/chartGenerator';
+import { generateBarChart, generatePieChart, parseChartData, validateChartData } from '../utils/chartGenerator';
 import { submitSKKNFeedback } from '../utils/firebaseSKKNFeedback';
 import { isEmailSKKNPro, validateSKKNProKey, activateSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
 import './SangKienKinhNghiem.css';
@@ -101,6 +101,12 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     const [error, setError] = useState('');
     const [showAIMenu, setShowAIMenu] = useState(false);
     const [chartImages, setChartImages] = useState<Record<string, string[]>>({});
+    const [showChartModal, setShowChartModal] = useState(false);
+    const [chartModalType, setChartModalType] = useState<'bar' | 'pie'>('bar');
+    const [chartModalTitle, setChartModalTitle] = useState('');
+    const [chartModalLabels, setChartModalLabels] = useState<string[]>(['Giỏi', 'Khá', 'Trung bình', 'Yếu']);
+    const [chartModalValues, setChartModalValues] = useState<number[]>([0, 0, 0, 0]);
+    const [chartModalSuggesting, setChartModalSuggesting] = useState(false);
     const [isSKKNPro, setIsSKKNPro] = useState(false);
     const [showProModal, setShowProModal] = useState(false);
     const [proKeyInput, setProKeyInput] = useState('');
@@ -626,6 +632,73 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
             images.splice(index, 1);
             return { ...prev, [sectionId]: images };
         });
+    };
+
+    // Open chart data modal
+    const openChartModal = (type: 'bar' | 'pie') => {
+        setChartModalType(type);
+        setChartModalTitle('');
+        setChartModalLabels(['Giỏi', 'Khá', 'Trung bình', 'Yếu']);
+        setChartModalValues([0, 0, 0, 0]);
+        setShowChartModal(true);
+        setShowAIMenu(false);
+    };
+
+    // Generate chart from manual data
+    const handleGenChartWithData = () => {
+        const data = { labels: chartModalLabels, values: chartModalValues, title: chartModalTitle };
+        const validation = validateChartData(data, topicInfo.classSize, chartModalType);
+        if (!validation.valid) {
+            setError(validation.message);
+            return;
+        }
+        const imgBase64 = chartModalType === 'bar'
+            ? generateBarChart(data)
+            : generatePieChart(data);
+        setChartImages(prev => ({
+            ...prev,
+            [activeSection]: [...(prev[activeSection] || []), imgBase64]
+        }));
+        setShowChartModal(false);
+    };
+
+    // AI suggest chart data for modal
+    const handleAISuggestChartData = async () => {
+        if (!apiKey || chartModalSuggesting) return;
+        setChartModalSuggesting(true);
+        setError('');
+
+        const messages = buildChartDataPrompt(
+            chartModalType,
+            topicInfo.title,
+            getActiveSectionTitle(),
+            getActiveContent(),
+            topicInfo.classSize || undefined
+        );
+
+        let result = '';
+        await groqStream(
+            messages,
+            apiKey,
+            (chunk: string) => { result += chunk; },
+            () => {
+                setChartModalSuggesting(false);
+                const chartData = parseChartData(result);
+                if (chartData) {
+                    setChartModalTitle(chartData.title || '');
+                    setChartModalLabels(chartData.labels);
+                    setChartModalValues(chartData.values);
+                } else {
+                    setError('AI không thể gợi ý dữ liệu. Vui lòng thử lại.');
+                }
+            },
+            (err: Error) => {
+                setChartModalSuggesting(false);
+                setError(`Lỗi: ${err.message}`);
+            },
+            'llama-3.3-70b-versatile',
+            0.5
+        );
     };
 
     // Export as Word file (with charts)
@@ -1495,8 +1568,10 @@ Chỉ trả về JSON, không giải thích.` },
                                         <button onClick={handleShorten}><Minimize2 size={14} /> Rút gọn nội dung</button>
                                         <div className="skkn-ai-menu-divider" />
                                         <button onClick={handleGenTable}><Table2 size={14} /> Tạo bảng biểu</button>
-                                        <button onClick={() => handleGenChart('bar')}><BarChart3 size={14} /> 📊 Biểu đồ cột</button>
-                                        <button onClick={() => handleGenChart('pie')}><PieChart size={14} /> 🥧 Biểu đồ tròn</button>
+                                        <button onClick={() => handleGenChart('bar')}><BarChart3 size={14} /> 📊 Biểu đồ cột (AI tự tạo)</button>
+                                        <button onClick={() => handleGenChart('pie')}><PieChart size={14} /> 🥧 Biểu đồ tròn (AI tự tạo)</button>
+                                        <button onClick={() => openChartModal('bar')}><BarChart3 size={14} /> 📊 Biểu đồ cột (nhập số liệu)</button>
+                                        <button onClick={() => openChartModal('pie')}><PieChart size={14} /> 🥧 Biểu đồ tròn (nhập số liệu)</button>
                                         <div className="skkn-ai-menu-divider" />
                                         <button onClick={handleGenReferences}><BookOpen size={14} /> Gợi ý tài liệu TK</button>
                                     </div>
@@ -1671,6 +1746,134 @@ Chỉ trả về JSON, không giải thích.` },
                     </div>
                 </div>
             )}
+            {/* Chart Data Input Modal */}
+            {showChartModal && (
+                <div className="skkn-modal-overlay" style={{ zIndex: 10000 }} onClick={(e) => { if (e.target === e.currentTarget) setShowChartModal(false); }}>
+                    <div className="skkn-modal" style={{ maxWidth: 520, background: 'linear-gradient(180deg, #1e293b, #0f172a)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 20, boxShadow: '0 25px 60px rgba(0,0,0,0.5)' }}>
+                        {/* Header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '20px 24px 16px' }}>
+                            <h3 style={{ margin: 0, color: '#e0e7ff', fontSize: 18, fontWeight: 700 }}>
+                                {chartModalType === 'bar' ? '📊' : '🥧'} {chartModalType === 'bar' ? 'Biểu đồ cột' : 'Biểu đồ tròn'} — Nhập số liệu
+                            </h3>
+                            <button className="skkn-btn-icon" onClick={() => setShowChartModal(false)} style={{ color: 'rgba(255,255,255,0.4)' }}><X size={20} /></button>
+                        </div>
+
+                        <div style={{ padding: '0 24px 24px', maxHeight: '70vh', overflowY: 'auto' }}>
+                            {/* Class size info */}
+                            {topicInfo.classSize && (
+                                <div style={{ padding: '8px 14px', borderRadius: 10, background: 'rgba(99,102,241,0.1)', border: '1px solid rgba(99,102,241,0.2)', marginBottom: 16, fontSize: 13, color: '#a5b4fc' }}>
+                                    👥 Sĩ số lớp: <strong>{topicInfo.classSize}</strong> học sinh
+                                    {chartModalType === 'bar' ? ' — tổng giá trị phải = sĩ số' : ' — tổng % phải = 100%'}
+                                </div>
+                            )}
+
+                            {/* Title */}
+                            <div style={{ marginBottom: 16 }}>
+                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: 600, marginBottom: 6 }}>Tiêu đề biểu đồ</label>
+                                <input
+                                    className="skkn-input"
+                                    placeholder="VD: Tỷ lệ học sinh giỏi"
+                                    value={chartModalTitle}
+                                    onChange={e => setChartModalTitle(e.target.value)}
+                                    style={{ width: '100%' }}
+                                />
+                            </div>
+
+                            {/* Data rows */}
+                            <div style={{ marginBottom: 12 }}>
+                                <label style={{ display: 'block', color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: 600, marginBottom: 8 }}>
+                                    Dữ liệu ({chartModalType === 'pie' ? 'nhãn + %' : 'nhãn + số lượng'})
+                                </label>
+                                {chartModalLabels.map((label, i) => (
+                                    <div key={i} style={{ display: 'flex', gap: 8, marginBottom: 6, alignItems: 'center' }}>
+                                        <input
+                                            className="skkn-input"
+                                            placeholder="Nhãn"
+                                            value={label}
+                                            onChange={e => {
+                                                const newLabels = [...chartModalLabels];
+                                                newLabels[i] = e.target.value;
+                                                setChartModalLabels(newLabels);
+                                            }}
+                                            style={{ flex: 1 }}
+                                        />
+                                        <input
+                                            className="skkn-input"
+                                            type="number"
+                                            placeholder={chartModalType === 'pie' ? '%' : 'SL'}
+                                            value={chartModalValues[i] || ''}
+                                            onChange={e => {
+                                                const newValues = [...chartModalValues];
+                                                newValues[i] = parseFloat(e.target.value) || 0;
+                                                setChartModalValues(newValues);
+                                            }}
+                                            style={{ width: 80, textAlign: 'center' }}
+                                        />
+                                        {chartModalLabels.length > 2 && (
+                                            <button
+                                                onClick={() => {
+                                                    setChartModalLabels(prev => prev.filter((_, idx) => idx !== i));
+                                                    setChartModalValues(prev => prev.filter((_, idx) => idx !== i));
+                                                }}
+                                                style={{ background: 'none', border: 'none', color: '#f87171', cursor: 'pointer', padding: 4, flexShrink: 0 }}
+                                                title="Xóa hàng"
+                                            ><X size={16} /></button>
+                                        )}
+                                    </div>
+                                ))}
+                                <button
+                                    onClick={() => {
+                                        setChartModalLabels(prev => [...prev, '']);
+                                        setChartModalValues(prev => [...prev, 0]);
+                                    }}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 4, padding: '6px 12px', borderRadius: 8, background: 'rgba(99,102,241,0.1)', border: '1px dashed rgba(99,102,241,0.3)', color: '#818cf8', cursor: 'pointer', fontSize: 12, fontWeight: 600, marginTop: 4 }}
+                                ><Plus size={14} /> Thêm hàng</button>
+                            </div>
+
+                            {/* Validation result */}
+                            {(() => {
+                                const validation = validateChartData(
+                                    { labels: chartModalLabels, values: chartModalValues },
+                                    topicInfo.classSize,
+                                    chartModalType
+                                );
+                                return (
+                                    <div style={{
+                                        padding: '10px 14px',
+                                        borderRadius: 10,
+                                        background: validation.valid ? 'rgba(34,197,94,0.1)' : 'rgba(239,68,68,0.1)',
+                                        border: `1px solid ${validation.valid ? 'rgba(34,197,94,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                                        color: validation.valid ? '#86efac' : '#fca5a5',
+                                        fontSize: 13,
+                                        fontWeight: 600,
+                                        marginBottom: 20
+                                    }}>
+                                        {validation.message}
+                                    </div>
+                                );
+                            })()}
+
+                            {/* Actions */}
+                            <div style={{ display: 'flex', gap: 8, justifyContent: 'space-between' }}>
+                                <button
+                                    onClick={handleAISuggestChartData}
+                                    disabled={chartModalSuggesting || !apiKey}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 16px', borderRadius: 12, background: 'rgba(139,92,246,0.15)', border: '1px solid rgba(139,92,246,0.3)', color: '#c4b5fd', cursor: 'pointer', fontSize: 13, fontWeight: 600, opacity: chartModalSuggesting ? 0.6 : 1 }}
+                                >
+                                    {chartModalSuggesting ? <><Loader2 size={14} className="spin" /> Đang gợi ý...</> : <><Sparkles size={14} /> AI Gợi ý</>}
+                                </button>
+                                <button
+                                    onClick={handleGenChartWithData}
+                                    disabled={!validateChartData({ labels: chartModalLabels, values: chartModalValues }, topicInfo.classSize, chartModalType).valid}
+                                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '10px 20px', borderRadius: 12, background: validateChartData({ labels: chartModalLabels, values: chartModalValues }, topicInfo.classSize, chartModalType).valid ? 'linear-gradient(135deg, #6366f1, #8b5cf6)' : 'rgba(100,116,139,0.3)', color: 'white', cursor: validateChartData({ labels: chartModalLabels, values: chartModalValues }, topicInfo.classSize, chartModalType).valid ? 'pointer' : 'not-allowed', fontSize: 14, fontWeight: 700, border: 'none', boxShadow: validateChartData({ labels: chartModalLabels, values: chartModalValues }, topicInfo.classSize, chartModalType).valid ? '0 4px 16px rgba(99,102,241,0.3)' : 'none' }}
+                                >
+                                    ✓ Tạo biểu đồ
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            )}
 
             {/* Pro Purchase Modal */}
             {showProModal && (
@@ -1717,7 +1920,7 @@ Chỉ trả về JSON, không giải thích.` },
                                 <div style={{ padding: '20px 24px', textAlign: 'center' }}>
                                     <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, marginBottom: 12 }}>
                                         <span style={{ color: '#fbbf24', fontSize: 28, fontWeight: 800 }}>100.000đ</span>
-                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>/ vĩnh viễn</span>
+                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>/ năm</span>
                                     </div>
                                     <div style={{ background: 'white', borderRadius: 16, padding: 12, width: 180, margin: '0 auto 12px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
                                         <img src="/qr-skkn.png.jpg" alt="QR chuyển khoản BIDV" style={{ width: '100%', borderRadius: 8 }} />
