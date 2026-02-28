@@ -540,7 +540,41 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
         setIsStreaming(true);
         setError('');
-        const text = await file.text();
+        let text = '';
+
+        try {
+            if (file.name.endsWith('.txt') || file.name.endsWith('.text')) {
+                text = await file.text();
+            } else if (file.name.endsWith('.docx')) {
+                const arrayBuffer = await file.arrayBuffer();
+                // @ts-ignore - mammoth is loaded via CDN
+                const result = await window.mammoth.extractRawText({ arrayBuffer });
+                text = result.value;
+            } else if (file.name.endsWith('.pdf')) {
+                const arrayBuffer = await file.arrayBuffer();
+                // @ts-ignore - pdfjsLib is loaded via CDN
+                const pdf = await window.pdfjsLib.getDocument({ data: arrayBuffer }).promise;
+                let fullText = '';
+                for (let i = 1; i <= pdf.numPages; i++) {
+                    const page = await pdf.getPage(i);
+                    const content = await page.getTextContent();
+                    const pageText = content.items.map((item: any) => item.str).join(' ');
+                    fullText += pageText + '\n';
+                }
+                text = fullText;
+            } else {
+                throw new Error('Định dạng file không được hỗ trợ. Vui lòng thử lại với file .txt, .docx, hoặc .pdf.');
+            }
+
+            if (!text || !text.trim()) {
+                throw new Error('Không có chữ nào được tìm thấy trong file.');
+            }
+        } catch (err: any) {
+            setIsStreaming(false);
+            setError(`Lỗi đọc file: ${err.message}`);
+            e.target.value = '';
+            return;
+        }
 
         const messages = [
             {
@@ -950,9 +984,9 @@ Chỉ trả về JSON, không giải thích.` },
                         <label>📂 Tải cấu trúc địa phương (tùy chọn)</label>
                         <label className="skkn-upload-area">
                             <Upload size={32} style={{ color: '#818cf8', marginBottom: 8 }} />
-                            <div style={{ color: '#94a3b8', fontSize: 14 }}>Kéo thả hoặc click để tải file .txt chứa cấu trúc</div>
-                            <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>Hỗ trợ file văn bản có mục lục</div>
-                            <input type="file" accept=".txt,.text" style={{ display: 'none' }} onChange={handleUploadStructure} />
+                            <div style={{ color: '#94a3b8', fontSize: 14 }}>Kéo thả hoặc click để tải lên file cấu trúc (Word/PDF/TXT)</div>
+                            <div style={{ color: '#64748b', fontSize: 12, marginTop: 4 }}>Hỗ trợ file .docx, .pdf, .txt có đánh mục lục rõ ràng</div>
+                            <input type="file" accept=".txt,.text,.docx,.pdf" style={{ display: 'none' }} onChange={handleUploadStructure} />
                         </label>
                         {isStreaming && <div className="skkn-streaming"><div className="skkn-streaming-dot" /> Đang phân tích cấu trúc...</div>}
                     </div>
