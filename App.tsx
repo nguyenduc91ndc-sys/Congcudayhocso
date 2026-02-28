@@ -372,6 +372,7 @@ function App() {
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
                   maintenanceMode={appVisibility.maintenanceMode}
                   maintenanceMessage={appVisibility.maintenanceMessage}
+                  showUpdateNotification={appVisibility.showUpdateNotification}
                 />
               </div>
               <Footer onViewChange={(v) => { window.scrollTo(0, 0); setView(v as ViewState); }} />

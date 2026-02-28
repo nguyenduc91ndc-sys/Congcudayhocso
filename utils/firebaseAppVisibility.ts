@@ -60,12 +60,14 @@ export interface AppVisibilityState {
     apps: Record<string, boolean>; // appId -> visible
     maintenanceMode: boolean;
     maintenanceMessage: string;
+    showUpdateNotification?: boolean;
 }
 
 const DEFAULT_STATE: AppVisibilityState = {
     apps: Object.fromEntries(ALL_APP_IDS.map(id => [id, true])),
     maintenanceMode: false,
     maintenanceMessage: '🔧 Website đang bảo trì, vui lòng quay lại sau. Xin cảm ơn!',
+    showUpdateNotification: false,
 };
 
 // Lấy trạng thái visibility
@@ -78,6 +80,7 @@ export const getAppVisibility = async (): Promise<AppVisibilityState> => {
                 apps: { ...DEFAULT_STATE.apps, ...(data.apps || {}) },
                 maintenanceMode: data.maintenanceMode || false,
                 maintenanceMessage: data.maintenanceMessage || DEFAULT_STATE.maintenanceMessage,
+                showUpdateNotification: data.showUpdateNotification !== undefined ? data.showUpdateNotification : false,
             };
         }
         return DEFAULT_STATE;
@@ -128,6 +131,7 @@ export const subscribeToAppVisibility = (callback: (state: AppVisibilityState) =
                 apps: { ...DEFAULT_STATE.apps, ...(data.apps || {}) },
                 maintenanceMode: data.maintenanceMode || false,
                 maintenanceMessage: data.maintenanceMessage || DEFAULT_STATE.maintenanceMessage,
+                showUpdateNotification: data.showUpdateNotification !== undefined ? data.showUpdateNotification : false,
             });
         } else {
             callback(DEFAULT_STATE);
@@ -135,4 +139,13 @@ export const subscribeToAppVisibility = (callback: (state: AppVisibilityState) =
     });
 
     return () => off(dbRef);
+};
+
+// Toggle banner cập nhật
+export const setUpdateNotification = async (visible: boolean): Promise<void> => {
+    try {
+        await set(ref(database, 'app_visibility/showUpdateNotification'), visible);
+    } catch (error) {
+        console.error('Error setting update notification:', error);
+    }
 };

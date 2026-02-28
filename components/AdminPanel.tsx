@@ -12,7 +12,7 @@ import { uploadImage, isValidImage } from '../utils/firebaseStorage';
 import { saveProKey, deleteProKey, subscribeToProKeys, ProKey } from '../utils/firebaseProKeys';
 import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode } from '../utils/firebaseBeeProKeys';
 import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, generateSKKNProCode, revokeSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
-import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode } from '../utils/firebaseAppVisibility';
+import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
 
 interface AdminPanelProps {
     onBack: () => void;
@@ -1225,9 +1225,27 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                             </div>
                         </div>
 
+                        {/* Update Notification Toggle */}
+                        <div className={`rounded-xl px-3 py-2 mb-4 shadow-md transition-all ${appVisibility.showUpdateNotification ? 'bg-gradient-to-r from-emerald-500 to-teal-500' : 'bg-gradient-to-r from-gray-400 to-gray-500'}`}>
+                            <div className="flex items-center justify-between gap-2">
+                                <div className="flex items-center gap-2">
+                                    <span className="text-lg">{appVisibility.showUpdateNotification ? '🎉' : '💤'}</span>
+                                    <span className="text-white font-bold text-sm">Thông báo SKKN nâng cấp</span>
+                                </div>
+                                <button
+                                    onClick={async () => {
+                                        await setUpdateNotification(!appVisibility.showUpdateNotification);
+                                    }}
+                                    className={`px-3 py-1 rounded-md font-bold text-[11px] transition-all flex-shrink-0 ${appVisibility.showUpdateNotification ? 'bg-white text-emerald-600 hover:bg-emerald-50' : 'bg-white/20 text-white hover:bg-white/30 border border-white/30'}`}
+                                >
+                                    {appVisibility.showUpdateNotification ? '🟢 Đang Bật' : '🔴 Đã Tắt'}
+                                </button>
+                            </div>
+                        </div>
+
                         {/* App List - Accordion */}
                         <div className="flex-1 overflow-y-auto pr-1 space-y-1.5">
-                            {(['Công cụ dạy học', 'Khóa học & AI', 'Ứng dụng 3D & VR', 'Mô phỏng khoa học', 'Học liệu tương tác'] as const).map(section => {
+                            {(['Công cụ dạy học', 'Khóa học & AI', 'Ứng dụng 3D & VR', 'Mô phỏng khoa học', 'Học liệu tương tác', 'Công cụ viết'] as const).map(section => {
                                 const sectionApps = ALL_APP_IDS.filter(id => APP_INFO[id].section === section);
                                 if (sectionApps.length === 0) return null;
                                 const enabledCount = sectionApps.filter(id => appVisibility.apps[id] !== false).length;
@@ -1235,7 +1253,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 const isExpanded = expandedSections.includes(section);
                                 const sectionIcons: Record<string, string> = {
                                     'Công cụ dạy học': '⚡', 'Mô phỏng khoa học': '🧪',
-                                    'Khóa học & AI': '🧠', 'Ứng dụng 3D & VR': '📦', 'Học liệu tương tác': '📚'
+                                    'Khóa học & AI': '🧠', 'Ứng dụng 3D & VR': '📦', 'Học liệu tương tác': '📚', 'Công cụ viết': '✍️'
                                 };
                                 return (
                                     <div key={section} className="rounded-xl border border-gray-200 overflow-hidden bg-white/60">
