@@ -1,9 +1,9 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { ArrowLeft, Sparkles, FileDown, Search, Upload, Save, Trash2, Plus, Loader2, X, RefreshCw, CheckCircle, ChevronDown, BookOpen, Table2, Maximize2, Minimize2, Wand2, BarChart3, PieChart } from 'lucide-react';
+import { ArrowLeft, Sparkles, FileDown, Search, Upload, Save, Trash2, Plus, Loader2, X, RefreshCw, CheckCircle, ChevronDown, BookOpen, Table2, Maximize2, Minimize2, Wand2, BarChart3, PieChart, Lightbulb, Star, AlertCircle, ChevronRight } from 'lucide-react';
 import {
     ReportType, TopicInfo, Section, SKKNDocument,
     AICheckResult, PlagiarismResult,
-    REPORT_TYPES, LEVELS, DEFAULT_SECTIONS,
+    REPORT_TYPES, LEVELS, DEFAULT_SECTIONS, SKKN_TEMPLATES, SKKNTemplate,
     getLeafSections, cloneSections
 } from '../utils/skknTypes';
 import {
@@ -12,7 +12,8 @@ import {
     buildPlagiarismPrompt, buildHumanizePrompt,
     buildExpandPrompt, buildShortenPrompt,
     buildTablePrompt, buildReferencePrompt,
-    buildChartDataPrompt
+    buildChartDataPrompt, buildTopicAnalysisPrompt,
+    buildTopicSuggestionPrompt
 } from '../utils/groqApi';
 import { exportToWord } from '../utils/wordExport';
 import { generateBarChart, generatePieChart, parseChartData } from '../utils/chartGenerator';
@@ -27,9 +28,12 @@ interface Props {
     userName?: string;
 }
 
-type AppView = 'landing' | 'form' | 'editor' | 'check' | 'feedback_admin';
+type AppView = 'landing' | 'form' | 'structure' | 'editor' | 'check' | 'feedback_admin';
 
 const STORAGE_KEY = 'skkn_documents';
+
+// Track selected template
+const DEFAULT_TEMPLATE_ID = 'standard';
 
 // Word count targets per section type (approximate)
 const WORD_TARGETS: Record<string, { min: number; max: number }> = {
@@ -76,9 +80,15 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     const [apiKeyInput, setApiKeyInput] = useState('');
     const [reportType, setReportType] = useState<ReportType>('skkn');
     const [topicInfo, setTopicInfo] = useState<TopicInfo>({
-        title: '', subject: '', level: 'Tiểu học', target: '', context: '',
+        title: '', subject: '', level: 'Tiểu học', grade: '', classSize: '', target: '', context: '',
+        referenceText: '', referenceImages: [],
         author: '', school: '', department: '', year: '2025-2026',
+        experimentClass: '', controlClass: '',
     });
+    const [topicAnalysis, setTopicAnalysis] = useState<any>(null);
+    const [isAnalyzingTopic, setIsAnalyzingTopic] = useState(false);
+    const [topicSuggestions, setTopicSuggestions] = useState<any[]>([]);
+    const [isSuggestingTopic, setIsSuggestingTopic] = useState(false);
     const [sections, setSections] = useState<Section[]>([]);
     const [activeSection, setActiveSection] = useState<string>('');
     const [isStreaming, setIsStreaming] = useState(false);
@@ -97,6 +107,9 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     const [proActivating, setProActivating] = useState(false);
     const [proError, setProError] = useState('');
     const [proSuccess, setProSuccess] = useState(false);
+    const [selectedTemplateId, setSelectedTemplateId] = useState(DEFAULT_TEMPLATE_ID);
+    const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
+    const [editingSectionTitle, setEditingSectionTitle] = useState('');
     const abortRef = useRef<AbortController | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -147,6 +160,87 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
         setReportType(type);
         setSections(cloneSections(DEFAULT_SECTIONS[type]));
         setAppView('form');
+    };
+
+    // AI Topic Analysis
+    const handleAnalyzeTopic = async () => {
+        if (!topicInfo.title.trim()) { setError('Vui lòng nhập tên đề tài trước'); return; }
+        if (!apiKey) { setError('Vui lòng nhập Groq API Key trước'); return; }
+        setIsAnalyzingTopic(true);
+        setTopicAnalysis(null);
+        setError('');
+
+        const messages = buildTopicAnalysisPrompt(
+            topicInfo.title,
+            REPORT_TYPES[reportType].label,
+            topicInfo.subject,
+            topicInfo.level
+        );
+
+        let result = '';
+        await groqStream(
+            messages,
+            apiKey,
+            (chunk: string) => { result += chunk; },
+            () => {
+                setIsAnalyzingTopic(false);
+                try {
+                    const jsonMatch = result.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        setTopicAnalysis(JSON.parse(jsonMatch[0]));
+                    } else {
+                        setError('Không thể phân tích. Vui lòng thử lại.');
+                    }
+                } catch { setError('Không thể phân tích kết quả. Vui lòng thử lại.'); }
+            },
+            (err: Error) => {
+                setIsAnalyzingTopic(false);
+                setError(`Lỗi: ${err.message}`);
+            },
+            'llama-3.3-70b-versatile',
+            0.7
+        );
+    };
+
+    // AI Topic Suggestion - Gợi ý đề tài mới
+    const handleSuggestTopics = async () => {
+        if (!apiKey) { setError('Vui lòng nhập Groq API Key trước'); return; }
+        if (!topicInfo.subject.trim() || !topicInfo.grade.trim()) { setError('Vui lòng nhập Môn/Lĩnh vực và Lớp trước để AI gợi ý đề tài phù hợp'); return; }
+        setIsSuggestingTopic(true);
+        setTopicSuggestions([]);
+        setError('');
+
+        const messages = buildTopicSuggestionPrompt(
+            reportType,
+            topicInfo.subject + (topicInfo.grade ? ` lớp ${topicInfo.grade}` : ''),
+            topicInfo.level,
+            topicInfo.context || undefined
+        );
+
+        let result = '';
+        await groqStream(
+            messages,
+            apiKey,
+            (chunk: string) => { result += chunk; },
+            () => {
+                setIsSuggestingTopic(false);
+                try {
+                    const jsonMatch = result.match(/\{[\s\S]*\}/);
+                    if (jsonMatch) {
+                        const parsed = JSON.parse(jsonMatch[0]);
+                        setTopicSuggestions(parsed.suggestions || []);
+                    } else {
+                        setError('Không thể tạo gợi ý. Vui lòng thử lại.');
+                    }
+                } catch { setError('Lỗi phân tích kết quả gợi ý. Thử lại.'); }
+            },
+            (err: Error) => {
+                setIsSuggestingTopic(false);
+                setError(`Lỗi: ${err.message}`);
+            },
+            'llama-3.3-70b-versatile',
+            0.9
+        );
     };
 
     // Start editing
@@ -211,10 +305,12 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
     // Save current document
     const handleSaveDoc = useCallback(() => {
+        // Strip referenceImages (large base64) to avoid localStorage overflow
+        const { referenceImages, ...topicInfoToSave } = topicInfo;
         const doc: SKKNDocument = {
             id: currentDocId || `skkn_${Date.now()}`,
             reportType,
-            topicInfo,
+            topicInfo: { ...topicInfoToSave, referenceImages: [] },
             sections: cloneSections(sections),
             createdAt: savedDocs.find(d => d.id === currentDocId)?.createdAt || Date.now(),
             updatedAt: Date.now(),
@@ -334,6 +430,8 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
             });
         setSections(prev => markWriting(prev));
 
+        // Use vision model when reference images are uploaded
+        const useVision = topicInfo.referenceImages && topicInfo.referenceImages.length > 0;
         const controller = await groqStream(
             messages,
             apiKey,
@@ -348,7 +446,8 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
             (err: Error) => {
                 setIsStreaming(false);
                 setError(`Lỗi AI: ${err.message}`);
-            }
+            },
+            useVision ? 'llama-3.2-90b-vision-preview' : undefined
         );
         abortRef.current = controller;
     };
@@ -459,7 +558,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
     // Generate table
     const handleGenTable = async () => {
-        await runAIAction(buildTablePrompt(topicInfo.title, getActiveSectionTitle()), false);
+        await runAIAction(buildTablePrompt(topicInfo.title, getActiveSectionTitle(), topicInfo.classSize || undefined), false);
     };
 
     // Generate references
@@ -485,7 +584,8 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
             chartType,
             topicInfo.title,
             getActiveSectionTitle(),
-            getActiveContent()
+            getActiveContent(),
+            topicInfo.classSize || undefined
         );
 
         let result = '';
@@ -688,10 +788,12 @@ Chỉ trả về JSON, không giải thích.` },
             <div className="skkn-header">
                 <button className="skkn-back-btn" onClick={
                     appView === 'editor'
-                        ? () => { handleSaveDoc(); setAppView('landing'); }
-                        : appView === 'form'
-                            ? () => setAppView('landing')
-                            : onBack
+                        ? () => { handleSaveDoc(); setAppView('structure'); }
+                        : appView === 'structure'
+                            ? () => setAppView('form')
+                            : appView === 'form'
+                                ? () => setAppView('landing')
+                                : onBack
                 }>
                     <ArrowLeft size={18} />
                 </button>
@@ -915,14 +1017,126 @@ Chỉ trả về JSON, không giải thích.` },
 
                     <div className="skkn-field">
                         <label>📌 Tên đề tài / biện pháp *</label>
-                        <input className="skkn-input" placeholder={reportType === 'gvcn_gioi' ? "VD: Một số biện pháp xây dựng lớp học thân thiện, học sinh tích cực..." : "VD: Một số biện pháp nâng cao chất lượng dạy học môn Toán..."}
-                            value={topicInfo.title} onChange={e => setTopicInfo({ ...topicInfo, title: e.target.value })} />
+                        <div style={{ fontSize: 12, color: '#8b5cf6', marginBottom: 6, fontStyle: 'italic' }}>
+                            💡 Chưa có đề tài? Hãy nhập <strong>Môn</strong> và <strong>Lớp</strong> bên dưới rồi bấm <strong>✨ Gợi ý đề tài</strong> để AI gợi ý cho bạn!
+                        </div>
+                        <div style={{ display: 'flex', gap: 8 }}>
+                            <input className="skkn-input" style={{ flex: 1 }} placeholder={reportType === 'gvcn_gioi' ? "VD: Một số biện pháp xây dựng lớp học thân thiện, học sinh tích cực..." : "VD: Một số biện pháp nâng cao chất lượng dạy học môn Toán..."}
+                                value={topicInfo.title} onChange={e => { setTopicInfo({ ...topicInfo, title: e.target.value }); setTopicAnalysis(null); }} />
+                            <button
+                                className="skkn-btn skkn-btn-primary"
+                                onClick={handleAnalyzeTopic}
+                                disabled={isAnalyzingTopic || !topicInfo.title.trim()}
+                                style={{ whiteSpace: 'nowrap', padding: '8px 16px', background: 'linear-gradient(135deg, #f59e0b, #ef4444)', border: 'none' }}
+                                title="AI phân tích và gợi ý tên đề tài hấp dẫn hơn"
+                            >
+                                {isAnalyzingTopic ? <><div className="skkn-spinner" /> Đang phân tích...</> : <><Lightbulb size={16} /> Phân tích đề tài</>}
+                            </button>
+                            <button
+                                className="skkn-btn"
+                                onClick={handleSuggestTopics}
+                                disabled={isSuggestingTopic || !topicInfo.subject.trim() || !topicInfo.grade.trim()}
+                                style={{ whiteSpace: 'nowrap', padding: '8px 16px', background: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? '#374151' : 'linear-gradient(135deg, #8b5cf6, #6366f1)', border: 'none', color: 'white', borderRadius: 10, cursor: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 0.5 : 1 }}
+                                title={(!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 'Vui lòng nhập Môn và Lớp bên dưới trước' : 'AI gợi ý đề tài mới dựa trên môn học và lớp'}
+                            >
+                                {isSuggestingTopic ? <><div className="skkn-spinner" /> Đang gợi ý...</> : <>✨ Gợi ý đề tài</>}
+                            </button>
+                        </div>
+
+                        {/* Topic Suggestions */}
+                        {topicSuggestions.length > 0 && (
+                            <div className="skkn-topic-analysis" style={{ borderColor: 'rgba(139,92,246,0.3)' }}>
+                                <div className="skkn-topic-analysis-header">
+                                    <span style={{ fontWeight: 700, color: '#a78bfa' }}>✨ Gợi ý đề tài ({topicSuggestions.length})</span>
+                                    <button onClick={() => setTopicSuggestions([])} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={16} /></button>
+                                </div>
+                                <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
+                                    {topicSuggestions.map((s: any, i: number) => (
+                                        <div key={i}
+                                            className="skkn-topic-suggestion"
+                                            style={{ padding: '10px 14px', background: 'rgba(139,92,246,0.06)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 10, cursor: 'pointer', transition: 'all 0.15s' }}
+                                            onClick={() => { setTopicInfo({ ...topicInfo, title: s.title }); setTopicSuggestions([]); setTopicAnalysis(null); }}
+                                            onMouseEnter={e => { (e.target as HTMLElement).style.background = 'rgba(139,92,246,0.12)'; (e.target as HTMLElement).style.borderColor = 'rgba(139,92,246,0.4)'; }}
+                                            onMouseLeave={e => { (e.target as HTMLElement).style.background = 'rgba(139,92,246,0.06)'; (e.target as HTMLElement).style.borderColor = 'rgba(139,92,246,0.15)'; }}
+                                        >
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e7ff' }}>{i + 1}. {s.title}</div>
+                                            {s.highlight && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>💡 {s.highlight}</div>}
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
+
+                        {/* Topic Analysis Results */}
+                        {topicAnalysis && (
+                            <div className="skkn-topic-analysis">
+                                <div className="skkn-topic-analysis-header">
+                                    <Lightbulb size={18} style={{ color: '#f59e0b' }} />
+                                    <span style={{ fontWeight: 700, color: '#f59e0b' }}>Kết quả phân tích đề tài</span>
+                                    <div className="skkn-topic-score">
+                                        <Star size={14} style={{ color: '#f59e0b' }} />
+                                        <span>{topicAnalysis.analysis?.score || '?'}/10</span>
+                                    </div>
+                                    <button onClick={() => setTopicAnalysis(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={16} /></button>
+                                </div>
+
+                                {/* Strengths & Weaknesses */}
+                                <div className="skkn-topic-analysis-grid">
+                                    {topicAnalysis.analysis?.strengths?.length > 0 && (
+                                        <div className="skkn-topic-block skkn-topic-strengths">
+                                            <div className="skkn-topic-block-title"><CheckCircle size={14} /> Điểm mạnh</div>
+                                            {topicAnalysis.analysis.strengths.map((s: string, i: number) => (
+                                                <div key={i} className="skkn-topic-item">✅ {s}</div>
+                                            ))}
+                                        </div>
+                                    )}
+                                    {topicAnalysis.analysis?.weaknesses?.length > 0 && (
+                                        <div className="skkn-topic-block skkn-topic-weaknesses">
+                                            <div className="skkn-topic-block-title"><AlertCircle size={14} /> Cần cải thiện</div>
+                                            {topicAnalysis.analysis.weaknesses.map((w: string, i: number) => (
+                                                <div key={i} className="skkn-topic-item">⚠️ {w}</div>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+
+                                {/* Suggestions */}
+                                {topicAnalysis.suggestions?.length > 0 && (
+                                    <div className="skkn-topic-suggestions">
+                                        <div className="skkn-topic-block-title" style={{ marginBottom: 8 }}><Sparkles size={14} style={{ color: '#818cf8' }} /> Gợi ý tên đề tài</div>
+                                        {topicAnalysis.suggestions.map((s: any, i: number) => (
+                                            <div
+                                                key={i}
+                                                className="skkn-topic-suggestion"
+                                                onClick={() => { setTopicInfo({ ...topicInfo, title: s.title }); setTopicAnalysis(null); }}
+                                                title="Click để sử dụng tên này"
+                                            >
+                                                <div className="skkn-topic-suggestion-title">
+                                                    <ChevronRight size={14} style={{ color: '#818cf8', flexShrink: 0 }} />
+                                                    <strong>{s.title}</strong>
+                                                </div>
+                                                <div className="skkn-topic-suggestion-reason">{s.reason}</div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Tips */}
+                                {topicAnalysis.tips?.length > 0 && (
+                                    <div className="skkn-topic-tips">
+                                        {topicAnalysis.tips.map((t: string, i: number) => (
+                                            <span key={i} className="skkn-topic-tip">💡 {t}</span>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     <div className="skkn-row">
                         {reportType !== 'gvcn_gioi' && (
                             <div className="skkn-field">
-                                <label>📚 Môn / Lĩnh vực</label>
+                                <label>📚 Môn / Lĩnh vực *</label>
                                 <input className="skkn-input" placeholder={reportType === 'skkn' ? "VD: Toán, Ngữ văn, Sinh học..." : "VD: Toán, Ngữ văn, Tin học..."}
                                     value={topicInfo.subject} onChange={e => setTopicInfo({ ...topicInfo, subject: e.target.value })} />
                             </div>
@@ -932,6 +1146,82 @@ Chỉ trả về JSON, không giải thích.` },
                             <select className="skkn-select" value={topicInfo.level} onChange={e => setTopicInfo({ ...topicInfo, level: e.target.value })}>
                                 {LEVELS.map(l => <option key={l} value={l}>{l}</option>)}
                             </select>
+                        </div>
+                        <div className="skkn-field">
+                            <label>🎓 Lớp *</label>
+                            <input className="skkn-input" placeholder="VD: 5, 3, Lá lớn, 9..."
+                                value={topicInfo.grade} onChange={e => setTopicInfo({ ...topicInfo, grade: e.target.value })} />
+                        </div>
+                        <div className="skkn-field">
+                            <label>👥 Sĩ số lớp</label>
+                            <input className="skkn-input" type="number" placeholder="VD: 38"
+                                value={topicInfo.classSize} onChange={e => setTopicInfo({ ...topicInfo, classSize: e.target.value })} />
+                        </div>
+                    </div>
+
+                    {/* Reference Content - cho ví dụ minh hoạ sát bài */}
+                    <div className="skkn-field" style={{ background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 12, padding: 16, marginTop: 4 }}>
+                        <label style={{ color: '#a78bfa', fontSize: 14, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                            📚 Tài liệu để AI đưa ví dụ sát bài
+                            <span style={{ fontSize: 11, fontWeight: 400, color: '#8b5cf6' }}>— paste nội dung SGK/giáo án để ví dụ minh hoạ chính xác hơn</span>
+                        </label>
+                        <textarea
+                            className="skkn-input"
+                            rows={4}
+                            placeholder={"Paste tên bài, nội dung kiến thức, hoạt động dạy học... vào đây để AI đưa ví dụ sát bài. VD:\n- Bài 12: Diện tích hình thang (trang 93 SGK Toán 5)\n- Kiến thức: công thức S = (a+b) × h ÷ 2\n- HĐ: Khám phá (cắt ghép hình thang → hình chữ nhật)..."}
+                            value={topicInfo.referenceText}
+                            onChange={e => setTopicInfo({ ...topicInfo, referenceText: e.target.value })}
+                            style={{ resize: 'vertical', minHeight: 80, fontFamily: 'inherit' }}
+                        />
+
+                        {/* Image Upload */}
+                        <div style={{ marginTop: 12 }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+                                <span style={{ fontSize: 13, color: '#94a3b8' }}>📷 Ảnh chụp SGK / Giáo án (tối đa 5 ảnh)</span>
+                            </div>
+                            <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                                {topicInfo.referenceImages.map((img, i) => (
+                                    <div key={i} style={{ position: 'relative', width: 100, height: 100, borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(139,92,246,0.3)' }}>
+                                        <img src={img} alt={`Tham chiếu ${i + 1}`} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                                        <button
+                                            onClick={() => setTopicInfo({ ...topicInfo, referenceImages: topicInfo.referenceImages.filter((_, idx) => idx !== i) })}
+                                            style={{ position: 'absolute', top: 2, right: 2, background: 'rgba(0,0,0,0.7)', border: 'none', color: 'white', borderRadius: '50%', width: 22, height: 22, cursor: 'pointer', fontSize: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+                                        >✕</button>
+                                    </div>
+                                ))}
+                                {topicInfo.referenceImages.length < 5 && (
+                                    <label
+                                        style={{ width: 100, height: 100, borderRadius: 8, border: '2px dashed rgba(139,92,246,0.3)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#8b5cf6', fontSize: 12, gap: 4, transition: 'all 0.15s' }}
+                                        onMouseEnter={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.6)'; (e.currentTarget as HTMLElement).style.background = 'rgba(139,92,246,0.05)'; }}
+                                        onMouseLeave={e => { (e.currentTarget as HTMLElement).style.borderColor = 'rgba(139,92,246,0.3)'; (e.currentTarget as HTMLElement).style.background = 'transparent'; }}
+                                    >
+                                        <span style={{ fontSize: 24 }}>+</span>
+                                        <span>Thêm ảnh</span>
+                                        <input
+                                            type="file"
+                                            accept="image/*"
+                                            multiple
+                                            style={{ display: 'none' }}
+                                            onChange={e => {
+                                                const files = Array.from(e.target.files || []);
+                                                const remaining = 5 - topicInfo.referenceImages.length;
+                                                files.slice(0, remaining).forEach(file => {
+                                                    const reader = new FileReader();
+                                                    reader.onload = (ev) => {
+                                                        const dataUrl = ev.target?.result as string;
+                                                        setTopicInfo(prev => ({
+                                                            ...prev,
+                                                            referenceImages: [...prev.referenceImages, dataUrl]
+                                                        }));
+                                                    };
+                                                    reader.readAsDataURL(file);
+                                                });
+                                                e.target.value = '';
+                                            }}
+                                        />
+                                    </label>
+                                )}
+                            </div>
                         </div>
                     </div>
 
@@ -967,6 +1257,19 @@ Chỉ trả về JSON, không giải thích.` },
                             value={topicInfo.target} onChange={e => setTopicInfo({ ...topicInfo, target: e.target.value })} />
                     </div>
 
+                    <div className="skkn-row">
+                        <div className="skkn-field">
+                            <label>🔬 Lớp thực nghiệm <span style={{ fontSize: 11, color: '#64748b', fontWeight: 400 }}>(tùy chọn)</span></label>
+                            <input className="skkn-input" placeholder="VD: Lớp 11A1 (38 HS)"
+                                value={topicInfo.experimentClass} onChange={e => setTopicInfo({ ...topicInfo, experimentClass: e.target.value })} />
+                        </div>
+                        <div className="skkn-field">
+                            <label>🔄 Lớp đối chứng <span style={{ fontSize: 11, color: '#64748b', fontWeight: 400 }}>(tùy chọn)</span></label>
+                            <input className="skkn-input" placeholder="VD: Lớp 11A2 (37 HS)"
+                                value={topicInfo.controlClass} onChange={e => setTopicInfo({ ...topicInfo, controlClass: e.target.value })} />
+                        </div>
+                    </div>
+
                     <div className="skkn-field">
                         <label>📝 Bối cảnh / Mô tả thêm</label>
                         <textarea className="skkn-textarea" placeholder="Mô tả thêm về bối cảnh, khó khăn, thuận lợi..."
@@ -987,7 +1290,163 @@ Chỉ trả về JSON, không giải thích.` },
 
                     <div className="skkn-form-actions">
                         <button className="skkn-btn skkn-btn-secondary" onClick={() => setAppView('landing')}>← Quay lại</button>
-                        <button className="skkn-btn skkn-btn-primary" onClick={handleStartWriting} disabled={isStreaming}>
+                        <button className="skkn-btn skkn-btn-primary" onClick={() => {
+                            if (!topicInfo.title.trim()) { setError('Vui lòng nhập tên đề tài'); return; }
+                            if (!apiKey) { setError('Vui lòng nhập Groq API Key'); return; }
+                            setError('');
+                            setAppView('structure');
+                        }} disabled={isStreaming}>
+                            <Sparkles size={16} /> Tiếp tục chọn cấu trúc
+                        </button>
+                    </div>
+                </div>
+            )}
+
+            {/* === STRUCTURE PREVIEW === */}
+            {appView === 'structure' && (
+                <div className="skkn-form" style={{ maxWidth: 900 }}>
+                    <h2>📋 Chọn cấu trúc dàn ý</h2>
+                    <p style={{ textAlign: 'center', color: '#94a3b8', fontSize: 14, marginTop: -16, marginBottom: 24 }}>
+                        Chọn mẫu cấu trúc phù hợp với yêu cầu của Sở/Đơn vị, hoặc tùy chỉnh theo ý muốn
+                    </p>
+
+                    {/* Template selector cards */}
+                    {reportType === 'skkn' && (
+                        <div className="skkn-template-grid">
+                            {SKKN_TEMPLATES.map(tpl => (
+                                <div
+                                    key={tpl.id}
+                                    className={`skkn-template-card ${selectedTemplateId === tpl.id ? 'active' : ''}`}
+                                    onClick={() => {
+                                        setSelectedTemplateId(tpl.id);
+                                        setSections(cloneSections(tpl.sections));
+                                    }}
+                                >
+                                    <div className="skkn-template-icon">{tpl.icon}</div>
+                                    <div className="skkn-template-info">
+                                        <div className="skkn-template-name">{tpl.name}</div>
+                                        <div className="skkn-template-desc">{tpl.desc}</div>
+                                    </div>
+                                    {selectedTemplateId === tpl.id && <CheckCircle size={18} style={{ color: '#818cf8', flexShrink: 0 }} />}
+                                </div>
+                            ))}
+                        </div>
+                    )}
+
+                    {/* Structure tree preview */}
+                    <div className="skkn-structure-preview">
+                        <div className="skkn-structure-header">
+                            <h3>🎯 Cấu trúc dàn ý hiện tại</h3>
+                            <span style={{ fontSize: 12, color: '#64748b' }}>{getLeafSections(sections).length} mục</span>
+                        </div>
+                        <div className="skkn-structure-tree">
+                            {sections.map((sec, si) => (
+                                <div key={sec.id} className="skkn-structure-section">
+                                    <div className="skkn-structure-item skkn-structure-parent">
+                                        <span className="skkn-structure-bullet">◆</span>
+                                        {editingSectionId === sec.id ? (
+                                            <input
+                                                className="skkn-input" style={{ flex: 1, padding: '4px 8px', fontSize: 13 }}
+                                                value={editingSectionTitle}
+                                                onChange={e => setEditingSectionTitle(e.target.value)}
+                                                onBlur={() => {
+                                                    if (editingSectionTitle.trim()) {
+                                                        setSections(prev => prev.map(s => s.id === sec.id ? { ...s, title: editingSectionTitle } : s));
+                                                    }
+                                                    setEditingSectionId(null);
+                                                }}
+                                                onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                                autoFocus
+                                            />
+                                        ) : (
+                                            <span
+                                                className="skkn-structure-title"
+                                                onDoubleClick={() => { setEditingSectionId(sec.id); setEditingSectionTitle(sec.title); }}
+                                                title="Double-click để sửa tên"
+                                            >{sec.title}</span>
+                                        )}
+                                        <button
+                                            className="skkn-structure-del"
+                                            onClick={() => setSections(prev => prev.filter(s => s.id !== sec.id))}
+                                            title="Xóa phần này"
+                                        ><X size={12} /></button>
+                                    </div>
+                                    {sec.subsections?.map((sub, subi) => (
+                                        <div key={sub.id} className="skkn-structure-item skkn-structure-child">
+                                            <span className="skkn-structure-bullet">○</span>
+                                            {editingSectionId === sub.id ? (
+                                                <input
+                                                    className="skkn-input" style={{ flex: 1, padding: '4px 8px', fontSize: 12 }}
+                                                    value={editingSectionTitle}
+                                                    onChange={e => setEditingSectionTitle(e.target.value)}
+                                                    onBlur={() => {
+                                                        if (editingSectionTitle.trim()) {
+                                                            setSections(prev => prev.map(s =>
+                                                                s.id === sec.id && s.subsections
+                                                                    ? { ...s, subsections: s.subsections.map(ss => ss.id === sub.id ? { ...ss, title: editingSectionTitle } : ss) }
+                                                                    : s
+                                                            ));
+                                                        }
+                                                        setEditingSectionId(null);
+                                                    }}
+                                                    onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur(); }}
+                                                    autoFocus
+                                                />
+                                            ) : (
+                                                <span
+                                                    className="skkn-structure-title"
+                                                    onDoubleClick={() => { setEditingSectionId(sub.id); setEditingSectionTitle(sub.title); }}
+                                                    title="Double-click để sửa tên"
+                                                >{sub.title}</span>
+                                            )}
+                                            <button
+                                                className="skkn-structure-del"
+                                                onClick={() => {
+                                                    setSections(prev => prev.map(s =>
+                                                        s.id === sec.id && s.subsections
+                                                            ? { ...s, subsections: s.subsections.filter(ss => ss.id !== sub.id) }
+                                                            : s
+                                                    ));
+                                                }}
+                                                title="Xóa mục này"
+                                            ><X size={12} /></button>
+                                        </div>
+                                    ))}
+                                    {/* Add subsection button */}
+                                    <button
+                                        className="skkn-structure-add-sub"
+                                        onClick={() => {
+                                            const newId = `${sec.id}_new_${Date.now()}`;
+                                            setSections(prev => prev.map(s =>
+                                                s.id === sec.id
+                                                    ? { ...s, subsections: [...(s.subsections || []), { id: newId, title: 'Mục mới', content: '', status: 'empty' as const }] }
+                                                    : s
+                                            ));
+                                            setEditingSectionId(newId);
+                                            setEditingSectionTitle('Mục mới');
+                                        }}
+                                    ><Plus size={12} /> Thêm mục con</button>
+                                </div>
+                            ))}
+                            {/* Add main section button */}
+                            <button
+                                className="skkn-structure-add-main"
+                                onClick={() => {
+                                    const newId = `main_new_${Date.now()}`;
+                                    setSections(prev => [...prev, { id: newId, title: 'PHẦN MỚI', content: '', status: 'empty' as const }]);
+                                    setEditingSectionId(newId);
+                                    setEditingSectionTitle('PHẦN MỚI');
+                                }}
+                            ><Plus size={14} /> Thêm phần mới</button>
+                        </div>
+                        <div style={{ fontSize: 11, color: '#64748b', marginTop: 8 }}>
+                            💡 Double-click vào tên mục để chỉnh sửa. Hoặc tải lên file cấu trúc ở bước trước.
+                        </div>
+                    </div>
+
+                    <div className="skkn-form-actions">
+                        <button className="skkn-btn skkn-btn-secondary" onClick={() => setAppView('form')}>← Quay lại</button>
+                        <button className="skkn-btn skkn-btn-primary" onClick={handleStartWriting} disabled={isStreaming || sections.length === 0}>
                             <Sparkles size={16} /> Bắt đầu viết
                         </button>
                     </div>
