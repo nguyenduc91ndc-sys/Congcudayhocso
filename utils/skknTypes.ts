@@ -130,14 +130,15 @@ export const DEFAULT_SECTIONS: Record<ReportType, Section[]> = {
     ],
 };
 
-// Helper to get all leaf sections (for writing)
+// Helper to get all sections as writable (flat list)
 export function getLeafSections(sections: Section[]): Section[] {
     const result: Section[] = [];
     for (const s of sections) {
+        // ALWAYS add the current section so the user can write in it
+        result.push(s);
+        // And also add its subsections if any
         if (s.subsections && s.subsections.length > 0) {
             result.push(...getLeafSections(s.subsections));
-        } else {
-            result.push(s);
         }
     }
     return result;

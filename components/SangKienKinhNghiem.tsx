@@ -664,26 +664,20 @@ Chỉ trả về JSON, không giải thích.` },
     const renderSections = (secs: Section[], depth = 0) => {
         return secs.map(sec => (
             <React.Fragment key={sec.id}>
-                {sec.subsections ? (
-                    <>
-                        <div className="skkn-section-item parent" style={{ paddingLeft: 12 + depth * 12 }}>
-                            {sec.title}
-                        </div>
-                        {renderSections(sec.subsections, depth + 1)}
-                    </>
-                ) : (
-                    <div
-                        className={`skkn-section-item ${activeSection === sec.id ? 'active' : ''}`}
-                        style={{ paddingLeft: 12 + depth * 12 }}
-                        onClick={() => setActiveSection(sec.id)}
-                    >
-                        <span className={`skkn-section-status ${sec.status}`} />
-                        <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                            {sec.title}
-                        </span>
-                        {sec.content && <span className="skkn-section-wc">{countWords(sec.content)}</span>}
-                    </div>
-                )}
+                {/* ALWAYS render the section as clickable whether it has subsections or not */}
+                <div
+                    className={`skkn-section-item ${sec.subsections ? 'parent' : ''} ${activeSection === sec.id ? 'active' : ''}`}
+                    style={{ paddingLeft: 12 + depth * 12 }}
+                    onClick={() => setActiveSection(sec.id)}
+                >
+                    {!sec.subsections && <span className={`skkn-section-status ${sec.status}`} />}
+                    <span style={{ flex: 1, minWidth: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                        {sec.title}
+                    </span>
+                    {sec.content && <span className="skkn-section-wc">{sec.content.split(/\s+/).filter(w => w.length > 0).length}</span>}
+                </div>
+                {/* Render children if any */}
+                {sec.subsections && renderSections(sec.subsections, depth + 1)}
             </React.Fragment>
         ));
     };
