@@ -55,6 +55,7 @@ interface DashboardProps {
     onYogurtExperiment: () => void;
     onKiemTraDaoVan: () => void;
     onPhongTranh3D: () => void;
+    onSangKienKN: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
     hiddenApps?: string[];
@@ -271,7 +272,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = ''
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = ''
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -287,6 +288,14 @@ const Dashboard: React.FC<DashboardProps> = ({
     const [showDonateModal, setShowDonateModal] = useState(false);
     const [showZaloModal, setShowZaloModal] = useState(false);
     const [activeTab, setActiveTab] = useState('all');
+    const [showUpdateBanner, setShowUpdateBanner] = useState(() => {
+        return !sessionStorage.getItem('skkn_update_dismissed');
+    });
+
+    const dismissUpdateBanner = () => {
+        setShowUpdateBanner(false);
+        sessionStorage.setItem('skkn_update_dismissed', 'true');
+    };
 
 
     useEffect(() => {
@@ -538,6 +547,142 @@ const Dashboard: React.FC<DashboardProps> = ({
                         </div>
                     </motion.section>
 
+                    {/* Update Notification Popup */}
+                    <AnimatePresence>
+                        {showUpdateBanner && (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                transition={{ duration: 0.3 }}
+                                className="fixed inset-0 z-[9999] flex items-center justify-center p-4"
+                                style={{ backdropFilter: 'blur(8px)', background: 'rgba(0,0,0,0.5)' }}
+                                onClick={(e) => { if (e.target === e.currentTarget) dismissUpdateBanner(); }}
+                            >
+                                <motion.div
+                                    initial={{ opacity: 0, scale: 0.85, y: 30 }}
+                                    animate={{ opacity: 1, scale: 1, y: 0 }}
+                                    exit={{ opacity: 0, scale: 0.85, y: 30 }}
+                                    transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+                                    className="relative w-full max-w-lg overflow-hidden rounded-3xl shadow-2xl"
+                                    style={{
+                                        background: 'linear-gradient(180deg, #1e293b 0%, #0f172a 100%)',
+                                        border: '1px solid rgba(255,255,255,0.1)',
+                                        boxShadow: '0 25px 60px rgba(0,0,0,0.5), 0 0 80px rgba(16, 185, 129, 0.15)'
+                                    }}
+                                >
+                                    {/* Close Button */}
+                                    <button
+                                        onClick={dismissUpdateBanner}
+                                        className="absolute top-4 right-4 z-10 w-8 h-8 rounded-full flex items-center justify-center text-white/50 hover:text-white hover:bg-white/10 transition-all duration-200"
+                                    >
+                                        <X size={18} />
+                                    </button>
+
+                                    {/* Header with gradient */}
+                                    <div className="relative px-6 pt-7 pb-5 text-center overflow-hidden">
+                                        {/* Background blobs */}
+                                        <div className="absolute -top-8 -left-8 w-32 h-32 bg-emerald-500/20 rounded-full blur-3xl pointer-events-none" />
+                                        <div className="absolute -top-8 -right-8 w-32 h-32 bg-blue-500/20 rounded-full blur-3xl pointer-events-none" />
+                                        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-40 h-40 bg-purple-500/10 rounded-full blur-3xl pointer-events-none" />
+
+                                        {/* Badge */}
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.2 }}
+                                            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider mb-4"
+                                            style={{
+                                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(59, 130, 246, 0.25))',
+                                                border: '1px solid rgba(16, 185, 129, 0.4)',
+                                                color: '#6ee7b7'
+                                            }}
+                                        >
+                                            <Sparkles size={12} /> Mới cập nhật
+                                        </motion.div>
+
+                                        {/* Icon */}
+                                        <motion.div
+                                            initial={{ scale: 0 }}
+                                            animate={{ scale: 1 }}
+                                            transition={{ delay: 0.15, type: 'spring', stiffness: 200 }}
+                                            className="mx-auto w-16 h-16 rounded-2xl flex items-center justify-center mb-4"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #10b981, #0d9488, #0ea5e9)',
+                                                boxShadow: '0 8px 30px rgba(16, 185, 129, 0.4)',
+                                            }}
+                                        >
+                                            <span className="text-3xl">✍️</span>
+                                        </motion.div>
+
+                                        {/* Title */}
+                                        <h3 className="text-xl sm:text-2xl font-bold text-white mb-2" style={{
+                                            background: 'linear-gradient(135deg, #fff, #a7f3d0, #93c5fd)',
+                                            WebkitBackgroundClip: 'text',
+                                            WebkitTextFillColor: 'transparent',
+                                        }}>
+                                            Viết SKKN & Báo Cáo đã nâng cấp!
+                                        </h3>
+                                        <p className="text-white/50 text-sm">Công cụ 2 trong 1 duy nhất cho giáo viên</p>
+                                    </div>
+
+                                    {/* Divider */}
+                                    <div className="h-px mx-6" style={{ background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }} />
+
+                                    {/* Feature List */}
+                                    <div className="px-6 py-5 space-y-3">
+                                        {[
+                                            { emoji: '🤖', text: 'AI viết nội dung chuyên sâu theo chuẩn' },
+                                            { emoji: '🔍', text: 'Quét & sửa tự động để vượt kiểm tra AI' },
+                                            { emoji: '📊', text: 'Biểu đồ cột, tròn minh họa số liệu' },
+                                            { emoji: '💡', text: 'Góp ý sản phẩm trực tiếp cho Admin' },
+                                        ].map((item, i) => (
+                                            <motion.div
+                                                key={i}
+                                                initial={{ opacity: 0, x: -20 }}
+                                                animate={{ opacity: 1, x: 0 }}
+                                                transition={{ delay: 0.3 + i * 0.08 }}
+                                                className="flex items-center gap-3"
+                                            >
+                                                <div className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center text-lg" style={{
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    border: '1px solid rgba(255,255,255,0.08)'
+                                                }}>
+                                                    {item.emoji}
+                                                </div>
+                                                <span className="text-white/80 text-sm font-medium">{item.text}</span>
+                                            </motion.div>
+                                        ))}
+                                    </div>
+
+                                    {/* CTA */}
+                                    <div className="px-6 pb-6 pt-1 flex gap-3">
+                                        <button
+                                            onClick={() => { dismissUpdateBanner(); onSangKienKN(); }}
+                                            className="flex-1 flex items-center justify-center gap-2 px-5 py-3 rounded-2xl text-sm font-bold text-white transition-all duration-300 hover:scale-[1.02] active:scale-95"
+                                            style={{
+                                                background: 'linear-gradient(135deg, #10b981, #0d9488, #0ea5e9)',
+                                                boxShadow: '0 6px 25px rgba(16, 185, 129, 0.35)',
+                                            }}
+                                        >
+                                            <Sparkles size={16} /> Trải nghiệm ngay
+                                        </button>
+                                        <button
+                                            onClick={dismissUpdateBanner}
+                                            className="px-5 py-3 rounded-2xl text-sm font-semibold transition-all duration-200 hover:bg-white/10 active:scale-95"
+                                            style={{
+                                                color: 'rgba(255,255,255,0.5)',
+                                                border: '1px solid rgba(255,255,255,0.1)',
+                                            }}
+                                        >
+                                            Để sau
+                                        </button>
+                                    </div>
+                                </motion.div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {/* Maintenance Banner */}
                     {maintenanceMode && !isAdmin && (
                         <div className="bg-gradient-to-r from-amber-500/20 to-orange-500/20 border-2 border-amber-400/50 rounded-2xl p-3 sm:p-6 text-center mb-4 sm:mb-8">
@@ -625,7 +770,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('chucTet') && <ToolCard title="Mẫu Chúc Tết" description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ" icon={<span className="text-2xl">🎊</span>} accentColor="bg-gradient-to-br from-red-600 to-yellow-500" onClick={onChucTet} badge="Mới" />}
                                         {!hiddenApps.includes('communityResources') && <ToolCard title="Kho tài nguyên cộng đồng" description="Kho tài nguyên miễn phí từ cộng đồng" icon={<Users size={24} className="text-white" />} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onCommunityResources} badge="Miễn phí" />}
                                         {!hiddenApps.includes('kiemTraDaoVan') && <ToolCard title="Thẩm Văn AI" description="Kiểm tra đạo văn & phát hiện nội dung AI thông minh" icon={<span className="text-2xl">🔍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onKiemTraDaoVan} badge="Mới" />}
-                                        {!hiddenApps.includes('aiAssistant') && <ToolCard title="Trợ Lý AI Cho Giáo Viên Tiểu Học" description="Hỗ trợ viết biện pháp, phương pháp dạy học và tài liệu giáo dục" icon={<span className="text-2xl">✨</span>} accentColor="bg-gradient-to-br from-pink-500 to-rose-600" onClick={() => { }} badge="Sắp ra mắt" disabled />}
+                                        {!hiddenApps.includes('sangKienKinhNghiem') && <ToolCard title="Viết SKKN & Báo Cáo" description="2 trong 1: AI viết + quét & sửa để vượt trình kiểm tra AI. Cá nhân hóa như người thật viết" icon={<span className="text-2xl">✍️</span>} accentColor="bg-gradient-to-br from-emerald-500 to-teal-600" onClick={onSangKienKN} badge="Mới" />}
                                     </div>
                                 </section>
                             )}

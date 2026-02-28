@@ -19,6 +19,7 @@ import BangCuuChuong from './components/BangCuuChuong';
 import GameTuongTac from './components/GameTuongTac';
 import YogurtExperiment from './components/YogurtExperiment';
 import KiemTraDaoVan from './components/KiemTraDaoVan';
+import SangKienKinhNghiem from './components/SangKienKinhNghiem';
 import BeeGame from './components/BeeGame';
 import BeeGameEditable from './components/BeeGameEditable';
 import BacteriaGameEditable from './components/BacteriaGameEditable';
@@ -134,6 +135,9 @@ function App() {
             break;
           case 'phong_tranh_3d':
             defaultView = 'PHONG_TRANH_3D';
+            break;
+          case 'sang_kien_kn':
+            defaultView = 'SANG_KIEN_KN';
             break;
           // Có thể thêm case cho các app khác ở đây sau
         }
@@ -362,6 +366,7 @@ function App() {
                   onYogurtExperiment={() => requireLogin(() => setView('YOGURT_EXPERIMENT'))}
                   onKiemTraDaoVan={() => requireLogin(() => setView('KIEM_TRA_DAO_VAN'))}
                   onPhongTranh3D={() => setView('PHONG_TRANH_3D')}
+                  onSangKienKN={() => requireLogin(() => setView('SANG_KIEN_KN'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -531,6 +536,15 @@ function App() {
 
           {view === 'KIEM_TRA_DAO_VAN' && (
             <KiemTraDaoVan onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'SANG_KIEN_KN' && (
+            <SangKienKinhNghiem
+              onBack={() => setView('DASHBOARD')}
+              isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
+              userEmail={user?.email || undefined}
+              userName={(user as any)?.displayName || undefined}
+            />
           )}
 
           {view === 'ABOUT' && (

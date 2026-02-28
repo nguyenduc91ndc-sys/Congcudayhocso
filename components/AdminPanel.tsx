@@ -11,6 +11,7 @@ import { subscribeToOrders, confirmOrder, cancelOrder } from '../utils/firebaseO
 import { uploadImage, isValidImage } from '../utils/firebaseStorage';
 import { saveProKey, deleteProKey, subscribeToProKeys, ProKey } from '../utils/firebaseProKeys';
 import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode } from '../utils/firebaseBeeProKeys';
+import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, generateSKKNProCode, revokeSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode } from '../utils/firebaseAppVisibility';
 
 interface AdminPanelProps {
@@ -37,7 +38,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [expandedSections, setExpandedSections] = useState<string[]>([]);
     const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
-    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee'>('pro');
+    const [skknKeys, setSkknKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
+    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn'>('pro');
     const [newNote, setNewNote] = useState('');
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -115,6 +117,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             setBeeKeys(formattedKeys);
         });
 
+        // Subscribe to SKKN PRO keys
+        const unsubscribeSkknKeys = subscribeToSKKNProKeys((firebaseKeys) => {
+            const formattedKeys = firebaseKeys.map(k => ({
+                key: k.key,
+                createdAt: new Date(k.createdAt).toLocaleDateString('vi-VN'),
+                note: k.note,
+                usedBy: k.usedBy
+            }));
+            setSkknKeys(formattedKeys);
+        });
+
         // Subscribe to videos
         const unsubscribeVideos = subscribeToVideos(setVideos);
         // Subscribe to orders
@@ -134,6 +147,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             clearInterval(interval);
             unsubscribeProKeys();
             unsubscribeBeeKeys();
+            unsubscribeSkknKeys();
             unsubscribeVideos();
             unsubscribeOrders();
             unsubscribeAppVis();
@@ -339,6 +353,36 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const handleDeleteBeeKey = async (keyToDelete: string) => {
         if (window.confirm('Xóa mã BEE này?')) {
             await deleteBeeProKey(keyToDelete);
+        }
+    };
+
+    // SKKN PRO key handlers
+    const handleCreateSKKNKey = async () => {
+        const newKey = generateSKKNProCode();
+        const note = newNote || 'Khách hàng SKKN';
+        const success = await saveSKKNProKey(newKey, note);
+        if (!success) { alert('Lỗi khi lưu mã SKKN lên Firebase!'); return; }
+        setNewNote('');
+        setShowCreateForm(false);
+        navigator.clipboard.writeText(newKey);
+        setCopiedKey(newKey);
+        setTimeout(() => setCopiedKey(null), 2000);
+    };
+
+    const handleDeleteSKKNKey = async (keyToDelete: string) => {
+        if (window.confirm('Xóa mã SKKN này?')) {
+            await deleteSKKNProKey(keyToDelete);
+        }
+    };
+
+    const handleRevokeSKKNPro = async (email: string) => {
+        if (window.confirm(`Thu hồi Pro của ${email}? Người dùng sẽ bị khóa tính năng Pro.`)) {
+            const success = await revokeSKKNProForEmail(email);
+            if (success) {
+                alert(`Đã thu hồi Pro của ${email}`);
+            } else {
+                alert('Lỗi khi thu hồi!');
+            }
         }
     };
 
@@ -760,6 +804,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 >
                                     🐝 BEE- Ong về Tổ ({beeKeys.length})
                                 </button>
+                                <button
+                                    onClick={() => setKeySubTab('skkn')}
+                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'skkn'
+                                        ? 'bg-emerald-500 text-white shadow-lg'
+                                        : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                        }`}
+                                >
+                                    ✍️ SKKN- Viết SKKN ({skknKeys.length})
+                                </button>
                             </div>
 
                             {/* Nút tạo mã */}
@@ -769,10 +822,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 onClick={() => setShowCreateForm(true)}
                                 className={`w-full text-white font-bold py-4 px-6 rounded-2xl shadow-lg mb-4 flex items-center justify-center gap-2 ${keySubTab === 'pro'
                                     ? 'bg-gradient-to-r from-green-500 to-emerald-600'
-                                    : 'bg-gradient-to-r from-orange-500 to-amber-600'
+                                    : keySubTab === 'bee'
+                                        ? 'bg-gradient-to-r from-orange-500 to-amber-600'
+                                        : 'bg-gradient-to-r from-teal-500 to-emerald-600'
                                     }`}
                             >
-                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : 'Tạo mã BEE- (Ong về Tổ)'}
+                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : 'Tạo mã SKKN- (Viết SKKN)'}
                             </motion.button>
 
                             <AnimatePresence>
@@ -783,8 +838,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         exit={{ opacity: 0, height: 0 }}
                                         className="bg-white rounded-2xl p-4 mb-4 shadow-lg"
                                     >
-                                        <div className={`text-sm font-semibold mb-2 ${keySubTab === 'pro' ? 'text-purple-600' : 'text-orange-600'}`}>
-                                            {keySubTab === 'pro' ? '🔑 Tạo mã PRO- (dùng cho nhiều game)' : '🐝 Tạo mã BEE- (chỉ dùng cho Ong về Tổ)'}
+                                        <div className={`text-sm font-semibold mb-2 ${keySubTab === 'pro' ? 'text-purple-600' : keySubTab === 'bee' ? 'text-orange-600' : 'text-emerald-600'}`}>
+                                            {keySubTab === 'pro' ? '🔑 Tạo mã PRO- (dùng cho nhiều game)' : keySubTab === 'bee' ? '🐝 Tạo mã BEE- (chỉ dùng cho Ong về Tổ)' : '✍️ Tạo mã SKKN- (chỉ dùng cho Viết SKKN)'}
                                         </div>
                                         <input
                                             type="text"
@@ -793,15 +848,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                             placeholder="Ghi chú (tên khách, SĐT...)"
                                             className={`w-full px-4 py-3 border-2 rounded-xl focus:outline-none mb-3 ${keySubTab === 'pro'
                                                 ? 'border-purple-200 focus:border-purple-500'
-                                                : 'border-orange-200 focus:border-orange-500'
+                                                : keySubTab === 'bee'
+                                                    ? 'border-orange-200 focus:border-orange-500'
+                                                    : 'border-emerald-200 focus:border-emerald-500'
                                                 }`}
                                         />
                                         <div className="flex gap-2">
                                             <button
-                                                onClick={keySubTab === 'pro' ? handleCreateKey : handleCreateBeeKey}
+                                                onClick={keySubTab === 'pro' ? handleCreateKey : keySubTab === 'bee' ? handleCreateBeeKey : handleCreateSKKNKey}
                                                 className={`flex-1 text-white font-bold py-2 rounded-xl ${keySubTab === 'pro'
                                                     ? 'bg-purple-600 hover:bg-purple-700'
-                                                    : 'bg-orange-500 hover:bg-orange-600'
+                                                    : keySubTab === 'bee'
+                                                        ? 'bg-orange-500 hover:bg-orange-600'
+                                                        : 'bg-emerald-500 hover:bg-emerald-600'
                                                     }`}
                                             >
                                                 Tạo & Copy
@@ -842,7 +901,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                             </div>
                                         </motion.div>
                                     ))
-                                ) : (
+                                ) : keySubTab === 'bee' ? (
                                     // BEE Keys List
                                     beeKeys.length === 0 ? (
                                         <div className="text-center text-gray-500 py-10">
@@ -865,6 +924,44 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     <Copy size={18} />
                                                 </button>
                                                 <button onClick={() => handleDeleteBeeKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    // SKKN Keys List
+                                    skknKeys.length === 0 ? (
+                                        <div className="text-center text-gray-500 py-10">
+                                            <span className="text-5xl block mb-4">✍️</span>
+                                            <p>Chưa có mã SKKN nào</p>
+                                            <p className="text-sm mt-2">Mã SKKN chỉ dùng được cho ứng dụng "Viết SKKN & Báo Cáo"</p>
+                                        </div>
+                                    ) : skknKeys.map((item) => (
+                                        <motion.div key={item.key} className="bg-gradient-to-r from-emerald-50 to-teal-50 rounded-2xl p-4 shadow-md flex items-center justify-between border border-emerald-200">
+                                            <div>
+                                                <div className="font-mono text-lg font-bold text-emerald-700 flex items-center gap-2">
+                                                    ✍️ {item.key}
+                                                    {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
+                                                </div>
+                                                <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
+                                                {item.usedBy && (
+                                                    <div className="text-xs text-green-600 flex items-center gap-2">
+                                                        ✅ Đã dùng: {item.usedBy}
+                                                        <button
+                                                            onClick={() => handleRevokeSKKNPro(item.usedBy!)}
+                                                            className="ml-1 px-2 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold"
+                                                        >
+                                                            ❌ Thu hồi Pro
+                                                        </button>
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200">
+                                                    <Copy size={18} />
+                                                </button>
+                                                <button onClick={() => handleDeleteSKKNKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200">
                                                     <Trash2 size={18} />
                                                 </button>
                                             </div>

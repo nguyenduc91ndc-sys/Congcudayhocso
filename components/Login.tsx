@@ -181,7 +181,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
           </div>
 
           <p className="text-purple-800/80 mb-6 text-sm sm:text-base font-medium">
-            Game, video và các công cụ dạy học...
+            Game dạy học, 3D tương tác, video và các công cụ dạy học số...
           </p>
 
           {/* Login Form */}
@@ -209,20 +209,14 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   />
                 </div>
 
-                {/* Switch to Pro Code */}
-                <div className="pt-2 flex justify-center">
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setIsProMode(true);
-                      setStep('code');
-                    }}
-                    className="flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-semibold text-purple-700 bg-purple-100/50 hover:bg-purple-100 hover:text-purple-900 transition-all border border-purple-200/50"
-                  >
-                    <Crown size={18} />
-                    <span>Đăng nhập Pro</span>
-                  </button>
-                </div>
+                {/* Terms of Service */}
+                <p className="text-xs text-purple-500/70 pt-2 leading-relaxed">
+                  Bằng cách đăng nhập, bạn đồng ý với{' '}
+                  <a href="https://zalo.me/0975509490" target="_blank" rel="noreferrer" className="underline hover:text-purple-700 font-medium">
+                    điều khoản sử dụng
+                  </a>{' '}
+                  của chúng tôi.
+                </p>
               </motion.div>
             )}
 
