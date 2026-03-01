@@ -1540,187 +1540,189 @@ Chỉ trả về JSON, không giải thích.` },
 
             {/* === EDITOR === */}
             {appView === 'editor' && (
-                <div className="skkn-editor">
-                    {/* Trial banner */}
+                <>
+                    {/* Trial banner - above editor */}
                     {trialDaysLeft !== null && (
-                        <div style={{ padding: '8px 16px', background: 'linear-gradient(90deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))', borderBottom: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontSize: 13 }}>
-                            <span style={{ color: '#fbbf24' }}>⏰ Dùng thử: còn <strong>{trialDaysLeft}</strong> ngày</span>
-                            <button onClick={() => setShowProModal(true)} style={{ padding: '4px 14px', borderRadius: 8, background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: 'white', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
-                                Nâng cấp Pro
+                        <div style={{ padding: '10px 20px', background: 'linear-gradient(90deg, #92400e, #78350f)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 16, fontSize: 14 }}>
+                            <span style={{ color: '#fde68a', fontWeight: 600 }}>⏰ Bản dùng thử — còn <strong style={{ color: '#fbbf24', fontSize: 16 }}>{trialDaysLeft}</strong> ngày</span>
+                            <button onClick={() => setShowProModal(true)} style={{ padding: '6px 18px', borderRadius: 10, background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: 'white', fontSize: 13, fontWeight: 700, border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px rgba(245,158,11,0.4)' }}>
+                                🔓 Nâng cấp Pro
                             </button>
                         </div>
                     )}
-                    {/* Sidebar */}
-                    <div className="skkn-sidebar">
-                        <div className="skkn-sidebar-header">
-                            <h3>📋 Cấu trúc</h3>
-                        </div>
-                        {renderProgressBar()}
-                        <div className="skkn-section-list">
-                            {renderSections(sections)}
-                        </div>
-                    </div>
-
-                    {/* Main editor */}
-                    <div className="skkn-main">
-                        <div className="skkn-editor-toolbar">
-                            <button className="skkn-btn skkn-btn-primary" onClick={() => { if (requirePro()) handleAIWrite(); }} disabled={isStreaming || !activeSection}>
-                                {isStreaming ? <><div className="skkn-spinner" /> Đang viết...</> : <><Sparkles size={16} /> Viết với AI {!isSKKNPro && '🔒'}</>}
-                            </button>
-                            {isStreaming && (
-                                <button className="skkn-btn skkn-btn-danger" onClick={handleStopStreaming}>
-                                    <X size={16} /> Dừng
-                                </button>
-                            )}
-
-                            {/* AI Actions dropdown */}
-                            <div className="skkn-ai-menu-container">
-                                <button
-                                    className="skkn-btn skkn-btn-secondary"
-                                    onClick={() => { if (requirePro()) setShowAIMenu(!showAIMenu); }}
-                                    disabled={isStreaming || !activeSection}
-                                >
-                                    <Wand2 size={16} /> Công cụ AI {!isSKKNPro && '🔒'} <ChevronDown size={14} />
-                                </button>
-                                {showAIMenu && (
-                                    <div className="skkn-ai-menu">
-                                        <button onClick={handleHumanize}><RefreshCw size={14} /> Humanize (tự nhiên hơn)</button>
-                                        <button onClick={handleExpand}><Maximize2 size={14} /> Mở rộng nội dung</button>
-                                        <button onClick={handleShorten}><Minimize2 size={14} /> Rút gọn nội dung</button>
-                                        <div className="skkn-ai-menu-divider" />
-                                        <button onClick={handleGenTable}><Table2 size={14} /> Tạo bảng biểu</button>
-                                        <button onClick={() => handleGenChart('bar')}><BarChart3 size={14} /> 📊 Biểu đồ cột (AI tự tạo)</button>
-                                        <button onClick={() => handleGenChart('pie')}><PieChart size={14} /> 🥧 Biểu đồ tròn (AI tự tạo)</button>
-                                        <button onClick={() => openChartModal('bar')}><BarChart3 size={14} /> 📊 Biểu đồ cột (nhập số liệu)</button>
-                                        <button onClick={() => openChartModal('pie')}><PieChart size={14} /> 🥧 Biểu đồ tròn (nhập số liệu)</button>
-                                        <div className="skkn-ai-menu-divider" />
-                                        <button onClick={handleGenReferences}><BookOpen size={14} /> Gợi ý tài liệu TK</button>
-                                    </div>
-                                )}
+                    <div className="skkn-editor">
+                        {/* Sidebar */}
+                        <div className="skkn-sidebar">
+                            <div className="skkn-sidebar-header">
+                                <h3>📋 Cấu trúc</h3>
                             </div>
-
-                            <button className="skkn-btn skkn-btn-secondary" onClick={() => { if (requirePro()) handleCheck(); }} disabled={isStreaming || !getActiveContent().trim()}>
-                                <Search size={16} /> Kiểm tra {!isSKKNPro && '🔒'}
-                            </button>
+                            {renderProgressBar()}
+                            <div className="skkn-section-list">
+                                {renderSections(sections)}
+                            </div>
                         </div>
 
-                        <div className="skkn-editor-content">
-                            {activeSection ? (
-                                <>
-                                    <div className="skkn-editor-section-header">
-                                        <h3 style={{ color: '#a5b4fc', margin: 0, fontSize: 16 }}>{getActiveSectionTitle()}</h3>
-                                        {renderWordCount()}
-                                    </div>
-                                    {isStreaming && (
-                                        <div className="skkn-streaming">
-                                            <div className="skkn-streaming-dot" />
-                                            AI đang viết nội dung...
-                                        </div>
-                                    )}
-                                    <textarea
-                                        ref={textareaRef}
-                                        className="skkn-editor-textarea"
-                                        value={getActiveContent()}
-                                        onChange={e => updateSectionContent(activeSection, e.target.value)}
-                                        placeholder={`Viết nội dung phần "${getActiveSectionTitle()}" ở đây hoặc nhấn "Viết với AI" để AI hỗ trợ...`}
-                                        disabled={isStreaming}
-                                    />
+                        {/* Main editor */}
+                        <div className="skkn-main">
+                            <div className="skkn-editor-toolbar">
+                                <button className="skkn-btn skkn-btn-primary" onClick={() => { if (requirePro()) handleAIWrite(); }} disabled={isStreaming || !activeSection}>
+                                    {isStreaming ? <><div className="skkn-spinner" /> Đang viết...</> : <><Sparkles size={16} /> Viết với AI {!isSKKNPro && '🔒'}</>}
+                                </button>
+                                {isStreaming && (
+                                    <button className="skkn-btn skkn-btn-danger" onClick={handleStopStreaming}>
+                                        <X size={16} /> Dừng
+                                    </button>
+                                )}
 
-                                    {/* Chart preview gallery */}
-                                    {chartImages[activeSection] && chartImages[activeSection].length > 0 && (
-                                        <div className="skkn-chart-gallery">
-                                            <h4 style={{ color: '#a5b4fc', margin: '0 0 12px', fontSize: 14 }}>📊 Biểu đồ đã tạo</h4>
-                                            <div className="skkn-chart-grid">
-                                                {chartImages[activeSection].map((img, idx) => (
-                                                    <div key={idx} className="skkn-chart-item">
-                                                        <img src={img} alt={`Biểu đồ ${idx + 1}`} />
-                                                        <button
-                                                            className="skkn-chart-delete"
-                                                            onClick={() => handleDeleteChart(activeSection, idx)}
-                                                            title="Xóa biểu đồ"
-                                                        >
-                                                            <X size={14} />
-                                                        </button>
-                                                    </div>
-                                                ))}
-                                            </div>
-                                            <p style={{ fontSize: 12, color: '#64748b', marginTop: 8, fontStyle: 'italic' }}>
-                                                💡 Biểu đồ sẽ được nhúng khi xuất Word
-                                            </p>
+                                {/* AI Actions dropdown */}
+                                <div className="skkn-ai-menu-container">
+                                    <button
+                                        className="skkn-btn skkn-btn-secondary"
+                                        onClick={() => { if (requirePro()) setShowAIMenu(!showAIMenu); }}
+                                        disabled={isStreaming || !activeSection}
+                                    >
+                                        <Wand2 size={16} /> Công cụ AI {!isSKKNPro && '🔒'} <ChevronDown size={14} />
+                                    </button>
+                                    {showAIMenu && (
+                                        <div className="skkn-ai-menu">
+                                            <button onClick={handleHumanize}><RefreshCw size={14} /> Humanize (tự nhiên hơn)</button>
+                                            <button onClick={handleExpand}><Maximize2 size={14} /> Mở rộng nội dung</button>
+                                            <button onClick={handleShorten}><Minimize2 size={14} /> Rút gọn nội dung</button>
+                                            <div className="skkn-ai-menu-divider" />
+                                            <button onClick={handleGenTable}><Table2 size={14} /> Tạo bảng biểu</button>
+                                            <button onClick={() => handleGenChart('bar')}><BarChart3 size={14} /> 📊 Biểu đồ cột (AI tự tạo)</button>
+                                            <button onClick={() => handleGenChart('pie')}><PieChart size={14} /> 🥧 Biểu đồ tròn (AI tự tạo)</button>
+                                            <button onClick={() => openChartModal('bar')}><BarChart3 size={14} /> 📊 Biểu đồ cột (nhập số liệu)</button>
+                                            <button onClick={() => openChartModal('pie')}><PieChart size={14} /> 🥧 Biểu đồ tròn (nhập số liệu)</button>
+                                            <div className="skkn-ai-menu-divider" />
+                                            <button onClick={handleGenReferences}><BookOpen size={14} /> Gợi ý tài liệu TK</button>
                                         </div>
                                     )}
-                                </>
-                            ) : (
-                                <div style={{ textAlign: 'center', padding: 60, color: '#64748b' }}>
-                                    <p style={{ fontSize: 18 }}>← Chọn một phần để bắt đầu viết</p>
                                 </div>
-                            )}
-                        </div>
-                    </div>
 
-                    {/* Check Panel */}
-                    {showCheck && (
-                        <div className="skkn-check-panel">
-                            <div className="skkn-check-header">
-                                <h3>🔍 Kết quả kiểm tra</h3>
-                                <button className="skkn-back-btn" onClick={() => setShowCheck(false)}><X size={18} /></button>
+                                <button className="skkn-btn skkn-btn-secondary" onClick={() => { if (requirePro()) handleCheck(); }} disabled={isStreaming || !getActiveContent().trim()}>
+                                    <Search size={16} /> Kiểm tra {!isSKKNPro && '🔒'}
+                                </button>
                             </div>
-                            <div className="skkn-check-body">
-                                {isChecking && (
-                                    <div style={{ textAlign: 'center', padding: 40 }}>
-                                        <div className="skkn-spinner" style={{ width: 40, height: 40, margin: '0 auto 16px' }} />
-                                        <p>Đang phân tích...</p>
-                                    </div>
-                                )}
 
-                                {aiResult && (
-                                    <div style={{ marginBottom: 24 }}>
-                                        <h4 style={{ color: '#c7d2fe', margin: '0 0 12px' }}>🤖 Phát hiện AI</h4>
-                                        {renderScore(aiResult.humanScore, 'Tính tự nhiên (Human Score)')}
-                                        <div className="skkn-alert skkn-alert-info">{aiResult.analysis}</div>
-                                        {aiResult.suggestions?.map((s: string, i: number) => (
-                                            <div key={i} className="skkn-alert skkn-alert-warn" style={{ fontSize: 13 }}>💡 {s}</div>
-                                        ))}
-                                        {/* Fix button */}
-                                        {aiResult.humanScore < 70 && (
-                                            <button
-                                                className="skkn-btn skkn-btn-primary skkn-fix-btn"
-                                                onClick={handleAIFix}
-                                                disabled={isStreaming}
-                                            >
-                                                <Wand2 size={16} /> Sửa tự động (Humanize)
-                                            </button>
-                                        )}
-                                    </div>
-                                )}
-
-                                {plagResult && (
-                                    <div>
-                                        <h4 style={{ color: '#c7d2fe', margin: '0 0 12px' }}>📋 Kiểm tra đạo văn</h4>
-                                        {renderScore(plagResult.originalityScore, 'Tính nguyên bản')}
-                                        <div className="skkn-alert skkn-alert-info">{plagResult.overallAssessment}</div>
-                                        {plagResult.suspiciousParts?.slice(0, 5).map((p: any, i: number) => (
-                                            <div key={i} className={`skkn-alert ${p.severity === 'high' ? 'skkn-alert-error' : 'skkn-alert-warn'}`}>
-                                                <strong>"{p.text?.slice(0, 80)}..."</strong><br />
-                                                {p.reason}
+                            <div className="skkn-editor-content">
+                                {activeSection ? (
+                                    <>
+                                        <div className="skkn-editor-section-header">
+                                            <h3 style={{ color: '#a5b4fc', margin: 0, fontSize: 16 }}>{getActiveSectionTitle()}</h3>
+                                            {renderWordCount()}
+                                        </div>
+                                        {isStreaming && (
+                                            <div className="skkn-streaming">
+                                                <div className="skkn-streaming-dot" />
+                                                AI đang viết nội dung...
                                             </div>
-                                        ))}
-                                        {/* Fix button for plagiarism */}
-                                        {plagResult.originalityScore < 70 && (
-                                            <button
-                                                className="skkn-btn skkn-btn-primary skkn-fix-btn"
-                                                onClick={handleAIFix}
-                                                disabled={isStreaming}
-                                            >
-                                                <Wand2 size={16} /> Viết lại cho nguyên bản hơn
-                                            </button>
                                         )}
+                                        <textarea
+                                            ref={textareaRef}
+                                            className="skkn-editor-textarea"
+                                            value={getActiveContent()}
+                                            onChange={e => updateSectionContent(activeSection, e.target.value)}
+                                            placeholder={`Viết nội dung phần "${getActiveSectionTitle()}" ở đây hoặc nhấn "Viết với AI" để AI hỗ trợ...`}
+                                            disabled={isStreaming}
+                                        />
+
+                                        {/* Chart preview gallery */}
+                                        {chartImages[activeSection] && chartImages[activeSection].length > 0 && (
+                                            <div className="skkn-chart-gallery">
+                                                <h4 style={{ color: '#a5b4fc', margin: '0 0 12px', fontSize: 14 }}>📊 Biểu đồ đã tạo</h4>
+                                                <div className="skkn-chart-grid">
+                                                    {chartImages[activeSection].map((img, idx) => (
+                                                        <div key={idx} className="skkn-chart-item">
+                                                            <img src={img} alt={`Biểu đồ ${idx + 1}`} />
+                                                            <button
+                                                                className="skkn-chart-delete"
+                                                                onClick={() => handleDeleteChart(activeSection, idx)}
+                                                                title="Xóa biểu đồ"
+                                                            >
+                                                                <X size={14} />
+                                                            </button>
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                                <p style={{ fontSize: 12, color: '#64748b', marginTop: 8, fontStyle: 'italic' }}>
+                                                    💡 Biểu đồ sẽ được nhúng khi xuất Word
+                                                </p>
+                                            </div>
+                                        )}
+                                    </>
+                                ) : (
+                                    <div style={{ textAlign: 'center', padding: 60, color: '#64748b' }}>
+                                        <p style={{ fontSize: 18 }}>← Chọn một phần để bắt đầu viết</p>
                                     </div>
                                 )}
                             </div>
                         </div>
-                    )}
-                </div>
+
+                        {/* Check Panel */}
+                        {showCheck && (
+                            <div className="skkn-check-panel">
+                                <div className="skkn-check-header">
+                                    <h3>🔍 Kết quả kiểm tra</h3>
+                                    <button className="skkn-back-btn" onClick={() => setShowCheck(false)}><X size={18} /></button>
+                                </div>
+                                <div className="skkn-check-body">
+                                    {isChecking && (
+                                        <div style={{ textAlign: 'center', padding: 40 }}>
+                                            <div className="skkn-spinner" style={{ width: 40, height: 40, margin: '0 auto 16px' }} />
+                                            <p>Đang phân tích...</p>
+                                        </div>
+                                    )}
+
+                                    {aiResult && (
+                                        <div style={{ marginBottom: 24 }}>
+                                            <h4 style={{ color: '#c7d2fe', margin: '0 0 12px' }}>🤖 Phát hiện AI</h4>
+                                            {renderScore(aiResult.humanScore, 'Tính tự nhiên (Human Score)')}
+                                            <div className="skkn-alert skkn-alert-info">{aiResult.analysis}</div>
+                                            {aiResult.suggestions?.map((s: string, i: number) => (
+                                                <div key={i} className="skkn-alert skkn-alert-warn" style={{ fontSize: 13 }}>💡 {s}</div>
+                                            ))}
+                                            {/* Fix button */}
+                                            {aiResult.humanScore < 70 && (
+                                                <button
+                                                    className="skkn-btn skkn-btn-primary skkn-fix-btn"
+                                                    onClick={handleAIFix}
+                                                    disabled={isStreaming}
+                                                >
+                                                    <Wand2 size={16} /> Sửa tự động (Humanize)
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+
+                                    {plagResult && (
+                                        <div>
+                                            <h4 style={{ color: '#c7d2fe', margin: '0 0 12px' }}>📋 Kiểm tra đạo văn</h4>
+                                            {renderScore(plagResult.originalityScore, 'Tính nguyên bản')}
+                                            <div className="skkn-alert skkn-alert-info">{plagResult.overallAssessment}</div>
+                                            {plagResult.suspiciousParts?.slice(0, 5).map((p: any, i: number) => (
+                                                <div key={i} className={`skkn-alert ${p.severity === 'high' ? 'skkn-alert-error' : 'skkn-alert-warn'}`}>
+                                                    <strong>"{p.text?.slice(0, 80)}..."</strong><br />
+                                                    {p.reason}
+                                                </div>
+                                            ))}
+                                            {/* Fix button for plagiarism */}
+                                            {plagResult.originalityScore < 70 && (
+                                                <button
+                                                    className="skkn-btn skkn-btn-primary skkn-fix-btn"
+                                                    onClick={handleAIFix}
+                                                    disabled={isStreaming}
+                                                >
+                                                    <Wand2 size={16} /> Viết lại cho nguyên bản hơn
+                                                </button>
+                                            )}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                </>
             )}
 
             {/* Feedback Modal */}
