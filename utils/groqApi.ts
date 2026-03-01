@@ -266,8 +266,8 @@ export function buildTopicSuggestionPrompt(
             : 'Một số biện pháp';
 
     const roleContext = reportType === 'gvcn_gioi'
-        ? `Bạn là một giáo viên ${level || 'phổ thông'}, có 20 năm kinh nghiệm làm công tác chủ nhiệm lớp. Bằng kinh nghiệm dạy học cùng những phương pháp giáo dục tích cực, học sinh của bạn tiếp cận và lĩnh hội những nội dung giáo dục phù hợp với chương trình giáo dục phổ thông 2018 đạt hiệu quả rất cao.`
-        : `Bạn là một giáo viên ${level || 'phổ thông'}, có 20 năm kinh nghiệm dạy học ${subject ? `môn ${subject}` : ''}. Bạn rất giỏi áp dụng các phương pháp dạy học hiện đại cũng như hình thức dạy học tích cực để nâng cao chất lượng giảng dạy. Bạn thường xuyên kết hợp các phương pháp như: dạy học dựa trên dự án, dạy học trải nghiệm, dạy học theo nhóm, gamification, ứng dụng CNTT và AI vào dạy học theo chương trình giáo dục phổ thông 2018 và đạt kết quả rất tích cực.`;
+        ? `Bạn là một giáo viên ${level || 'phổ thông'}, giàu kinh nghiệm làm công tác chủ nhiệm lớp. Bằng kinh nghiệm dạy học cùng những phương pháp giáo dục tích cực, học sinh của bạn tiếp cận và lĩnh hội những nội dung giáo dục phù hợp đạt hiệu quả rất cao.`
+        : `Bạn là một giáo viên ${level || 'phổ thông'}, giàu kinh nghiệm dạy học ${subject ? `môn ${subject}` : ''}. Bạn rất giỏi áp dụng các phương pháp dạy học hiện đại cũng như hình thức dạy học tích cực để nâng cao chất lượng giảng dạy. Bạn thường xuyên kết hợp các phương pháp như: dạy học dựa trên dự án, dạy học trải nghiệm, dạy học theo nhóm, gamification, ứng dụng CNTT và AI vào dạy học và đạt kết quả rất tích cực.`;
 
     const contextNote = context
         ? `\n\nGiáo viên đã có sẵn một số minh chứng/tài liệu: "${context}". Hãy gợi ý đề tài dựa trên những minh chứng này.`
@@ -284,10 +284,10 @@ Quy tắc đặt tên đề tài:
 - Tên đề tài bắt đầu bằng "${titlePrefix}..."
 - Phải cụ thể về phương pháp/biện pháp áp dụng
 - Nêu rõ đối tượng (học sinh lớp mấy, môn gì)
-- Hướng tới phát triển năng lực/phẩm chất theo chương trình GDPT 2018
+- Hướng tới phát triển năng lực/phẩm chất cho học sinh
 - Mỗi đề tài phải khác biệt về phương pháp/hình thức
 - Tránh trùng lặp với các đề tài phổ biến trên internet
-${reportType === 'gv_gioi' ? '- Kết thúc bằng "...khi học môn ' + (subject || '...') + ' Chương trình giáo dục phổ thông 2018"' : ''}
+- KHÔNG đưa "Chương trình giáo dục phổ thông 2018" vào tên đề tài. Tên đề tài phải ngắn gọn, tập trung vào biện pháp và đối tượng
 
 Trả về JSON duy nhất theo format:
 {
