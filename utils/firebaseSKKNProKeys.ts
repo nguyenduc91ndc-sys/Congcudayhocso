@@ -138,30 +138,39 @@ export const activateSKKNProForEmail = async (email: string, keyUsed: string, is
 
 /** Kiểm tra email đã là SKKN Pro chưa (kiểm tra cả hết hạn trial) */
 export const isEmailSKKNPro = async (email: string): Promise<boolean> => {
+    const status = await getSKKNProStatus(email);
+    return status.isPro;
+};
+
+/** Lấy chi tiết trạng thái Pro (bao gồm trial info) */
+export const getSKKNProStatus = async (email: string): Promise<{ isPro: boolean; isTrial?: boolean; daysLeft?: number; expiresAt?: string }> => {
     const normalizedEmail = email.toLowerCase().trim();
     const emailKey = normalizedEmail.replace(/\./g, '_').replace(/@/g, '_at_');
 
     try {
         const userRef = ref(database, `${SKKN_PRO_USERS_REF}/${emailKey}`);
         const snapshot = await get(userRef);
-        if (!snapshot.exists()) return false;
+        if (!snapshot.exists()) return { isPro: false };
 
         const userData = snapshot.val() as SKKNProUser;
 
         // Kiểm tra trial hết hạn
         if (userData.expiresAt) {
             const expiresAt = new Date(userData.expiresAt);
-            if (new Date() > expiresAt) {
+            const now = new Date();
+            if (now > expiresAt) {
                 // Hết hạn trial → xóa record
                 await remove(userRef);
-                return false;
+                return { isPro: false };
             }
+            const daysLeft = Math.ceil((expiresAt.getTime() - now.getTime()) / (1000 * 60 * 60 * 24));
+            return { isPro: true, isTrial: true, daysLeft, expiresAt: userData.expiresAt };
         }
 
-        return true;
+        return { isPro: true };
     } catch (error) {
         console.error('Error checking SKKN PRO status:', error);
-        return false;
+        return { isPro: false };
     }
 };
 

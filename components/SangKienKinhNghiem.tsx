@@ -18,7 +18,7 @@ import {
 import { exportToWord } from '../utils/wordExport';
 import { generateBarChart, generatePieChart, parseChartData, validateChartData } from '../utils/chartGenerator';
 import { submitSKKNFeedback } from '../utils/firebaseSKKNFeedback';
-import { isEmailSKKNPro, validateSKKNProKey, activateSKKNProForEmail, TRIAL_DAYS } from '../utils/firebaseSKKNProKeys';
+import { isEmailSKKNPro, validateSKKNProKey, activateSKKNProForEmail, getSKKNProStatus, TRIAL_DAYS } from '../utils/firebaseSKKNProKeys';
 import './SangKienKinhNghiem.css';
 
 interface Props {
@@ -118,12 +118,20 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     const [editingSectionTitle, setEditingSectionTitle] = useState('');
     const abortRef = useRef<AbortController | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
 
     // Check Pro status on mount
     useEffect(() => {
         if (isAdmin) { setIsSKKNPro(true); return; }
         if (userEmail) {
-            isEmailSKKNPro(userEmail).then(isPro => setIsSKKNPro(isPro));
+            getSKKNProStatus(userEmail).then(status => {
+                setIsSKKNPro(status.isPro);
+                if (status.isTrial && status.daysLeft !== undefined) {
+                    setTrialDaysLeft(status.daysLeft);
+                } else {
+                    setTrialDaysLeft(null);
+                }
+            });
         }
     }, [userEmail, isAdmin]);
 
@@ -1533,6 +1541,15 @@ Chỉ trả về JSON, không giải thích.` },
             {/* === EDITOR === */}
             {appView === 'editor' && (
                 <div className="skkn-editor">
+                    {/* Trial banner */}
+                    {trialDaysLeft !== null && (
+                        <div style={{ padding: '8px 16px', background: 'linear-gradient(90deg, rgba(251,191,36,0.12), rgba(245,158,11,0.08))', borderBottom: '1px solid rgba(251,191,36,0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 12, fontSize: 13 }}>
+                            <span style={{ color: '#fbbf24' }}>⏰ Dùng thử: còn <strong>{trialDaysLeft}</strong> ngày</span>
+                            <button onClick={() => setShowProModal(true)} style={{ padding: '4px 14px', borderRadius: 8, background: 'linear-gradient(135deg, #f59e0b, #ef4444)', color: 'white', fontSize: 12, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                                Nâng cấp Pro
+                            </button>
+                        </div>
+                    )}
                     {/* Sidebar */}
                     <div className="skkn-sidebar">
                         <div className="skkn-sidebar-header">
