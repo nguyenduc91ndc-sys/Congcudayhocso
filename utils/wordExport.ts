@@ -123,20 +123,71 @@ export function exportToWord(
 
   bodyHtml += `<br clear="all" style="page-break-before:always"/>`;
 
+  // Strip duplicate title from content beginning
+  // AI often starts content with the section title (bold, numbered, etc.)
+  const stripDuplicateTitle = (content: string, title: string): string => {
+    const lines = content.split('\n');
+    if (lines.length === 0) return content;
+
+    // Normalize title for comparison: remove numbering, markdown bold, extra spaces
+    const normalizeText = (t: string) => t
+      .replace(/^[\d.]+\s*/, '')        // Remove leading numbers like "1. " or "1.1. "
+      .replace(/^\*\*|\*\*$/g, '')      // Remove markdown bold **
+      .replace(/^#+\s*/, '')            // Remove markdown headings #
+      .replace(/\s+/g, ' ')
+      .trim()
+      .toLowerCase();
+
+    const normalizedTitle = normalizeText(title);
+    if (!normalizedTitle) return content;
+
+    // Check first few lines for title duplication
+    let linesToSkip = 0;
+    for (let i = 0; i < Math.min(3, lines.length); i++) {
+      const line = lines[i].trim();
+      if (!line) { linesToSkip++; continue; }
+
+      const normalizedLine = normalizeText(line);
+      // Check if line matches or contains the title
+      if (normalizedLine === normalizedTitle ||
+        normalizedTitle.includes(normalizedLine) ||
+        normalizedLine.includes(normalizedTitle)) {
+        linesToSkip = i + 1;
+        // Also skip empty line right after title
+        if (linesToSkip < lines.length && !lines[linesToSkip].trim()) {
+          linesToSkip++;
+        }
+        break;
+      }
+      // If first non-empty line doesn't match, stop checking
+      break;
+    }
+
+    return linesToSkip > 0 ? lines.slice(linesToSkip).join('\n') : content;
+  };
+
   // Content sections
   const renderContentSections = (secs: Section[], depth: number = 0) => {
     for (const sec of secs) {
       if (sec.subsections && sec.subsections.length > 0) {
         // Parent section - heading
         bodyHtml += `<p style="font-size:14pt; font-weight:bold; text-transform:uppercase; margin-top:18pt; margin-bottom:6pt;">${escapeHtml(sec.title)}</p>`;
+        // If parent also has content, render it (without duplicate title)
+        if (sec.content && sec.content.trim()) {
+          const cleanContent = stripDuplicateTitle(sec.content, sec.title);
+          if (cleanContent.trim()) {
+            bodyHtml += convertTablesToHtml(cleanContent);
+          }
+        }
         renderContentSections(sec.subsections, depth + 1);
       } else {
         // Leaf section with content
         const headingSize = depth === 0 ? '14pt' : '13pt';
         bodyHtml += `<p style="font-size:${headingSize}; font-weight:bold; margin-top:12pt; margin-bottom:6pt;">${escapeHtml(sec.title)}</p>`;
         if (sec.content && sec.content.trim()) {
-          // Use smart converter that handles tables
-          bodyHtml += convertTablesToHtml(sec.content);
+          // Strip duplicate title from AI-generated content, then convert
+          const cleanContent = stripDuplicateTitle(sec.content, sec.title);
+          bodyHtml += convertTablesToHtml(cleanContent);
         }
         // Embed chart images for this section
         if (chartImages && chartImages[sec.id]) {
