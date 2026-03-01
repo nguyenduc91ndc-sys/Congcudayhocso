@@ -18,7 +18,7 @@ import {
 import { exportToWord } from '../utils/wordExport';
 import { generateBarChart, generatePieChart, parseChartData, validateChartData } from '../utils/chartGenerator';
 import { submitSKKNFeedback } from '../utils/firebaseSKKNFeedback';
-import { isEmailSKKNPro, validateSKKNProKey, activateSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
+import { isEmailSKKNPro, validateSKKNProKey, activateSKKNProForEmail, TRIAL_DAYS } from '../utils/firebaseSKKNProKeys';
 import './SangKienKinhNghiem.css';
 
 interface Props {
@@ -143,11 +143,15 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
             const result = await validateSKKNProKey(proKeyInput);
             if (!result.valid) { setProError('Mã không hợp lệ hoặc đã hết hạn'); setProActivating(false); return; }
             if (userEmail) {
-                await activateSKKNProForEmail(userEmail, proKeyInput.toUpperCase().trim());
+                await activateSKKNProForEmail(userEmail, proKeyInput.toUpperCase().trim(), !!result.trial);
             }
             setIsSKKNPro(true);
             setProSuccess(true);
-            setTimeout(() => { setShowProModal(false); setProSuccess(false); setProKeyInput(''); }, 1500);
+            if (result.trial) {
+                setTimeout(() => { setShowProModal(false); setProSuccess(false); setProKeyInput(''); }, 2500);
+            } else {
+                setTimeout(() => { setShowProModal(false); setProSuccess(false); setProKeyInput(''); }, 1500);
+            }
         } catch { setProError('Lỗi kích hoạt, vui lòng thử lại'); }
         setProActivating(false);
     };
@@ -1883,7 +1887,11 @@ Chỉ trả về JSON, không giải thích.` },
                             <div style={{ textAlign: 'center', padding: '40px 20px' }}>
                                 <div style={{ fontSize: 64, marginBottom: 16 }}>🎉</div>
                                 <h3 style={{ color: '#6ee7b7', fontSize: 22, margin: '0 0 8px' }}>Kích hoạt thành công!</h3>
-                                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>Tất cả tính năng Pro đã được mở khóa</p>
+                                <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: 14 }}>
+                                    {proKeyInput.toUpperCase().includes('DUNGTHU')
+                                        ? `Bạn có ${TRIAL_DAYS} ngày dùng thử tất cả tính năng Pro`
+                                        : 'Tất cả tính năng Pro đã được mở khóa'}
+                                </p>
                             </div>
                         ) : (
                             <>
@@ -1913,25 +1921,43 @@ Chỉ trả về JSON, không giải thích.` },
                                     ))}
                                 </div>
 
-                                {/* Divider */}
-                                <div style={{ height: 1, margin: '0 24px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1), transparent)' }} />
-
-                                {/* Price + QR */}
+                                {/* Trial - Join Zalo Group */}
                                 <div style={{ padding: '20px 24px', textAlign: 'center' }}>
-                                    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, marginBottom: 12 }}>
-                                        <span style={{ color: '#fbbf24', fontSize: 28, fontWeight: 800 }}>100.000đ</span>
-                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 13 }}>/ năm</span>
+                                    <div style={{ background: 'linear-gradient(135deg, rgba(34,197,94,0.12), rgba(16,185,129,0.08))', border: '1px solid rgba(34,197,94,0.25)', borderRadius: 16, padding: '20px 16px', marginBottom: 16 }}>
+                                        <div style={{ fontSize: 28, marginBottom: 8 }}>🎁</div>
+                                        <h4 style={{ color: '#6ee7b7', fontSize: 16, fontWeight: 700, margin: '0 0 6px' }}>Dùng thử MIỄN PHÍ</h4>
+                                        <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, margin: '0 0 14px', lineHeight: 1.5 }}>
+                                            Quét mã QR hoặc nhấn nút bên dưới<br />để tham gia nhóm Zalo nhận mã dùng thử
+                                        </p>
+                                        <div style={{ background: 'white', borderRadius: 14, padding: 10, width: 160, margin: '0 auto 14px', boxShadow: '0 4px 16px rgba(0,0,0,0.2)' }}>
+                                            <img src={`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent('https://zalo.me/g/qdjuwq474')}`} alt="QR nhóm Zalo" style={{ width: '100%', borderRadius: 8 }} />
+                                        </div>
+                                        <p style={{ color: 'rgba(255,255,255,0.35)', fontSize: 11, margin: '0 0 12px' }}>Quét bằng Zalo trên điện thoại</p>
+                                        <a href="https://zalo.me/g/qdjuwq474" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 24px', borderRadius: 14, background: 'linear-gradient(135deg, #0068FF, #0052CC)', color: 'white', fontSize: 14, fontWeight: 700, textDecoration: 'none', boxShadow: '0 4px 16px rgba(0,104,255,0.3)', transition: 'all 0.15s' }}>
+                                            💬 Tham gia nhóm Zalo nhận mã
+                                        </a>
                                     </div>
-                                    <div style={{ background: 'white', borderRadius: 16, padding: 12, width: 180, margin: '0 auto 12px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
-                                        <img src="/qr-skkn.png.jpg" alt="QR chuyển khoản BIDV" style={{ width: '100%', borderRadius: 8 }} />
-                                    </div>
-                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, margin: '0 0 4px' }}>NGUYEN THE DUC - BIDV - 6701386512</p>
-                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, margin: 0 }}>Nội dung CK: <strong style={{ color: '#fbbf24' }}>SKKN {userEmail || ''}</strong></p>
                                 </div>
 
-                                {/* Zalo */}
-                                <div style={{ padding: '0 24px 16px', textAlign: 'center' }}>
-                                    <a href="https://zalo.me/0975509490" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '8px 16px', borderRadius: 12, background: 'rgba(59,130,246,0.15)', border: '1px solid rgba(59,130,246,0.3)', color: '#93c5fd', fontSize: 13, fontWeight: 600, textDecoration: 'none' }}>
+                                {/* Divider with text */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '0 24px', marginBottom: 4 }}>
+                                    <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.1))' }} />
+                                    <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: 11 }}>hoặc mua ngay</span>
+                                    <div style={{ flex: 1, height: 1, background: 'linear-gradient(90deg, rgba(255,255,255,0.1), transparent)' }} />
+                                </div>
+
+                                {/* Price + QR (secondary) */}
+                                <div style={{ padding: '16px 24px', textAlign: 'center' }}>
+                                    <div style={{ display: 'inline-flex', alignItems: 'baseline', gap: 4, marginBottom: 10 }}>
+                                        <span style={{ color: '#fbbf24', fontSize: 22, fontWeight: 800 }}>100.000đ</span>
+                                        <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: 12 }}>/ năm</span>
+                                    </div>
+                                    <div style={{ background: 'white', borderRadius: 14, padding: 10, width: 150, margin: '0 auto 10px', boxShadow: '0 4px 20px rgba(0,0,0,0.3)' }}>
+                                        <img src="/qr-skkn.png.jpg" alt="QR chuyển khoản BIDV" style={{ width: '100%', borderRadius: 8 }} />
+                                    </div>
+                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, margin: '0 0 3px' }}>NGUYEN THE DUC - BIDV - 6701386512</p>
+                                    <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 11, margin: '0 0 8px' }}>Nội dung CK: <strong style={{ color: '#fbbf24' }}>SKKN {userEmail || ''}</strong></p>
+                                    <a href="https://zalo.me/0975509490" target="_blank" rel="noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 10, background: 'rgba(59,130,246,0.1)', border: '1px solid rgba(59,130,246,0.2)', color: '#93c5fd', fontSize: 12, fontWeight: 600, textDecoration: 'none' }}>
                                         📱 Zalo: 0975 509 490 để nhận mã
                                     </a>
                                 </div>

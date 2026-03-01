@@ -9,6 +9,10 @@ import { ref, get, set, remove, onValue } from 'firebase/database';
 const SKKN_PRO_KEYS_REF = 'skkn_pro_codes';
 const SKKN_PRO_USERS_REF = 'skkn_pro_users';
 
+// Trial key config
+const TRIAL_KEYS = ['SKKN-DUNGTHU'];
+export const TRIAL_DAYS = 3;
+
 export interface SKKNProKey {
     key: string;
     createdAt: string;
@@ -21,6 +25,7 @@ export interface SKKNProUser {
     email: string;
     activatedAt: string;
     activatedByKey: string;
+    expiresAt?: string; // ISO string, only for trial keys
 }
 
 /** Lưu mã SKKN PRO mới lên Firebase */
@@ -65,12 +70,15 @@ export const subscribeToSKKNProKeys = (callback: (keys: SKKNProKey[]) => void): 
 };
 
 /** Kiểm tra mã SKKN PRO có hợp lệ không */
-export const validateSKKNProKey = async (code: string): Promise<{ valid: boolean; key?: SKKNProKey }> => {
+export const validateSKKNProKey = async (code: string): Promise<{ valid: boolean; key?: SKKNProKey; trial?: boolean }> => {
     const inputCode = code.toUpperCase().trim();
 
     // Mã cố định admin
     const FIXED_KEYS = ['SKKN-ADMIN-2024', 'SKKN-DEMO-2024'];
     if (FIXED_KEYS.includes(inputCode)) return { valid: true };
+
+    // Mã dùng thử chung
+    if (TRIAL_KEYS.includes(inputCode)) return { valid: true, trial: true };
 
     // Kiểm tra prefix
     if (!inputCode.startsWith('SKKN-')) return { valid: false };
@@ -87,27 +95,38 @@ export const validateSKKNProKey = async (code: string): Promise<{ valid: boolean
 };
 
 /** Kích hoạt Pro cho email */
-export const activateSKKNProForEmail = async (email: string, keyUsed: string): Promise<boolean> => {
+export const activateSKKNProForEmail = async (email: string, keyUsed: string, isTrial = false): Promise<boolean> => {
     const normalizedEmail = email.toLowerCase().trim();
     const emailKey = normalizedEmail.replace(/\./g, '_').replace(/@/g, '_at_');
 
     try {
         // Lưu user Pro
         const userRef = ref(database, `${SKKN_PRO_USERS_REF}/${emailKey}`);
-        await set(userRef, {
+        const userData: any = {
             email: normalizedEmail,
             activatedAt: new Date().toISOString(),
             activatedByKey: keyUsed.toUpperCase()
-        });
+        };
 
-        // Cập nhật mã đã sử dụng
-        const keyRef = ref(database, `${SKKN_PRO_KEYS_REF}/${keyUsed.toUpperCase()}`);
-        const keySnapshot = await get(keyRef);
-        if (keySnapshot.exists()) {
-            const keyData = keySnapshot.val() as SKKNProKey;
-            keyData.usedBy = normalizedEmail;
-            keyData.usedAt = new Date().toISOString();
-            await set(keyRef, keyData);
+        // Nếu là mã trial → thêm ngày hết hạn
+        if (isTrial) {
+            const expiresAt = new Date();
+            expiresAt.setDate(expiresAt.getDate() + TRIAL_DAYS);
+            userData.expiresAt = expiresAt.toISOString();
+        }
+
+        await set(userRef, userData);
+
+        // Cập nhật mã đã sử dụng (không áp dụng cho trial vì dùng chung)
+        if (!isTrial) {
+            const keyRef = ref(database, `${SKKN_PRO_KEYS_REF}/${keyUsed.toUpperCase()}`);
+            const keySnapshot = await get(keyRef);
+            if (keySnapshot.exists()) {
+                const keyData = keySnapshot.val() as SKKNProKey;
+                keyData.usedBy = normalizedEmail;
+                keyData.usedAt = new Date().toISOString();
+                await set(keyRef, keyData);
+            }
         }
 
         return true;
@@ -117,7 +136,7 @@ export const activateSKKNProForEmail = async (email: string, keyUsed: string): P
     }
 };
 
-/** Kiểm tra email đã là SKKN Pro chưa */
+/** Kiểm tra email đã là SKKN Pro chưa (kiểm tra cả hết hạn trial) */
 export const isEmailSKKNPro = async (email: string): Promise<boolean> => {
     const normalizedEmail = email.toLowerCase().trim();
     const emailKey = normalizedEmail.replace(/\./g, '_').replace(/@/g, '_at_');
@@ -125,7 +144,21 @@ export const isEmailSKKNPro = async (email: string): Promise<boolean> => {
     try {
         const userRef = ref(database, `${SKKN_PRO_USERS_REF}/${emailKey}`);
         const snapshot = await get(userRef);
-        return snapshot.exists();
+        if (!snapshot.exists()) return false;
+
+        const userData = snapshot.val() as SKKNProUser;
+
+        // Kiểm tra trial hết hạn
+        if (userData.expiresAt) {
+            const expiresAt = new Date(userData.expiresAt);
+            if (new Date() > expiresAt) {
+                // Hết hạn trial → xóa record
+                await remove(userRef);
+                return false;
+            }
+        }
+
+        return true;
     } catch (error) {
         console.error('Error checking SKKN PRO status:', error);
         return false;
