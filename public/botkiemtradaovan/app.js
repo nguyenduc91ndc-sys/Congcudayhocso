@@ -370,8 +370,31 @@ function processFile(file) {
             showToast(`Đã tải: ${file.name}`, 'success');
         };
         reader.readAsText(file, 'UTF-8');
-    } else if (file.name.endsWith('.docx') || file.name.endsWith('.doc')) {
+    } else if (file.name.endsWith('.doc') && !file.name.endsWith('.docx')) {
+        // File .doc (Word 97-2003) — mammoth chỉ hỗ trợ .docx
+        showToast('⚠️ File .doc (Word 97-2003) không được hỗ trợ. Vui lòng lưu lại dưới dạng .docx rồi tải lên.', 'error');
+        // Hiện hướng dẫn chi tiết trong vùng upload
+        let docWarning = document.getElementById('docFormatWarning');
+        if (!docWarning) {
+            docWarning = document.createElement('div');
+            docWarning.id = 'docFormatWarning';
+            docWarning.style.cssText = 'margin-top:12px;padding:14px 16px;background:linear-gradient(135deg,#fffbeb,#fef3c7);border:2px solid #fbbf24;border-radius:12px;color:#92400e;font-size:14px;line-height:1.8;font-weight:500;';
+            docWarning.innerHTML = `
+                ⚠️ <strong>File "${file.name}" có định dạng .doc (Word 97-2003)</strong><br>
+                💡 <strong>Cách khắc phục:</strong><br>
+                1️⃣ Mở file bằng Microsoft Word<br>
+                2️⃣ Chọn <strong>File → Save As (Lưu thành)</strong><br>
+                3️⃣ Chọn định dạng <strong>Word Document (.docx)</strong><br>
+                4️⃣ Nhấn <strong>Save</strong> rồi tải file .docx mới lên đây<br>
+                <span style="font-size:12px;color:#b45309;">Hoặc bạn có thể copy-paste nội dung trực tiếp vào tab "Dán văn bản"</span>
+            `;
+            els.uploadZone.parentElement.appendChild(docWarning);
+        }
+    } else if (file.name.endsWith('.docx')) {
         showToast('Đang đọc file Word...', 'info');
+        // Xóa cảnh báo .doc nếu có
+        const oldWarning = document.getElementById('docFormatWarning');
+        if (oldWarning) oldWarning.remove();
         const reader = new FileReader();
         reader.onload = async (e) => {
             try {
@@ -387,7 +410,7 @@ function processFile(file) {
                 showToast(`Đã tải thành công: ${file.name}`, 'success');
             } catch (err) {
                 console.error('DOCX read error:', err);
-                showToast('Không thể đọc file Word. Hãy thử lưu lại dưới dạng .docx mới hoặc copy-paste nội dung.', 'error');
+                showToast('Không thể đọc file .docx. Hãy thử lưu lại dưới dạng .docx mới hoặc copy-paste nội dung.', 'error');
             }
         };
         reader.readAsArrayBuffer(file);
