@@ -15,7 +15,8 @@ import {
     buildChartDataPrompt, buildTopicAnalysisPrompt,
     buildTopicSuggestionPrompt
 } from '../utils/groqApi';
-import { exportToWord } from '../utils/wordExport';
+import { exportToWord, generatePreviewHtml } from '../utils/wordExport';
+import { Eye } from 'lucide-react';
 import { generateBarChart, generatePieChart, parseChartData, validateChartData } from '../utils/chartGenerator';
 import { submitSKKNFeedback } from '../utils/firebaseSKKNFeedback';
 import { isEmailSKKNPro, validateSKKNProKey, activateSKKNProForEmail, getSKKNProStatus, TRIAL_DAYS } from '../utils/firebaseSKKNProKeys';
@@ -116,6 +117,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     const [selectedTemplateId, setSelectedTemplateId] = useState(DEFAULT_TEMPLATE_ID);
     const [editingSectionId, setEditingSectionId] = useState<string | null>(null);
     const [editingSectionTitle, setEditingSectionTitle] = useState('');
+    const [showPreview, setShowPreview] = useState(false);
     const abortRef = useRef<AbortController | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     const apiKeySetupRef = useRef<HTMLDivElement>(null);
@@ -916,6 +918,9 @@ Chỉ trả về JSON, không giải thích.` },
                         </button>
                         <button className="skkn-btn skkn-btn-secondary" onClick={handleSaveDoc} title="Lưu">
                             <Save size={16} /> Lưu
+                        </button>
+                        <button className="skkn-btn skkn-btn-secondary" onClick={() => setShowPreview(true)} title="Xem trước bài viết">
+                            <Eye size={16} /> Xem trước
                         </button>
                         <button className="skkn-btn skkn-btn-secondary" onClick={() => { if (requirePro()) handleExport(); }} title="Xuất file Word">
                             <FileDown size={16} /> Xuất Word {!isSKKNPro && '🔒'}
@@ -2043,6 +2048,37 @@ Chỉ trả về JSON, không giải thích.` },
             {/* Admin Feedback View */}
             {appView === 'feedback_admin' && isAdmin && (
                 <AdminFeedbackView onBack={() => setAppView('landing')} />
+            )}
+
+            {/* Preview Modal */}
+            {showPreview && (
+                <div className="skkn-preview-overlay" onClick={(e) => { if (e.target === e.currentTarget) setShowPreview(false); }}>
+                    <div className="skkn-preview-container">
+                        <div className="skkn-preview-toolbar">
+                            <h3>👁 Xem trước bài viết</h3>
+                            <div className="skkn-preview-actions">
+                                <button className="skkn-btn skkn-btn-secondary" onClick={() => {
+                                    const iframe = document.getElementById('skkn-preview-iframe') as HTMLIFrameElement;
+                                    iframe?.contentWindow?.print();
+                                }}>
+                                    🖨️ In
+                                </button>
+                                <button className="skkn-btn skkn-btn-primary" onClick={() => { if (requirePro()) { handleExport(); setShowPreview(false); } }}>
+                                    <FileDown size={16} /> Xuất Word {!isSKKNPro && '🔒'}
+                                </button>
+                                <button className="skkn-preview-close" onClick={() => setShowPreview(false)}>
+                                    <X size={20} />
+                                </button>
+                            </div>
+                        </div>
+                        <iframe
+                            id="skkn-preview-iframe"
+                            className="skkn-preview-iframe"
+                            srcDoc={generatePreviewHtml(sections, topicInfo, reportType, chartImages)}
+                            title="Xem trước bài viết"
+                        />
+                    </div>
+                </div>
             )}
         </div>
     );

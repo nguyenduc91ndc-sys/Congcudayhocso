@@ -75,12 +75,16 @@ function convertTablesToHtml(text: string): string {
   return result;
 }
 
-export function exportToWord(
+/**
+ * Generate the full HTML preview of the report.
+ * Used by both the preview modal and the Word export.
+ */
+export function generatePreviewHtml(
   sections: Section[],
   topicInfo: TopicInfo,
   reportType: ReportType,
   chartImages?: Record<string, string[]>
-) {
+): string {
   const reportLabel = REPORT_TYPES[reportType].label.toUpperCase();
 
   // Build HTML content with Word-compatible styles
@@ -200,24 +204,13 @@ export function exportToWord(
   };
   renderContentSections(sections);
 
-  // Full HTML document with Word-compatible headers
-  const fullHtml = `
+  // Full HTML document
+  return `
 <!DOCTYPE html>
-<html xmlns:o="urn:schemas-microsoft-com:office:office"
-      xmlns:w="urn:schemas-microsoft-com:office:word"
-      xmlns="http://www.w3.org/TR/REC-html40">
+<html>
 <head>
   <meta charset="utf-8">
   <title>${escapeHtml(topicInfo.title)}</title>
-  <!--[if gte mso 9]>
-  <xml>
-    <w:WordDocument>
-      <w:View>Print</w:View>
-      <w:Zoom>100</w:Zoom>
-      <w:DoNotOptimizeForBrowser/>
-    </w:WordDocument>
-  </xml>
-  <![endif]-->
   <style>
     @page {
       size: A4;
@@ -228,6 +221,9 @@ export function exportToWord(
       font-size: 13pt;
       line-height: 1.5;
       color: #000000;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
     }
     p {
       margin: 0 0 6pt 0;
@@ -245,21 +241,50 @@ export function exportToWord(
       background-color: #e8eaf6;
       font-weight: bold;
     }
+    @media print {
+      body { max-width: none; padding: 0; }
+    }
   </style>
 </head>
 <body>
 ${bodyHtml}
 </body>
 </html>`;
+}
+
+export function exportToWord(
+  sections: Section[],
+  topicInfo: TopicInfo,
+  reportType: ReportType,
+  chartImages?: Record<string, string[]>
+) {
+  // Generate the HTML, then add Word-specific XML headers for download
+  const previewHtml = generatePreviewHtml(sections, topicInfo, reportType, chartImages);
+
+  // Wrap with Word-compatible headers
+  const wordHtml = previewHtml
+    .replace('<html>', `<html xmlns:o="urn:schemas-microsoft-com:office:office"
+      xmlns:w="urn:schemas-microsoft-com:office:word"
+      xmlns="http://www.w3.org/TR/REC-html40">`)
+    .replace('</head>', `<!--[if gte mso 9]>
+  <xml>
+    <w:WordDocument>
+      <w:View>Print</w:View>
+      <w:Zoom>100</w:Zoom>
+      <w:DoNotOptimizeForBrowser/>
+    </w:WordDocument>
+  </xml>
+  <![endif]-->
+</head>`);
 
   // Create Blob and download
-  const blob = new Blob(['\ufeff' + fullHtml], {
-    type: 'application/msword;charset=utf-8'
+  const blob = new Blob(['\ufeff' + wordHtml], {
+    type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document;charset=utf-8'
   });
   const url = URL.createObjectURL(blob);
   const link = document.createElement('a');
   link.href = url;
-  link.download = `${topicInfo.title || 'SKKN'}.doc`;
+  link.download = `${topicInfo.title || 'SKKN'}.docx`;
   document.body.appendChild(link);
   link.click();
   document.body.removeChild(link);

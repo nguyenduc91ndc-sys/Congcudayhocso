@@ -1198,11 +1198,11 @@ function exportReport() {
     </html>`;
 
     // Create Word-compatible blob and download
-    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/msword' });
+    const blob = new Blob(['\ufeff', htmlContent], { type: 'application/vnd.openxmlformats-officedocument.wordprocessingml.document' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `bao-cao-dao-van-${Date.now()}.doc`;
+    a.download = `bao-cao-dao-van-${Date.now()}.docx`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
