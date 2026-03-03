@@ -118,7 +118,11 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     const [editingSectionTitle, setEditingSectionTitle] = useState('');
     const abortRef = useRef<AbortController | null>(null);
     const textareaRef = useRef<HTMLTextAreaElement>(null);
+    const apiKeySetupRef = useRef<HTMLDivElement>(null);
     const [trialDaysLeft, setTrialDaysLeft] = useState<number | null>(null);
+    const [isLightTheme, setIsLightTheme] = useState(() => {
+        try { const t = localStorage.getItem('skkn_theme'); return t === null ? true : t === 'light'; } catch { return true; }
+    });
 
     // Check Pro status on mount
     useEffect(() => {
@@ -175,6 +179,16 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
     // Select report type and go to form
     const handleSelectType = (type: ReportType) => {
+        if (!apiKey) {
+            setError('⚠️ Vui lòng nhập Groq API Key trước khi tiếp tục!');
+            // Scroll to API key input and highlight it
+            if (apiKeySetupRef.current) {
+                apiKeySetupRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                apiKeySetupRef.current.classList.add('skkn-api-highlight');
+                setTimeout(() => apiKeySetupRef.current?.classList.remove('skkn-api-highlight'), 2000);
+            }
+            return;
+        }
         setReportType(type);
         setSections(cloneSections(DEFAULT_SECTIONS[type]));
         setAppView('form');
@@ -867,8 +881,16 @@ Chỉ trả về JSON, không giải thích.` },
         ));
     };
 
+    const toggleTheme = () => {
+        setIsLightTheme(prev => {
+            const next = !prev;
+            try { localStorage.setItem('skkn_theme', next ? 'light' : 'dark'); } catch { }
+            return next;
+        });
+    };
+
     return (
-        <div className="skkn-app">
+        <div className={`skkn-app${isLightTheme ? ' skkn-light' : ''}`}>
             {/* Header */}
             <div className="skkn-header">
                 <button className="skkn-back-btn" onClick={
@@ -888,7 +910,10 @@ Chỉ trả về JSON, không giải thích.` },
                     <p>2 trong 1: Viết AI + Quét AI & Cá nhân hóa như người thật</p>
                 </div>
                 {appView === 'editor' && (
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <button className="skkn-theme-toggle" onClick={toggleTheme} title={isLightTheme ? 'Chuyển giao diện tối' : 'Chuyển giao diện sáng'}>
+                            <span className="skkn-theme-icon">{isLightTheme ? '🌙' : '☀️'}</span>
+                        </button>
                         <button className="skkn-btn skkn-btn-secondary" onClick={handleSaveDoc} title="Lưu">
                             <Save size={16} /> Lưu
                         </button>
@@ -898,7 +923,10 @@ Chỉ trả về JSON, không giải thích.` },
                     </div>
                 )}
                 {appView !== 'editor' && (
-                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 8 }}>
+                    <div style={{ marginLeft: 'auto', display: 'flex', gap: 8, alignItems: 'center' }}>
+                        <button className="skkn-theme-toggle" onClick={toggleTheme} title={isLightTheme ? 'Chuyển giao diện tối' : 'Chuyển giao diện sáng'}>
+                            <span className="skkn-theme-icon">{isLightTheme ? '🌙' : '☀️'}</span>
+                        </button>
                         {isAdmin && (
                             <button
                                 className="skkn-btn skkn-btn-secondary"
@@ -925,7 +953,7 @@ Chỉ trả về JSON, không giải thích.` },
                                 position: 'absolute', top: -6, right: -6,
                                 background: '#ef4444', color: 'white',
                                 fontSize: 9, fontWeight: 800, padding: '2px 6px',
-                                borderRadius: 8, border: '2px solid #1e293b',
+                                borderRadius: 8, border: '2px solid var(--skkn-bg-header)',
                                 animation: 'bounce 1s infinite'
                             }}>Mới</span>
                             💡 Góp ý sản phẩm
@@ -991,7 +1019,7 @@ Chỉ trả về JSON, không giải thích.` },
                     <div className="skkn-landing">
                         <div className="skkn-landing-title">
                             <h2>✍️ Viết SKKN thông minh</h2>
-                            <p style={{ fontSize: 18, maxWidth: 650, lineHeight: 1.6 }}>Công cụ <strong style={{ color: '#a5b4fc' }}>2 trong 1</strong> duy nhất: AI viết nội dung chuyên sâu <em>+</em> Quét & sửa tự động để <strong style={{ color: '#34d399' }}>vượt qua trình kiểm tra AI</strong>. Văn phong tự nhiên, cá nhân hóa như giáo viên thật viết.</p>
+                            <p style={{ fontSize: 18, maxWidth: 650, lineHeight: 1.6 }}>Công cụ <strong style={{ color: 'var(--skkn-text-accent)' }}>2 trong 1</strong> duy nhất: AI viết nội dung chuyên sâu <em>+</em> Quét & sửa tự động để <strong style={{ color: '#059669' }}>vượt qua trình kiểm tra AI</strong>. Văn phong tự nhiên, cá nhân hóa như giáo viên thật viết.</p>
                             <div style={{ display: 'flex', gap: 12, marginTop: 16, justifyContent: 'center', flexWrap: 'wrap' }}>
                                 <span className="skkn-badge">🤖 Viết AI tốc độ cao</span>
                                 <span className="skkn-badge">🔍 Quét đạo văn & AI</span>
@@ -1003,10 +1031,10 @@ Chỉ trả về JSON, không giải thích.` },
 
                         {/* API Key Setup */}
                         {!apiKey && (
-                            <div className="skkn-api-setup">
+                            <div className="skkn-api-setup" ref={apiKeySetupRef}>
                                 <h3>🔑 Nhập Groq API Key</h3>
-                                <p style={{ fontSize: 13, color: '#94a3b8', margin: '0 0 12px' }}>
-                                    Lấy miễn phí tại <a href="https://console.groq.com" target="_blank" rel="noreferrer" style={{ color: '#818cf8' }}>console.groq.com</a>
+                                <p style={{ fontSize: 13, color: 'var(--skkn-text-secondary)', margin: '0 0 12px' }}>
+                                    Lấy miễn phí tại <a href="https://console.groq.com" target="_blank" rel="noreferrer" style={{ color: '#6366f1' }}>console.groq.com</a>
                                 </p>
                                 <div className="skkn-api-input-group">
                                     <input
@@ -1041,7 +1069,7 @@ Chỉ trả về JSON, không giải thích.` },
                         {apiKey && (
                             <div className="skkn-alert skkn-alert-info" style={{ maxWidth: 500, textAlign: 'center' }}>
                                 ✅ API Key đã cấu hình •{' '}
-                                <button onClick={() => { setGroqApiKey(''); setApiKeyState(''); }} style={{ background: 'none', border: 'none', color: '#fca5a5', cursor: 'pointer', textDecoration: 'underline' }}>
+                                <button onClick={() => { setGroqApiKey(''); setApiKeyState(''); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', textDecoration: 'underline' }}>
                                     Xóa key
                                 </button>
                             </div>
@@ -1065,10 +1093,10 @@ Chỉ trả về JSON, không giải thích.` },
                                 {savedDocs.map(doc => (
                                     <div key={doc.id} className="skkn-doc-item" onClick={() => handleLoadDoc(doc)}>
                                         <div>
-                                            <div style={{ fontWeight: 600, color: 'white' }}>
+                                            <div style={{ fontWeight: 600, color: 'var(--skkn-text-heading)' }}>
                                                 {REPORT_TYPES[doc.reportType].icon} {doc.topicInfo.title || 'Chưa đặt tên'}
                                             </div>
-                                            <div style={{ fontSize: 12, color: '#94a3b8', marginTop: 4 }}>
+                                            <div style={{ fontSize: 12, color: 'var(--skkn-text-secondary)', marginTop: 4 }}>
                                                 {REPORT_TYPES[doc.reportType].label} • {new Date(doc.updatedAt).toLocaleDateString('vi-VN')}
                                             </div>
                                         </div>
@@ -1082,11 +1110,11 @@ Chỉ trả về JSON, không giải thích.` },
                     </div>
                     <div style={{
                         textAlign: 'center', padding: '30px 0 20px', marginTop: 30,
-                        borderTop: '1px solid rgba(255,255,255,0.05)',
-                        color: '#64748b', fontSize: 13
+                        borderTop: '1px solid var(--skkn-border-divider)',
+                        color: 'var(--skkn-text-muted)', fontSize: 13
                     }}>
-                        <p style={{ margin: 0, fontWeight: 500, color: '#94a3b8' }}>
-                            Bản quyền © 2026 <span style={{ color: '#818cf8' }}>@giaovienyeucongnghe</span>
+                        <p style={{ margin: 0, fontWeight: 500, color: 'var(--skkn-text-secondary)' }}>
+                            Bản quyền © 2026 <span style={{ color: '#6366f1' }}>@giaovienyeucongnghe</span>
                         </p>
                         <p style={{ margin: '6px 0 0', fontSize: 12, opacity: 0.7 }}>
                             Phát triển giải pháp ứng dụng Trí tuệ Nhân tạo dành riêng cho Giáo viên
@@ -1102,7 +1130,7 @@ Chỉ trả về JSON, không giải thích.` },
 
                     <div className="skkn-field">
                         <label>📌 Tên đề tài / biện pháp *</label>
-                        <div style={{ fontSize: 12, color: '#8b5cf6', marginBottom: 6, fontStyle: 'italic' }}>
+                        <div style={{ fontSize: 12, color: 'var(--skkn-text-accent)', marginBottom: 6, fontStyle: 'italic' }}>
                             💡 Chưa có đề tài? Hãy nhập <strong>Môn</strong> và <strong>Lớp</strong> bên dưới rồi bấm <strong>✨ Gợi ý đề tài</strong> để AI gợi ý cho bạn!
                         </div>
                         <div style={{ display: 'flex', gap: 8 }}>
@@ -1121,7 +1149,7 @@ Chỉ trả về JSON, không giải thích.` },
                                 className="skkn-btn"
                                 onClick={handleSuggestTopics}
                                 disabled={isSuggestingTopic || !topicInfo.subject.trim() || !topicInfo.grade.trim()}
-                                style={{ whiteSpace: 'nowrap', padding: '8px 16px', background: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? '#374151' : 'linear-gradient(135deg, #8b5cf6, #6366f1)', border: 'none', color: 'white', borderRadius: 10, cursor: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 0.5 : 1 }}
+                                style={{ whiteSpace: 'nowrap', padding: '8px 16px', background: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 'var(--skkn-bg-subtle)' : 'linear-gradient(135deg, #8b5cf6, #6366f1)', border: 'none', color: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 'var(--skkn-text-muted)' : 'white', borderRadius: 10, cursor: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 'not-allowed' : 'pointer', fontWeight: 600, fontSize: 13, opacity: (!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 0.5 : 1 }}
                                 title={(!topicInfo.subject.trim() || !topicInfo.grade.trim()) ? 'Vui lòng nhập Môn và Lớp bên dưới trước' : 'AI gợi ý đề tài mới dựa trên môn học và lớp'}
                             >
                                 {isSuggestingTopic ? <><div className="skkn-spinner" /> Đang gợi ý...</> : <>✨ Gợi ý đề tài</>}
@@ -1132,8 +1160,8 @@ Chỉ trả về JSON, không giải thích.` },
                         {topicSuggestions.length > 0 && (
                             <div className="skkn-topic-analysis" style={{ borderColor: 'rgba(139,92,246,0.3)' }}>
                                 <div className="skkn-topic-analysis-header">
-                                    <span style={{ fontWeight: 700, color: '#a78bfa' }}>✨ Gợi ý đề tài ({topicSuggestions.length})</span>
-                                    <button onClick={() => setTopicSuggestions([])} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={16} /></button>
+                                    <span style={{ fontWeight: 700, color: '#7c3aed' }}>✨ Gợi ý đề tài ({topicSuggestions.length})</span>
+                                    <button onClick={() => setTopicSuggestions([])} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--skkn-text-secondary)', cursor: 'pointer' }}><X size={16} /></button>
                                 </div>
                                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6, maxHeight: 300, overflowY: 'auto' }}>
                                     {topicSuggestions.map((s: any, i: number) => (
@@ -1144,8 +1172,8 @@ Chỉ trả về JSON, không giải thích.` },
                                             onMouseEnter={e => { (e.target as HTMLElement).style.background = 'rgba(139,92,246,0.12)'; (e.target as HTMLElement).style.borderColor = 'rgba(139,92,246,0.4)'; }}
                                             onMouseLeave={e => { (e.target as HTMLElement).style.background = 'rgba(139,92,246,0.06)'; (e.target as HTMLElement).style.borderColor = 'rgba(139,92,246,0.15)'; }}
                                         >
-                                            <div style={{ fontSize: 13, fontWeight: 600, color: '#e0e7ff' }}>{i + 1}. {s.title}</div>
-                                            {s.highlight && <div style={{ fontSize: 11, color: '#94a3b8', marginTop: 3 }}>💡 {s.highlight}</div>}
+                                            <div style={{ fontSize: 13, fontWeight: 600, color: 'var(--skkn-text-heading)' }}>{i + 1}. {s.title}</div>
+                                            {s.highlight && <div style={{ fontSize: 11, color: 'var(--skkn-text-secondary)', marginTop: 3 }}>💡 {s.highlight}</div>}
                                         </div>
                                     ))}
                                 </div>
@@ -1162,7 +1190,7 @@ Chỉ trả về JSON, không giải thích.` },
                                         <Star size={14} style={{ color: '#f59e0b' }} />
                                         <span>{topicAnalysis.analysis?.score || '?'}/10</span>
                                     </div>
-                                    <button onClick={() => setTopicAnalysis(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: '#94a3b8', cursor: 'pointer' }}><X size={16} /></button>
+                                    <button onClick={() => setTopicAnalysis(null)} style={{ marginLeft: 'auto', background: 'none', border: 'none', color: 'var(--skkn-text-secondary)', cursor: 'pointer' }}><X size={16} /></button>
                                 </div>
 
                                 {/* Strengths & Weaknesses */}
@@ -1246,9 +1274,9 @@ Chỉ trả về JSON, không giải thích.` },
 
                     {/* Reference Content - cho ví dụ minh hoạ sát bài */}
                     <div className="skkn-field" style={{ background: 'rgba(139,92,246,0.04)', border: '1px solid rgba(139,92,246,0.15)', borderRadius: 12, padding: 16, marginTop: 4 }}>
-                        <label style={{ color: '#a78bfa', fontSize: 14, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
+                        <label style={{ color: 'var(--skkn-text-accent)', fontSize: 14, fontWeight: 700, marginBottom: 8, display: 'flex', alignItems: 'center', gap: 6 }}>
                             📚 Tài liệu để AI đưa ví dụ sát bài
-                            <span style={{ fontSize: 11, fontWeight: 400, color: '#8b5cf6' }}>— paste nội dung SGK/giáo án để ví dụ minh hoạ chính xác hơn</span>
+                            <span style={{ fontSize: 11, fontWeight: 400, color: 'var(--skkn-text-accent)' }}>— paste nội dung SGK/giáo án để ví dụ minh hoạ chính xác hơn</span>
                         </label>
                         <textarea
                             className="skkn-input"
@@ -1262,7 +1290,7 @@ Chỉ trả về JSON, không giải thích.` },
                         {/* Image Upload */}
                         <div style={{ marginTop: 12 }}>
                             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-                                <span style={{ fontSize: 13, color: '#94a3b8' }}>📷 Ảnh chụp SGK / Giáo án (tối đa 5 ảnh)</span>
+                                <span style={{ fontSize: 13, color: 'var(--skkn-text-secondary)' }}>📷 Ảnh chụp SGK / Giáo án (tối đa 5 ảnh)</span>
                             </div>
                             <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                                 {topicInfo.referenceImages.map((img, i) => (
