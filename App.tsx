@@ -16,6 +16,7 @@ import TreasureHunt from './components/TreasureHunt';
 import VirtualExperiment from './components/VirtualExperiment';
 import EarthSeasonsSimulation from './components/EarthSeasonsSimulation';
 import ClockExperiment from './components/ClockExperiment';
+import ThatLuong3D from './components/ThatLuong3D';
 import BangCuuChuong from './components/BangCuuChuong';
 import GameTuongTac from './components/GameTuongTac';
 import YogurtExperiment from './components/YogurtExperiment';
@@ -153,6 +154,9 @@ function App() {
         switch (viewParam.toLowerCase()) {
           case 'earth-seasons':
             defaultView = 'EARTH_SEASONS';
+            break;
+          case 'that-luong-3d':
+            defaultView = 'THAT_LUONG_3D';
             break;
             // Handle other views here if needed
         }
@@ -383,6 +387,7 @@ function App() {
                   onPhongTranh3D={() => setView('PHONG_TRANH_3D')}
                   onSangKienKN={() => requireLogin(() => setView('SANG_KIEN_KN'))}
                   onEarthSeasons={() => requireLogin(() => setView('EARTH_SEASONS'))}
+                  onThatLuong3D={() => requireLogin(() => setView('THAT_LUONG_3D'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -509,6 +514,10 @@ function App() {
 
           {view === 'DEN_HUNG_3D' && (
             <DenHung3D onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'THAT_LUONG_3D' && (
+            <ThatLuong3D onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'HEART_SYSTEM_3D' && (

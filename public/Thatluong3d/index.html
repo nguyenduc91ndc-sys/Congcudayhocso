@@ -1,0 +1,666 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Thạt Luổng 3D - Pha That Luang</title>
+    <meta name="description" content="Mô hình 3D tương tác của Thạt Luổng (Pha That Luang) - Di sản thế giới UNESCO tại Viêng Chăn, Lào">
+    <script type="text/javascript" src="https://static.sketchfab.com/api/sketchfab-viewer-1.12.1.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;500;600&display=swap');
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            overflow: hidden;
+            background: #0a0a1a;
+            font-family: 'Inter', sans-serif;
+            color: #fff;
+        }
+
+        /* === VIEWER CONTAINER === */
+        #viewer-container {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            z-index: 1;
+        }
+        #api-frame {
+            width: 100%;
+            height: 100%;
+            border: none;
+        }
+
+        /* === LOADING SCREEN === */
+        .loading-screen {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100vw; height: 100vh;
+            background: radial-gradient(ellipse at center, #1a1520 0%, #0a0a1a 100%);
+            z-index: 200;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 1s ease;
+        }
+        .loading-screen.hidden { opacity: 0; pointer-events: none; }
+
+        .loading-anim {
+            width: 80px;
+            height: 120px;
+            position: relative;
+        }
+        .loading-anim .base {
+            position: absolute;
+            bottom: 0; left: 50%;
+            transform: translateX(-50%);
+            width: 60px; height: 25px;
+            background: linear-gradient(135deg, #f5c542 0%, #d4a017 100%);
+            border-radius: 4px;
+        }
+        .loading-anim .tower {
+            position: absolute;
+            bottom: 20px; left: 50%;
+            transform: translateX(-50%);
+            width: 0; height: 0;
+            border-left: 20px solid transparent;
+            border-right: 20px solid transparent;
+            border-bottom: 90px solid #f5c542;
+            filter: drop-shadow(0 0 15px rgba(245,197,66,0.5));
+        }
+        .loading-text {
+            margin-top: 30px;
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            background: linear-gradient(90deg, #f5c542, #fff8dc, #f5c542);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            animation: shimmer 2s ease-in-out infinite;
+        }
+        .loading-sub {
+            margin-top: 10px;
+            font-size: 12px;
+            color: rgba(255,255,255,0.35);
+            letter-spacing: 2px;
+        }
+        .loading-bar {
+            margin-top: 25px;
+            width: 200px;
+            height: 3px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .loading-bar-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #d4a017, #f5c542);
+            border-radius: 2px;
+            transition: width 0.5s ease;
+        }
+        @keyframes shimmer {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 1; }
+        }
+
+        /* === HEADER OVERLAY === */
+        .header-overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            z-index: 100;
+            padding: 18px 25px;
+            background: linear-gradient(180deg, rgba(0,0,0,0.65) 0%, rgba(0,0,0,0) 100%);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            pointer-events: none;
+            opacity: 0;
+            transform: translateY(-10px);
+            transition: all 0.8s ease;
+        }
+        .header-overlay.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+        .header-overlay > * { pointer-events: auto; }
+
+        .title-group {
+            display: flex;
+            align-items: center;
+            gap: 14px;
+        }
+        .gold-icon {
+            width: 46px; height: 46px;
+            background: linear-gradient(135deg, #f5c542, #d4a017);
+            border-radius: 11px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 22px;
+            box-shadow: 0 4px 20px rgba(212,160,23,0.35);
+        }
+        .title-text h1 {
+            font-family: 'Playfair Display', serif;
+            font-size: 20px;
+            background: linear-gradient(90deg, #f5c542, #fff8dc, #f5c542);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            letter-spacing: 1.5px;
+        }
+        .title-text p {
+            font-size: 11px;
+            color: rgba(255,255,255,0.5);
+            font-weight: 300;
+            margin-top: 2px;
+        }
+
+        /* === CONTROL PANEL === */
+        .controls {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+        }
+        .ctrl-btn {
+            background: rgba(255,255,255,0.08);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245,197,66,0.25);
+            color: rgba(245,197,66,0.85);
+            padding: 7px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 11px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+        }
+        .ctrl-btn:hover {
+            background: rgba(245,197,66,0.15);
+            border-color: rgba(245,197,66,0.5);
+            color: #f5c542;
+        }
+        .ctrl-btn.active {
+            background: rgba(245,197,66,0.25);
+            border-color: #f5c542;
+            color: #f5c542;
+        }
+
+
+        /* === INFO TAB (right side, collapsible) === */
+        .info-tab-btn {
+            position: fixed;
+            right: 20px;
+            bottom: 20px;
+            z-index: 120;
+            height: 44px;
+            padding: 0 16px;
+            background: rgba(0,0,0,0.55);
+            backdrop-filter: blur(12px);
+            border: 1px solid rgba(245,197,66,0.4);
+            border-radius: 12px;
+            color: #f5c542;
+            font-size: 13px;
+            font-family: 'Inter', sans-serif;
+            font-weight: 500;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            transition: all 0.3s ease;
+            opacity: 0;
+            animation: pulseGlow 2.5s ease-in-out 3;
+        }
+        .info-tab-btn.visible { opacity: 1; }
+        .info-tab-btn:hover {
+            background: rgba(245,197,66,0.2);
+            border-color: #f5c542;
+            transform: scale(1.05);
+        }
+        .info-tab-btn.active {
+            background: rgba(245,197,66,0.25);
+            border-color: #f5c542;
+            animation: none;
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 0 0 rgba(245,197,66,0); }
+            50% { box-shadow: 0 0 15px 3px rgba(245,197,66,0.35); }
+        }
+
+        .info-panel {
+            position: fixed;
+            right: 20px;
+            bottom: 72px;
+            z-index: 110;
+            width: 280px;
+            max-height: 70vh;
+            overflow-y: auto;
+            background: rgba(10,10,26,0.85);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(245,197,66,0.2);
+            border-radius: 14px;
+            padding: 18px;
+            display: none;
+            flex-direction: column;
+            gap: 10px;
+            scrollbar-width: thin;
+            scrollbar-color: rgba(245,197,66,0.3) transparent;
+        }
+        .info-panel.open {
+            display: flex;
+            animation: slideUp 0.3s ease;
+        }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .info-panel-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding-bottom: 10px;
+            border-bottom: 1px solid rgba(245,197,66,0.15);
+        }
+        .info-panel-header h3 {
+            font-family: 'Playfair Display', serif;
+            font-size: 15px;
+            color: #f5c542;
+            letter-spacing: 0.5px;
+        }
+        .info-panel-close {
+            background: none;
+            border: none;
+            color: rgba(255,255,255,0.4);
+            font-size: 18px;
+            cursor: pointer;
+            padding: 2px 6px;
+            border-radius: 6px;
+            transition: all 0.2s;
+        }
+        .info-panel-close:hover {
+            color: #fff;
+            background: rgba(255,255,255,0.1);
+        }
+
+        .info-card {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(245,197,66,0.1);
+            border-radius: 10px;
+            padding: 12px 14px;
+            transition: all 0.3s ease;
+            cursor: default;
+        }
+        .info-card:hover {
+            border-color: rgba(245,197,66,0.35);
+            background: rgba(255,255,255,0.08);
+        }
+        .info-card .label {
+            font-size: 9px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: rgba(245,197,66,0.8);
+            margin-bottom: 5px;
+            font-weight: 600;
+        }
+        .info-card .value {
+            font-size: 13px;
+            color: rgba(255,255,255,0.85);
+            line-height: 1.4;
+        }
+        .info-card .value strong { color: #f5c542; }
+
+        /* === COLOR PICKER PANEL === */
+        .color-panel {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 100;
+            display: none;
+            flex-direction: column;
+            gap: 8px;
+            background: rgba(0,0,0,0.6);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(245,197,66,0.2);
+            border-radius: 12px;
+            padding: 15px;
+        }
+        .color-panel.visible {
+            display: flex;
+        }
+        .color-panel h3 {
+            font-size: 11px;
+            color: #f5c542;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin-bottom: 5px;
+        }
+        .color-swatches {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 6px;
+        }
+        .swatch {
+            width: 36px; height: 36px;
+            border-radius: 8px;
+            cursor: pointer;
+            border: 2px solid transparent;
+            transition: all 0.3s ease;
+            position: relative;
+        }
+        .swatch:hover {
+            transform: scale(1.15);
+            border-color: #fff;
+        }
+        .swatch.active {
+            border-color: #fff;
+            box-shadow: 0 0 12px rgba(255,255,255,0.3);
+        }
+        .swatch-label {
+            font-size: 9px;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            margin-top: 2px;
+        }
+
+        /* === ANNOTATION TOOLTIP === */
+        .annotation-info {
+            position: fixed;
+            z-index: 150;
+            background: rgba(0,0,0,0.75);
+            backdrop-filter: blur(15px);
+            border: 1px solid rgba(245,197,66,0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            max-width: 250px;
+            display: none;
+            pointer-events: none;
+        }
+        .annotation-info h4 {
+            font-size: 13px;
+            color: #f5c542;
+            margin-bottom: 5px;
+        }
+        .annotation-info p {
+            font-size: 11px;
+            color: rgba(255,255,255,0.75);
+            line-height: 1.5;
+        }
+
+
+        /* === RESPONSIVE === */
+        @media (max-width: 768px) {
+            .header-overlay { padding: 12px 15px; }
+            .title-text h1 { font-size: 16px; }
+            .title-text p { font-size: 10px; }
+            .info-panel { padding: 0 12px 12px; }
+            .info-card { min-width: 140px; padding: 10px 12px; }
+
+            .color-panel { right: 10px; }
+            .controls { gap: 4px; }
+            .ctrl-btn { padding: 6px 10px; font-size: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading-screen" id="loadingScreen">
+        <div class="loading-anim">
+            <div class="base"></div>
+            <div class="tower"></div>
+        </div>
+        <div class="loading-text">Thạt Luổng 3D</div>
+        <div class="loading-sub">ĐANG TẢI MÔ HÌNH 3D</div>
+        <div class="loading-bar">
+            <div class="loading-bar-fill" id="loadingBar"></div>
+        </div>
+    </div>
+
+    <!-- 3D Viewer -->
+    <div id="viewer-container">
+        <iframe id="api-frame"
+            allow="autoplay; fullscreen; xr-spatial-tracking"
+            xr-spatial-tracking
+            execution-while-out-of-viewport
+            execution-while-not-rendered
+            web-share
+            allowfullscreen
+            mozallowfullscreen="true"
+            webkitallowfullscreen="true">
+        </iframe>
+    </div>
+
+    <!-- Header Overlay -->
+    <div class="header-overlay" id="headerOverlay">
+        <div class="title-group">
+            <div class="gold-icon">🏛️</div>
+            <div class="title-text">
+                <h1>THẠT LUỔNG</h1>
+                <p>Pha That Luang · ທາດຫຼວງ · Viêng Chăn, Lào · <strong style="color:#f5c542;">@giaovienyeucongnghe</strong></p>
+            </div>
+        </div>
+        <div class="controls">
+            <button class="ctrl-btn" id="btnColor" onclick="toggleColorPanel()">🎨 Đổi màu</button>
+            <button class="ctrl-btn" id="btnWireframe" onclick="toggleWireframe()">🔲 Wireframe</button>
+            <button class="ctrl-btn" id="btnReset" onclick="resetCamera()">🔄 Reset</button>
+            <button class="ctrl-btn" id="btnFullscreen" onclick="goFullscreen()">⛶ Toàn màn</button>
+        </div>
+    </div>
+
+
+
+    <!-- Color Panel -->
+    <div class="color-panel" id="colorPanel">
+        <h3>🎨 Đổi Màu Tháp</h3>
+        <div class="color-swatches">
+            <div>
+                <div class="swatch active" style="background: linear-gradient(135deg, #f5c542, #d4a017);" onclick="changeColor(0.96,0.77,0.26, this)" title="Vàng gốc"></div>
+                <div class="swatch-label">Vàng gốc</div>
+            </div>
+            <div>
+                <div class="swatch" style="background: linear-gradient(135deg, #ff8c00, #cc7000);" onclick="changeColor(1.0,0.55,0.0, this)" title="Cam vàng"></div>
+                <div class="swatch-label">Cam vàng</div>
+            </div>
+            <div>
+                <div class="swatch" style="background: linear-gradient(135deg, #c0c0c0, #808080);" onclick="changeColor(0.75,0.75,0.75, this)" title="Bạc"></div>
+                <div class="swatch-label">Bạc</div>
+            </div>
+            <div>
+                <div class="swatch" style="background: linear-gradient(135deg, #b87333, #8b5a2b);" onclick="changeColor(0.72,0.45,0.2, this)" title="Đồng"></div>
+                <div class="swatch-label">Đồng</div>
+            </div>
+            <div>
+                <div class="swatch" style="background: linear-gradient(135deg, #e8e8e8, #fafafa);" onclick="changeColor(0.95,0.95,0.92, this)" title="Trắng ngà"></div>
+                <div class="swatch-label">Trắng ngà</div>
+            </div>
+            <div>
+                <div class="swatch" style="background: linear-gradient(135deg, #2ecc71, #1a9c4e);" onclick="changeColor(0.18,0.8,0.44, this)" title="Ngọc lục"></div>
+                <div class="swatch-label">Ngọc lục</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Info Tab Button -->
+    <button class="info-tab-btn" id="infoTabBtn" onclick="toggleInfoPanel()">📖 Thông tin</button>
+
+    <!-- Info Panel (collapsible) -->
+    <div class="info-panel" id="infoPanel">
+        <div class="info-panel-header">
+            <h3>📖 Thông tin</h3>
+            <button class="info-panel-close" onclick="toggleInfoPanel()">✕</button>
+        </div>
+        <div class="info-card">
+            <div class="label">📏 Chiều cao</div>
+            <div class="value"><strong>45 mét</strong></div>
+        </div>
+        <div class="info-card">
+            <div class="label">📅 Xây dựng</div>
+            <div class="value">Năm <strong>1566</strong> (thế kỷ XVI)</div>
+        </div>
+        <div class="info-card">
+            <div class="label">🏗️ Kiến trúc</div>
+            <div class="value">Hình <strong>nậm rượu</strong> trên đế <strong>hoa sen</strong>, đáy vuông</div>
+        </div>
+        <div class="info-card">
+            <div class="label">🌍 UNESCO</div>
+            <div class="value">Di sản thế giới<br><strong>1992, 1995, 2019</strong></div>
+        </div>
+        <div class="info-card">
+            <div class="label">🇱🇦 Ý nghĩa</div>
+            <div class="value">Hình ảnh trên <strong>Quốc huy</strong> và <strong>tờ tiền</strong> Lào</div>
+        </div>
+        <div class="info-card">
+            <div class="label">📐 Cấu trúc</div>
+            <div class="value"><strong>3 tầng</strong> nền + tháp chính + <strong>30 tháp nhỏ</strong></div>
+        </div>
+        <div class="info-card">
+            <div class="label">✨ Đặc điểm</div>
+            <div class="value">Đỉnh hình <strong>quả bầu</strong>, toàn thân <strong>dát vàng</strong></div>
+        </div>
+    </div>
+
+
+
+    <script>
+    // ===== SKETCHFAB VIEWER API =====
+    const MODEL_UID = '564b29eb85b7494f9771a9e6ea01e47e';
+    let api = null;
+    let materialList = [];
+    let isWireframe = false;
+
+    // Loading progress simulation
+    let loadProgress = 0;
+    const loadInterval = setInterval(() => {
+        loadProgress = Math.min(loadProgress + Math.random() * 15, 90);
+        document.getElementById('loadingBar').style.width = loadProgress + '%';
+    }, 400);
+
+    // Initialize Sketchfab Viewer
+    const iframe = document.getElementById('api-frame');
+    const client = new Sketchfab(iframe);
+
+    client.init(MODEL_UID, {
+        success: function(apiInstance) {
+            api = apiInstance;
+            api.start();
+            api.addEventListener('viewerready', function() {
+                console.log('✅ Viewer ready!');
+
+                // Complete loading
+                clearInterval(loadInterval);
+                document.getElementById('loadingBar').style.width = '100%';
+
+                setTimeout(() => {
+                    document.getElementById('loadingScreen').classList.add('hidden');
+                    document.getElementById('headerOverlay').classList.add('visible');
+                    document.getElementById('infoTabBtn').classList.add('visible');
+                }, 600);
+
+                // Get all materials for color changing
+                api.getMaterialList(function(err, materials) {
+                    if (!err) {
+                        materialList = materials;
+                        console.log('📦 Materials:', materials.length, materials);
+                        
+                        // Default to yellow/gold color
+                        const goldSwatch = document.querySelector('.swatch[title="Vàng gốc"]');
+                        changeColor(0.96, 0.77, 0.26, goldSwatch);
+                    }
+                });
+
+                // Set initial background to nice gradient
+                api.setBackground({color: [0.05, 0.05, 0.12, 1]}, function() {
+                    console.log('🎨 Background set');
+                });
+            });
+        },
+        error: function() {
+            console.error('❌ Viewer error');
+            document.querySelector('.loading-text').textContent = 'Lỗi tải mô hình';
+            document.querySelector('.loading-sub').textContent = 'Vui lòng thử lại sau';
+        },
+        // Options
+        autostart: 1,
+        camera: 0,
+        ui_stop: 0,
+        ui_inspector: 0,
+        ui_watermark: 0,
+        ui_color: 'f5c542',
+        ui_animations: 0,
+        preload: 1,
+        transparent: 0,
+        ui_hint: 0,
+        ui_controls: 1,
+        ui_infos: 0,
+        ui_ar: 0,
+        ui_help: 0,
+        ui_settings: 0,
+        ui_vr: 0,
+        ui_fullscreen: 0,
+        ui_annotations: 0,
+    });
+
+
+    // ===== COLOR CHANGING =====
+    function changeColor(r, g, b, el) {
+        if (!api || materialList.length === 0) return;
+
+        // Update active swatch
+        document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
+        if (el) el.classList.add('active');
+
+        // Change all material colors
+        materialList.forEach(function(material) {
+            material.channels.AlbedoPBR.color = [r, g, b];
+            material.channels.AlbedoPBR.factor = 1;
+            api.setMaterial(material, function() {
+                console.log('🎨 Color updated');
+            });
+        });
+    }
+
+    // ===== WIREFRAME TOGGLE =====
+    function toggleWireframe() {
+        if (!api) return;
+        isWireframe = !isWireframe;
+
+        api.setWireframe(isWireframe, function(err) {
+            if(!err) {
+                document.getElementById('btnWireframe').classList.toggle('active', isWireframe);
+                console.log('🔲 Wireframe:', isWireframe);
+            }
+        });
+    }
+
+    // ===== COLOR PANEL TOGGLE =====
+    function toggleColorPanel() {
+        const panel = document.getElementById('colorPanel');
+        panel.classList.toggle('visible');
+        document.getElementById('btnColor').classList.toggle('active', panel.classList.contains('visible'));
+    }
+
+    // ===== INFO PANEL TOGGLE =====
+    function toggleInfoPanel() {
+        const panel = document.getElementById('infoPanel');
+        const btn = document.getElementById('infoTabBtn');
+        panel.classList.toggle('open');
+        btn.classList.toggle('active', panel.classList.contains('open'));
+    }
+
+    // ===== RESET CAMERA =====
+    function resetCamera() {
+        if (!api) return;
+        api.recenterCamera(function(err) {
+            if(!err) console.log('🔄 Camera reset');
+        });
+    }
+
+    // ===== FULLSCREEN =====
+    function goFullscreen() {
+        const el = document.documentElement;
+        if (el.requestFullscreen) el.requestFullscreen();
+        else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+        else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    }
+    </script>
+</body>
+</html>

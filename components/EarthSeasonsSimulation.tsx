@@ -90,7 +90,8 @@ const EarthSeasonsSimulation: React.FC<Props> = ({ onBack }) => {
 
   // Copy & shorten link
   const handleCopyLink = async () => {
-    const fullUrl = window.location.href;
+    // Luôn luôn tạo link với tham số view=earth-seasons để đảm bảo copy đúng
+    const fullUrl = `${window.location.origin}${window.location.pathname}?view=earth-seasons`;
     setIsShortening(true);
     try {
       const shortUrl = await shortenUrl(fullUrl);
