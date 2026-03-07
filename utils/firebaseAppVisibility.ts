@@ -6,9 +6,9 @@ export const ALL_APP_IDS = [
     'interactiveVideo', 'beeGame', 'beeGameEditable', 'bacteriaGame',
     'vongQuay', 'kingGame', 'luckyWheel', 'starWheel',
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
-    'clockExperiment', 'yogurtExperiment',
+    'clockExperiment', 'yogurtExperiment', 'earthSeasons',
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
-    'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D',
+    'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D', 'thatLuong3D',
     'bangCuuChuong', 'gameTuongTac',
     'phongTranh3D', // Phòng Tranh 3D tùy chỉnh
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
@@ -34,6 +34,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     virtualExperiment: { name: 'Thí nghiệm ảo tách muối', icon: '🧪', section: 'Mô phỏng khoa học' },
     clockExperiment: { name: 'Xem Giờ Trên Đồng Hồ', icon: '⏰', section: 'Mô phỏng khoa học' },
     yogurtExperiment: { name: 'Thí nghiệm làm Sữa chua', icon: '🧫', section: 'Mô phỏng khoa học' },
+    earthSeasons: { name: 'Chuyển động Trái Đất', icon: '🌍', section: 'Mô phỏng khoa học' },
     // ── Khóa học & AI ──
     aiCourseStore: { name: 'Kho Khóa học AI', icon: '🎓', section: 'Khóa học & AI' },
     ngheNghiep: { name: 'Nghề Nghiệp Tương Lai', icon: '👨‍🚀', section: 'Khóa học & AI' },
@@ -46,6 +47,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     geometry3DTools: { name: 'Bộ công cụ Hình học 3D', icon: '📦', section: 'Ứng dụng 3D & VR' },
     vietnamMap: { name: 'Bản đồ Việt Nam', icon: '🗺️', section: 'Ứng dụng 3D & VR' },
     denHung3D: { name: 'Phòng Tranh 3D - Đền Hùng', icon: '🏛️', section: 'Ứng dụng 3D & VR' },
+    thatLuong3D: { name: 'Mô hình 3D - Thạt Luổng', icon: '🕍', section: 'Ứng dụng 3D & VR' },
     // ── Học liệu tương tác ──
     bangCuuChuong: { name: 'Bảng Cửu Chương Số', icon: '🔢', section: 'Học liệu tương tác' },
     gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
