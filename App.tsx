@@ -147,6 +147,20 @@ function App() {
         window.history.replaceState({}, document.title, cleanUrl);
       }
 
+      // Parse ?view= from URL
+      const viewParam = urlParams.get('view');
+      if (viewParam) {
+        switch (viewParam.toLowerCase()) {
+          case 'earth-seasons':
+            defaultView = 'EARTH_SEASONS';
+            break;
+            // Handle other views here if needed
+        }
+        const cleanUrl = `${window.location.pathname}?view=${viewParam}`;
+        window.history.replaceState({}, document.title, cleanUrl);
+      }
+
+
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
