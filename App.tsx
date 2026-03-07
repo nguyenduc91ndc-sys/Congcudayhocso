@@ -14,6 +14,7 @@ import ChucTet from './components/ChucTet';
 import PuzzleGame from './components/PuzzleGame';
 import TreasureHunt from './components/TreasureHunt';
 import VirtualExperiment from './components/VirtualExperiment';
+import EarthSeasonsSimulation from './components/EarthSeasonsSimulation';
 import ClockExperiment from './components/ClockExperiment';
 import BangCuuChuong from './components/BangCuuChuong';
 import GameTuongTac from './components/GameTuongTac';
@@ -367,6 +368,7 @@ function App() {
                   onKiemTraDaoVan={() => requireLogin(() => setView('KIEM_TRA_DAO_VAN'))}
                   onPhongTranh3D={() => setView('PHONG_TRANH_3D')}
                   onSangKienKN={() => requireLogin(() => setView('SANG_KIEN_KN'))}
+                  onEarthSeasons={() => requireLogin(() => setView('EARTH_SEASONS'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -517,6 +519,10 @@ function App() {
 
           {view === 'VIRTUAL_EXPERIMENT' && (
             <VirtualExperiment onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'EARTH_SEASONS' && (
+            <EarthSeasonsSimulation onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'CLOCK_EXPERIMENT' && (

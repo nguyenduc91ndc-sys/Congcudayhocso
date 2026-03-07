@@ -56,6 +56,7 @@ interface DashboardProps {
     onKiemTraDaoVan: () => void;
     onPhongTranh3D: () => void;
     onSangKienKN: () => void;
+    onEarthSeasons: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
     hiddenApps?: string[];
@@ -273,7 +274,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onEarthSeasons, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -818,6 +819,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('virtualExperiment') && <ToolCard title="Thí nghiệm ảo tách muối ra khỏi dung dịch" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" />}
                                         {!hiddenApps.includes('clockExperiment') && <ToolCard title="Xem Giờ Trên Đồng Hồ" description="Học cách xem giờ trên đồng hồ kim và đồng hồ số" icon={<span className="text-2xl">⏰</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onClockExperiment} badge="Mới" />}
                                         {!hiddenApps.includes('yogurtExperiment') && <ToolCard title="Thí nghiệm làm Sữa chua" description="Mô phỏng thí nghiệm làm sữa chua với vi khuẩn lactic" icon={<span className="text-2xl">🥛</span>} accentColor="bg-gradient-to-br from-pink-500 to-purple-600" onClick={onYogurtExperiment} badge="Mới" />}
+                                        {!hiddenApps.includes('earthSeasons') && <ToolCard title="Chuyển động Trái Đất & Các Mùa" description="Mô phỏng quỹ đạo Trái Đất, trục nghiêng và sự hình thành 4 mùa" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-blue-600" onClick={onEarthSeasons} badge="Mới" />}
                                     </div>
                                 </section>
                             )}
