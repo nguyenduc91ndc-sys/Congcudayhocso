@@ -8,6 +8,7 @@ import {
 } from '../utils/skknTypes';
 import {
     getGroqApiKey, setGroqApiKey, groqStream,
+    getGeminiApiKey, setGeminiApiKey, geminiStream,
     buildSectionPrompt, buildAIDetectionPrompt,
     buildPlagiarismPrompt, buildHumanizePrompt,
     buildExpandPrompt, buildShortenPrompt,
@@ -77,8 +78,30 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     const [showFeedbackModal, setShowFeedbackModal] = useState(false);
     const [feedbackContent, setFeedbackContent] = useState('');
     const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
-    const [apiKey, setApiKeyState] = useState(getGroqApiKey());
-    const [apiKeyInput, setApiKeyInput] = useState('');
+    const [apiProvider, setApiProvider] = useState<'groq' | 'gemini'>(() => (localStorage.getItem('skkn_api_provider') as 'groq' | 'gemini') || 'gemini');
+    const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem('skkn_selected_model') || 'gemini-2.0-flash');
+    const [groqKey, setGroqKeyState] = useState(getGroqApiKey());
+    const [groqKeyInput, setGroqKeyInput] = useState('');
+    const [geminiKey, setGeminiKeyState] = useState(getGeminiApiKey());
+    const [geminiKeyInput, setGeminiKeyInput] = useState('');
+    const apiKey = apiProvider === 'groq' ? groqKey : geminiKey;
+
+    const callAIStream = async (
+        messages: any[],
+        key: string,
+        onChunk: (text: string) => void,
+        onComplete: () => void,
+        onError: (error: Error) => void,
+        forceModel?: string,
+        temperature?: number
+    ) => {
+        if (!key) return null as any;
+        if (apiProvider === 'gemini') {
+            return geminiStream(messages, key, onChunk, onComplete, onError, selectedModel);
+        } else {
+            return groqStream(messages, key, onChunk, onComplete, onError, forceModel || 'llama-3.3-70b-versatile', temperature);
+        }
+    };
     const [reportType, setReportType] = useState<ReportType>('skkn');
     const [topicInfo, setTopicInfo] = useState<TopicInfo>({
         title: '', subject: '', level: 'Tiểu học', grade: '', classSize: '', target: '', context: '',
@@ -172,17 +195,21 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
     // Save API key
     const handleSaveApiKey = () => {
-        if (apiKeyInput.trim()) {
-            setGroqApiKey(apiKeyInput.trim());
-            setApiKeyState(apiKeyInput.trim());
-            setApiKeyInput('');
+        if (apiProvider === 'groq' && groqKeyInput.trim()) {
+            setGroqApiKey(groqKeyInput.trim());
+            setGroqKeyState(groqKeyInput.trim());
+            setGroqKeyInput('');
+        } else if (apiProvider === 'gemini' && geminiKeyInput.trim()) {
+            setGeminiApiKey(geminiKeyInput.trim());
+            setGeminiKeyState(geminiKeyInput.trim());
+            setGeminiKeyInput('');
         }
     };
 
     // Select report type and go to form
     const handleSelectType = (type: ReportType) => {
         if (!apiKey) {
-            setError('⚠️ Vui lòng nhập Groq API Key trước khi tiếp tục!');
+            setError('⚠️ Vui lòng cấu hình API Key trước khi tiếp tục!');
             // Scroll to API key input and highlight it
             if (apiKeySetupRef.current) {
                 apiKeySetupRef.current.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -199,7 +226,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     // AI Topic Analysis
     const handleAnalyzeTopic = async () => {
         if (!topicInfo.title.trim()) { setError('Vui lòng nhập tên đề tài trước'); return; }
-        if (!apiKey) { setError('Vui lòng nhập Groq API Key trước'); return; }
+        if (!apiKey) { setError('Vui lòng cấu hình API Key trước'); return; }
         setIsAnalyzingTopic(true);
         setTopicAnalysis(null);
         setError('');
@@ -212,7 +239,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
         );
 
         let result = '';
-        await groqStream(
+        await callAIStream(
             messages,
             apiKey,
             (chunk: string) => { result += chunk; },
@@ -238,7 +265,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
     // AI Topic Suggestion - Gợi ý đề tài mới
     const handleSuggestTopics = async () => {
-        if (!apiKey) { setError('Vui lòng nhập Groq API Key trước'); return; }
+        if (!apiKey) { setError('Vui lòng cấu hình API Key trước'); return; }
         if (!topicInfo.subject.trim() || !topicInfo.grade.trim()) { setError('Vui lòng nhập Môn/Lĩnh vực và Lớp trước để AI gợi ý đề tài phù hợp'); return; }
         setIsSuggestingTopic(true);
         setTopicSuggestions([]);
@@ -252,7 +279,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
         );
 
         let result = '';
-        await groqStream(
+        await callAIStream(
             messages,
             apiKey,
             (chunk: string) => { result += chunk; },
@@ -284,7 +311,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
             return;
         }
         if (!apiKey) {
-            setError('Vui lòng nhập Groq API Key');
+            setError('Vui lòng cấu hình API Key');
             return;
         }
         setError('');
@@ -416,7 +443,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
             });
         setSections(prev => markWriting(prev));
 
-        const controller = await groqStream(
+        const controller = await callAIStream(
             messages,
             apiKey,
             (chunk: string) => {
@@ -466,7 +493,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
         // Use vision model when reference images are uploaded
         const useVision = topicInfo.referenceImages && topicInfo.referenceImages.length > 0;
-        const controller = await groqStream(
+        const controller = await callAIStream(
             messages,
             apiKey,
             (chunk: string) => {
@@ -512,7 +539,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
             // Run 1: main model
             let aiText1 = '';
-            await groqStream(aiMessages, apiKey, (c: string) => { aiText1 += c; }, () => {
+            await callAIStream(aiMessages, apiKey, (c: string) => { aiText1 += c; }, () => {
                 try {
                     const jsonMatch = aiText1.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
@@ -528,7 +555,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
 
             // Run 2: same model, slight variation for averaging
             let aiText2 = '';
-            await groqStream(aiMessages, apiKey, (c: string) => { aiText2 += c; }, () => {
+            await callAIStream(aiMessages, apiKey, (c: string) => { aiText2 += c; }, () => {
                 try {
                     const jsonMatch = aiText2.match(/\{[\s\S]*\}/);
                     if (jsonMatch) {
@@ -557,7 +584,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
             // Plagiarism check
             const plagMessages = buildPlagiarismPrompt(content);
             let plagText = '';
-            await groqStream(plagMessages, apiKey, (c: string) => { plagText += c; }, () => {
+            await callAIStream(plagMessages, apiKey, (c: string) => { plagText += c; }, () => {
                 try {
                     const jsonMatch = plagText.match(/\{[\s\S]*\}/);
                     if (jsonMatch) setPlagResult(JSON.parse(jsonMatch[0]));
@@ -623,7 +650,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
         );
 
         let result = '';
-        await groqStream(
+        await callAIStream(
             messages,
             apiKey,
             (chunk: string) => { result += chunk; },
@@ -705,7 +732,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
         );
 
         let result = '';
-        await groqStream(
+        await callAIStream(
             messages,
             apiKey,
             (chunk: string) => { result += chunk; },
@@ -786,7 +813,7 @@ Chỉ trả về JSON, không giải thích.` },
         ];
 
         let result = '';
-        await groqStream(messages, apiKey,
+        await callAIStream(messages, apiKey,
             (c: string) => { result += c; },
             () => {
                 setIsStreaming(false);
@@ -984,8 +1011,8 @@ Chỉ trả về JSON, không giải thích.` },
                                             style={{ padding: '6px 14px', fontSize: 13 }}
                                             onClick={() => {
                                                 setError('');
-                                                setApiKeyState('');
-                                                setGroqApiKey('');
+                                                if (apiProvider === 'groq') { setGroqApiKey(''); setGroqKeyState(''); }
+                                                else { setGeminiApiKey(''); setGeminiKeyState(''); }
                                                 if (appView === 'editor') setAppView('landing');
                                             }}
                                         >
@@ -1035,50 +1062,88 @@ Chỉ trả về JSON, không giải thích.` },
                         </div>
 
                         {/* API Key Setup */}
-                        {!apiKey && (
-                            <div className="skkn-api-setup" ref={apiKeySetupRef}>
-                                <h3>🔑 Nhập Groq API Key</h3>
-                                <p style={{ fontSize: 13, color: 'var(--skkn-text-secondary)', margin: '0 0 12px' }}>
-                                    Lấy miễn phí tại <a href="https://console.groq.com" target="_blank" rel="noreferrer" style={{ color: '#6366f1' }}>console.groq.com</a>
-                                </p>
-                                <div className="skkn-api-input-group">
-                                    <input
-                                        className="skkn-input"
-                                        type="password"
-                                        placeholder="gsk_..."
-                                        value={apiKeyInput}
-                                        onChange={e => setApiKeyInput(e.target.value)}
-                                        onKeyDown={e => e.key === 'Enter' && handleSaveApiKey()}
-                                    />
-                                    <button className="skkn-btn skkn-btn-primary" onClick={handleSaveApiKey}>Lưu</button>
-                                </div>
-                                <a
-                                    href="https://youtu.be/aZR6pZip4M0"
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    style={{
-                                        display: 'inline-flex', alignItems: 'center', gap: 6,
-                                        marginTop: 12, padding: '8px 16px', borderRadius: 10,
-                                        background: 'linear-gradient(135deg, #ef4444, #dc2626)',
-                                        color: '#fff', fontSize: 13, fontWeight: 600,
-                                        textDecoration: 'none', boxShadow: '0 2px 8px rgba(239,68,68,0.3)',
-                                        transition: 'transform 0.2s, box-shadow 0.2s',
-                                    }}
-                                    onMouseEnter={e => { (e.target as HTMLElement).style.transform = 'scale(1.05)'; }}
-                                    onMouseLeave={e => { (e.target as HTMLElement).style.transform = 'scale(1)'; }}
-                                >
-                                    ▶️ Video hướng dẫn lấy API Key
-                                </a>
+                        <div className="skkn-api-setup" ref={apiKeySetupRef}>
+                            <h3>⚙️ Cấu hình AI (Yêu cầu)</h3>
+                            <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                                    <input type="radio" name="apiProvider" value="gemini" checked={apiProvider === 'gemini'} onChange={() => { setApiProvider('gemini'); localStorage.setItem('skkn_api_provider', 'gemini'); }} />
+                                    Google Gemini (Khuyên dùng)
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
+                                    <input type="radio" name="apiProvider" value="groq" checked={apiProvider === 'groq'} onChange={() => { setApiProvider('groq'); localStorage.setItem('skkn_api_provider', 'groq'); }} />
+                                    Groq (Tốc độ cao)
+                                </label>
                             </div>
-                        )}
-                        {apiKey && (
-                            <div className="skkn-alert skkn-alert-info" style={{ maxWidth: 500, textAlign: 'center' }}>
-                                ✅ API Key đã cấu hình •{' '}
-                                <button onClick={() => { setGroqApiKey(''); setApiKeyState(''); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', textDecoration: 'underline' }}>
-                                    Xóa key
-                                </button>
-                            </div>
-                        )}
+
+                            {apiProvider === 'gemini' ? (
+                                <>
+                                    <div style={{ fontSize: 13, background: 'rgba(139, 92, 246, 0.04)', padding: '12px 16px', borderRadius: 8, margin: '0 0 16px', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
+                                        <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Cần 1 phút để lấy mã Gemini API Key (miễn phí):</p>
+                                        <ol style={{ margin: 0, paddingLeft: 20, color: 'var(--skkn-text-secondary)', lineHeight: 1.6 }}>
+                                            <li>Truy cập <a href="https://aistudio.google.com/apikey" target="_blank" rel="noreferrer" style={{ color: '#6366f1' }}>Google AI Studio</a></li>
+                                            <li>Đăng nhập tài khoản Google → Nhấn <strong>"Create API Key"</strong></li>
+                                            <li>Sao chép key và dán vào ô bên dưới.</li>
+                                        </ol>
+                                    </div>
+                                    {!geminiKey ? (
+                                        <div className="skkn-api-input-group">
+                                            <input className="skkn-input" type="password" placeholder="Dán Gemini API Key (AIza...)" value={geminiKeyInput} onChange={e => setGeminiKeyInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveApiKey()} />
+                                            <button className="skkn-btn skkn-btn-primary" onClick={handleSaveApiKey}>Lưu</button>
+                                        </div>
+                                    ) : (
+                                        <div className="skkn-alert skkn-alert-info" style={{ marginTop: 0 }}>
+                                            ✅ Đã cấu hình Gemini API Key • <button onClick={() => { setGeminiApiKey(''); setGeminiKeyState(''); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Thay đổi</button>
+                                        </div>
+                                    )}
+                                    <div style={{ marginTop: 12 }}>
+                                        <label style={{ fontSize: 13, fontWeight: 600, display: 'block', marginBottom: 6 }}>Chọn mô hình Gemini:</label>
+                                        <select className="skkn-select" value={selectedModel} onChange={e => { setSelectedModel(e.target.value); localStorage.setItem('skkn_selected_model', e.target.value); }} style={{ width: '100%', maxWidth: 350 }}>
+                                            <option value="gemini-2.0-flash">Gemini 2.0 Flash (Tốc độ cực nhanh, ổn định & tốt nhất)</option>
+                                            <option value="gemini-1.5-pro">Gemini 1.5 Pro (Đọc hiểu sâu xa, lý luận sắc bén, tốt nhất cho văn bản khó)</option>
+                                            <option value="gemini-1.5-flash">Gemini 1.5 Flash (Nhanh, nhẹ, cân bằng)</option>
+                                        </select>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <div style={{ fontSize: 13, background: 'rgba(139, 92, 246, 0.04)', padding: '12px 16px', borderRadius: 8, margin: '0 0 16px', border: '1px solid rgba(139, 92, 246, 0.15)' }}>
+                                        <p style={{ margin: '0 0 8px', fontWeight: 600 }}>Cần 1 phút để lấy mã Groq API Key (miễn phí):</p>
+                                        <ol style={{ margin: 0, paddingLeft: 20, color: 'var(--skkn-text-secondary)', lineHeight: 1.6 }}>
+                                            <li>Truy cập <a href="https://console.groq.com" target="_blank" rel="noreferrer" style={{ color: '#6366f1' }}>Groq Console</a></li>
+                                            <li>Đăng nhập/đăng ký → Nhấn <strong>"Create API Key"</strong></li>
+                                            <li>Sao chép key và dán vào ô bên dưới.</li>
+                                        </ol>
+                                    </div>
+                                    {!groqKey ? (
+                                        <div className="skkn-api-input-group">
+                                            <input className="skkn-input" type="password" placeholder="Dán Groq API Key (gsk_...)" value={groqKeyInput} onChange={e => setGroqKeyInput(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSaveApiKey()} />
+                                            <button className="skkn-btn skkn-btn-primary" onClick={handleSaveApiKey}>Lưu</button>
+                                        </div>
+                                    ) : (
+                                        <div className="skkn-alert skkn-alert-info" style={{ marginTop: 0 }}>
+                                            ✅ Đã cấu hình Groq API Key • <button onClick={() => { setGroqApiKey(''); setGroqKeyState(''); }} style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer', textDecoration: 'underline', padding: 0 }}>Thay đổi</button>
+                                        </div>
+                                    )}
+                                    <a
+                                        href="https://youtu.be/aZR6pZip4M0"
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        style={{
+                                            display: 'inline-flex', alignItems: 'center', gap: 6,
+                                            marginTop: 12, padding: '8px 16px', borderRadius: 10,
+                                            background: 'linear-gradient(135deg, #ef4444, #dc2626)',
+                                            color: '#fff', fontSize: 13, fontWeight: 600,
+                                            textDecoration: 'none', boxShadow: '0 2px 8px rgba(239,68,68,0.3)',
+                                            transition: 'transform 0.2s, box-shadow 0.2s',
+                                        }}
+                                        onMouseEnter={e => { (e.target as HTMLElement).style.transform = 'scale(1.05)'; }}
+                                        onMouseLeave={e => { (e.target as HTMLElement).style.transform = 'scale(1)'; }}
+                                    >
+                                        ▶️ Video hướng dẫn lấy API Key Groq
+                                    </a>
+                                </>
+                            )}
+                        </div>
 
                         {/* Report type cards */}
                         <div className="skkn-cards">
@@ -1410,7 +1475,7 @@ Chỉ trả về JSON, không giải thích.` },
                         <button className="skkn-btn skkn-btn-secondary" onClick={() => setAppView('landing')}>← Quay lại</button>
                         <button className="skkn-btn skkn-btn-primary" onClick={() => {
                             if (!topicInfo.title.trim()) { setError('Vui lòng nhập tên đề tài'); return; }
-                            if (!apiKey) { setError('Vui lòng nhập Groq API Key'); return; }
+                            if (!apiKey) { setError('Vui lòng cấu hình API Key'); return; }
                             setError('');
                             setAppView('structure');
                         }} disabled={isStreaming}>

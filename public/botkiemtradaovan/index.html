@@ -150,6 +150,16 @@
                         Lưu Key
                     </button>
                 </div>
+                
+                <div class="model-selector-group" id="modelSelectorGroup" style="display: none; margin-top: 16px;">
+                    <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 8px; color: var(--text-primary);">Độ sâu phân tích (Mô hình Gemini):</label>
+                    <select id="geminiModelSelect" style="width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); background: var(--bg-card); color: var(--text-primary); font-family: inherit; font-size: 14px; outline: none;">
+                        <option value="gemini-2.0-flash">Gemini 2.0 Flash (Tốc độ cực nhanh, ổn định & rẻ nhất)</option>
+                        <option value="gemini-1.5-pro">Gemini 1.5 Pro (Đọc hiểu sâu xa, lý luận sắc bén, tốt nhất cho văn bản khó)</option>
+                        <option value="gemini-1.5-flash">Gemini 1.5 Flash (Nhanh, nhẹ, cân bằng)</option>
+                    </select>
+                </div>
+
                 <div class="api-key-status" id="apiKeyStatus"></div>
             </div>
         </div>

@@ -12,6 +12,7 @@ const state = {
         gemini: localStorage.getItem('gemini_api_key') || '',
         groq: localStorage.getItem('groq_api_key') || '',
     },
+    geminiModel: localStorage.getItem('gemini_model') || 'gemini-2.0-flash',
     isScanning: false,
     lastResults: null,
     history: JSON.parse(localStorage.getItem('scan_history') || '[]'),
@@ -73,6 +74,8 @@ const els = {
     detailsList: $('#detailsList'),
     summaryText: $('#summaryText'),
     toastContainer: $('#toastContainer'),
+    modelSelectorGroup: $('#modelSelectorGroup'),
+    geminiModelSelect: $('#geminiModelSelect'),
 };
 
 // ========================
@@ -137,6 +140,15 @@ function init() {
     $$('.tab-btn').forEach(btn => btn.addEventListener('click', handleTabSwitch));
     $$('.result-tab').forEach(btn => btn.addEventListener('click', handleResultTabSwitch));
 
+    // Gemini Model switching
+    if (els.geminiModelSelect) {
+        els.geminiModelSelect.value = state.geminiModel;
+        els.geminiModelSelect.addEventListener('change', (e) => {
+            state.geminiModel = e.target.value;
+            localStorage.setItem('gemini_model', state.geminiModel);
+        });
+    }
+
     // Upload
     els.uploadZone.addEventListener('click', () => els.fileInput.click());
     els.uploadZone.addEventListener('dragover', handleDragOver);
@@ -187,10 +199,12 @@ function updateProviderUI() {
     if (state.provider === 'groq') {
         els.settingsDesc.innerHTML = 'Nhập Groq API Key của bạn. Lấy miễn phí tại <a href="https://console.groq.com/keys" target="_blank" rel="noopener" id="apiLink">Groq Console</a>. Key được lưu trên trình duyệt, không gửi đến bất kỳ server nào khác.';
         els.apiKeyInput.placeholder = 'Dán Groq API Key (gsk_...)';
+        if (els.modelSelectorGroup) els.modelSelectorGroup.style.display = 'none';
         if (videoTutorial) videoTutorial.style.display = '';
     } else {
         els.settingsDesc.innerHTML = 'Nhập Google Gemini API Key của bạn. Lấy miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" id="apiLink">Google AI Studio</a>. Key được lưu trên trình duyệt, không gửi đến bất kỳ server nào khác.';
         els.apiKeyInput.placeholder = 'Dán Gemini API Key (AIza...)';
+        if (els.modelSelectorGroup) els.modelSelectorGroup.style.display = 'block';
         if (videoTutorial) {
             videoTutorial.style.display = 'none';
             videoTutorial.classList.remove('open'); // collapse if open
@@ -568,8 +582,8 @@ async function callGeminiAPI(text, checkPlagiarism, checkAI, checkStyle) {
     if (checkStyle) analysisTypes.push('writing style analysis');
 
     const prompt = buildAnalysisPrompt(text, analysisTypes, checkPlagiarism, checkAI, checkStyle);
-
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent?key=${getCurrentKey()}`;
+    const modelToUse = state.geminiModel || 'gemini-2.0-flash';
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${getCurrentKey()}`;
 
     const response = await fetch(apiUrl, {
         method: 'POST',

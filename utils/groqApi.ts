@@ -24,6 +24,15 @@ export function setGroqApiKey(key: string): void {
     localStorage.setItem('skkn_groq_api_key', key);
 }
 
+// Get API key from localStorage or env
+export function getGeminiApiKey(): string {
+    return localStorage.getItem('skkn_gemini_api_key') || '';
+}
+
+export function setGeminiApiKey(key: string): void {
+    localStorage.setItem('skkn_gemini_api_key', key);
+}
+
 // Non-streaming completion
 export async function groqComplete(
     messages: GroqMessage[],
@@ -117,6 +126,93 @@ export async function groqStream(
                     }
                 } catch {
                     // Skip malformed JSON
+                }
+            }
+        }
+
+        onComplete();
+    } catch (err: any) {
+        if (err.name !== 'AbortError') {
+            onError(err);
+        }
+    }
+
+    return controller;
+}
+
+// Streaming completion for Gemini
+export async function geminiStream(
+    messages: GroqMessage[],
+    apiKey: string,
+    onChunk: (text: string) => void,
+    onComplete: () => void,
+    onError: (error: Error) => void,
+    model: string = 'gemini-1.5-flash'
+): Promise<AbortController> {
+    const controller = new AbortController();
+
+    try {
+        const systemMessages = messages.filter(m => m.role === 'system').map(m => m.content).join('\n');
+        const contents = messages.filter(m => m.role !== 'system').map(m => {
+            if (Array.isArray(m.content)) {
+                const parts = (m.content as any[]).map(part => {
+                    if (part.type === 'text') return { text: part.text };
+                    if (part.type === 'image_url') {
+                        const base64Str = part.image_url.url.split(',')[1];
+                        return { inlineData: { mimeType: 'image/jpeg', data: base64Str } };
+                    }
+                    return { text: '' };
+                });
+                return { role: m.role === 'user' ? 'user' : 'model', parts };
+            }
+            return {
+                role: m.role === 'user' ? 'user' : 'model',
+                parts: [{ text: m.content as string }]
+            };
+        });
+
+        const body: any = { contents };
+        if (systemMessages) {
+            body.systemInstruction = { parts: [{ text: systemMessages }] };
+        }
+
+        const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:streamGenerateContent?alt=sse&key=${apiKey}`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(body),
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            const error = await response.json().catch(() => ({ error: { message: response.statusText } }));
+            throw new Error(error.error?.message || `Gemini API error: ${response.status}`);
+        }
+
+        const reader = response.body?.getReader();
+        if (!reader) throw new Error('No response body');
+
+        const decoder = new TextDecoder();
+        let buffer = '';
+
+        while (true) {
+            const { done, value } = await reader.read();
+            if (done) break;
+
+            buffer += decoder.decode(value, { stream: true });
+            const lines = buffer.split('\n');
+            buffer = lines.pop() || '';
+
+            for (const line of lines) {
+                if (line.startsWith('data: ')) {
+                    const dataStr = line.slice(6).trim();
+                    if (!dataStr) continue;
+                    try {
+                        const json = JSON.parse(dataStr);
+                        const text = json.candidates?.[0]?.content?.parts?.[0]?.text;
+                        if (text) onChunk(text);
+                    } catch {
+                        // Skip malformed JSON
+                    }
                 }
             }
         }
