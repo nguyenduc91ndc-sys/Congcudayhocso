@@ -481,7 +481,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                 setIsStreaming(false);
                 setError(`Lỗi AI: ${err.message}`);
             },
-            useVision ? 'llama-3.2-90b-vision-preview' : undefined
+            useVision ? 'meta-llama/llama-4-scout-17b-16e-instruct' : undefined
         );
         abortRef.current = controller;
     };
