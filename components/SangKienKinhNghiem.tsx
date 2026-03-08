@@ -78,7 +78,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
     const [showFeedbackModal, setShowFeedbackModal] = useState(false);
     const [feedbackContent, setFeedbackContent] = useState('');
     const [isSubmittingFeedback, setIsSubmittingFeedback] = useState(false);
-    const [apiProvider, setApiProvider] = useState<'groq' | 'gemini'>(() => (localStorage.getItem('skkn_api_provider') as 'groq' | 'gemini') || 'gemini');
+    const [apiProvider, setApiProvider] = useState<'groq' | 'gemini'>(() => (localStorage.getItem('skkn_api_provider') as 'groq' | 'gemini') || 'groq');
     const [selectedModel, setSelectedModel] = useState<string>(() => localStorage.getItem('skkn_selected_model') || 'gemini-2.0-flash');
     const [groqKey, setGroqKeyState] = useState(getGroqApiKey());
     const [groqKeyInput, setGroqKeyInput] = useState('');
@@ -1066,12 +1066,12 @@ Chỉ trả về JSON, không giải thích.` },
                             <h3>⚙️ Cấu hình AI (Yêu cầu)</h3>
                             <div style={{ display: 'flex', gap: 12, marginBottom: 16 }}>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                                    <input type="radio" name="apiProvider" value="gemini" checked={apiProvider === 'gemini'} onChange={() => { setApiProvider('gemini'); localStorage.setItem('skkn_api_provider', 'gemini'); }} />
-                                    Google Gemini (Khuyên dùng)
+                                    <input type="radio" name="apiProvider" value="groq" checked={apiProvider === 'groq'} onChange={() => { setApiProvider('groq'); localStorage.setItem('skkn_api_provider', 'groq'); }} />
+                                    Groq (Khuyên dùng - Nhanh & Ổn định)
                                 </label>
                                 <label style={{ display: 'flex', alignItems: 'center', gap: 6, cursor: 'pointer' }}>
-                                    <input type="radio" name="apiProvider" value="groq" checked={apiProvider === 'groq'} onChange={() => { setApiProvider('groq'); localStorage.setItem('skkn_api_provider', 'groq'); }} />
-                                    Groq (Tốc độ cao)
+                                    <input type="radio" name="apiProvider" value="gemini" checked={apiProvider === 'gemini'} onChange={() => { setApiProvider('gemini'); localStorage.setItem('skkn_api_provider', 'gemini'); }} />
+                                    Google Gemini
                                 </label>
                             </div>
 
