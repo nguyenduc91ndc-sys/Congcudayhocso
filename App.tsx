@@ -22,6 +22,7 @@ import GameTuongTac from './components/GameTuongTac';
 import YogurtExperiment from './components/YogurtExperiment';
 import KiemTraDaoVan from './components/KiemTraDaoVan';
 import SangKienKinhNghiem from './components/SangKienKinhNghiem';
+import NhanXetTT27 from './components/NhanXetTT27';
 import BeeGame from './components/BeeGame';
 import BeeGameEditable from './components/BeeGameEditable';
 import BacteriaGameEditable from './components/BacteriaGameEditable';
@@ -140,6 +141,9 @@ function App() {
             break;
           case 'sang_kien_kn':
             defaultView = 'SANG_KIEN_KN';
+            break;
+          case 'nhan_xet_tt27':
+            defaultView = 'NHAN_XET_TT27';
             break;
           // Có thể thêm case cho các app khác ở đây sau
         }
@@ -386,7 +390,8 @@ function App() {
                   onKiemTraDaoVan={() => requireLogin(() => setView('KIEM_TRA_DAO_VAN'))}
                   onPhongTranh3D={() => setView('PHONG_TRANH_3D')}
                   onSangKienKN={() => requireLogin(() => setView('SANG_KIEN_KN'))}
-                  onEarthSeasons={() => requireLogin(() => setView('EARTH_SEASONS'))}
+                  onNhanXetTT27={() => requireLogin(() => setView('NHAN_XET_TT27'))}
+                   onEarthSeasons={() => requireLogin(() => setView('EARTH_SEASONS'))}
                   onThatLuong3D={() => requireLogin(() => setView('THAT_LUONG_3D'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
@@ -575,6 +580,10 @@ function App() {
               userEmail={user?.email || undefined}
               userName={(user as any)?.displayName || undefined}
             />
+          )}
+
+          {view === 'NHAN_XET_TT27' && (
+            <NhanXetTT27 onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'ABOUT' && (

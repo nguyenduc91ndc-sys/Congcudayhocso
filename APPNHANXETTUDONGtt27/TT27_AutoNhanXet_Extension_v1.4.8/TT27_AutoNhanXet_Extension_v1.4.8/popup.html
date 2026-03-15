@@ -1,0 +1,164 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>TT27</title>
+
+  <!-- giữ nguyên nếu dự án bạn đang dùng ui.css -->
+  <link rel="stylesheet" href="ui.css"/>
+
+  <style>
+    body { width: 360px; }
+    .mini { padding: 14px; }
+    .host { font-size: 12px; opacity: .75; margin-top: 4px; }
+    .row { margin-top: 10px; }
+
+    /* ===== Developed by (2 cột: trái thông tin, phải QR) ===== */
+    .devBlock{
+      display:flex;
+      align-items:flex-start;      /* canh TOP */
+      justify-content:space-between;
+      gap:14px;
+      padding:2px 0;
+    }
+
+    .devLeft{
+      flex:1;
+      min-width:0;                 /* quan trọng để ellipsis hoạt động trong flex */
+    }
+
+    .devTitle{
+      font-size:12px;
+      opacity:.9;
+      margin-bottom:8px;
+    }
+
+    .devName{
+      font-weight:700;
+      font-size:14px;
+      letter-spacing:.2px;
+      margin-bottom:6px;
+    }
+
+    .devLine{
+      display:flex;
+      align-items:baseline;
+      gap:6px;
+      font-size:12px;
+      line-height:1.35;
+      opacity:.92;
+
+      /* Lựa chọn A: 1 dòng + ... nếu quá dài */
+      white-space:nowrap;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      min-width:0;
+    }
+
+    .devKey{
+      opacity:.75;
+      flex:0 0 auto;
+    }
+
+    .devVal{
+      opacity:.95;
+      min-width:0;
+      overflow:hidden;
+      text-overflow:ellipsis;
+      white-space:nowrap;
+    }
+
+    .devRight{
+      flex:0 0 auto;
+      display:flex;
+      align-items:flex-start;      /* canh TOP */
+    }
+
+    .devQr{
+      width:78px;                  /* thu bé hơn */
+      height:78px;
+      object-fit:contain;
+
+      background:#fff;             /* nền trắng để quét ổn trên theme tối */
+      border-radius:14px;
+      border:1px solid rgba(255,255,255,.12);
+      box-shadow: 0 8px 24px rgba(0,0,0,.35);
+      padding:6px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="mini">
+    <div class="brand">
+      <div class="logo">TT27</div>
+      <div>
+        <div class="title">TT27 Tự động Nhận xét</div>
+        <div class="host" id="host"></div>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top:12px;">
+      <div class="row">
+        <div class="label">Bật extension</div>
+        <label class="switch">
+          <input id="enabled" type="checkbox">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row">
+        <div class="label">Bật cho domain này</div>
+        <label class="switch">
+          <input id="siteEnabled" type="checkbox">
+          <span class="slider"></span>
+        </label>
+      </div>
+
+      <div class="row">
+        <div class="label">Chế độ</div>
+        <div class="seg">
+          <button class="segbtn" data-mode="BANK" id="modeBANK">Ngân hàng</button>
+          <button class="segbtn" data-mode="AI" id="modeAI">AI</button>
+        </div>
+      </div>
+
+      <div class="row2" style="margin-top:12px;">
+        <button id="openOptions" class="btn primary">Mở cài đặt</button>
+      </div>
+
+      <div class="status" id="usageLine" style="margin-top:8px;"></div>
+      <div id="status" class="status"></div>
+    </div>
+
+    <!-- ===== Developed by (đã chỉnh theo yêu cầu) ===== -->
+    <div class="card" style="margin-top:12px;">
+      <div class="devBlock">
+        <div class="devLeft">
+          <div class="devTitle">Quan Thuật - Minh Hiếu</div>
+          <div class="devName">Hỗ trợ nâng cấp các tài khoản AI</div>
+          <div class="devLine">
+            <span class="devKey"></span>
+            <span class="devVal">ChatGPT, Gemini, Veo3, google pro, ultra</span>
+          </div>
+          <div class="devLine">
+            <span class="devKey">Phone:</span>
+            <span class="devVal">0374 180 562</span>
+          </div>
+        </div>
+
+        <div class="devRight">
+          <img class="devQr" src="zalo-qr.png" alt="Zalo QR">
+        </div>
+      </div>
+    </div>
+
+    <div class="note" style="margin-top:10px;">
+      Tip: Reload trang sau khi đổi chế độ/bật tắt để áp dụng nhanh.
+    </div>
+  </div>
+
+  <script src="popup.js"></script>
+</body>
+</html>

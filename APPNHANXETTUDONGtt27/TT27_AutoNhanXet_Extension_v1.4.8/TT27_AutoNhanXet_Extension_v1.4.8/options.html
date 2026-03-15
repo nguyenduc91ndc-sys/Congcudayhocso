@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="vi">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>TT27 Auto Nhận xét - Cấu hình</title>
+  <link rel="stylesheet" href="ui.css"/>
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="logo">TT27</div>
+        <div>
+          <div class="title">TT27 Auto Nhận xét</div>
+          <div class="sub">Môn học + Năng lực/Phẩm chất · Ngân hàng hoặc AI</div>
+        </div>
+      </div>
+      <div class="actions">
+        <button id="btnSave" class="btn primary">Lưu</button>
+        
+      </div>
+    </header>
+
+    <main class="grid">
+      <section class="card">
+        <h2>Trạng thái</h2>
+        <div class="row">
+          <div class="label">Bật extension</div>
+          <label class="switch">
+            <input id="enabled" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+
+        <div class="row">
+          <div class="label">Chế độ</div>
+          <div class="seg">
+            <button class="segbtn" data-mode="BANK" id="modeBANK">Ngân hàng</button>
+            <button class="segbtn" data-mode="AI" id="modeAI">AI</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="label">Tính năng</div>
+          <div class="chips">
+            <label class="chip"><input id="featSubject" type="checkbox">Môn học</label>
+            <label class="chip"><input id="featNlpc" type="checkbox">Năng lực/Phẩm chất</label>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="label">Mã mức Đ (NL/PC)</div>
+          <select id="nlpcLevelSymbol" class="input">
+            <option value="D">D (khuyến nghị)</option>
+            <option value="Đ">Đ</option>
+          </select>
+        </div>
+
+        <div class="note">
+          Tip: Nhận xét tự động sẽ không ghi đè nếu giáo viên đã gõ tay.
+        </div>
+      
+        <div class="note" style="margin-top:12px;">
+          <b>Tổng số lượt dùng:</b> <span id="usageBox">0</span>
+        </div>
+</section>
+<section class="card">
+        <h2>AI (tuỳ chọn)</h2>
+
+        <label class="label2">Endpoint (OpenAI-compatible)</label>
+        <input id="aiEndpoint" class="input" placeholder="https://api.openai.com/v1/chat/completions"/>
+
+        <label class="label2">API key</label>
+        <input id="aiKey" type="password" class="input" placeholder="sk-..."/>
+
+        <div class="row2">
+          <div>
+            <label class="label2">Model</label>
+            <input id="aiModel" class="input" placeholder="gpt-4o-mini"/>
+          </div>
+          <div>
+            <label class="label2">Temperature</label>
+            <input id="aiTemp" type="number" step="0.1" min="0" max="1.2" class="input"/>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label class="label2">Max tokens</label>
+            <input id="aiMaxTokens" type="number" min="40" max="400" class="input"/>
+          </div>
+          <div>
+            <label class="label2">Giới hạn ký tự</label>
+            <input id="maxChars" type="number" min="80" max="350" class="input"/>
+          </div>
+        </div>
+
+        <div class="row2">
+          <div>
+            <label class="label2">Test AI</label>
+            <button id="btnTestAI" class="btn">Tạo thử 1 nhận xét</button>
+          </div>
+          <div id="aiStatus" class="status"></div>
+        </div>
+
+        <div class="note">
+          Chế độ AI: nhận xét ngắn gọn, khách quan, không dùng đại từ nhân xưng/hô ngữ.
+        </div>
+      </section>
+
+      <section class="card">
+        <h2>Mã môn (Subject map)</h2>
+        <div class="note">
+          Dùng để tạo mã tra ngân hàng. Bạn có thể sửa/ thêm môn cho đúng tên hiển thị trên website.
+        </div>
+        <textarea id="subjectMap" class="textarea" spellcheck="false"></textarea>
+        <div class="row2">
+          <button id="btnResetMap" class="btn">Khôi phục mặc định</button>
+          <div class="status" id="mapStatus"></div>
+        </div>
+      </section>
+
+
+      <section class="card">
+        <h2>Quy tắc điểm → T/H/C (môn học có điểm)</h2>
+        <div class="note">
+          Mặc định: ≥9 → T, ≥5 → H, còn lại → C. Bạn có thể đổi ngưỡng, và thêm override theo môn/khối/kỳ.
+          Khi bạn sửa ô mức (T/H/C) bằng tay, nhận xét sẽ tự đổi theo mức mới.
+        </div>
+
+        <div class="row2">
+          <div>
+            <label class="label2">Ngưỡng T (tối thiểu)</label>
+            <input id="tMin" type="number" min="0" max="10" step="0.1" class="input"/>
+          </div>
+          <div>
+            <label class="label2">Ngưỡng H (tối thiểu)</label>
+            <input id="hMin" type="number" min="0" max="10" step="0.1" class="input"/>
+          </div>
+        </div>
+
+        <label class="label2">Overrides (JSON)</label>
+        <textarea id="scoringOverrides" class="textarea" spellcheck="false" style="min-height:220px"></textarea>
+        <div class="note">
+          Ví dụ:
+          <br/>[{ "subject":"Tiếng Việt", "grade":3, "periodKey":"CK1", "tMin":8, "hMin":5 }]
+          <br/>periodKey: GK1/CK1/GK2/CK2 hoặc "" nếu không dùng (như Tiếng Anh).
+        </div>
+        <div class="status" id="scoringStatus"></div>
+      </section>
+
+      <section class="card">
+        <h2>Riêng tư & Ủng hộ</h2>
+
+        <div class="row">
+          <div class="label">Nhớ API key (lưu máy)</div>
+          <label class="switch">
+            <input id="rememberApiKey" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="note">
+          Nếu tắt: API key chỉ lưu theo phiên (session). Đóng Chrome / restart sẽ phải nhập lại.
+        </div>
+</section>
+
+
+      <section class="card">
+        <h2>Site policy</h2>
+        <div class="row">
+          <div class="label">Bật theo mặc định cho mọi domain</div>
+          <label class="switch">
+            <input id="enabledByDefault" type="checkbox">
+            <span class="slider"></span>
+          </label>
+        </div>
+        <div class="note">
+          Bật/tắt nhanh theo từng domain ở popup (biểu tượng extension).
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <span id="saveHint"></span>
+    </footer>
+  </div>
+
+  <script src="options.js"></script>
+</body>
+</html>

@@ -56,6 +56,7 @@ interface DashboardProps {
     onKiemTraDaoVan: () => void;
     onPhongTranh3D: () => void;
     onSangKienKN: () => void;
+    onNhanXetTT27: () => void;
     onEarthSeasons: () => void;
     onThatLuong3D: () => void;
     isAdmin: boolean;
@@ -275,7 +276,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onEarthSeasons, onThatLuong3D, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -774,6 +775,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('communityResources') && <ToolCard title="Kho tài nguyên cộng đồng" description="Kho tài nguyên miễn phí từ cộng đồng" icon={<Users size={24} className="text-white" />} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onCommunityResources} badge="Miễn phí" />}
                                         {!hiddenApps.includes('kiemTraDaoVan') && <ToolCard title="Thẩm Văn AI" description="Kiểm tra đạo văn & phát hiện nội dung AI thông minh" icon={<span className="text-2xl">🔍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onKiemTraDaoVan} badge="Mới" />}
                                         {!hiddenApps.includes('sangKienKinhNghiem') && <ToolCard title="Viết SKKN & Báo Cáo" description="2 trong 1: AI viết + quét & sửa để vượt trình kiểm tra AI. Cá nhân hóa như người thật viết" icon={<span className="text-2xl">✍️</span>} accentColor="bg-gradient-to-br from-emerald-500 to-teal-600" onClick={onSangKienKN} badge="Mới" />}
+                                        {!hiddenApps.includes('nhanXetTT27') && <ToolCard title="Nhận Xét TT27" description="Tự động sinh nhận xét học sinh chuẩn Thông tư 27, hỗ trợ file từ vnEdu & SMAS" icon={<span className="text-2xl">📝</span>} accentColor="bg-gradient-to-br from-violet-500 to-purple-600" onClick={onNhanXetTT27} badge="Mới" />}
                                     </div>
                                 </section>
                             )}

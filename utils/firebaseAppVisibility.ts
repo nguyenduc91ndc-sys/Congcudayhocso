@@ -12,6 +12,7 @@ export const ALL_APP_IDS = [
     'bangCuuChuong', 'gameTuongTac',
     'phongTranh3D', // Phòng Tranh 3D tùy chỉnh
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
+    'nhanXetTT27', // Nhận Xét TT27
 ] as const;
 
 export type AppId = typeof ALL_APP_IDS[number];
@@ -53,8 +54,8 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
     // ── Phòng Tranh 3D ──
     phongTranh3D: { name: 'Phòng Tranh 3D', icon: '🖼️', section: 'Ứng dụng 3D & VR' },
-    // ── Công cụ viết ──
-    sangKienKinhNghiem: { name: 'Viết SKKN & Báo Cáo', icon: '✍️', section: 'Công cụ viết' },
+    sangKienKinhNghiem: { name: 'Viết SKKN & Báo Cáo', icon: '✍️', section: 'Khóa học & AI' },
+    nhanXetTT27: { name: 'Nhận Xét TT27', icon: '📝', section: 'Khóa học & AI' },
 };
 
 

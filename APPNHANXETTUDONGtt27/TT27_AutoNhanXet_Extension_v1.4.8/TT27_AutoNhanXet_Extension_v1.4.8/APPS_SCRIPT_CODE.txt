@@ -1,0 +1,253 @@
+/**
+ * TT27 BANK + STATS Apps Script (Google Sheet)
+ *
+ * Sheet bắt buộc: BANK
+ * Cột bắt buộc:
+ *   - "Mã chuẩn" hoặc "ma_chuan"
+ *   - "Nội dung" hoặc "noi_dung"
+ *
+ * Mở rộng thống kê:
+ *  - GET  ?action=stats&key=API_KEY
+ *  - POST ?action=hit&key=API_KEY   (body JSON)
+ *
+ * Deploy: Web app (Execute as Me, Access Anyone with link)
+ *
+ * Web app URL (đã dùng trong extension): https://script.google.com/macros/s/AKfycbyHi4M7qcEBVf7Vy8joFbK4bdZFdTqwlUk6-meOoGCrW6Rp-90bBkBdpD9UZ0LQ3LpvvQ/exec
+ * API_KEY (đã dùng trong extension): HL_TT27_BANK_2026_QVThuat_9f3c2a7d1b6e4f8a_61C7C0A2
+ */
+
+const SHEET_NAME  = "BANK";
+const SHEET_STATS = "STATS";
+const SHEET_USERS = "USERS";
+const API_KEY = "HL_TT27_BANK_2026_QVThuat_9f3c2a7d1b6e4f8a_61C7C0A2";
+
+/** Trả JSON chuẩn */
+function json_(obj) {
+  const out = ContentService.createTextOutput(JSON.stringify(obj));
+  out.setMimeType(ContentService.MimeType.JSON);
+  return out;
+}
+
+/**
+ * setup(): Khoá tất cả cột, chỉ mở cột "Nội dung"/"noi_dung"
+ * Chạy 1 lần sau khi bạn đã có header đúng.
+ */
+function setup() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) throw new Error(`Không tìm thấy sheet "${SHEET_NAME}"`);
+
+  const values = sh.getDataRange().getValues();
+  if (!values || values.length < 1) throw new Error("Sheet BANK chưa có header");
+
+  const header = values[0].map(x => String(x).trim());
+  const idxText =
+    header.indexOf("Nội dung") >= 0 ? header.indexOf("Nội dung") :
+    header.indexOf("noi_dung");
+
+  if (idxText < 0) throw new Error('Không tìm thấy cột "Nội dung" hoặc "noi_dung"');
+
+  const protections = sh.getProtections(SpreadsheetApp.ProtectionType.SHEET);
+  protections.forEach(p => { try { p.remove(); } catch (e) {} });
+
+  const p = sh.protect().setDescription("BANK protect: chỉ cho sửa cột Nội dung");
+  p.removeEditors(p.getEditors());
+  if (p.canDomainEdit()) p.setDomainEdit(false);
+
+  const lastRow = Math.max(sh.getLastRow(), 2);
+  const rangeText = sh.getRange(1, idxText + 1, lastRow, 1); // cả header + data
+  p.setUnprotectedRanges([rangeText]);
+
+  SpreadsheetApp.flush();
+}
+
+function doGet(e) {
+  e = e || { parameter: {} };
+  const p = e.parameter || {};
+
+  if (String(p.ping || "") === "1") {
+    return json_({ ok: true, pong: true, ts: new Date().toISOString() });
+  }
+
+  const key = String(p.key || "");
+  if (key !== API_KEY) {
+    return json_({ ok: false, error: "unauthorized" });
+  }
+
+  const action = String(p.action || "bank").toLowerCase();
+
+  if (action === "stats") {
+    ensureSheets_();
+    return json_({ ok: true, stats: readStats_(), updatedAt: new Date().toISOString() });
+  }
+
+  // action=bank (giữ nguyên hành vi cũ)
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const sh = ss.getSheetByName(SHEET_NAME);
+  if (!sh) return json_({ ok: false, error: "sheet_not_found" });
+
+  const values = sh.getDataRange().getValues();
+  if (!values || values.length < 2) {
+    return json_({ ok: true, updatedAt: new Date().toISOString(), data: {} });
+  }
+
+  const header = values[0].map(x => String(x).trim());
+  const idxCode =
+    header.indexOf("Mã chuẩn") >= 0 ? header.indexOf("Mã chuẩn") :
+    header.indexOf("ma_chuan");
+  const idxText =
+    header.indexOf("Nội dung") >= 0 ? header.indexOf("Nội dung") :
+    header.indexOf("noi_dung");
+
+  if (idxCode < 0 || idxText < 0) {
+    return json_({
+      ok: false,
+      error: "missing_columns",
+      detail: {
+        need: ['"Mã chuẩn"|"ma_chuan"', '"Nội dung"|"noi_dung"'],
+        header
+      }
+    });
+  }
+
+  const data = {};
+  let count = 0;
+
+  for (let r = 1; r < values.length; r++) {
+    const row = values[r];
+    const code = String(row[idxCode] || "").trim();
+    const text = String(row[idxText] || "").trim();
+    if (!code) continue;
+    if (!text) continue;
+    data[code] = text;
+    count++;
+  }
+
+  return json_({
+    ok: true,
+    updatedAt: new Date().toISOString(),
+    count,
+    data
+  });
+}
+
+function doPost(e) {
+  let body = {};
+  try { body = JSON.parse(e?.postData?.contents || "{}"); } catch (err) {}
+
+  const qpKey = (e && e.parameter && e.parameter.key) ? String(e.parameter.key) : "";
+  const key = String(qpKey || body.key || "");
+  if (key !== API_KEY) return json_({ ok: false, error: "unauthorized" });
+
+  const action = String((e?.parameter?.action || body.action || "hit")).toLowerCase();
+  if (action !== "hit") return json_({ ok: false, error: "unknown_action" });
+
+  const clientId = String(body.clientId || "").trim();
+  if (!clientId) return json_({ ok: false, error: "missing_clientId" });
+
+  const delta = body.delta || {};
+  const version = String(body.version || "").trim();
+  const now = Date.now();
+
+  const lock = LockService.getScriptLock();
+  lock.tryLock(8000);
+
+  try {
+    ensureSheets_();
+    upsertUser_(clientId, version, now);
+    const next = bumpStats_(delta, now, version);
+    return json_({ ok: true, stats: next, updatedAt: new Date(now).toISOString() });
+  } finally {
+    try { lock.releaseLock(); } catch (e) {}
+  }
+}
+
+function ensureSheets_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+
+  let st = ss.getSheetByName(SHEET_STATS);
+  if (!st) st = ss.insertSheet(SHEET_STATS);
+  if (st.getLastRow() === 0) {
+    st.getRange(1,1,1,6).setValues([[
+      "totalUsers","totalFills","totalBankHits","totalAiCalls","lastAt","lastVersion"
+    ]]);
+    st.getRange(2,1,1,6).setValues([[0,0,0,0,"",""]]);
+  }
+
+  let us = ss.getSheetByName(SHEET_USERS);
+  if (!us) us = ss.insertSheet(SHEET_USERS);
+  if (us.getLastRow() === 0) {
+    us.getRange(1,1,1,4).setValues([[
+      "clientId","firstSeen","lastSeen","version"
+    ]]);
+  }
+}
+
+function readStats_() {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const st = ss.getSheetByName(SHEET_STATS);
+  const row = st.getRange(2,1,1,6).getValues()[0];
+  return {
+    totalUsers: Number(row[0] || 0),
+    totalFills: Number(row[1] || 0),
+    totalBankHits: Number(row[2] || 0),
+    totalAiCalls: Number(row[3] || 0),
+    lastAt: row[4] || "",
+    lastVersion: row[5] || ""
+  };
+}
+
+function bumpStats_(delta, now, version) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const st = ss.getSheetByName(SHEET_STATS);
+  const cur = readStats_();
+
+  const dFills = Number(delta?.totalFills || 0);
+  const dBank  = Number(delta?.totalBankHits || 0);
+  const dAi    = Number(delta?.totalAiCalls || 0);
+
+  const next = {
+    totalUsers: cur.totalUsers,
+    totalFills: cur.totalFills + dFills,
+    totalBankHits: cur.totalBankHits + dBank,
+    totalAiCalls: cur.totalAiCalls + dAi,
+    lastAt: new Date(now).toISOString(),
+    lastVersion: version || cur.lastVersion || ""
+  };
+
+  st.getRange(2,1,1,6).setValues([[
+    next.totalUsers, next.totalFills, next.totalBankHits, next.totalAiCalls, next.lastAt, next.lastVersion
+  ]]);
+
+  return next;
+}
+
+function upsertUser_(clientId, version, now) {
+  const ss = SpreadsheetApp.getActiveSpreadsheet();
+  const us = ss.getSheetByName(SHEET_USERS);
+  const props = PropertiesService.getScriptProperties();
+  const mapKey = "userRow_" + clientId;
+
+  let rowNum = Number(props.getProperty(mapKey) || 0);
+
+  if (!rowNum) {
+    const found = us.createTextFinder(clientId).matchEntireCell(true).findNext();
+    if (found) rowNum = found.getRow();
+  }
+
+  if (!rowNum) {
+    const iso = new Date(now).toISOString();
+    us.appendRow([clientId, iso, iso, version || ""]);
+    rowNum = us.getLastRow();
+
+    const st = ss.getSheetByName(SHEET_STATS);
+    const curUsers = Number(st.getRange(2,1).getValue() || 0);
+    st.getRange(2,1).setValue(curUsers + 1);
+
+    props.setProperty(mapKey, String(rowNum));
+  } else {
+    us.getRange(rowNum, 3).setValue(new Date(now).toISOString());
+    if (version) us.getRange(rowNum, 4).setValue(version);
+    props.setProperty(mapKey, String(rowNum));
+  }
+}
