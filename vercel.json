@@ -1,6 +1,10 @@
 {
     "rewrites": [
         {
+            "source": "/nhan-xet-tt27",
+            "destination": "/nhan-xet-tt27/index.html"
+        },
+        {
             "source": "/lucky-wheel",
             "destination": "/lucky-wheel/index.html"
         },
@@ -25,7 +29,7 @@
             "destination": "/contact/index.html"
         },
         {
-            "source": "/((?!giải-mã-bức-tranh|lucky-wheel|hinh-hoc-3d|chuctettudong|about|privacy|terms|contact|assets|.*\\.[a-z]+$).*)",
+            "source": "/((?!giải-mã-bức-tranh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|assets|.*\\.[a-z]+$).*)",
             "destination": "/"
         }
     ],
