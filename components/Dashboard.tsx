@@ -867,10 +867,10 @@ const Dashboard: React.FC<DashboardProps> = ({
                         className="mt-6 bg-gradient-to-r from-blue-900/40 to-cyan-900/40 border border-blue-500/30 rounded-2xl p-4 cursor-pointer hover:border-blue-400/50 transition-all group relative ring-2 ring-blue-500/30 animate-pulse hover:animate-none"
                     >
                         <div className="flex items-center gap-4">
-                            {/* QR Code nhỏ */}
+                            {/* QR Code nhỏ - dùng QR mới (nhóm 2) */}
                             <div className="w-16 h-16 bg-white rounded-xl overflow-hidden flex-shrink-0 shadow-lg group-hover:scale-105 transition-transform p-1">
                                 <img
-                                    src="/zalo-group-qr.png"
+                                    src="/zalo-group-qr1.jpg"
                                     alt="QR Zalo Group"
                                     className="w-full h-full object-contain"
                                 />
@@ -1062,21 +1062,50 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     Chia sẻ kinh nghiệm & tài liệu giảng dạy 4.0
                                 </p>
 
-                                {/* QR Code Container - Compact */}
-                                <div className="rounded-xl overflow-hidden mb-4 mx-auto max-w-[180px] shadow-sm">
-                                    <img
-                                        src="/zalo-group-qr.png"
-                                        alt="QR Code Zalo"
-                                        className="w-full h-full object-contain"
-                                    />
-                                </div>
+                                {/* QR Code - 2 nhóm */}
+                                <div className="flex gap-3 mb-4 justify-center">
+                                    {/* Nhóm 1 - Đã đầy */}
+                                    <div className="flex-1 max-w-[140px]">
+                                        <div className="rounded-xl overflow-hidden shadow-sm border-2 border-slate-200 opacity-60 grayscale relative">
+                                            <img
+                                                src="/zalo-group-qr.png"
+                                                alt="QR Code Zalo Nhóm 1"
+                                                className="w-full h-full object-contain"
+                                            />
+                                            <div className="absolute inset-0 flex items-center justify-center">
+                                                <span className="bg-red-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow">Đã đầy</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-slate-400 mt-1 text-center">Nhóm 1</p>
+                                        <button
+                                            onClick={() => window.open('https://zalo.me/g/kvfmke936', '_blank')}
+                                            className="w-full mt-1 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-500 rounded-lg font-semibold transition-all active:scale-95 flex items-center justify-center gap-1 text-xs"
+                                        >
+                                            Xem <ExternalLink size={12} />
+                                        </button>
+                                    </div>
 
-                                <button
-                                    onClick={() => window.open('https://zalo.me/g/kvfmke936', '_blank')}
-                                    className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-2 text-sm"
-                                >
-                                    Tham gia ngay <ExternalLink size={16} />
-                                </button>
+                                    {/* Nhóm 2 - Đang mở */}
+                                    <div className="flex-1 max-w-[140px]">
+                                        <div className="rounded-xl overflow-hidden shadow-md border-2 border-blue-400 relative">
+                                            <img
+                                                src="/zalo-group-qr1.jpg"
+                                                alt="QR Code Zalo Nhóm 2"
+                                                className="w-full h-full object-contain"
+                                            />
+                                            <div className="absolute top-1.5 right-1.5">
+                                                <span className="bg-green-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow animate-pulse">Mới ✓</span>
+                                            </div>
+                                        </div>
+                                        <p className="text-xs text-blue-600 font-semibold mt-1 text-center">Nhóm 2</p>
+                                        <button
+                                            onClick={() => window.open('https://zalo.me/g/pgsjyv156', '_blank')}
+                                            className="w-full mt-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold shadow-md shadow-blue-500/20 transition-all active:scale-95 flex items-center justify-center gap-1 text-xs"
+                                        >
+                                            Tham gia <ExternalLink size={12} />
+                                        </button>
+                                    </div>
+                                </div>
 
                                 <button
                                     onClick={() => setShowZaloModal(false)}
