@@ -186,6 +186,43 @@ export const isEmailBeePro = async (email: string): Promise<boolean> => {
 };
 
 /**
+ * Thu hồi quyền PRO Bee của email (Admin)
+ * - Xóa user khỏi bee_pro_users
+ * - Xóa usedBy/usedAt trên key tương ứng (nếu có)
+ */
+export const revokeBeeProForEmail = async (email: string): Promise<boolean> => {
+    const normalizedEmail = email.toLowerCase().trim();
+    const emailKey = normalizedEmail.replace(/\./g, '_').replace(/@/g, '_at_');
+
+    try {
+        // 1. Xóa user khỏi danh sách BEE PRO users
+        const userRef = ref(database, `${BEE_PRO_USERS_REF}/${emailKey}`);
+        await remove(userRef);
+
+        // 2. Tìm và reset key đã dùng bởi email này
+        const keysRef = ref(database, BEE_PRO_KEYS_REF);
+        const snapshot = await get(keysRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val() as Record<string, BeeProKey>;
+            for (const [keyId, keyData] of Object.entries(data)) {
+                if (keyData.usedBy === normalizedEmail) {
+                    const keyRef = ref(database, `${BEE_PRO_KEYS_REF}/${keyId}`);
+                    await set(keyRef, {
+                        key: keyData.key,
+                        createdAt: keyData.createdAt,
+                        note: keyData.note
+                    });
+                }
+            }
+        }
+        return true;
+    } catch (error) {
+        console.error('Error revoking BEE PRO for email:', error);
+        return false;
+    }
+};
+
+/**
  * Lấy thông tin PRO của email
  */
 export const getBeeProUserInfo = async (email: string): Promise<BeeProUser | null> => {

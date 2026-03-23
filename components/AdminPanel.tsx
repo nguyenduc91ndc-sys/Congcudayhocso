@@ -9,8 +9,8 @@ import { AIVideo, Order } from '../types/videoStoreTypes';
 import { subscribeToVideos, addVideo, updateVideo, deleteVideo } from '../utils/firebaseVideoStore';
 import { subscribeToOrders, confirmOrder, cancelOrder } from '../utils/firebaseOrders';
 import { uploadImage, isValidImage } from '../utils/firebaseStorage';
-import { saveProKey, deleteProKey, subscribeToProKeys, ProKey } from '../utils/firebaseProKeys';
-import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode } from '../utils/firebaseBeeProKeys';
+import { saveProKey, deleteProKey, subscribeToProKeys, ProKey, revokeProForEmail } from '../utils/firebaseProKeys';
+import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode, revokeBeeProForEmail } from '../utils/firebaseBeeProKeys';
 import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, generateSKKNProCode, revokeSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
 
@@ -372,6 +372,28 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const handleDeleteSKKNKey = async (keyToDelete: string) => {
         if (window.confirm('Xóa mã SKKN này?')) {
             await deleteSKKNProKey(keyToDelete);
+        }
+    };
+
+    const handleRevokeProEmail = async (email: string) => {
+        if (window.confirm(`Thu hồi Pro của ${email}? Người dùng sẽ bị khóa tính năng Pro.`)) {
+            const success = await revokeProForEmail(email);
+            if (success) {
+                alert(`Đã thu hồi Pro của ${email}`);
+            } else {
+                alert('Lỗi khi thu hồi!');
+            }
+        }
+    };
+
+    const handleRevokeBeeProEmail = async (email: string) => {
+        if (window.confirm(`Thu hồi Pro BEE của ${email}? Người dùng sẽ bị khóa tính năng Pro Ong về Tổ.`)) {
+            const success = await revokeBeeProForEmail(email);
+            if (success) {
+                alert(`Đã thu hồi Pro BEE của ${email}`);
+            } else {
+                alert('Lỗi khi thu hồi!');
+            }
         }
     };
 
@@ -889,7 +911,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
                                                 </div>
                                                 <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
-                                                {item.usedBy && <div className="text-xs text-green-600">✅ Đã dùng: {item.usedBy}</div>}
+                                                {item.usedBy && (
+                                                    <div className="text-xs text-green-600 flex items-center gap-2">
+                                                        ✅ Đã dùng: {item.usedBy}
+                                                        <button
+                                                            onClick={() => handleRevokeProEmail(item.usedBy!)}
+                                                            className="ml-1 px-2 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold"
+                                                        >
+                                                            ❌ Thu hồi Pro
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200">
@@ -917,7 +949,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
                                                 </div>
                                                 <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
-                                                {item.usedBy && <div className="text-xs text-green-600">✅ Đã dùng: {item.usedBy}</div>}
+                                                {item.usedBy && (
+                                                    <div className="text-xs text-green-600 flex items-center gap-2">
+                                                        ✅ Đã dùng: {item.usedBy}
+                                                        <button
+                                                            onClick={() => handleRevokeBeeProEmail(item.usedBy!)}
+                                                            className="ml-1 px-2 py-0.5 rounded bg-red-100 text-red-600 hover:bg-red-200 text-xs font-bold"
+                                                        >
+                                                            ❌ Thu hồi Pro
+                                                        </button>
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200">

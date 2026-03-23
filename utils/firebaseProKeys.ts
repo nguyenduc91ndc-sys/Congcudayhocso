@@ -173,6 +173,43 @@ export const isEmailPro = async (email: string): Promise<boolean> => {
 };
 
 /**
+ * Thu hồi quyền PRO của email (Admin)
+ * - Xóa user khỏi decode_pro_users
+ * - Xóa usedBy/usedAt trên key tương ứng (nếu có)
+ */
+export const revokeProForEmail = async (email: string): Promise<boolean> => {
+    const normalizedEmail = email.toLowerCase().trim();
+    const emailKey = normalizedEmail.replace(/\./g, '_').replace(/@/g, '_at_');
+
+    try {
+        // 1. Xóa user khỏi danh sách PRO users
+        const userRef = ref(database, `${PRO_USERS_REF}/${emailKey}`);
+        await remove(userRef);
+
+        // 2. Tìm và reset key đã dùng bởi email này
+        const keysRef = ref(database, PRO_KEYS_REF);
+        const snapshot = await get(keysRef);
+        if (snapshot.exists()) {
+            const data = snapshot.val() as Record<string, ProKey>;
+            for (const [keyId, keyData] of Object.entries(data)) {
+                if (keyData.usedBy === normalizedEmail) {
+                    const keyRef = ref(database, `${PRO_KEYS_REF}/${keyId}`);
+                    await set(keyRef, {
+                        key: keyData.key,
+                        createdAt: keyData.createdAt,
+                        note: keyData.note
+                    });
+                }
+            }
+        }
+        return true;
+    } catch (error) {
+        console.error('Error revoking PRO for email:', error);
+        return false;
+    }
+};
+
+/**
  * Lấy thông tin PRO của email
  */
 export const getProUserInfo = async (email: string): Promise<ProUser | null> => {
