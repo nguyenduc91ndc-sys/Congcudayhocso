@@ -71,9 +71,9 @@ const FeedbackModal: React.FC<FeedbackModalProps> = ({ isOpen, onClose, user }) 
                         initial={{ opacity: 0, scale: 0.9, y: 20 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.9, y: 20 }}
-                        className="fixed inset-x-4 top-20 sm:left-1/2 sm:top-1/2 sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md z-50"
+                        className="fixed inset-x-4 top-4 bottom-4 sm:inset-x-auto sm:left-1/2 sm:top-1/2 sm:bottom-auto sm:-translate-x-1/2 sm:-translate-y-1/2 sm:w-full sm:max-w-md z-50 flex flex-col"
                     >
-                        <div className="bg-white rounded-2xl shadow-2xl p-5 border border-purple-100">
+                        <div className="bg-white rounded-2xl shadow-2xl p-5 border border-purple-100 overflow-y-auto flex-1">
                             {/* Header */}
                             <div className="flex items-center justify-between mb-3">
                                 <h3 className="text-lg font-bold text-purple-800 flex items-center gap-2">
