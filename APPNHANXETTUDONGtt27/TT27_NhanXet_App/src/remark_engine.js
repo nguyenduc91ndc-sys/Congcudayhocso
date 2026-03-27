@@ -7,7 +7,6 @@ import ExcelJS from 'exceljs';
 import { getComment, getNlpcComment, scoreToLevel } from './comment_bank.js';
 
 // ===== MAPPING TÊN MÔN =====
-// ===== MAPPING TÊN MÔN =====
 const SUBJECT_MAP = {
   'TOÁN': 'TOAN',
   'TIẾNG VIỆT': 'TV',
@@ -22,22 +21,34 @@ const SUBJECT_MAP = {
   'TIN HỌC': 'TIN',
   'CÔNG NGHỆ': 'CN',
   'TRẢI NGHIỆM': 'HDTN',
+  // ===== PHẨM CHẤT & NĂNG LỰC (TT27 / GDPT 2018) =====
+  'PHẨM CHẤT': 'PC',
+  'NĂNG LỰC CHUNG': 'NLC',
+  'NĂNG LỰC': 'NLPC',   // fallback cho cột "Năng lực" không rõ loại
 };
 
 function normalizeSubject(name) {
   if (!name) return '';
   const up = normalizeVN(name);
-  
+
+  // Ưu tiên kiểm tra Phẩm chất trước (tránh nhầm với Năng lực)
+  if (up.includes('PHAM CHAT')) return 'PC';
+
+  // Năng lực chung (NLC) vs Năng lực đặc thù môn học
+  if (up.includes('NANG LUC CHUNG')) return 'NLC';
+
+  // Kiểm tra từng môn trong map
   for (const [k, v] of Object.entries(SUBJECT_MAP)) {
     const kn = normalizeVN(k);
-    // Ví dụ: up="NGHE THUAT MI THUAT", kn="MI THUAT" -> khớp
     if (up.includes(kn) || kn.includes(up)) return v;
   }
-  // Thử lại các từ khóa ngắn nếu vẫn không khớp
+
+  // Thử lại các từ khóa ngắn
   if (up.includes('TOAN')) return 'TOAN';
   if (up.includes('VIET')) return 'TV';
-  
-  return 'TOAN'; // fallback cuối cùng
+  if (up.includes('NANG LUC')) return 'NLPC';
+
+  return ''; // Không nhận diện được → trả rỗng, tránh gán sai môn
 }
 
 /**

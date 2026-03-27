@@ -1130,6 +1130,71 @@ export const BANK_BY_GRADE = {
   }
 };
 
+// ===== BANK PHẨM CHẤT (PC) - Theo TT27 / GDPT 2018 =====
+// 5 phẩm chất: Yêu nước, Nhân ái, Chăm chỉ, Trung thực, Trách nhiệm
+export const PC_BANK = {
+  "T": [
+    "Yêu trường lớp, kính trọng thầy cô.",
+    "Nhân ái, sẵn sàng giúp đỡ bạn bè.",
+    "Chăm chỉ, tự giác trong học tập.",
+    "Trung thực, thật thà trong mọi việc.",
+    "Có trách nhiệm với bản thân và tập thể.",
+    "Thực hiện tốt nội quy trường lớp.",
+    "Đoàn kết, thân thiện với bạn bè.",
+    "Biết nhận lỗi và sửa sai kịp thời.",
+    "Lễ phép, đúng mực với người lớn.",
+    "Tích cực tham gia hoạt động tập thể."
+  ],
+  "H": [
+    "Có ý thức yêu trường, yêu lớp.",
+    "Biết quan tâm, chia sẻ với bạn.",
+    "Tương đối chăm chỉ, hoàn thành nhiệm vụ.",
+    "Thực hiện đúng nội quy trường lớp.",
+    "Có ý thức trung thực trong học tập.",
+    "Tham gia tích cực hoạt động tập thể.",
+    "Lễ phép với thầy cô, người lớn."
+  ],
+  "C": [
+    "Cần rèn thêm tính chăm chỉ, tự giác.",
+    "Cần có ý thức trách nhiệm hơn.",
+    "Cần rèn luyện thêm tính trung thực.",
+    "Cần chú ý thực hiện đúng nội quy.",
+    "Cần thân thiện, đoàn kết với bạn hơn."
+  ]
+};
+
+// ===== BANK NĂNG LỰC CHUNG (NLC) - Theo TT27 / GDPT 2018 =====
+// Tự chủ & tự học, Giao tiếp & hợp tác, Giải quyết vấn đề & sáng tạo
+export const NLC_BANK = {
+  "T": [
+    "Tự chủ, tự học tốt.",
+    "Giao tiếp tự tin, rõ ràng.",
+    "Hợp tác tốt trong hoạt động nhóm.",
+    "Biết giải quyết vấn đề hiệu quả.",
+    "Sáng tạo, linh hoạt trong học tập.",
+    "Biết vận dụng kiến thức vào thực tiễn.",
+    "Tự đánh giá và điều chỉnh bản thân tốt.",
+    "Biết tìm và xử lí thông tin phù hợp.",
+    "Lập kế hoạch và thực hiện đúng tiến độ.",
+    "Đóng góp ý kiến tích cực trong nhóm."
+  ],
+  "H": [
+    "Bước đầu biết tự quản trong học tập.",
+    "Giao tiếp khá tự tin, diễn đạt được ý.",
+    "Biết phối hợp trong hoạt động nhóm.",
+    "Cần mạnh dạn hơn khi đưa ra ý kiến.",
+    "Bước đầu biết giải quyết tình huống đơn giản.",
+    "Cần tự tin hơn khi trình bày trước lớp."
+  ],
+  "C": [
+    "Cần rèn thêm tính tự chủ trong học tập.",
+    "Cần mạnh dạn, tự tin hơn khi giao tiếp.",
+    "Cần rèn kĩ năng làm việc nhóm.",
+    "Cần rèn thêm kĩ năng giải quyết vấn đề.",
+    "Cần tích cực hơn trong hoạt động tập thể."
+  ]
+};
+
 export function scoreToLevel(score) {
   if (score >= 9) return 'T';
   if (score >= 6) return 'H';
@@ -1145,6 +1210,19 @@ export function isLevelValue(val) {
 // grade param is expected to be '1', '2', '3', or '45'
 export function getComment(subject, level, idx = 0, grade = '45') {
   if (!subject || !level) return '';
+
+  // Phẩm chất → dùng PC_BANK
+  if (subject === 'PC') {
+    const opts = PC_BANK[level] || [];
+    return opts.length > 0 ? opts[idx % opts.length] : '';
+  }
+
+  // Năng lực chung → dùng NLC_BANK
+  if (subject === 'NLC') {
+    const opts = NLC_BANK[level] || [];
+    return opts.length > 0 ? opts[idx % opts.length] : '';
+  }
+
   const bank = BANK_BY_GRADE[grade] || BANK_BY_GRADE['45'];
   const opts = bank[subject]?.[level] || BANK_BY_GRADE['45'][subject]?.[level] || [];
   if (opts.length === 0) return '';
@@ -1154,3 +1232,4 @@ export function getComment(subject, level, idx = 0, grade = '45') {
 export function getNlpcComment(nlpcType, level, idx = 0, grade = '45') {
   return getComment('NLPC', level, idx, grade);
 }
+
