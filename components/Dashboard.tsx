@@ -800,7 +800,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('vietnamMap') && <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" />}
                                         {!hiddenApps.includes('denHung3D') && <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" />}
                                         {!hiddenApps.includes('thatLuong3D') && <ToolCard title="Mô hình 3D - Thạt Luổng" description="Khám phá kiến trúc Thạt Luổng với mô hình 3D tương tác" icon={<span className="text-2xl">🕍</span>} accentColor="bg-gradient-to-br from-yellow-600 to-amber-700" onClick={onThatLuong3D} badge="Mới" />}
-                                        {!hiddenApps.includes('phongTranh3D') && <ToolCard title="Phòng Tranh 3D" description="Tạo phòng tranh ảo 3D tùy chỉnh, chia sẻ cho học sinh" icon={<span className="text-2xl">🖼️</span>} accentColor="bg-gradient-to-br from-purple-600 to-pink-600" onClick={onPhongTranh3D} badge="Mới" />}
+                                        <ToolCard title="Phòng Tranh 3D Tùy Chỉnh" description="Phòng triển lãm nghệ thuật 3D ảo sống động, tương tác thực tế" icon={<span className="text-2xl">🖼️</span>} accentColor="bg-gradient-to-br from-purple-600 to-pink-600" onClick={onPhongTranh3D} badge="3D" />
                                     </div>
                                 </section>
                             )}
