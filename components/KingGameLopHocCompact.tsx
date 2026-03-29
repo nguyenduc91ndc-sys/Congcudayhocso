@@ -38,7 +38,7 @@ const KingGameLopHocCompact: React.FC<KingGameLopHocCompactProps> = ({ onBack })
             {/* Game iframe */}
             <iframe
                 ref={iframeRef}
-                src="/Duong-toi-ngoi-vua-phien-ban-lop-hoc-so/compact/index.html"
+                src="/Duong-toi-ngoi-vua-phien-ban-lop-hoc-so/Ngaivang/compact/index.html"
                 className="w-full border-0"
                 title="Đường tới Ngôi Vua – Quản lý lớp học số (Compact)"
                 allow="autoplay"

@@ -148,14 +148,28 @@ function App() {
             break;
           // Có thể thêm case cho các app khác ở đây sau
         }
-        // Dọn sạch URL: chỉ giữ ?app=..., xóa fbclid, utm_*, aem_* v.v.
-        const cleanUrl = `${window.location.pathname}?app=${appParam}`;
+        // Dọn sạch URL: chỉ giữ ?app=..., xóa fbclid, utm_*, aem_* v.v. Cần giữ lại tham số 'id' nếu có để hỗ trợ chức năng chia sẻ Cloud
+        let cleanUrl = `${window.location.pathname}?app=${appParam}`;
+        const idParam = urlParams.get('id');
+        if (idParam) {
+            cleanUrl += `&id=${idParam}`;
+        }
         window.history.replaceState({}, document.title, cleanUrl);
       }
 
-      // Parse ?view= from URL
-      const viewParam = urlParams.get('view');
-      if (viewParam) {
+      // Bổ sung: Parse Path cho các link thân thiện kiểu mới (VD: /share/phong-tranh-3d/XYZ)
+      const pathSegments = window.location.pathname.split('/').filter(Boolean);
+      if (pathSegments.length >= 2 && pathSegments[0] === 'share') {
+          const appSection = pathSegments[1];
+          if (appSection === 'phong-tranh-3d') {
+              defaultView = 'PHONG_TRANH_3D';
+          }
+          // Dọn dẹp các query như fbclid nhưng giữ nguyên đường dẫn tĩnh gốc
+          window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+          // Parse ?view= from URL (cũ)
+          const viewParam = urlParams.get('view');
+          if (viewParam) {
         switch (viewParam.toLowerCase()) {
           case 'earth-seasons':
             defaultView = 'EARTH_SEASONS';
@@ -168,7 +182,7 @@ function App() {
         const cleanUrl = `${window.location.pathname}?view=${viewParam}`;
         window.history.replaceState({}, document.title, cleanUrl);
       }
-
+      } // Đóng thẻ else bên trên
 
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);

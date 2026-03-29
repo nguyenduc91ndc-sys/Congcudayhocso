@@ -1,580 +1,569 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ref as dbRef, set, remove, onValue, off } from 'firebase/database';
-import { database } from '../utils/firebaseConfig';
+import { 
+    Image, Plus, Save, Play, Trash2, Home, HelpCircle, BookOpen,
+    CheckCircle2, Share2, Edit3, X, Copy, ArrowLeft
+} from 'lucide-react';
+import { VirtualGallery, getVirtualGalleriesByUser, saveVirtualGallery, deleteVirtualGallery, updateVirtualGallery, getVirtualGallery } from '../utils/firebaseVirtualGallery';
+import { ref as storageRef, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
+import { storage } from '../utils/firebaseConfig';
 
-// Tạo panorama image cho phòng 3D bằng Canvas
-function generateRoomPanorama(roomType: string): string {
-    const W = 2048, H = 1024;
-    const canvas = document.createElement('canvas');
-    canvas.width = W; canvas.height = H;
-    const ctx = canvas.getContext('2d')!;
-    const p: Record<string, { wall: string; floor: string; ceil: string }> = {
-        'cong-nghe': { wall: '#dde3ea', floor: '#37474f', ceil: '#78909c' },
-        'tu-nhien':  { wall: '#f1f8e9', floor: '#388e3c', ceil: '#a5d6a7' },
-        'lich-su':   { wall: '#fdf6ec', floor: '#6d4c41', ceil: '#bcaaa4' },
-    };
-    const c = p[roomType] || p['cong-nghe'];
-    // Trần
-    const ceil = ctx.createLinearGradient(0, 0, 0, H * 0.32);
-    ceil.addColorStop(0, c.ceil); ceil.addColorStop(1, '#ffffff');
-    ctx.fillStyle = ceil; ctx.fillRect(0, 0, W, H * 0.32);
-    // Tường
-    ctx.fillStyle = c.wall; ctx.fillRect(0, H * 0.32, W, H * 0.4);
-    // Sàn
-    const floor = ctx.createLinearGradient(0, H * 0.72, 0, H);
-    floor.addColorStop(0, '#aaaaaa'); floor.addColorStop(1, c.floor);
-    ctx.fillStyle = floor; ctx.fillRect(0, H * 0.72, W, H * 0.28);
-    // Góc tường
-    for (let i = 0; i <= 4; i++) {
-        const x = (i / 4) * W;
-        ctx.fillStyle = 'rgba(0,0,0,0.18)';
-        ctx.fillRect(x - 4, H * 0.32, 8, H * 0.4);
-    }
-    // Chân tường
-    ctx.fillStyle = 'rgba(255,255,255,0.85)'; ctx.fillRect(0, H * 0.70, W, H * 0.02);
-    ctx.fillStyle = 'rgba(0,0,0,0.15)'; ctx.fillRect(0, H * 0.72, W, H * 0.015);
-    // Gờ trần
-    ctx.fillStyle = 'rgba(255,255,255,0.9)'; ctx.fillRect(0, H * 0.32, W, H * 0.015);
-    return canvas.toDataURL('image/jpeg', 0.82);
+interface Props {
+    user: { email: string; name: string } | null;
+    onRequireLogin?: () => void;
+    onBack?: () => void;
 }
 
-// ─── Types ───────────────────────────────────────────────────────────────────
-type RoomType = 'cong-nghe' | 'tu-nhien' | 'lich-su';
-interface FrameData { imageUrl: string; description: string; }
-interface Gallery {
-    id: string; title: string; type: RoomType;
-    frames: Record<string, FrameData>; // key: "1"~"15"
-    createdAt: number; ownerEmail: string;
-}
-
-interface Props { user: { email: string; name: string } | null; onRequireLogin?: () => void; onBack?: () => void; }
-
-const MAX_ROOMS = 3; const MAX_FRAMES = 15;
-const emailKey = (e: string) => e.replace(/[.@]/g, '_');
-
-const ROOM_TYPES: { id: RoomType; label: string; icon: string; bg: string; accent: string }[] = [
-    { id: 'cong-nghe', label: 'Công Nghệ', icon: '🖥️', bg: 'from-slate-700 to-slate-900', accent: '#6366f1' },
-    { id: 'tu-nhien', label: 'Tự nhiên',  icon: '🌿', bg: 'from-emerald-700 to-green-900', accent: '#10b981' },
-    { id: 'lich-su',  label: 'Lịch Sử',  icon: '📚', bg: 'from-amber-700 to-stone-900',   accent: '#f59e0b' },
-];
-const getRoomType = (id: RoomType) => ROOM_TYPES.find(r => r.id === id) || ROOM_TYPES[0];
-
-// ─── Main ─────────────────────────────────────────────────────────────────────
 export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
-    const [galleries, setGalleries] = useState<Gallery[]>([]);
-    const [loading, setLoading] = useState(true);
-    const [screen, setScreen] = useState<'list' | 'create' | 'edit' | 'view'>('list');
-    const [active, setActive] = useState<Gallery | null>(null);
-    const [deleteConfirm, setDeleteConfirm] = useState<string | null>(null);
-    const [toast, setToast] = useState<{ msg: string; ok: boolean } | null>(null);
+    const [mode, setMode] = useState<'DASHBOARD' | 'IFRAME'>('DASHBOARD');
+    const [galleries, setGalleries] = useState<VirtualGallery[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [currentGallery, setCurrentGallery] = useState<VirtualGallery | null>(null);
+    const [isSaving, setIsSaving] = useState(false);
+    const [saveProgress, setSaveProgress] = useState<number>(0);
+    const [isCopyingLink, setIsCopyingLink] = useState<string | null>(null);
+    const [copiedId, setCopiedId] = useState<string | null>(null);
 
-    const notify = (msg: string, ok = true) => { setToast({ msg, ok }); setTimeout(() => setToast(null), 2500); };
+    const iframeRef = useRef<HTMLIFrameElement>(null);
+    const [iframeReady, setIframeReady] = useState(false);
+
+    // Deep link logic
+    useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedId = urlParams.get('id');
+        const appParam = urlParams.get('app');
+
+        if (appParam === 'phong_tranh_3d' && sharedId) {
+            // Load shared gallery directly
+            import('../utils/firebaseVirtualGallery').then(({ getVirtualGallery }) => {
+                getVirtualGallery(sharedId).then(gallery => {
+                    if (gallery) {
+                        setCurrentGallery(gallery);
+                        setIframeReady(false);
+                        setMode('IFRAME');
+                    }
+                });
+            });
+        }
+    }, []);
 
     useEffect(() => {
-        if (!user) return;
-        const r = dbRef(database, `phong_tranh_3d/${emailKey(user.email)}`);
-        const unsub = onValue(r, snap => {
-            setGalleries(snap.exists() ? Object.values(snap.val() as Record<string, Gallery>).sort((a,b)=>b.createdAt-a.createdAt) : []);
-            setLoading(false);
+        const urlParams = new URLSearchParams(window.location.search);
+        let sharedId = urlParams.get('id');
+        const pathSegments = window.location.pathname.split('/').filter(Boolean);
+        if (pathSegments.length >= 3 && pathSegments[0] === 'share' && pathSegments[1] === 'phong-tranh-3d') {
+            sharedId = pathSegments[2];
+        }
+
+        if (!user) {
+            // Nếu người dùng không đăng nhập VÀ không có ID chia sẻ mới đòi login
+            if (onRequireLogin && mode === 'DASHBOARD' && !sharedId) {
+                onRequireLogin();
+            }
+            return;
+        }
+        setIsLoading(true);
+        getVirtualGalleriesByUser(user.email).then(data => {
+            setGalleries(data);
+            setIsLoading(false);
         });
-        return () => off(r);
-    }, [user]);
+    }, [user, onRequireLogin, mode]);
 
-    if (!user) return (
-        <div className="fixed inset-0 flex flex-col items-center justify-center gap-5 z-[100]" style={{ background: 'linear-gradient(135deg,#1e1b4b,#312e81)' }}>
-            <div className="text-7xl">🧊</div>
-            <h2 className="text-2xl font-bold text-white">Phòng 3D Panorama</h2>
-            <p className="text-indigo-300 text-center max-w-xs">Đăng nhập để tạo và quản lý phòng triển lãm 3D</p>
-            <button onClick={onRequireLogin} className="px-8 py-3 rounded-2xl font-bold text-white" style={{ background: 'linear-gradient(135deg,#6366f1,#a855f7)' }}>Đăng nhập</button>
-        </div>
-    );
-
-    if (screen === 'view' && active) return <RoomViewer gallery={active} onBack={() => { setScreen('list'); setActive(null); }} />;
-    if (screen === 'edit' && active) return <RoomEditor gallery={active} user={user} onBack={() => { setScreen('list'); setActive(null); }} notify={notify} />;
-    if (screen === 'create') return (
-        <CreateModal onBack={() => setScreen('list')} user={user} roomCount={galleries.length} notify={notify} onCreated={_g => { setScreen('list'); notify('Đã tạo phòng!'); }} />
-    );
-
-    const handleDelete = async (id: string) => {
-        await remove(dbRef(database, `phong_tranh_3d/${emailKey(user.email)}/${id}`));
-        setDeleteConfirm(null); notify('Đã xóa phòng!');
-    };
-
-    return (
-        <div className="fixed inset-0 flex z-[100] overflow-hidden" style={{ background: '#f5f4fe' }}>
-            {/* Toast */}
-            <AnimatePresence>
-                {toast && (
-                    <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0 }}
-                        className="fixed top-4 right-4 z-[999] px-5 py-3 rounded-2xl text-white text-sm font-bold shadow-xl"
-                        style={{ background: toast.ok ? '#16a34a' : '#dc2626' }}>
-                        {toast.ok ? '✅' : '❌'} {toast.msg}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* ── Sidebar ── */}
-            <aside className="w-52 flex-shrink-0 flex flex-col gap-1 py-5 px-3 sticky top-0 h-screen overflow-y-auto"
-                style={{ background: 'white', borderRight: '1px solid #e0d7ff' }}>
-                <div className="flex items-center gap-2 mb-1 px-2">
-                    <button onClick={onBack} className="flex items-center gap-1 text-xs text-purple-400 hover:text-purple-600 mb-2 transition-colors">
-                        ← Về trang chủ
-                    </button>
-                </div>
-                <div className="flex items-center gap-2 mb-5 px-2">
-                    <span className="text-3xl">🧊</span>
-                    <div><div className="font-bold text-purple-800 text-sm leading-tight">Phòng 3D</div><div className="font-bold text-purple-600 text-xs">Panorama</div></div>
-                </div>
-                <NavItem icon="❓" label="Hướng dẫn sử dụng" onClick={() => window.open('https://www.facebook.com/groups/giaovienyeucongnghe','_blank')} />
-                <div className="mx-2 my-1 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-2" style={{ background: '#fef9c3', color: '#854d0e', border: '1px solid #fde047' }}>
-                    🚀 Đã dùng {galleries.length}/{MAX_ROOMS} lượt tạo phòng
-                </div>
-                <button onClick={() => setScreen('create')}
-                    className="flex items-center gap-2 mx-2 my-1 px-3 py-2.5 rounded-xl text-sm font-semibold border-2 border-gray-800 hover:bg-gray-50 transition-colors">
-                    <span className="text-lg font-bold">+</span> Tạo phòng mới
-                </button>
-                <NavItem icon="🧊" label="Phòng của tôi" active onClick={() => setScreen('list')} />
-            </aside>
-
-            {/* ── Main ── */}
-            <main className="flex-1 p-7 overflow-y-auto">
-                <div className="mb-6">
-                    <h1 className="flex items-center gap-2 text-xl font-bold" style={{ color: '#5b21b6' }}>
-                        <span>🧊</span> Phòng của tôi
-                    </h1>
-                    <p className="text-sm text-gray-500 mt-0.5">Quản lý các phòng trưng bày 360 của bạn</p>
-                </div>
-
-                {loading ? (
-                    <div className="flex justify-center py-20"><div className="w-10 h-10 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin" /></div>
-                ) : galleries.length === 0 ? (
-                    <EmptyState onCreate={() => setScreen('create')} />
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-5">
-                        {galleries.map(g => (
-                            <RoomCard key={g.id} gallery={g}
-                                onView={() => { setActive(g); setScreen('view'); }}
-                                onEdit={() => { setActive(g); setScreen('edit'); }}
-                                onDelete={() => setDeleteConfirm(g.id)} />
-                        ))}
-                        {galleries.length < MAX_ROOMS && (
-                            <button onClick={() => setScreen('create')}
-                                className="h-52 rounded-2xl border-2 border-dashed border-purple-300 flex flex-col items-center justify-center gap-2 text-purple-400 hover:border-purple-500 hover:text-purple-600 transition-colors"
-                                style={{ background: '#faf5ff' }}>
-                                <span className="text-5xl font-light">+</span>
-                                <span className="text-sm font-semibold">Tạo phòng mới</span>
-                            </button>
-                        )}
-                    </div>
-                )}
-            </main>
-
-            {/* Delete confirm */}
-            <AnimatePresence>
-                {deleteConfirm && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[500] flex items-center justify-center p-4"
-                        style={{ background: 'rgba(0,0,0,0.5)' }} onClick={() => setDeleteConfirm(null)}>
-                        <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-                            onClick={e => e.stopPropagation()} className="bg-white rounded-3xl p-8 max-w-sm w-full shadow-2xl text-center">
-                            <div className="text-5xl mb-3">🗑️</div>
-                            <h3 className="text-lg font-bold text-gray-800 mb-1">Xóa phòng tranh?</h3>
-                            <p className="text-gray-500 text-sm mb-6">Hành động này không thể hoàn tác.</p>
-                            <div className="flex gap-3">
-                                <button onClick={() => setDeleteConfirm(null)} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold">Hủy</button>
-                                <button onClick={() => handleDelete(deleteConfirm!)} className="flex-1 py-3 rounded-xl font-bold text-white" style={{ background: '#ef4444' }}>Xóa ngay</button>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-// ─── Nav Item ─────────────────────────────────────────────────────────────────
-function NavItem({ icon, label, active, onClick }: { icon: string; label: string; active?: boolean; onClick?: () => void }) {
-    return (
-        <button onClick={onClick} className="flex items-center gap-2 mx-2 my-0.5 px-3 py-2.5 rounded-xl text-sm font-semibold w-full text-left transition-all"
-            style={{ background: active ? 'linear-gradient(135deg,#7c3aed,#9333ea)' : 'transparent', color: active ? '#fff' : '#6d28d9' }}>
-            <span>{icon}</span> {label}
-        </button>
-    );
-}
-
-// ─── Room Card ────────────────────────────────────────────────────────────────
-function RoomCard({ gallery, onView, onEdit, onDelete }: { gallery: Gallery; onView: ()=>void; onEdit: ()=>void; onDelete: ()=>void }) {
-    const rt = getRoomType(gallery.type);
-    const frameCount = Object.keys(gallery.frames || {}).length;
-    const date = new Date(gallery.createdAt).toLocaleDateString('vi-VN');
-    const thumb = Object.values(gallery.frames || {}).find(f => f.imageUrl)?.imageUrl;
-
-    return (
-        <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }}
-            className="rounded-2xl overflow-hidden shadow-sm hover:shadow-md transition-shadow"
-            style={{ border: '1px solid #e0d7ff', background: '#fff' }}>
-            <div className={`relative h-28 bg-gradient-to-br ${rt.bg} flex items-center justify-center`}>
-                {thumb ? <img src={thumb} alt="" className="w-full h-full object-cover absolute inset-0" /> : null}
-                <span className="text-5xl opacity-60 relative z-10">{rt.icon}</span>
-            </div>
-            <div className="p-4">
-                <p className="text-xs font-semibold mb-1" style={{ color: rt.accent }}>{rt.icon} {rt.label}</p>
-                <h3 className="font-bold text-gray-800 truncate mb-3">{gallery.title}</h3>
-                <div className="flex gap-4 text-xs text-gray-400 mb-4">
-                    <span>📅 Ngày tạo: {date}</span>
-                    <span>🖼️ Khung ảnh: {frameCount}/{MAX_FRAMES}</span>
-                </div>
-                <div className="flex gap-2">
-                    <button onClick={onView} className="flex-1 py-2 rounded-xl text-sm font-bold text-white flex items-center justify-center gap-1"
-                        style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)' }}>
-                        👁️ Vào xem
-                    </button>
-                    <button onClick={onEdit} className="px-3 py-2 rounded-xl text-sm font-semibold border border-gray-200 text-gray-600 hover:bg-gray-50">✏️ Sửa</button>
-                    <button onClick={onDelete} className="px-3 py-2 rounded-xl text-sm font-semibold border border-red-100 text-red-500 hover:bg-red-50">🗑️ Xóa</button>
-                </div>
-            </div>
-        </motion.div>
-    );
-}
-
-// ─── Empty State ──────────────────────────────────────────────────────────────
-function EmptyState({ onCreate }: { onCreate: ()=>void }) {
-    return (
-        <div className="flex flex-col items-center justify-center py-24 gap-5">
-            <motion.div animate={{ y: [0, -8, 0] }} transition={{ duration: 2.5, repeat: Infinity }} className="text-8xl">🧊</motion.div>
-            <h3 className="text-xl font-bold text-gray-700">Chưa có phòng nào</h3>
-            <p className="text-gray-400 text-sm text-center">Bắt đầu bằng cách tạo phòng trưng bày 3D đầu tiên của bạn</p>
-            <button onClick={onCreate} className="px-8 py-3 rounded-2xl font-bold text-white shadow-lg"
-                style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)' }}>
-                ✨ Tạo phòng Đầu Tiên
-            </button>
-        </div>
-    );
-}
-
-// ─── Create Modal ─────────────────────────────────────────────────────────────
-function CreateModal({ onBack, user, roomCount, notify, onCreated }: {
-    onBack: ()=>void; user: { email: string; name: string };
-    roomCount: number; notify: (m: string, ok?: boolean)=>void; onCreated: (g: Gallery)=>void;
-}) {
-    const [title, setTitle] = useState('');
-    const [type, setType] = useState<RoomType>('cong-nghe');
-    const [saving, setSaving] = useState(false);
-
-    const handleCreate = async () => {
-        if (!title.trim()) { notify('Vui lòng nhập tên phòng!', false); return; }
-        if (roomCount >= MAX_ROOMS) { notify('Đã đạt giới hạn 3 phòng!', false); return; }
-        setSaving(true);
-        const id = `room_${Date.now()}`;
-        const g: Gallery = { id, title: title.trim(), type, frames: {}, createdAt: Date.now(), ownerEmail: user.email };
-        await set(dbRef(database, `phong_tranh_3d/${emailKey(user.email)}/${id}`), g);
-        setSaving(false);
-        onCreated(g);
-    };
-
-    return (
-        <div className="fixed inset-0 z-[200] flex items-center justify-center p-4" style={{ background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(4px)' }}>
-            <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
-                className="bg-white rounded-3xl shadow-2xl w-full max-w-md overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-5" style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)' }}>
-                    <h2 className="text-white font-bold text-lg flex items-center gap-2">✨ Tạo phòng Mới</h2>
-                    <button onClick={onBack} className="text-white/70 hover:text-white text-xl font-bold">✕</button>
-                </div>
-                <div className="p-6 space-y-5">
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-1.5">Tên phòng *</label>
-                        <input value={title} onChange={e => setTitle(e.target.value.slice(0, 50))}
-                            placeholder="Ví dụ: Phòng Công Nghệ, phòng Lịch Sử..."
-                            className="w-full px-4 py-3 rounded-xl border border-gray-200 text-sm focus:outline-none focus:ring-2 focus:ring-purple-400" />
-                        <p className="text-right text-xs text-gray-400 mt-1">{title.length}/50</p>
-                    </div>
-                    <div>
-                        <label className="block text-sm font-bold text-gray-700 mb-2">Loại phòng *</label>
-                        <div className="flex gap-2">
-                            {ROOM_TYPES.map(rt => (
-                                <button key={rt.id} onClick={() => setType(rt.id)}
-                                    className="flex-1 py-2.5 rounded-xl text-sm font-semibold border-2 transition-all"
-                                    style={{ borderColor: type === rt.id ? rt.accent : '#e5e7eb', background: type === rt.id ? rt.accent : '#fff', color: type === rt.id ? '#fff' : '#374151' }}>
-                                    {rt.icon} {rt.label}
-                                </button>
-                            ))}
-                        </div>
-                    </div>
-                    <div className="flex gap-3 pt-2">
-                        <button onClick={onBack} className="flex-1 py-3 rounded-xl border border-gray-200 text-gray-600 font-semibold">Hủy</button>
-                        <button onClick={handleCreate} disabled={saving}
-                            className="flex-1 py-3 rounded-xl font-bold text-white flex items-center justify-center gap-2 disabled:opacity-70"
-                            style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)' }}>
-                            {saving ? <><span className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Đang tạo...</> : '✨ Tạo phòng'}
-                        </button>
-                    </div>
-                </div>
-            </motion.div>
-        </div>
-    );
-}
-
-// ─── Room Editor (Pannellum 3D) ───────────────────────────────────────────────
-function RoomEditor({ gallery, user, onBack, notify }: {
-    gallery: Gallery; user: { email: string; name: string };
-    onBack: ()=>void; notify: (m: string, ok?: boolean)=>void;
-}) {
-    const rt = getRoomType(gallery.type);
-    const [frames, setFrames] = useState<Record<string, FrameData>>(gallery.frames || {});
-    const [editFrame, setEditFrame] = useState<number | null>(null);
-    const [saving, setSaving] = useState(false);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-    const panoramaRef = useRef<string>('');
-
-    // Tạo panorama 1 lần khi mount
+    // Handle postMessage from iframe
     useEffect(() => {
-        panoramaRef.current = generateRoomPanorama(gallery.type);
-    }, [gallery.type]);
+        const handleMessage = async (event: MessageEvent) => {
+            if (!user) return;
+            if (event.data?.type === 'SAVE_VIRTUAL_GALLERY') {
+                const buffer = event.data.data; // Now an ArrayBuffer
+                const fileName = event.data.fileName || 'room.zip';
+                
+                const galleryName = prompt("Nhập tên cho Phòng Tranh này:", currentGallery?.title || "Phòng tranh 3D của tôi");
+                if (!galleryName) return;
 
-    // Lắng nghe postMessage từ iframe
-    useEffect(() => {
-        const handler = (e: MessageEvent) => {
-            if (!e.data?.type) return;
-            if (e.data.type === 'ready') {
-                iframeRef.current?.contentWindow?.postMessage({
-                    type: 'init', panorama: panoramaRef.current,
-                    frames, isViewer: false
-                }, '*');
-            } else if (e.data.type === 'edit-frame') {
-                setEditFrame(e.data.num);
+                setIsSaving(true);
+                
+                try {
+                    // 1. Upload Blob to Firebase Storage
+                    const blob = new Blob([buffer]);
+                    const fileRef = storageRef(storage, `virtual_galleries/${user.email}/${Date.now()}_${fileName}`);
+                    
+                    const uploadTask = uploadBytesResumable(fileRef, blob);
+
+                    uploadTask.on('state_changed',
+                        (snapshot) => {
+                            const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                            setSaveProgress(Math.round(progress));
+                        },
+                        (error) => {
+                            console.error("Lỗi khi tải file lên Storage:", error);
+                            alert("Có lỗi xảy ra khi lưu phòng tranh. Vui lòng thử lại!");
+                            setIsSaving(false);
+                            setSaveProgress(0);
+                        },
+                        async () => {
+                            try {
+                                const downloadUrl = await getDownloadURL(uploadTask.snapshot.ref);
+
+                                // 2. Save Meta to Realtime Database
+                                if (currentGallery && currentGallery.ownerEmail === user.email) {
+                                    // Update existing
+                                    const success = await updateVirtualGallery(currentGallery.id, { title: galleryName, galleryFileUrl: downloadUrl });
+                                    if (success) {
+                                        alert("Đã cập nhật phòng tranh thành công lên Máy chủ Đám mây!");
+                                        getVirtualGalleriesByUser(user.email).then(setGalleries);
+                                    }
+                                } else {
+                                    // Create new
+                                    const newId = await saveVirtualGallery({
+                                        ownerEmail: user.email,
+                                        ownerName: user.name,
+                                        title: galleryName,
+                                        galleryFileUrl: downloadUrl
+                                    });
+                                    if (newId) {
+                                        alert("Đã lưu phòng mới thành công lên Máy chủ Đám mây!");
+                                        getVirtualGalleriesByUser(user.email).then(data => {
+                                            setGalleries(data);
+                                            const savedGallery = data.find(g => g.id === newId);
+                                            if (savedGallery) setCurrentGallery(savedGallery);
+                                        });
+                                    }
+                                }
+                            } catch (metaError) {
+                                console.error("Lỗi lưu metadata", metaError);
+                                alert("Có lỗi xảy ra khi lưu thông tin. Vui lòng thử");
+                            } finally {
+                                setIsSaving(false);
+                                setSaveProgress(0);
+                            }
+                        }
+                    );
+                } catch (error) {
+                    console.error("Lỗi khởi tạo Storage:", error);
+                    alert("Có lỗi xảy ra khi khởi tạo phiên lưu trữ!");
+                    setIsSaving(false);
+                }
+            } else if (event.data?.type === 'IFRAME_APP_READY') {
+                setIframeReady(true);
+                if (currentGallery && currentGallery.galleryFileUrl) {
+                    // Tải file ZIP từ đám mây xuống trước khi nhét vào Iframe
+                    try {
+                        setIsSaving(true); // Hiển thị loading khi tải file
+                        const response = await fetch(currentGallery.galleryFileUrl);
+                        const buffer = await response.arrayBuffer();
+                        iframeRef.current?.contentWindow?.postMessage({
+                            type: 'LOAD_VIRTUAL_GALLERY',
+                            data: buffer,
+                            fileName: currentGallery.galleryFileUrl.includes('.zip') ? 'cloud.zip' : 'cloud.json'
+                        }, '*');
+                    } catch (err) {
+                        console.error("Lỗi khi tải file tĩnh từ Mây:", err);
+                    } finally {
+                        setIsSaving(false);
+                    }
+                }
             }
         };
-        window.addEventListener('message', handler);
-        return () => window.removeEventListener('message', handler);
-    }, [frames]);
 
-    const handleSave = async () => {
-        setSaving(true);
-        await set(dbRef(database, `phong_tranh_3d/${emailKey(user.email)}/${gallery.id}/frames`), frames);
-        setSaving(false); notify('Đã lưu phòng!'); onBack();
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, [user, currentGallery]);
+
+    const handleCreateNew = () => {
+        if (!user) {
+            if (onRequireLogin) onRequireLogin();
+            return;
+        }
+
+        // Kiểm tra giới hạn bản miễn phí (tối đa 3 phòng)
+        if (galleries.length >= 3) {
+            // Giả lập check Pro tạm thời (có thể liên kết licenseUtils sau này)
+            const isPro = localStorage.getItem(`ntd_pro_phongtranh3d_${user.email}`) === 'true';
+            if (!isPro) {
+                alert("Tài khoản của bạn đã đạt giới hạn tối đa để thiết kế (3 phòng tranh). Xin vui lòng liên hệ Admin (Zalo: 0975.509.490) để nâng cấp tài khoản CÓ TRẢ PHÍ hoặc vui lòng xoá bớt tác phẩm cũ để tạo mới!");
+                return;
+            }
+        }
+
+        setCurrentGallery(null);
+        setIframeReady(false);
+        setMode('IFRAME');
     };
 
-    const handleFrameSave = (idx: number, data: FrameData) => {
-        const updated = { ...frames, [idx]: data };
-        setFrames(updated);
-        setEditFrame(null);
-        // Cập nhật hotspot trong iframe
-        iframeRef.current?.contentWindow?.postMessage({
-            type: 'refresh-hotspots', frames: updated
-        }, '*');
+    const handleOpenGallery = (gallery: VirtualGallery) => {
+        setCurrentGallery(gallery);
+        setIframeReady(false);
+        setMode('IFRAME');
     };
 
-    return (
-        <div className="flex flex-col" style={{ height: '100vh', background: '#111' }}>
-            {/* Top bar */}
-            <div className="flex-shrink-0 flex items-center justify-between px-5 py-3"
-                style={{ background: 'rgba(0,0,0,0.85)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <button onClick={handleSave} disabled={saving}
-                    className="flex items-center gap-2 text-sm font-semibold text-white/80 hover:text-white transition-colors">
-                    {saving ? '⏳' : '←'} Lưu phòng &amp; Quay lại
-                </button>
-                <h2 className="text-white font-bold text-sm truncate mx-4">Chỉnh sửa: {gallery.title}</h2>
-                <span className="flex-shrink-0 text-xs px-3 py-1 rounded-full font-semibold" style={{ background: rt.accent, color: '#fff' }}>{rt.icon} {rt.label}</span>
-            </div>
+    const handleDeleteGallery = (e: React.MouseEvent, id: string) => {
+        e.stopPropagation();
+        if (confirm("Bạn có chắc chắn muốn xóa phòng tranh này khỏi tài khoản của bạn?")) {
+            deleteVirtualGallery(id).then(success => {
+                if (success && user) {
+                    getVirtualGalleriesByUser(user.email).then(setGalleries);
+                }
+            });
+        }
+    };
 
-            {/* Pannellum + Sidebar */}
-            <div className="flex flex-1 overflow-hidden">
-                <iframe
+    const handleShare = async (e: React.MouseEvent, gallery: VirtualGallery) => {
+        e.stopPropagation();
+        if (isCopyingLink) return;
+        // Cấu trúc Link đẹp: /share/phong-tranh-3d/ID
+        const shareUrl = `${window.location.origin}/share/phong-tranh-3d/${gallery.id}`;
+        
+        try {
+            await navigator.clipboard.writeText(shareUrl);
+            setCopiedId(gallery.id);
+            setTimeout(() => setCopiedId(null), 3000);
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setIsCopyingLink(null);
+        }
+    };
+
+    // Kiểm tra login trừ khi là khách đang xem qua link chia sẻ
+    if (!user && mode === 'DASHBOARD') {
+        const urlParams = new URLSearchParams(window.location.search);
+        if (!urlParams.get('id')) return null;
+    }
+
+    if (mode === 'IFRAME') {
+        const handleIframeLoad = () => {
+            try {
+                const doc = iframeRef.current?.contentDocument || iframeRef.current?.contentWindow?.document;
+                if (!doc) {
+                    setIframeReady(true);
+                    return;
+                }
+
+                const script = doc.createElement('script');
+                script.innerHTML = `
+                    // BẮT SỰ KIỆN TẢI FILE ZIP HOẶC JSON
+                    const originalCreateElement = document.createElement.bind(document);
+                    document.createElement = function(tagName) {
+                        if (tagName.toLowerCase() === 'a') {
+                            const el = originalCreateElement(tagName);
+                            const originalClick = el.click.bind(el);
+                            el.click = function() {
+                                if (el.download && (el.download.endsWith('.json') || el.download.endsWith('.zip')) && el.href && el.href.startsWith('blob:')) {
+                                    // Chuyển blob thành array buffer rồi ship về cho mẹ
+                                    fetch(el.href).then(res => res.arrayBuffer()).then(buffer => {
+                                        window.parent.postMessage({ 
+                                            type: 'SAVE_VIRTUAL_GALLERY', 
+                                            data: buffer, 
+                                            fileName: el.download 
+                                        }, '*');
+                                    });
+                                    return; // Chặn hành vi tải file xuống máy tính cục bộ
+                                }
+                                originalClick();
+                            };
+                            return el;
+                        }
+                        return originalCreateElement(tagName);
+                    };
+
+                    // NHẬN FILE MỚI TỪ REACT
+                    window.addEventListener('message', (e) => {
+                        if(e.data && e.data.type === 'LOAD_VIRTUAL_GALLERY') {
+                            try {
+                                const buffer = e.data.data;
+                                const fn = e.data.fileName || 'room.zip';
+                                const mime = fn.endsWith('.zip') ? 'application/zip' : 'application/json';
+                                
+                                const blob = new Blob([buffer], { type: mime });
+                                const file = new File([blob], fn, { type: mime });
+                                const dataTransfer = new DataTransfer();
+                                dataTransfer.items.add(file);
+                                
+                                document.querySelectorAll('input[type="file"]').forEach(input => {
+                                    input.files = dataTransfer.files;
+                                    input.dispatchEvent(new Event('change', { bubbles: true }));
+                                });
+                            } catch (err) {
+                                console.error('Lỗi khi nạp file vào iframe:', err);
+                            }
+                        }
+                    });
+
+                    window.parent.postMessage({ type: 'IFRAME_APP_READY' }, '*');
+
+                    // THAY ĐỔI GIAO DIỆN THEO PHONG CÁCH BLACK & GOLD
+                    const redesignUI = () => {
+                        const walker = document.createTreeWalker(document.body, NodeFilter.SHOW_TEXT, null, false);
+                        let node;
+                        while ((node = walker.nextNode())) {
+                            if (node.nodeValue) {
+                                const val = node.nodeValue.trim().toUpperCase();
+                                if (val.includes('BẢN QUYỀN') || val.includes('NESTORA') || 
+                                    val.includes('USER:') || val.includes('KUTOM') || 
+                                    val.includes('@GMAIL.COM') || val.includes('1.0.34')) {
+                                    let parent = node.parentElement;
+                                    if (parent) {
+                                        parent.style.setProperty('display', 'none', 'important');
+                                        const container = parent.closest('div[style*="fixed"], div[style*="absolute"], footer, div[class*="footer"]');
+                                        if (container && container.clientHeight < 100) container.style.setProperty('display', 'none', 'important');
+                                    }
+                                }
+                            }
+                        }
+
+                        document.body.style.setProperty('background', '#121212', 'important');
+                        document.body.style.setProperty('color', '#e0e0e0', 'important');
+                        
+                        document.querySelectorAll('button, div[role="button"]').forEach(btn => {
+                            const txt = (btn.innerText || '').toUpperCase();
+                            
+                            if (txt.includes('TẠO LINK CHIA SẺ') || txt.includes('LOAD FILE')) {
+                                btn.style.setProperty('display', 'none', 'important');
+                                return;
+                            }
+
+                            if (txt.includes('LƯU FILE')) {
+                                btn.innerHTML = '☁️ LƯU LÊN ĐÁM MÂY';
+                                btn.style.setProperty('background', 'linear-gradient(135deg, #FFD700 0%, #B8860B 100%)', 'important');
+                                btn.style.setProperty('color', '#1a1a1a', 'important');
+                                btn.style.setProperty('border', 'none', 'important');
+                                btn.style.setProperty('border-radius', '8px', 'important');
+                                btn.style.setProperty('box-shadow', '0 4px 15px rgba(218, 165, 32, 0.4)', 'important');
+                                btn.style.setProperty('font-weight', '900', 'important');
+                            } else if (txt.includes('TẠO PHÒNG') || txt.includes('PHÒNG TRƯNG BÀY') || txt.includes('BẮT ĐẦU')) {
+                                btn.style.setProperty('background', '#1a1a1a', 'important');
+                                btn.style.setProperty('color', '#FFD700', 'important');
+                                btn.style.setProperty('border', '1px solid #FFD700', 'important');
+                                btn.style.setProperty('border-radius', '8px', 'important');
+                                btn.style.setProperty('box-shadow', '0 2px 10px rgba(0,0,0,0.5)', 'important');
+                            }
+                        });
+                    };
+
+                    redesignUI();
+                    setInterval(redesignUI, 300);
+
+                    const style = document.createElement('style');
+                    style.innerHTML = "@import url('https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&display=swap'); * { font-family: 'Montserrat', sans-serif !important; }";
+                    document.head.appendChild(style);
+                `;
+                doc.head.insertBefore(script, doc.head.firstChild);
+
+                setTimeout(() => setIframeReady(true), 200);
+            } catch (e) {
+                console.error("Lỗi Iframe:", e);
+                setIframeReady(true);
+            }
+        };
+
+        return (
+            <div className="w-full h-screen bg-[#121212] overflow-hidden relative">
+                {(!iframeReady || isSaving) && (
+                    <div className="absolute inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm">
+                        <div className="text-center">
+                            <div className="w-16 h-16 border-4 border-t-[#FFD700] border-r-transparent border-b-[#FFD700] border-l-transparent rounded-full animate-spin mx-auto"></div>
+                            <p className="mt-4 text-[#FFD700] font-bold tracking-widest uppercase mb-1">
+                                {saveProgress > 0 && saveProgress < 100 ? `Đang tải lên Đám Mây: ${saveProgress}%` : "Đang kết nối thư viện..."}
+                            </p>
+                            {saveProgress > 0 && saveProgress < 100 && (
+                                <div className="w-48 h-2 bg-gray-700 rounded-full mx-auto overflow-hidden">
+                                     <div className="h-full bg-gradient-to-r from-yellow-400 to-yellow-600 transition-all duration-300" style={{width: `${saveProgress}%`}}></div>
+                                </div>
+                            )}
+                        </div>
+                    </div>
+                )}
+                
+                {onBack && (
+                    <button 
+                        onClick={() => { 
+                            // Nếu mở từ share link (không có user context hoặc mở thẳng) thì Back ra ngoài
+                            const urlParams = new URLSearchParams(window.location.search);
+                            if (urlParams.get('id')) {
+                                // Xóa url params 
+                                window.history.replaceState({}, document.title, window.location.pathname);
+                            }
+                            setMode('DASHBOARD'); 
+                            setCurrentGallery(null); 
+                            if (!user && onBack) onBack(); 
+                        }}
+                        className="absolute bottom-5 left-5 z-[9999] px-6 py-3 bg-black/80 text-[#FFD700] border border-[#FFD700]/50 rounded-xl font-bold hover:bg-[#FFD700] hover:text-black transition duration-300 shadow-2xl backdrop-blur-sm"
+                    >
+                        ⟵ Trở về Menu Quản Lý
+                    </button>
+                )}
+
+                <iframe 
                     ref={iframeRef}
-                    src="/room-viewer.html"
-                    className="flex-1 border-0"
-                    allow="fullscreen"
-                    title="Room Viewer"
+                    onLoad={handleIframeLoad}
+                    src="/phongtranh3dmoi/Phòng tranh 3dmoi.html" 
+                    className="w-full h-full border-none absolute top-0 left-0"
+                    style={{ opacity: iframeReady ? 1 : 0, transition: 'opacity 0.4s' }}
+                    title="Phòng Tranh 3D"
+                    allowFullScreen
                 />
-                {/* Hotspots sidebar */}
-                <div className="w-44 flex-shrink-0 flex flex-col overflow-y-auto"
-                    style={{ background: '#0f0f1e', borderLeft: '1px solid rgba(255,255,255,0.08)' }}>
-                    <div className="px-3 py-3 text-xs font-bold tracking-widest uppercase" style={{ color: 'rgba(255,255,255,0.4)' }}>Hotspots</div>
-                    {Array.from({ length: MAX_FRAMES }, (_, i) => i + 1).map(n => {
-                        const f = frames[n];
-                        return (
-                            <button key={n} onClick={() => setEditFrame(n)}
-                                className="flex items-center gap-2 px-3 py-2.5 text-sm text-left transition-colors border-b hover:bg-white/5"
-                                style={{ color: f?.imageUrl ? '#e2e8f0' : 'rgba(255,255,255,0.35)', borderColor: 'rgba(255,255,255,0.05)' }}>
-                                <span className="w-5 h-5 rounded-full flex-shrink-0 flex items-center justify-center text-[10px] font-bold"
-                                    style={{ background: f?.imageUrl ? rt.accent : 'rgba(255,255,255,0.12)', color: '#fff' }}>{n}</span>
-                                Khung {n}
-                                {f?.imageUrl && <span className="ml-auto text-emerald-400 text-xs">✓</span>}
-                            </button>
-                        );
-                    })}
+            </div>
+        );
+    }
+
+    // DASHBOARD MODE
+    return (
+        <div className="min-h-screen flex bg-gradient-to-br from-purple-600 via-purple-500 to-indigo-600">
+            {/* Sidebar Trái */}
+            <div className="w-64 bg-gradient-to-b from-purple-700 to-purple-800 p-6 flex flex-col gap-4 shadow-2xl z-10">
+                <div className="mb-4">
+                    <h2 className="text-xl font-bold text-white flex items-center gap-2">
+                        <span className="text-2xl">🖼️</span> Phòng Tranh 3D
+                    </h2>
                 </div>
+
+                <button
+                    onClick={onBack}
+                    className="flex items-center gap-3 w-full px-4 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                >
+                    <Home size={20} />
+                    Về trang chủ
+                </button>
+
+                <button
+                    onClick={() => window.open('https://zalo.me/0975509490', '_blank')}
+                    className="flex items-center gap-3 w-full px-4 py-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                >
+                    <HelpCircle size={20} />
+                    Hướng dẫn sử dụng
+                </button>
+
+                <button
+                    onClick={handleCreateNew}
+                    className="flex items-center gap-3 w-full px-4 py-3 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 bg-white/20 text-white hover:bg-white/30"
+                >
+                    <Plus size={20} />
+                    Tạo phòng mới
+                </button>
+
+                <button
+                    className="flex items-center gap-3 w-full px-4 py-3 font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105 bg-gradient-to-r from-green-400 to-emerald-500 text-white"
+                >
+                    <BookOpen size={20} />
+                    Phòng của tôi
+                </button>
             </div>
 
-            <AnimatePresence>
-                {editFrame !== null && (
-                    <FrameEditModal
-                        frameNum={editFrame}
-                        initial={frames[editFrame] || { imageUrl: '', description: '' }}
-                        user={user} galleryId={gallery.id}
-                        onSave={data => handleFrameSave(editFrame!, data)}
-                        onClose={() => setEditFrame(null)}
-                    />
-                )}
-            </AnimatePresence>
-        </div>
-    );
-}
-
-// ─── Frame Edit Modal ─────────────────────────────────────────────────────────
-function FrameEditModal({ frameNum, initial, user, galleryId, onSave, onClose }: {
-    frameNum: number; initial: FrameData; user: { email: string; name: string };
-    galleryId: string; onSave: (d: FrameData)=>void; onClose: ()=>void;
-}) {
-    const [imageUrl, setImageUrl] = useState(initial.imageUrl);
-    const [description, setDescription] = useState(initial.description);
-    const [uploading, setUploading] = useState(false);
-    const [progress, setProgress] = useState(0);
-    const fileRef = useRef<HTMLInputElement>(null);
-
-    const handleFile = (file: File) => {
-        setUploading(true); setProgress(10);
-        const reader = new FileReader();
-        reader.onprogress = (e) => { if (e.lengthComputable) setProgress(Math.round(e.loaded / e.total * 100)); };
-        reader.onload = () => { setImageUrl(reader.result as string); setProgress(100); setUploading(false); };
-        reader.onerror = () => { setUploading(false); };
-        reader.readAsDataURL(file);
-    };
-
-    return (
-        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[500] flex items-center justify-center p-4"
-            style={{ background: 'rgba(0,0,0,0.7)' }} onClick={onClose}>
-            <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-                onClick={e => e.stopPropagation()}
-                className="w-full max-w-md rounded-2xl shadow-2xl overflow-hidden"
-                style={{ background: '#1e1e3a', color: '#fff' }}>
-                <div className="px-6 py-4 flex items-center justify-between" style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                    <h3 className="font-bold">Chỉnh sửa Khung {frameNum}</h3>
-                    <button onClick={onClose} className="text-white/50 hover:text-white text-xl">✕</button>
-                </div>
-                <div className="p-6 space-y-5">
-                    {/* Preview */}
-                    {imageUrl && (
-                        <div className="rounded-xl overflow-hidden h-36 bg-black">
-                            <img src={imageUrl} alt="" className="w-full h-full object-contain" />
-                        </div>
-                    )}
-                    {/* Upload */}
-                    <div>
-                        <p className="text-sm font-semibold mb-2">📸 Chọn ảnh từ máy tính:</p>
-                        <input ref={fileRef} type="file" accept="image/*" className="hidden"
-                            onChange={e => e.target.files?.[0] && handleFile(e.target.files[0])} />
-                        <button onClick={() => fileRef.current?.click()} disabled={uploading}
-                            className="w-full py-2 rounded-xl text-sm font-semibold border border-white/20 hover:bg-white/10 transition-colors">
-                            {uploading ? `Đang tải... ${progress}%` : 'Choose File'}
-                        </button>
-                        {uploading && (
-                            <div className="mt-2 h-1.5 rounded-full bg-white/10 overflow-hidden">
-                                <div className="h-full rounded-full transition-all" style={{ width: `${progress}%`, background: '#7c3aed' }} />
+            {/* Màn hình phải (Thư viện) */}
+            <div className="flex-1 flex overflow-hidden">
+                <div className="flex-1 bg-white rounded-l-[40px] p-8 overflow-y-auto relative z-0">
+                    <AnimatePresence mode="wait">
+                        <motion.div
+                            key="my-galleries"
+                            initial={{ opacity: 0, x: 20 }}
+                            animate={{ opacity: 1, x: 0 }}
+                            exit={{ opacity: 0, x: -20 }}
+                        >
+                            <div className="flex items-center justify-between mb-8">
+                                <h1 className="text-3xl font-bold text-purple-800">Cơ sở dữ liệu Đám Mây</h1>
+                                <button
+                                    onClick={handleCreateNew}
+                                    className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                                >
+                                    <Plus size={20} />
+                                    Tạo phòng mới
+                                </button>
                             </div>
-                        )}
-                    </div>
-                    {/* Divider */}
-                    <div className="flex items-center gap-3 text-white/30 text-xs"><div className="flex-1 h-px bg-white/10" />Hoặc nhập link ngoài<div className="flex-1 h-px bg-white/10" /></div>
-                    {/* URL */}
-                    <div>
-                        <div className="flex justify-between mb-1.5"><label className="text-sm font-semibold">Đường dẫn ảnh (URL):</label><a href="https://drive.google.com" target="_blank" rel="noreferrer" className="text-xs text-purple-400 hover:underline">Link ngoài là gì?</a></div>
-                        <input value={imageUrl} onChange={e => setImageUrl(e.target.value)}
-                            placeholder="https://..."
-                            className="w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none"
-                            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }} />
-                    </div>
-                    {/* Description */}
-                    <div>
-                        <label className="block text-sm font-semibold mb-1.5">Mô tả tranh:</label>
-                        <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3}
-                            placeholder="Nhập mô tả cho ảnh..."
-                            className="w-full px-4 py-2.5 rounded-xl text-sm focus:outline-none resize-none"
-                            style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.15)', color: '#fff' }} />
-                    </div>
-                    <div className="flex gap-3 pt-1">
-                        <button onClick={onClose} className="flex-1 py-2.5 rounded-xl border border-white/20 text-sm font-semibold text-white/70 hover:bg-white/5">Hủy</button>
-                        <button onClick={() => onSave({ imageUrl, description })}
-                            className="flex-1 py-2.5 rounded-xl text-sm font-bold text-white"
-                            style={{ background: 'linear-gradient(135deg,#7c3aed,#9333ea)' }}>💾 Lưu lại</button>
-                    </div>
-                </div>
-            </motion.div>
-        </motion.div>
-    );
-}
 
-// ─── Room Viewer (Pannellum 3D) ───────────────────────────────────────────────
-function RoomViewer({ gallery, onBack }: { gallery: Gallery; onBack: ()=>void }) {
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-    const panoramaRef = useRef<string>('');
-    const frames = gallery.frames || {};
-    const [lightbox, setLightbox] = useState<{ imageUrl: string; description: string } | null>(null);
+                            {isLoading ? (
+                                <div className="flex items-center justify-center p-20">
+                                    <div className="animate-spin rounded-full h-12 w-12 border-4 border-purple-500 border-t-transparent"></div>
+                                </div>
+                            ) : galleries.length === 0 ? (
+                                <div className="flex flex-col items-center justify-center py-20">
+                                    <div className="w-24 h-24 mb-6 opacity-80 text-6xl text-center">🖼️</div>
+                                    <h3 className="text-2xl font-bold text-gray-700 mb-2">Bạn chưa có phòng triển lãm nào</h3>
+                                    <p className="text-gray-500 mb-6 text-center max-w-sm">
+                                        Mọi phòng tranh bạn thiết kế sẽ được lưu trữ an toàn trên Cơ Sở Dữ Liệu mây Firebase.
+                                    </p>
+                                    <button
+                                        onClick={handleCreateNew}
+                                        className="px-6 py-3 bg-gradient-to-r from-blue-500 to-indigo-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all"
+                                    >
+                                        + Bắt đầu thiết kế ngay
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 pr-4 pb-10">
+                                    {galleries.map(gallery => (
+                                        <motion.div
+                                            key={gallery.id}
+                                            initial={{ opacity: 0, scale: 0.95 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="bg-gradient-to-br from-gray-50 to-white rounded-2xl p-6 border border-gray-200 shadow-sm hover:shadow-lg transition-all flex flex-col"
+                                        >
+                                            <div className="flex justify-between items-start mb-3">
+                                                <h4 className="text-lg font-bold text-gray-800 truncate flex-1 pr-4">{gallery.title}</h4>
+                                                <span className="px-3 py-1 rounded-full bg-yellow-500 text-black text-xs font-black shadow-sm flex-shrink-0">
+                                                    ĐÃ LƯU MÂY
+                                                </span>
+                                            </div>
 
-    useEffect(() => {
-        panoramaRef.current = generateRoomPanorama(gallery.type);
-    }, [gallery.type]);
+                                            <p className="text-gray-500 text-sm mb-4">
+                                                Cập nhật: {new Date(gallery.updatedAt).toLocaleDateString('vi-VN', { hour: '2-digit', minute: '2-digit', day: 'numeric', month: 'numeric', year: 'numeric' })}
+                                            </p>
 
-    useEffect(() => {
-        const handler = (e: MessageEvent) => {
-            if (!e.data?.type) return;
-            if (e.data.type === 'ready') {
-                iframeRef.current?.contentWindow?.postMessage({
-                    type: 'init', panorama: panoramaRef.current,
-                    frames, isViewer: true
-                }, '*');
-            } else if (e.data.type === 'view-frame') {
-                setLightbox({ imageUrl: e.data.imageUrl, description: e.data.description });
-            }
-        };
-        window.addEventListener('message', handler);
-        return () => window.removeEventListener('message', handler);
-    }, [frames]);
+                                            <div className="mt-auto grid grid-cols-2 gap-2">
+                                                <button
+                                                    onClick={(e) => { e.stopPropagation(); window.open(`/share/phong-tranh-3d/${gallery.id}`, '_blank'); }}
+                                                    className="py-2 px-3 rounded-xl font-bold text-white bg-gradient-to-r from-sky-500 to-blue-600 shadow-md hover:shadow-lg transition-all text-sm flex items-center justify-center gap-1"
+                                                >
+                                                    <Play size={14} /> Xem (View)
+                                                </button>
 
-    const shareUrl = () => {
-        navigator.clipboard.writeText(`${window.location.origin}?room=${gallery.id}`);
-    };
+                                                <button
+                                                    onClick={() => handleOpenGallery(gallery)}
+                                                    className="py-2 px-3 rounded-xl font-bold text-white bg-gradient-to-r from-indigo-500 to-purple-600 shadow-md hover:shadow-lg transition-all text-sm flex items-center justify-center gap-1"
+                                                >
+                                                    <Edit3 size={14} /> Chỉnh sửa
+                                                </button>
+                                                
+                                                <button
+                                                    onClick={(e) => handleShare(e, gallery)}
+                                                    disabled={isCopyingLink === gallery.id}
+                                                    className="col-span-2 py-2 px-3 rounded-xl font-bold text-white bg-gradient-to-r from-amber-400 to-orange-500 shadow-md hover:shadow-lg transition-all text-sm flex items-center justify-center gap-1 disabled:opacity-70"
+                                                >
+                                                    {copiedId === gallery.id ? (
+                                                        <><CheckCircle2 size={14} /> Đã sao chép Link!</>
+                                                    ) : (
+                                                        <><Share2 size={14} /> Copy link chia sẻ</>
+                                                    )}
+                                                </button>
 
-    return (
-        <div className="flex flex-col" style={{ height: '100vh', background: '#111' }}>
-            {/* Top bar */}
-            <div className="flex-shrink-0 flex items-center justify-between px-5 py-3"
-                style={{ background: 'rgba(0,0,0,0.85)', borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                <button onClick={onBack} className="text-white/80 hover:text-white text-sm font-semibold flex items-center gap-2">← Quay lại</button>
-                <h2 className="text-white font-bold text-sm truncate mx-4">{gallery.title}</h2>
-                <div className="flex gap-2">
-                    <button onClick={shareUrl} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white border border-white/20 hover:bg-white/10">🔗 Chia sẻ</button>
-                    <button onClick={() => iframeRef.current?.requestFullscreen?.()} className="px-3 py-1.5 rounded-lg text-xs font-semibold text-white border border-white/20 hover:bg-white/10">⛶ Full Screen</button>
+                                                <button
+                                                    onClick={(e) => handleDeleteGallery(e, gallery.id)}
+                                                    className="col-span-2 py-2 px-3 rounded-xl font-bold text-white bg-gradient-to-r from-red-500 to-rose-600 shadow-md hover:shadow-lg transition-all text-sm flex items-center justify-center gap-1 opacity-80 hover:opacity-100"
+                                                >
+                                                    <Trash2 size={14} /> Xóa vĩnh viễn
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
+                        </motion.div>
+                    </AnimatePresence>
                 </div>
             </div>
 
-            {/* Pannellum iframe */}
-            <iframe
-                ref={iframeRef}
-                src="/room-viewer.html"
-                className="flex-1 border-0 w-full"
-                allow="fullscreen"
-                title="Room Viewer"
-            />
-
-            {/* Lightbox */}
+            {/* Copied Toast */}
             <AnimatePresence>
-                {lightbox && (
-                    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[999] flex items-center justify-center p-4"
-                        style={{ background: 'rgba(0,0,0,0.92)' }} onClick={() => setLightbox(null)}>
-                        <motion.div initial={{ scale: 0.9 }} animate={{ scale: 1 }} exit={{ scale: 0.9 }}
-                            onClick={e => e.stopPropagation()} className="max-w-2xl w-full text-center">
-                            <img src={lightbox.imageUrl} alt="" className="max-h-[70vh] w-full object-contain rounded-2xl shadow-2xl" />
-                            {lightbox.description && <p className="mt-4 text-white/80 text-sm">{lightbox.description}</p>}
-                            <button onClick={() => setLightbox(null)} className="mt-5 px-6 py-2 rounded-xl text-white text-sm border border-white/20 hover:bg-white/10">Đóng</button>
-                        </motion.div>
+                {copiedId && (
+                    <motion.div
+                        initial={{ opacity: 0, y: 50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 50 }}
+                        className="fixed bottom-6 left-1/2 -translate-x-1/2 bg-emerald-600 text-white px-5 py-3 rounded-xl font-bold shadow-2xl z-50 flex items-center gap-2"
+                    >
+                        <CheckCircle2 size={20} /> Đã sao chép link chia sẻ vào khay nhớ tạm!
                     </motion.div>
                 )}
             </AnimatePresence>
         </div>
     );
 }
-
