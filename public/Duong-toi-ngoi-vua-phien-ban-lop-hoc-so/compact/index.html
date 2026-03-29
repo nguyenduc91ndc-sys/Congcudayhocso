@@ -1,0 +1,313 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đường đến NGÔI VUA</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.min.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="header-content">
+            <div class="header-left">
+                <span class="crown-icon">👑</span>
+                <div>
+                    <h1 class="header-title">Đường đến NGÔI VUA</h1>
+                    <p class="header-subtitle">Ai sẽ là người bước lên ngai vàng?</p>
+                </div>
+            </div>
+            <div class="header-actions">
+                <button id="classSelector" class="btn btn-success">📚 <span id="currentClassName">hello</span></button>
+                <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleFileImport(event)">
+                <button class="nav-btn btn-orange" data-page="management">Chơi</button>
+                <button class="nav-btn btn-pink" data-page="questions" style="display:none;">Câu Hỏi</button>
+                <button class="nav-btn btn-pink" data-page="rewards">Đổi điểm</button>
+                <button class="nav-btn btn-blue" data-page="redeemed">Đã đổi quà</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <!-- Home Page -->
+        <div id="homePage" class="page active">
+            <div class="home-layout">
+                <div class="home-main">
+                    <div class="banner">
+                        <h2 class="text-banner">Đường đến ngôi vua</h2>
+                    </div>
+                    
+                    <div class="stats-grid" id="roleStats"></div>
+                </div>
+                
+                <aside class="home-sidebar">
+                    <div class="top-students">
+                        <h3>Top 5 học sinh</h3>
+                        <div id="topStudents"></div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+
+        <!-- Management Page -->
+        <div id="managementPage" class="page">
+            <div class="page-header">
+                <h2>Quản Lý Học Sinh</h2>
+                <button class="btn btn-outline" onclick="navigateTo('home')">← Về Trang Chủ</button>
+            </div>
+
+            <div class="management-controls-horizontal">
+                <div class="add-student-section">
+                    <input type="text" id="studentName" placeholder="Nhập tên học sinh..." class="input">
+                    <button id="addStudentBtn" class="btn btn-primary">Thêm</button>
+                    <button id="bulkStudentInputBtn" class="btn btn-outline" style="margin-left:8px;">Nhập hàng loạt</button>
+                    <!-- Modal nhập học sinh hàng loạt -->
+                    <div id="bulkStudentInputModal" class="modal">
+                        <div class="modal-content modal-small" style="max-width:420px; border-radius:18px; box-shadow:0 8px 32px #0002; padding:2.2rem 2rem 1.5rem 2rem; position:relative; background:#fff;">
+                            <button class="modal-close" id="closeBulkStudentInputModal" style="position:absolute;top:16px;right:18px;font-size:1.5rem;color:#888;background:none;border:none;cursor:pointer;">&times;</button>
+                            <div style="text-align:center; margin-bottom:1rem;">
+                                <span style="font-size:2.2rem;">📋</span>
+                                <h3 style="margin:0.5rem 0 0.2rem 0; font-size:1.35rem; color:#f59e42; font-weight:700;">Nhập học sinh hàng loạt</h3>
+                                <div style="color:#888; font-size:1rem;">Mỗi tên học sinh trên 1 dòng</div>
+                            </div>
+                            <textarea id="bulkStudentInputTextarea" class="input" rows="8" style="width:100%;resize:vertical; border-radius:10px; border:1.5px solid #fbbf24; padding:0.8rem 1rem; font-size:1.08rem; background:#fffbe9; margin-bottom:1.2rem;" placeholder="Nhập họ tên HS"></textarea>
+                            <button id="confirmBulkStudentInputBtn" class="btn btn-primary" style="width:100%;background:linear-gradient(90deg,#fbbf24,#f59e42);color:#222;font-weight:600;font-size:1.1rem;border-radius:8px;box-shadow:0 2px 8px #fbbf2433;transition:background 0.2s;">+ Thêm học sinh</button>
+                        </div>
+                    </div>
+                </div>
+                <div class="bulk-controls-section" id="bulkControls" style="display: none;">
+                    <input type="number" id="bulkScore" value="0" placeholder="0" class="input input-small">
+                    <button id="bulkMinusBtn" class="btn btn-outline">−</button>
+                    <button id="bulkPlusBtn" class="btn btn-outline">+</button>
+                    <button id="deleteAllBtn" class="btn btn-danger">Xóa Tất Cả</button>
+                </div>
+                <div style="text-align: center;">
+                    <button id="randomStudentBtn" class="btn btn-random" style="background: #fbbf24; color: #222; font-weight: bold;">🎲 Random học sinh</button>
+                </div>
+            </div>
+
+            <div id="studentListHeader" class="student-list-header" style="display: none;">
+                <h3 id="studentListTitle">Danh Sách Học Sinh (0)</h3>
+            </div>
+
+            <div id="studentList" class="student-grid"></div>
+
+            <div class="role-guide">
+                <h3>Điểm yêu cầu mỗi mốc</h3>
+                <div class="role-badges">
+                    <span class="role-badge role-peasant" id="badge-peasant">Dân: 0đ</span>
+                    <span class="role-badge role-soldier" id="badge-soldier">Lính: 100đ</span>
+                    <span class="role-badge role-officer" id="badge-officer">Quan: 300đ</span>
+                    <span class="role-badge role-chancellor" id="badge-chancellor">Tế Tướng: 500đ</span>
+                    <span class="role-badge role-king" id="badge-king">Vua: 1000đ</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Rewards Page -->
+        <div id="rewardsPage" class="page">
+            <div class="rewards-header">
+                <div>
+                    <h1 class="rewards-title">Hệ Thống Đổi Điểm</h1>
+                    <p class="rewards-subtitle">Xem điểm và quà tặng của học sinh</p>
+                </div>
+                <div class="rewards-actions">
+                    <button class="btn btn-outline" onclick="navigateTo('home')">← Về Trang Chủ</button>
+                    <button id="manageRewardsBtn" class="btn btn-outline">Quản Lý Quà</button>
+                </div>
+            </div>
+            <div id="rewardsTable"></div>
+        </div>
+
+        <!-- Redeemed Page -->
+        <div id="redeemedPage" class="page">
+            <div class="page-header">
+                <div>
+                    <h2>Học Sinh Đã Đổi Quà</h2>
+                    <p class="page-subtitle">Xem danh sách quà tặng mà học sinh đã đổi</p>
+                </div>
+                <button class="btn btn-outline" onclick="navigateTo('home')">← Về Trang Chủ</button>
+            </div>
+            <div id="redeemedList"></div>
+        </div>
+
+        <!-- Questions Page -->
+        <div id="questionsPage" class="page">
+            <div class="page-header">
+                <div>
+                    <h2>Quản Lý Câu Hỏi</h2>
+                    <p class="page-subtitle">Thêm và quản lý câu hỏi cho trò chơi</p>
+                </div>
+                <button class="btn btn-outline" onclick="navigateTo('home')">← Về Trang Chủ</button>
+            </div>
+            <div class="question-form">
+                <h3>Thêm Câu Hỏi Mới</h3>
+                <textarea id="newQuestionText" placeholder="Nhập câu hỏi..." class="input"></textarea>
+                <div class="image-input">
+                    <label for="newImage" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Ảnh minh họa (tùy chọn):</label>
+                    <input type="file" id="newImage" accept="image/*" class="input">
+                    <div id="newImagePreview" class="image-preview" style="display: none;"></div>
+                </div>
+                <div class="answers-grid">
+                    <input type="text" id="newAnswerA" placeholder="Đáp án A" class="input">
+                    <input type="text" id="newAnswerB" placeholder="Đáp án B" class="input">
+                    <input type="text" id="newAnswerC" placeholder="Đáp án C" class="input">
+                    <input type="text" id="newAnswerD" placeholder="Đáp án D" class="input">
+                </div>
+                <div class="correct-select">
+                    <select id="newCorrectAnswer" class="input">
+                        <option value="">Chọn đáp án đúng</option>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+                <div class="points-input">
+                    <label for="newPoints" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Số điểm:</label>
+                    <input type="number" id="newPoints" class="input" placeholder="Điểm (mặc định 1)" min="1" max="100" value="1">
+                </div>
+                <button id="addQuestionBtn" class="btn btn-primary">Thêm Câu Hỏi</button>
+            </div>
+            <div id="questionsList" class="questions-list"></div>
+        </div>
+    </main>
+
+    <!-- Class Selector Modal -->
+    <div id="classSelectorModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>📚 Chọn Lớp</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="class-form">
+                    <input type="text" id="newClassName" placeholder="Tên lớp mới..." class="input">
+                    <button id="createClassBtn" class="btn btn-primary">Tạo Lớp</button>
+                </div>
+                <div id="classList" class="class-list"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Reward Manager Modal -->
+    <div id="rewardManagerModal" class="modal">
+        <div class="modal-content modal-large">
+            <div class="modal-header">
+                <h3>🎁 Quản Lý Quà Tặng</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div style="margin-bottom:1.5rem;">
+                    <h4>Cài đặt điểm yêu cầu mỗi vai trò</h4>
+                    <div id="roleThresholdsSettings" style="display:flex;gap:1rem;flex-wrap:wrap;margin-top:0.5rem;"></div>
+                    <button id="saveRoleThresholdsBtn" class="btn btn-primary" style="margin-top:0.5rem;">Lưu mốc điểm</button>
+                </div>
+                <div id="rewardManager"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Icon Picker Modal -->
+    <div id="iconPickerModal" class="modal">
+        <div class="modal-content modal-small">
+            <div class="modal-header">
+                <h3>Chọn Icon</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="iconPicker" class="icon-grid"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Question Modal -->
+    <div id="questionModal" class="modal">
+        <div class="modal-content modal-medium">
+            <div class="modal-header">
+                <h3 id="questionModalTitle">Câu Hỏi</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div id="questionContent">
+                    <p id="selectedStudentName"></p>
+                    <div id="questionDisplay"></div>
+                    <div class="answers">
+                        <button class="answer-btn" data-answer="A">A</button>
+                        <button class="answer-btn" data-answer="B">B</button>
+                        <button class="answer-btn" data-answer="C">C</button>
+                        <button class="answer-btn" data-answer="D">D</button>
+                    </div>
+                </div>
+                <div id="dvCongrats" class="congrats" style="display: none;"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Edit Question Modal -->
+    <div id="editQuestionModal" class="modal">
+        <div class="modal-content modal-medium">
+            <div class="modal-header">
+                <h3>Chỉnh Sửa Câu Hỏi</h3>
+                <button class="modal-close">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="question-form">
+                    <textarea id="editQuestionText" placeholder="Nhập câu hỏi..." class="input"></textarea>
+                    <div class="image-input">
+                        <label for="editImage" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Ảnh minh họa (tùy chọn):</label>
+                        <input type="file" id="editImage" accept="image/*" class="input">
+                        <div id="editImagePreview" class="image-preview" style="display: none;"></div>
+                    </div>
+                    <div class="answers-grid">
+                        <input type="text" id="editAnswerA" placeholder="Đáp án A" class="input">
+                        <input type="text" id="editAnswerB" placeholder="Đáp án B" class="input">
+                        <input type="text" id="editAnswerC" placeholder="Đáp án C" class="input">
+                        <input type="text" id="editAnswerD" placeholder="Đáp án D" class="input">
+                    </div>
+                    <div class="correct-select">
+                        <select id="editCorrectAnswer" class="input">
+                            <option value="">Chọn đáp án đúng</option>
+                            <option value="A">A</option>
+                            <option value="B">B</option>
+                            <option value="C">C</option>
+                            <option value="D">D</option>
+                        </select>
+                    </div>
+                    <div class="points-input">
+                        <label for="editPoints" style="display: block; margin-bottom: 0.5rem; font-weight: 500;">Số điểm:</label>
+                        <input type="number" id="editPoints" class="input" placeholder="Điểm" min="1" max="100">
+                    </div>
+                    <button id="saveEditQuestionBtn" class="btn btn-primary">Lưu Thay Đổi</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Level Up Notification -->
+    <div id="levelUpNotifications" class="notifications"></div>
+
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.6/underscore-min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.js"></script>
+    <script src="app.js"></script>
+    <script src="parent-report.js?v=4"></script>
+    <script src="nenep-evaluation.js?v=5"></script>
+    <script>
+    // Bootstrap trực tiếp - đảm bảo các tính năng mới hoạt động
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            try { if(typeof initParentReportFeature==='function') initParentReportFeature(); } catch(e){}
+            try { if(typeof initNenepEvaluation==='function') initNenepEvaluation(); } catch(e){}
+        }, 800);
+    });
+    </script>
+
+
