@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.css">
+<script src="https://cdn.jsdelivr.net/npm/pannellum@2.5.6/build/pannellum.js"></script>
+<style>
+* { margin:0; padding:0; box-sizing:border-box; }
+body { background:#111; overflow:hidden; font-family:sans-serif; }
+#pano { width:100vw; height:100vh; }
+.pnlm-container { background:#222 !important; }
+.hs-btn {
+  width:34px; height:34px; border-radius:50%;
+  background:rgba(99,102,241,0.9);
+  border:2.5px solid rgba(255,255,255,0.9);
+  color:#fff; font-weight:700; font-size:13px;
+  display:flex; align-items:center; justify-content:center;
+  cursor:pointer; box-shadow:0 2px 10px rgba(0,0,0,0.6);
+  transition:transform .15s, background .15s;
+  user-select:none; line-height:1;
+}
+.hs-btn:hover { transform:scale(1.25); }
+.hs-btn.filled { background:rgba(16,185,129,0.92); }
+.hs-btn.viewer { cursor:default; }
+.hs-btn.viewer.filled { cursor:pointer; }
+</style>
+</head>
+<body>
+<div id="pano"></div>
+<script>
+var viewer = null;
+var storedFrames = {};
+var isViewer = false;
+
+var HOTSPOT_POSITIONS = [
+  {num:1,  pitch:8,  yaw:-55},
+  {num:2,  pitch:8,  yaw:-27},
+  {num:3,  pitch:8,  yaw:0  },
+  {num:4,  pitch:8,  yaw:27 },
+  {num:5,  pitch:8,  yaw:55 },
+  {num:6,  pitch:8,  yaw:85 },
+  {num:7,  pitch:8,  yaw:110},
+  {num:8,  pitch:8,  yaw:135},
+  {num:9,  pitch:8,  yaw:162},
+  {num:10, pitch:8,  yaw:-168},
+  {num:11, pitch:8,  yaw:-143},
+  {num:12, pitch:8,  yaw:-118},
+  {num:13, pitch:8,  yaw:-93},
+  {num:14, pitch:8,  yaw:-68},
+  {num:15, pitch:-5, yaw:0  }
+];
+
+function buildHotspots(frames, viewer_mode) {
+  return HOTSPOT_POSITIONS.map(function(h) {
+    var fd = frames[h.num] || {};
+    var filled = !!(fd.imageUrl);
+    return {
+      pitch: h.pitch, yaw: h.yaw, type: 'custom',
+      createTooltipFunc: function(el) {
+        var btn = document.createElement('div');
+        btn.className = 'hs-btn' + (filled ? ' filled' : '') + (viewer_mode ? ' viewer' : '');
+        btn.textContent = h.num;
+        btn.onclick = function(e) {
+          e.stopPropagation();
+          if (viewer_mode) {
+            if (filled) window.parent.postMessage({ type:'view-frame', num:h.num, imageUrl:fd.imageUrl, description:fd.description||'' }, '*');
+          } else {
+            window.parent.postMessage({ type:'edit-frame', num:h.num }, '*');
+          }
+        };
+        el.appendChild(btn);
+      }
+    };
+  });
+}
+
+function initViewer(panorama, frames, viewer_mode) {
+  storedFrames = frames;
+  isViewer = viewer_mode;
+  if (viewer) { try { viewer.destroy(); } catch(e){} }
+  viewer = pannellum.viewer('pano', {
+    type: 'equirectangular',
+    panorama: panorama,
+    autoLoad: true,
+    showFullscreenCtrl: false,
+    showZoomCtrl: true,
+    showControls: true,
+    hfov: 100,
+    minHfov: 50,
+    maxHfov: 120,
+    hotSpots: buildHotspots(frames, viewer_mode),
+    mouseZoom: true,
+    draggable: true,
+    friction: 0.15
+  });
+}
+
+window.addEventListener('message', function(e) {
+  var d = e.data;
+  if (!d || !d.type) return;
+  if (d.type === 'init') {
+    initViewer(d.panorama, d.frames || {}, !!d.isViewer);
+  } else if (d.type === 'refresh-hotspots') {
+    storedFrames = d.frames || {};
+    if (viewer) {
+      viewer.removeAllHotSpots && viewer.removeAllHotSpots();
+      buildHotspots(storedFrames, isViewer).forEach(function(hs) {
+        try { viewer.addHotSpot(hs); } catch(err){}
+      });
+    }
+  }
+});
+
+document.addEventListener('DOMContentLoaded', function() {
+  window.parent.postMessage({ type:'ready' }, '*');
+});
+</script>
+</body>
+</html>

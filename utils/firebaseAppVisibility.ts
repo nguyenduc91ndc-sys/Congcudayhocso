@@ -10,7 +10,7 @@ export const ALL_APP_IDS = [
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D', 'thatLuong3D',
     'bangCuuChuong', 'gameTuongTac',
-    'phongTranh3D', // Phòng Tranh 3D tùy chỉnh
+    'phongTranh3D', // Phòng Tranh 3D Tùy Chỉnh
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
     'nhanXetTT27', // Nhận Xét TT27
 ] as const;
@@ -52,8 +52,8 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     // ── Học liệu tương tác ──
     bangCuuChuong: { name: 'Bảng Cửu Chương Số', icon: '🔢', section: 'Học liệu tương tác' },
     gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
-    // ── Phòng Tranh 3D ──
-    phongTranh3D: { name: 'Phòng Tranh 3D', icon: '🖼️', section: 'Ứng dụng 3D & VR' },
+    // ── Ứng dụng 3D & VR ──
+    phongTranh3D: { name: 'Phòng Tranh 3D Tùy Chỉnh', icon: '🖼️', section: 'Ứng dụng 3D & VR' },
     sangKienKinhNghiem: { name: 'Viết SKKN & Báo Cáo', icon: '✍️', section: 'Khóa học & AI' },
     nhanXetTT27: { name: 'Nhận Xét TT27', icon: '📝', section: 'Khóa học & AI' },
 };
