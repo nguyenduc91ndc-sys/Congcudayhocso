@@ -26,7 +26,7 @@
                 <button id="classSelector" class="btn btn-success">📚 <span id="currentClassName">hello</span></button>
                 <input type="file" id="importFileInput" accept=".json" style="display: none;" onchange="handleFileImport(event)">
                 <button class="nav-btn btn-orange" data-page="management">Chơi</button>
-                <button class="nav-btn btn-pink" data-page="questions">Câu Hỏi</button>
+                <button class="nav-btn btn-pink" data-page="questions" style="display:none;">Câu Hỏi</button>
                 <button class="nav-btn btn-pink" data-page="rewards">Đổi điểm</button>
                 <button class="nav-btn btn-blue" data-page="redeemed">Đã đổi quà</button>
             </div>
@@ -102,10 +102,10 @@
                 <h3>Điểm yêu cầu mỗi mốc</h3>
                 <div class="role-badges">
                     <span class="role-badge role-peasant" id="badge-peasant">Dân: 0đ</span>
-                    <span class="role-badge role-soldier" id="badge-soldier">Lính: 10đ</span>
-                    <span class="role-badge role-officer" id="badge-officer">Quan: 25đ</span>
-                    <span class="role-badge role-chancellor" id="badge-chancellor">Tế Tướng: 40đ</span>
-                    <span class="role-badge role-king" id="badge-king">Vua: 60đ</span>
+                    <span class="role-badge role-soldier" id="badge-soldier">Lính: 100đ</span>
+                    <span class="role-badge role-officer" id="badge-officer">Quan: 300đ</span>
+                    <span class="role-badge role-chancellor" id="badge-chancellor">Tế Tướng: 500đ</span>
+                    <span class="role-badge role-king" id="badge-king">Vua: 1000đ</span>
                 </div>
             </div>
         </div>
@@ -298,4 +298,16 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/underscore.js/1.13.6/underscore-min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/toastify-js/src/toastify.js"></script>
     <script src="app.js"></script>
+    <script src="parent-report.js?v=4"></script>
+    <script src="nenep-evaluation.js?v=5"></script>
+    <script>
+    // Bootstrap trực tiếp - đảm bảo các tính năng mới hoạt động
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            try { if(typeof initParentReportFeature==='function') initParentReportFeature(); } catch(e){}
+            try { if(typeof initNenepEvaluation==='function') initNenepEvaluation(); } catch(e){}
+        }, 800);
+    });
+    </script>
+
 
