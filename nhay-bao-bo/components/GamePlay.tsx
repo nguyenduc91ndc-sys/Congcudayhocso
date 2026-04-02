@@ -237,7 +237,7 @@ export const GamePlay: React.FC<GamePlayProps> = ({ questions, onBackToSettings 
           isPenalty={gameState.team1.isPenalty}
           penaltyTimeLeft={gameState.team1.penaltyTimeLeft}
           keys={['W', 'A', 'S', 'D']}
-          keyCodes={['w', 'a', 's', 'd']}
+          keyCodes={['KeyW', 'KeyA', 'KeyS', 'KeyD']}
           onAnswer={(idx) => handleAnswer('team1', idx)}
           isFinished={gameState.team1.isFinished}
         />

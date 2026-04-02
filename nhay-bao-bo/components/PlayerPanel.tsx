@@ -36,8 +36,9 @@ export const PlayerPanel: React.FC<PlayerPanelProps> = ({
       // Ignore if finished, penaltied, or no question
       if (isFinished || isPenalty || !question) return;
 
-      const keyIndex = keyCodes.indexOf(e.key);
+      const keyIndex = keyCodes.indexOf(e.code);
       if (keyIndex !== -1) {
+        e.preventDefault(); // Ngăn cuộn trang với phím mũi tên hoặc phím cách
         onAnswer(keyIndex);
       }
     };
