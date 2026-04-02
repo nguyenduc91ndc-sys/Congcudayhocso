@@ -53,6 +53,7 @@ import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import ContactUs from './components/ContactUs';
 import PhongTranh3D from './components/PhongTranh3D';
+import NhayBaoBoApp from './nhay-bao-bo/NhayBaoBoApp';
 import { AppVisibilityState, subscribeToAppVisibility } from './utils/firebaseAppVisibility';
 
 // Email admin được phép vào trang quản lý mã
@@ -407,8 +408,9 @@ function App() {
                   onPhongTranh3D={() => setView('PHONG_TRANH_3D')}
                   onSangKienKN={() => requireLogin(() => setView('SANG_KIEN_KN'))}
                   onNhanXetTT27={() => requireLogin(() => setView('NHAN_XET_TT27'))}
-                   onEarthSeasons={() => requireLogin(() => setView('EARTH_SEASONS'))}
+                  onEarthSeasons={() => requireLogin(() => setView('EARTH_SEASONS'))}
                   onThatLuong3D={() => requireLogin(() => setView('THAT_LUONG_3D'))}
+                  onNhayBaoBo={() => requireLogin(() => setView('NHAY_BAO_BO'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -604,6 +606,10 @@ function App() {
 
           {view === 'NHAN_XET_TT27' && (
             <NhanXetTT27 onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'NHAY_BAO_BO' && (
+            <NhayBaoBoApp onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'ABOUT' && (
