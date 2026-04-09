@@ -168,6 +168,8 @@ function App() {
           const appSection = pathSegments[1];
           if (appSection === 'phong-tranh-3d') {
               defaultView = 'PHONG_TRANH_3D';
+          } else if (appSection === 'he-mat-troi') {
+              defaultView = 'SOLAR_SYSTEM';
           }
           // Dọn dẹp các query như fbclid nhưng giữ nguyên đường dẫn tĩnh gốc
           window.history.replaceState({}, document.title, window.location.pathname);
