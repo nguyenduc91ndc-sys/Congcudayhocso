@@ -189,6 +189,17 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                                                             />
                                                         ))}
                                                     </div>
+                                                    {currentFeedback.createdAt && (
+                                                        <p className="text-[10px] text-white/40 mt-1 mb-0 font-medium">
+                                                            {new Date(currentFeedback.createdAt).toLocaleString('vi-VN', {
+                                                                day: '2-digit',
+                                                                month: '2-digit',
+                                                                year: 'numeric',
+                                                                hour: '2-digit',
+                                                                minute: '2-digit'
+                                                            })}
+                                                        </p>
+                                                    )}
                                                 </div>
                                             </div>
                                             <p className="text-white/80 italic text-sm leading-relaxed">"{currentFeedback.message}"</p>
