@@ -61,6 +61,7 @@ interface DashboardProps {
     onEarthSeasons: () => void;
     onThatLuong3D: () => void;
     onNhayBaoBo: () => void;
+    onSolarSystem: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
     hiddenApps?: string[];
@@ -278,7 +279,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -799,6 +800,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('phongTranh3D') && <ToolCard title="Phòng tranh 3D" description="Phân tích tác phẩm nghệ thuật 3D" icon={<span className="text-2xl">🖼️</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onPhongTranh3D} />}
+                                        {!hiddenApps.includes('solarSystem') && <ToolCard title="Hệ Mặt Trời" description="Khám phá và thực hành mô phỏng 2D ấn tượng" icon={<span className="text-2xl">🪐</span>} accentColor="bg-gradient-to-br from-cyan-600 to-blue-800" onClick={onSolarSystem} badge="Mới" />}
+                                        {!hiddenApps.includes('earthSeasons') && <ToolCard title="Trái đất & Bốn mùa" description="Mô phỏng ngày đêm và 4 mùa 3D" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-blue-500 to-cyan-500" onClick={onEarthSeasons} />}
                                         {!hiddenApps.includes('heartSystem3D') && <ToolCard title="Hệ tuần hoàn 3D" description="Mô hình tim và hệ tuần hoàn 3D sống động" icon={<Heart size={24} className="text-white" />} accentColor="bg-red-600" onClick={onHeartSystem3D} badge="Mới" />}
                                         {!hiddenApps.includes('geometry3DTools') && <ToolCard title="Bộ công cụ Hình học 3D" description="Lập phương, hộp, chóp, cầu, trụ tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-indigo-600" onClick={onGeometry3D} badge="Mới" />}
                                         {!hiddenApps.includes('vietnamMap') && <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" />}

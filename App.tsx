@@ -55,6 +55,7 @@ import ContactUs from './components/ContactUs';
 import PhongTranh3D from './components/PhongTranh3D';
 import NhayBaoBoApp from './nhay-bao-bo/NhayBaoBoApp';
 import { AppVisibilityState, subscribeToAppVisibility } from './utils/firebaseAppVisibility';
+import SolarSystemSimulation from './components/SolarSystemSimulation';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -140,6 +141,9 @@ function App() {
             break;
           case 'phong_tranh_3d':
             defaultView = 'PHONG_TRANH_3D';
+            break;
+          case 'he_mat_troi':
+            defaultView = 'SOLAR_SYSTEM';
             break;
           case 'sang_kien_kn':
             defaultView = 'SANG_KIEN_KN';
@@ -411,6 +415,7 @@ function App() {
                   onEarthSeasons={() => requireLogin(() => setView('EARTH_SEASONS'))}
                   onThatLuong3D={() => requireLogin(() => setView('THAT_LUONG_3D'))}
                   onNhayBaoBo={() => requireLogin(() => setView('NHAY_BAO_BO'))}
+                  onSolarSystem={() => requireLogin(() => setView('SOLAR_SYSTEM'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -632,6 +637,10 @@ function App() {
               onRequireLogin={() => setShowLoginModal(true)}
               onBack={() => setView('DASHBOARD')}
             />
+          )}
+
+          {view === 'SOLAR_SYSTEM' && (
+            <SolarSystemSimulation onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'PRIVACY' && (
