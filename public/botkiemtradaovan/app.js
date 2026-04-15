@@ -23,6 +23,8 @@ function getCurrentKey() {
     return state.keys[state.provider];
 }
 
+const MAX_CHARS = 25000; // Giới hạn ký tự khuyên dùng
+
 // ========================
 // DOM ELEMENTS
 // ========================
@@ -296,6 +298,15 @@ function onTextInput() {
     const chars = text.length;
     els.wordCount.textContent = words + ' từ';
     els.charCount.textContent = chars + ' ký tự';
+
+    if (chars > MAX_CHARS) {
+        els.charCount.style.color = '#ef4444';
+        els.charCount.style.fontWeight = '700';
+    } else {
+        els.charCount.style.color = '';
+        els.charCount.style.fontWeight = '';
+    }
+
     updateScanButton();
 }
 
@@ -475,6 +486,12 @@ async function startScan() {
         showToast('Vui lòng nhập ít nhất 10 ký tự.', 'error');
         return;
     }
+
+    if (text.length > MAX_CHARS) {
+        showToast('⚠️ Bài của bạn quá dài! Hãy coppy ra làm 2 đoạn và quét 2 lần hoặc hơn vì bài của bạn hiện quá dài, bạn hiểu ý tôi chứ?', 'error');
+        return;
+    }
+
     if (!getCurrentKey()) {
         showToast('Vui lòng cài đặt API Key trước!', 'error');
         toggleSettings();
@@ -525,12 +542,15 @@ async function startScan() {
         console.error('Scan error:', error);
         let errorMsg = 'Có lỗi xảy ra khi phân tích. ';
 
-        if (error.message.includes('API key') || error.message.includes('api_key') || error.message.includes('401')) {
+        const lowerError = error.message.toLowerCase();
+        if (lowerError.includes('api key') || lowerError.includes('api_key') || lowerError.includes('401')) {
             errorMsg += 'API Key không hợp lệ. Vui lòng kiểm tra lại.';
-        } else if (error.message.includes('429') || error.message.includes('quota') || error.message.includes('rate')) {
+        } else if (lowerError.includes('429') || lowerError.includes('quota') || lowerError.includes('rate')) {
             errorMsg += 'Đã hết giới hạn API. Vui lòng thử lại sau vài phút.';
-        } else if (error.message.includes('network') || error.message.includes('fetch')) {
+        } else if (lowerError.includes('network') || lowerError.includes('fetch')) {
             errorMsg += 'Lỗi kết nối mạng. Vui lòng kiểm tra internet.';
+        } else if (lowerError.includes('too large') || lowerError.includes('too long') || lowerError.includes('413') || lowerError.includes('exhausted') || lowerError.includes('limit')) {
+            errorMsg = '⚠️ Bài của bạn quá dài! Hãy coppy ra làm 2 đoạn và quét 2 lần hoặc hơn vì bài của bạn hiện quá dài, bạn hiểu ý tôi chứ?';
         } else {
             errorMsg += error.message;
         }
