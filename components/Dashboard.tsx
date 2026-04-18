@@ -62,6 +62,8 @@ interface DashboardProps {
     onThatLuong3D: () => void;
     onNhayBaoBo: () => void;
     onSolarSystem: () => void;
+    onKeoCoTriTue: () => void;
+    onGameTuyChinh: () => void;
     isAdmin: boolean;
     isGuest?: boolean;
     hiddenApps?: string[];
@@ -279,7 +281,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -753,6 +755,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('puzzleGame') && <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" />}
                                         {!hiddenApps.includes('treasureHunt') && <ToolCard title="Truy Tìm Kho Báu" description="Game phiêu lưu khám phá, tự soạn câu hỏi" icon={<span className="text-2xl">🏴‍☠️</span>} accentColor="bg-gradient-to-br from-orange-500 to-amber-500" onClick={onTreasureHunt} badge="Mới" />}
                                         {!hiddenApps.includes('nhayBaoBo') && <ToolCard title="Nhảy Bao Bố" description="Hai đội thi đấu song song với ngân hàng câu hỏi" icon={<span className="text-2xl">🏁</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-500" onClick={onNhayBaoBo} badge="Mới" />}
+                                        {!hiddenApps.includes('keoCoTriTue') && <ToolCard title="Kéo Co Trí Tuệ" description="Game kéo co, nhận diện cử chỉ tay (AI)" icon={<span className="text-2xl">✊🖐️</span>} accentColor="bg-gradient-to-br from-red-500 to-blue-500" onClick={onKeoCoTriTue} badge="Mới" />}
+                                        {!hiddenApps.includes('gameTuyChinh') && <ToolCard title="Game Tùy Chỉnh" description="Game tùy biến câu hỏi, nhận diện cử chỉ (AI)" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-red-400 to-orange-500" onClick={onGameTuyChinh} badge="Cực Hot" />}
                                         {!hiddenApps.includes('videoStore') && <ToolCard title="Kho Video AI" description="Video AI giáo dục chất lượng cao" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-blue-500 to-purple-600" onClick={onVideoStore} badge="Mới" />}
                                     </div>
                                 </section>

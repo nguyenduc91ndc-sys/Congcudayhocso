@@ -1,0 +1,8 @@
+{
+  "name": "GAME TÙY CHỈNH",
+  "description": "Game Lịch Sử Tương Tác Bằng Cử Chỉ Tay",
+  "requestFramePermissions": [
+    "camera"
+  ],
+  "majorCapabilities": []
+}

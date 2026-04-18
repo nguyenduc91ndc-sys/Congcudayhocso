@@ -1,0 +1,42 @@
+[
+  {
+    "id": "1",
+    "type": "multiple-choice",
+    "question": "Ai là người lãnh đạo cuộc khởi nghĩa Hai Bà Trưng?",
+    "options": ["Trưng Trắc và Trưng Nhị", "Bà Triệu", "Lê Lợi", "Quang Trung"],
+    "correctAnswer": 0,
+    "level": "easy"
+  },
+  {
+    "id": "2",
+    "type": "multiple-choice",
+    "question": "Trận Điện Biên Phủ diễn ra vào năm nào?",
+    "options": ["1945", "1954", "1975", "1930"],
+    "correctAnswer": 1,
+    "level": "medium"
+  },
+  {
+    "id": "3",
+    "type": "multiple-choice",
+    "question": "Bác Hồ đọc bản Tuyên ngôn Độc lập tại đâu?",
+    "options": ["Quảng trường Ba Đình", "Bến Nhà Rồng", "Pác Bó", "Tân Trào"],
+    "correctAnswer": 0,
+    "level": "easy"
+  },
+  {
+    "id": "4",
+    "type": "multiple-choice",
+    "question": "Vị vua nào đã dời đô từ Hoa Lư về Thăng Long?",
+    "options": ["Lý Thái Tổ", "Lê Hoàn", "Trần Nhân Tông", "Lê Thánh Tông"],
+    "correctAnswer": 0,
+    "level": "medium"
+  },
+  {
+    "id": "5",
+    "type": "multiple-choice",
+    "question": "Chiến thắng Bạch Đằng năm 938 do ai lãnh đạo?",
+    "options": ["Ngô Quyền", "Trần Hưng Đạo", "Lý Thường Kiệt", "Lê Lợi"],
+    "correctAnswer": 0,
+    "level": "easy"
+  }
+]

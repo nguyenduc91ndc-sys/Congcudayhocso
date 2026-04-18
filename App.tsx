@@ -56,6 +56,8 @@ import PhongTranh3D from './components/PhongTranh3D';
 import NhayBaoBoApp from './nhay-bao-bo/NhayBaoBoApp';
 import { AppVisibilityState, subscribeToAppVisibility } from './utils/firebaseAppVisibility';
 import SolarSystemSimulation from './components/SolarSystemSimulation';
+import KeoCoTriTueApp from './keo-co-tri-tue/App';
+import GameTuyChinh from './components/GameTuyChinh';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -151,13 +153,16 @@ function App() {
           case 'nhan_xet_tt27':
             defaultView = 'NHAN_XET_TT27';
             break;
+          case 'game_tuy_chinh':
+            defaultView = 'GAME_TUY_CHINH';
+            break;
           // Có thể thêm case cho các app khác ở đây sau
         }
         // Dọn sạch URL: chỉ giữ ?app=..., xóa fbclid, utm_*, aem_* v.v. Cần giữ lại tham số 'id' nếu có để hỗ trợ chức năng chia sẻ Cloud
         let cleanUrl = `${window.location.pathname}?app=${appParam}`;
         const idParam = urlParams.get('id');
         if (idParam) {
-            cleanUrl += `&id=${idParam}`;
+          cleanUrl += `&id=${idParam}`;
         }
         window.history.replaceState({}, document.title, cleanUrl);
       }
@@ -165,30 +170,30 @@ function App() {
       // Bổ sung: Parse Path cho các link thân thiện kiểu mới (VD: /share/phong-tranh-3d/XYZ)
       const pathSegments = window.location.pathname.split('/').filter(Boolean);
       if (pathSegments.length >= 2 && pathSegments[0] === 'share') {
-          const appSection = pathSegments[1];
-          if (appSection === 'phong-tranh-3d') {
-              defaultView = 'PHONG_TRANH_3D';
-          } else if (appSection === 'he-mat-troi') {
-              defaultView = 'SOLAR_SYSTEM';
-          }
-          // Dọn dẹp các query như fbclid nhưng giữ nguyên đường dẫn tĩnh gốc
-          window.history.replaceState({}, document.title, window.location.pathname);
-      } else {
-          // Parse ?view= from URL (cũ)
-          const viewParam = urlParams.get('view');
-          if (viewParam) {
-        switch (viewParam.toLowerCase()) {
-          case 'earth-seasons':
-            defaultView = 'EARTH_SEASONS';
-            break;
-          case 'that-luong-3d':
-            defaultView = 'THAT_LUONG_3D';
-            break;
-            // Handle other views here if needed
+        const appSection = pathSegments[1];
+        if (appSection === 'phong-tranh-3d') {
+          defaultView = 'PHONG_TRANH_3D';
+        } else if (appSection === 'he-mat-troi') {
+          defaultView = 'SOLAR_SYSTEM';
         }
-        const cleanUrl = `${window.location.pathname}?view=${viewParam}`;
-        window.history.replaceState({}, document.title, cleanUrl);
-      }
+        // Dọn dẹp các query như fbclid nhưng giữ nguyên đường dẫn tĩnh gốc
+        window.history.replaceState({}, document.title, window.location.pathname);
+      } else {
+        // Parse ?view= from URL (cũ)
+        const viewParam = urlParams.get('view');
+        if (viewParam) {
+          switch (viewParam.toLowerCase()) {
+            case 'earth-seasons':
+              defaultView = 'EARTH_SEASONS';
+              break;
+            case 'that-luong-3d':
+              defaultView = 'THAT_LUONG_3D';
+              break;
+            // Handle other views here if needed
+          }
+          const cleanUrl = `${window.location.pathname}?view=${viewParam}`;
+          window.history.replaceState({}, document.title, cleanUrl);
+        }
       } // Đóng thẻ else bên trên
 
       if (savedUser) {
@@ -418,6 +423,8 @@ function App() {
                   onThatLuong3D={() => requireLogin(() => setView('THAT_LUONG_3D'))}
                   onNhayBaoBo={() => requireLogin(() => setView('NHAY_BAO_BO'))}
                   onSolarSystem={() => requireLogin(() => setView('SOLAR_SYSTEM'))}
+                  onKeoCoTriTue={() => requireLogin(() => setView('KEO_CO_TRI_TUE'))}
+                  onGameTuyChinh={() => setView('GAME_TUY_CHINH')}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -516,7 +523,6 @@ function App() {
             <AICourseStore
               onBack={() => setView('DASHBOARD')}
               isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
-              onAdmin={() => setView('AI_COURSE_ADMIN')}
               isLoggedIn={!!user}
               onRequireLogin={() => setShowLoginModal(true)}
             />
@@ -643,6 +649,14 @@ function App() {
 
           {view === 'SOLAR_SYSTEM' && (
             <SolarSystemSimulation onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'KEO_CO_TRI_TUE' && (
+            <KeoCoTriTueApp onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'GAME_TUY_CHINH' && (
+            <GameTuyChinh onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'PRIVACY' && (

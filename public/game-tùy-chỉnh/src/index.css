@@ -1,0 +1,19 @@
+@import "tailwindcss";
+
+@theme {
+  --color-primary: #FF6B6B;
+  --color-secondary: #4ECDC4;
+  --color-accent: #FFE66D;
+  --color-dark: #2F2F2F;
+  --color-light: #F7FFF7;
+  --color-card-bg: #FFFFFF;
+}
+
+body {
+  background-color: #f0f4f8;
+  color: var(--color-dark);
+}
+
+button, [role="button"], label[class*="cursor"] {
+  cursor: pointer;
+}
