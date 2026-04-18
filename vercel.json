@@ -9,6 +9,10 @@
             "destination": "/lucky-wheel/index.html"
         },
         {
+            "source": "/game-tùy-chỉnh",
+            "destination": "/game-tùy-chỉnh/index.html"
+        },
+        {
             "source": "/chuctettudong",
             "destination": "/chuctettudong/index.html"
         },
@@ -29,7 +33,7 @@
             "destination": "/contact/index.html"
         },
         {
-            "source": "/((?!giải-mã-bức-tranh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|assets|.*\\.[a-z]+$).*)",
+            "source": "/((?!giải-mã-bức-tranh|game-tùy-chỉnh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|assets|.*\\.[a-z]+$).*)",
             "destination": "/"
         }
     ],

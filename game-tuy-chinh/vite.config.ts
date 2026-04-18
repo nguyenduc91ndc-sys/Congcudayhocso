@@ -7,7 +7,11 @@ import { VitePWA } from 'vite-plugin-pwa';
 export default defineConfig(({mode}) => {
   const env = loadEnv(mode, '.', '');
   return {
-    base: './',
+    base: '/game-tùy-chỉnh/',
+    build: {
+      outDir: '../dist/game-tùy-chỉnh',
+      emptyOutDir: true,
+    },
     plugins: [
       react(), 
       tailwindcss(),
