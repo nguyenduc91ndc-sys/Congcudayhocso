@@ -33,8 +33,8 @@
             "destination": "/contact/index.html"
         },
         {
-            "source": "/((?!giải-mã-bức-tranh|game-tùy-chỉnh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|assets|.*\\.[a-z]+$).*)",
-            "destination": "/"
+            "source": "/((?!giải-mã-bức-tranh|game-tùy-chỉnh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|assets|.*\\.[a-z0-9]+$).*)",
+            "destination": "/index.html"
         }
     ],
     "headers": [
