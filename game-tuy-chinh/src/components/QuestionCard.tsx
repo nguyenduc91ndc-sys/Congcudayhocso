@@ -17,7 +17,7 @@ export function QuestionCard({ question, selectedAnswer, feedback, currentIndex 
   const content = question.content || { text: question.question };
   
   return (
-    <div className="bg-[var(--color-card-bg)] rounded-[3rem] p-8 md:p-12 shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex-1 flex flex-col border-[6px] border-[var(--color-secondary)] relative overflow-hidden">
+    <div className="bg-[var(--color-card-bg)] rounded-[2rem] p-6 lg:p-8 shadow-[0_20px_50px_rgba(0,0,0,0.1)] flex-1 flex flex-col border-4 border-[var(--color-secondary)] relative overflow-hidden min-h-0">
       {feedback && (
         <motion.div 
           initial={{ opacity: 0 }}
@@ -44,7 +44,7 @@ export function QuestionCard({ question, selectedAnswer, feedback, currentIndex 
         Câu hỏi {String(currentIndex + 1).padStart(2, '0')} / {String(total).padStart(2, '0')}
       </div>
 
-      <div className="flex-1 flex flex-col items-center justify-center gap-6 mt-6 mb-10 overflow-y-auto custom-scrollbar pr-2">
+      <div className="flex-1 flex flex-col items-center justify-center gap-4 mt-8 mb-6 overflow-y-auto custom-scrollbar pr-2 min-h-0">
         {/* Question Text */}
         {content.text && (
           <h2 className="text-[28px] md:text-[36px] font-black leading-tight text-[var(--color-dark)] text-center">
@@ -88,7 +88,7 @@ export function QuestionCard({ question, selectedAnswer, feedback, currentIndex 
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 flex-shrink-0 mt-auto">
         {question.options.map((option, index) => {
           const isSelected = selectedAnswer === index;
           const isCorrect = index === question.correctAnswer;

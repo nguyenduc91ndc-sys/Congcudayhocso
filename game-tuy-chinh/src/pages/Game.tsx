@@ -51,9 +51,9 @@ export function Game() {
   if (currentGesture === 'D') selectedAnswerIndex = 3;
 
   return (
-    <div className="min-h-screen bg-[#f0f4f8] flex flex-col text-[var(--color-dark)] font-sans">
-      <header className="bg-[var(--color-primary)] text-white px-8 py-4 flex justify-between items-center shadow-[0_4px_10px_rgba(0,0,0,0.1)] z-10">
-        <div className="text-2xl font-black tracking-wide flex items-center gap-2">
+    <div className="h-[100dvh] overflow-hidden bg-[#f0f4f8] flex flex-col text-[var(--color-dark)] font-sans">
+      <header className="bg-[var(--color-primary)] text-white px-6 py-3 flex justify-between items-center shadow-[0_4px_10px_rgba(0,0,0,0.1)] z-10 flex-shrink-0">
+        <div className="text-xl md:text-2xl font-black tracking-wide flex items-center gap-2">
           <span>🏛️</span>
           GAME TÙY CHỈNH
         </div>
@@ -67,8 +67,8 @@ export function Game() {
         </div>
       </header>
 
-      <main className="flex-1 grid grid-cols-1 lg:grid-cols-[1fr_320px] gap-5 p-5 max-w-[1200px] mx-auto w-full">
-        <div className="flex flex-col gap-5">
+      <main className="flex-1 min-h-0 grid grid-cols-1 lg:grid-cols-[1fr_280px] xl:grid-cols-[1fr_320px] gap-4 p-4 max-w-[1400px] mx-auto w-full">
+        <div className="flex flex-col gap-4 min-h-0">
           <QuestionCard 
             question={currentQuestion} 
             selectedAnswer={selectedAnswerIndex !== -1 ? selectedAnswerIndex : null} 
@@ -78,14 +78,16 @@ export function Game() {
           />
         </div>
 
-        <div className="flex flex-col gap-5">
-          <HandGestureDetector 
-            onGestureConfirm={handleGestureConfirm} 
-            onGestureChange={setCurrentGesture}
-            disabled={feedback !== null}
-          />
+        <div className="flex flex-col gap-3 min-h-0">
+          <div className="flex-shrink-0">
+            <HandGestureDetector 
+              onGestureConfirm={handleGestureConfirm} 
+              onGestureChange={setCurrentGesture}
+              disabled={feedback !== null}
+            />
+          </div>
 
-          <div className="flex justify-around bg-[var(--color-dark)] text-white p-4 rounded-2xl">
+          <div className="flex flex-shrink-0 justify-around bg-[var(--color-dark)] text-white p-3 rounded-2xl">
             <div className="text-center">
               <span className="block text-xl font-black text-[var(--color-accent)]">{score}</span>
               <span className="text-[10px] uppercase opacity-70">Điểm</span>
@@ -96,44 +98,44 @@ export function Game() {
             </div>
           </div>
 
-          <div className="bg-[var(--color-card-bg)] rounded-2xl p-5 flex-1 shadow-[0_4px_15px_rgba(0,0,0,0.05)] border-2 border-slate-100">
-            <div className="text-sm font-black uppercase mb-4 text-[#718096] flex items-center gap-2">
+          <div className="bg-[var(--color-card-bg)] rounded-2xl p-4 flex-1 shadow-[0_4px_15px_rgba(0,0,0,0.05)] border-2 border-slate-100 flex flex-col min-h-0">
+            <div className="text-sm font-black uppercase mb-3 text-[#718096] flex items-center gap-2 flex-shrink-0">
               <span className="w-2 h-4 bg-[var(--color-primary)] rounded-full"></span>
               Hướng dẫn cử chỉ
             </div>
-            <div className="space-y-4">
-              <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
-                <div className="w-10 h-10 bg-white shadow-sm rounded-lg flex items-center justify-center text-xl">☝️</div>
+            <div className="space-y-3 overflow-y-auto custom-scrollbar flex-1 pr-2">
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
+                <div className="w-8 h-8 bg-white shadow-sm rounded-lg flex items-center justify-center text-lg">☝️</div>
                 <div>
-                  <div className="font-black text-[var(--color-dark)] text-sm">Cử chỉ A</div>
-                  <div className="text-[11px] font-medium text-slate-500">Giơ 1 ngón tay</div>
+                  <div className="font-black text-[var(--color-dark)] text-xs">Cử chỉ A</div>
+                  <div className="text-[10px] font-medium text-slate-500">Giơ 1 ngón tay</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
-                <div className="w-10 h-10 bg-white shadow-sm rounded-lg flex items-center justify-center text-xl">✌️</div>
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
+                <div className="w-8 h-8 bg-white shadow-sm rounded-lg flex items-center justify-center text-lg">✌️</div>
                 <div>
-                  <div className="font-black text-[var(--color-dark)] text-sm">Cử chỉ B</div>
-                  <div className="text-[11px] font-medium text-slate-500">Giơ 2 ngón tay</div>
+                  <div className="font-black text-[var(--color-dark)] text-xs">Cử chỉ B</div>
+                  <div className="text-[10px] font-medium text-slate-500">Giơ 2 ngón tay</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
-                <div className="w-10 h-10 bg-white shadow-sm rounded-lg flex items-center justify-center text-xl">🤟</div>
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
+                <div className="w-8 h-8 bg-white shadow-sm rounded-lg flex items-center justify-center text-lg">🤟</div>
                 <div>
-                  <div className="font-black text-[var(--color-dark)] text-sm">Cử chỉ C</div>
-                  <div className="text-[11px] font-medium text-slate-500">Giơ 3 ngón tay</div>
+                  <div className="font-black text-[var(--color-dark)] text-xs">Cử chỉ C</div>
+                  <div className="text-[10px] font-medium text-slate-500">Giơ 3 ngón tay</div>
                 </div>
               </div>
-              <div className="flex items-center gap-3 p-2 rounded-xl bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
-                <div className="w-10 h-10 bg-white shadow-sm rounded-lg flex items-center justify-center text-xl">🖐️</div>
+              <div className="flex items-center gap-2 p-2 rounded-xl bg-slate-50 border border-transparent hover:border-slate-200 transition-colors">
+                <div className="w-8 h-8 bg-white shadow-sm rounded-lg flex items-center justify-center text-lg">🖐️</div>
                 <div>
-                  <div className="font-black text-[var(--color-dark)] text-sm">Cử chỉ D</div>
-                  <div className="text-[11px] font-medium text-slate-500">Giơ 5 ngón tay</div>
+                  <div className="font-black text-[var(--color-dark)] text-xs">Cử chỉ D</div>
+                  <div className="text-[10px] font-medium text-slate-500">Giơ 5 ngón tay</div>
                 </div>
               </div>
-              <div className="mt-4 p-3 bg-red-50 rounded-xl border border-red-100">
+              <div className="mt-2 p-2 bg-red-50 rounded-xl border border-red-100 flex-shrink-0">
                 <div className="text-[10px] font-bold text-red-600 uppercase mb-1">Dừng chọn</div>
-                <p className="text-[10px] text-red-700 leading-relaxed font-medium">
-                  Nắm tay lại (✊) để tạm dừng nhận diện hoặc tránh việc chọn nhầm khi đang suy nghĩ.
+                <p className="text-[10px] text-red-700 leading-relaxed font-medium m-0">
+                  Nắm tay lại (✊) để tạm dừng.
                 </p>
               </div>
             </div>

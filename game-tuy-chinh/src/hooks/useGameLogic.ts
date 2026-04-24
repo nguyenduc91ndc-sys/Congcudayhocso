@@ -100,8 +100,10 @@ export function useGameLogic() {
     if (isCorrect) {
       setScore(prev => prev + 10);
       setFeedback('correct');
+      new Audio('/sounds/Am_thanh_chuc_mung_chien_thang-www_tiengdong_com.mp3').play().catch(e => console.warn('Audio play failed:', e));
     } else {
       setFeedback('incorrect');
+      new Audio('/sounds/Am_thanh_tra_loi_sai-www_tiengdong_com.mp3').play().catch(e => console.warn('Audio play failed:', e));
     }
 
     setTimeout(() => {

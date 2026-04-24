@@ -17,7 +17,7 @@ const GameTuyChinh: React.FC<GameTuyChinhProps> = ({ onBack }) => {
                 <ArrowLeft size={18} className="text-white" />
             </button>
             <iframe
-                src="/game-tùy-chỉnh/dist/index.html"
+                src="/game-tùy-chỉnh/index.html"
                 className="w-full h-full border-0"
                 title="Game Tùy Chỉnh"
                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; camera; microphone"

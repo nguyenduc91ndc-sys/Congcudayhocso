@@ -5,7 +5,15 @@
             "destination": "/nhan-xet-tt27/index.html"
         },
         {
+            "source": "/nhan-xet-tt27/(.*)",
+            "destination": "/nhan-xet-tt27/index.html"
+        },
+        {
             "source": "/lucky-wheel",
+            "destination": "/lucky-wheel/index.html"
+        },
+        {
+            "source": "/lucky-wheel/(.*)",
             "destination": "/lucky-wheel/index.html"
         },
         {
@@ -13,7 +21,23 @@
             "destination": "/game-tùy-chỉnh/index.html"
         },
         {
+            "source": "/game-tùy-chỉnh/(.*)",
+            "destination": "/game-tùy-chỉnh/index.html"
+        },
+        {
+            "source": "/game-tuy-chinh",
+            "destination": "/game-tùy-chỉnh/index.html"
+        },
+        {
+            "source": "/game-tuy-chinh/(.*)",
+            "destination": "/game-tùy-chỉnh/index.html"
+        },
+        {
             "source": "/chuctettudong",
+            "destination": "/chuctettudong/index.html"
+        },
+        {
+            "source": "/chuctettudong/(.*)",
             "destination": "/chuctettudong/index.html"
         },
         {
@@ -33,7 +57,7 @@
             "destination": "/contact/index.html"
         },
         {
-            "source": "/((?!giải-mã-bức-tranh|game-tùy-chỉnh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|assets|.*\\.[a-z0-9]+$).*)",
+            "source": "/((?!giải-mã-bức-tranh|game-tùy-chỉnh|game-tuy-chinh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|assets|.*\\.[a-z0-9]+$).*)",
             "destination": "/index.html"
         }
     ],
