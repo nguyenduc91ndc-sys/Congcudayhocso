@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Khoảnh Khắc Lịch Sử - Dinh Độc Lập 30/4/1975</title>
+    <meta name="description" content="Sa bàn 3D tương tác tái hiện khoảnh khắc xe tăng 390 húc đổ cổng Dinh Độc Lập ngày 30/4/1975 - Ngày Giải phóng miền Nam, thống nhất đất nước.">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div id="loading-screen">
+        <div class="loading-content">
+            <div class="loading-star">★</div>
+            <h1>KHOẢNH KHẮC LỊCH SỬ</h1>
+            <h2>Dinh Độc Lập — 30/4/1975</h2>
+            <div class="loading-bar-container">
+                <div class="loading-bar" id="loading-bar"></div>
+            </div>
+            <p class="loading-text" id="loading-text">Đang tải mô hình 3D...</p>
+        </div>
+    </div>
+
+    <!-- Main UI Overlay -->
+    <div id="ui-overlay">
+        <!-- Top Header -->
+        <header id="top-header">
+            <div class="header-left">
+                <span class="header-star">★</span>
+                <div class="header-title">
+                    <h1>Dinh Độc Lập</h1>
+                    <p>30 tháng 4, 1975 — Ngày Giải phóng miền Nam</p>
+                </div>
+            </div>
+            <div class="header-right">
+                <button id="btn-toggle-music" class="header-btn" title="Bật/Tắt nhạc nền">
+                    <svg id="icon-music-on" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/>
+                    </svg>
+                    <svg id="icon-music-off" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/><line x1="1" y1="1" x2="23" y2="23"/>
+                    </svg>
+                </button>
+                <button id="btn-toggle-rotation" class="header-btn" title="Dừng/Xoay tự động">
+                    <svg id="icon-pause" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <rect x="6" y="4" width="4" height="16"/><rect x="14" y="4" width="4" height="16"/>
+                    </svg>
+                    <svg id="icon-play" class="hidden" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <polygon points="5 3 19 12 5 21 5 3"/>
+                    </svg>
+                </button>
+                <button id="btn-reset-view" class="header-btn" title="Đặt lại góc nhìn">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M1 4v6h6M23 20v-6h-6"/>
+                        <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22 4l-4.64 4.36A9 9 0 0 1 3.51 15"/>
+                    </svg>
+                </button>
+                <button id="btn-info" class="header-btn" title="Thông tin">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>
+                    </svg>
+                </button>
+            </div>
+        </header>
+
+        <!-- Hotspot Info Panel (Chi tiết lịch sử) -->
+        <div id="info-panel">
+            <div class="panel-top-actions">
+                <button id="btn-speak" class="panel-action-btn" title="Nghe thuyết minh">🔊</button>
+                <button id="close-panel" class="close-btn">&times;</button>
+            </div>
+            <div class="panel-icon" id="panel-icon">🏛️</div>
+            <h2 id="panel-title">Tiêu đề</h2>
+            <div class="panel-meta" id="panel-meta"></div>
+            <div class="panel-divider"></div>
+            <p id="panel-description">Mô tả chi tiết</p>
+            <div id="panel-details" class="panel-details"></div>
+            <div id="panel-fact" class="panel-fact"></div>
+        </div>
+
+        <!-- About Modal -->
+        <div id="about-modal" class="modal hidden">
+            <div class="modal-content">
+                <button class="close-btn modal-close" id="close-modal">&times;</button>
+                <div class="modal-header">
+                    <span class="modal-star">★</span>
+                    <h2>Về Dự Án Này</h2>
+                </div>
+                <div class="modal-body">
+                    <p>Sa bàn 3D tương tác tái hiện <strong>khoảnh khắc lịch sử</strong> ngày <strong>30 tháng 4 năm 1975</strong> — khi xe tăng mang số hiệu 390 của Quân đội Nhân dân Việt Nam húc đổ cổng chính Dinh Độc Lập, đánh dấu sự kiện giải phóng hoàn toàn miền Nam, thống nhất đất nước.</p>
+                    <h3>Hướng dẫn tương tác</h3>
+                    <ul>
+                        <li>🖱️ <strong>Chuột trái + kéo</strong>: Xoay góc nhìn</li>
+                        <li>🔍 <strong>Cuộn chuột</strong>: Phóng to / Thu nhỏ</li>
+                        <li>👆 <strong>Chuột phải + kéo</strong>: Di chuyển camera</li>
+                        <li>📍 <strong>Click vào điểm neo</strong>: Xem thông tin lịch sử chi tiết</li>
+                    </ul>
+                    <h3>Điểm neo trên mô hình</h3>
+                    <ul>
+                        <li>🏛️ Dinh Độc Lập — Kiến trúc & Lịch sử</li>
+                        <li>🪖 Xe tăng 390 — Kíp xe anh hùng</li>
+                        <li>🚪 Cổng Dinh — Khoảnh khắc húc cổng</li>
+                        <li>🇻🇳 Lá cờ chiến thắng — Giây phút vinh quang</li>
+                        <li>🎖️ Xe tăng 843 — Chiếc tăng tiên phong</li>
+                    </ul>
+                    <div class="modal-footer-note">
+                        <p>🎓 Sản phẩm giáo dục — Kỷ niệm 50 năm Giải phóng miền Nam, thống nhất đất nước.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bottom Timeline -->
+        <div id="bottom-controls">
+            <div class="timeline-bar">
+                <span class="tl-badge">30/4/1975</span>
+                <div class="tl-events">
+                    <span class="tl-event">10:30 Tiến quân</span>
+                    <span class="tl-dot">→</span>
+                    <span class="tl-event active">10:45 Húc đổ cổng</span>
+                    <span class="tl-dot">→</span>
+                    <span class="tl-event">11:30 Cắm cờ chiến thắng</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Hotspot Labels (rendered in 3D → projected to 2D) -->
+        <div id="hotspot-labels"></div>
+
+        <!-- Nhạc nền tự phát -->
+        <audio id="bg-audio" loop preload="auto">
+            <source src="./publich/Viết tiếp câu chuyện hoà bình - Đông Hùng x Võ Hạ Trâm _ Kỷ niệm 50 năm Giải phóng miền Nam - (128 Kbps).mp3" type="audio/mpeg">
+        </audio>
+    </div>
+
+    <!-- Three.js Canvas -->
+    <canvas id="scene-canvas"></canvas>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://cdn.jsdelivr.net/npm/three@0.163.0/build/three.module.js",
+            "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.163.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="app.js"></script>
+</body>
+</html>

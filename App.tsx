@@ -58,6 +58,7 @@ import { AppVisibilityState, subscribeToAppVisibility } from './utils/firebaseAp
 import SolarSystemSimulation from './components/SolarSystemSimulation';
 import KeoCoTriTueApp from './keo-co-tri-tue/App';
 import GameTuyChinh from './components/GameTuyChinh';
+import DinhDocLap3D from './components/DinhDocLap3D';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -130,6 +131,7 @@ function App() {
       else if (pathname === '/privacy') defaultView = 'PRIVACY' as ViewState;
       else if (pathname === '/terms') defaultView = 'TERMS' as ViewState;
       else if (pathname === '/contact') defaultView = 'CONTACT' as ViewState;
+      else if (pathname === '/dinh-doc-lap-3d') defaultView = 'DINH_DOC_LAP_3D' as ViewState;
 
       // Parse ?app= from URL
       const appParam = urlParams.get('app');
@@ -155,6 +157,9 @@ function App() {
             break;
           case 'game_tuy_chinh':
             defaultView = 'GAME_TUY_CHINH';
+            break;
+          case 'dinh_doc_lap':
+            defaultView = 'DINH_DOC_LAP_3D';
             break;
           // Có thể thêm case cho các app khác ở đây sau
         }
@@ -425,6 +430,7 @@ function App() {
                   onSolarSystem={() => requireLogin(() => setView('SOLAR_SYSTEM'))}
                   onKeoCoTriTue={() => requireLogin(() => setView('KEO_CO_TRI_TUE'))}
                   onGameTuyChinh={() => setView('GAME_TUY_CHINH')}
+                   onDinhDocLap3D={() => requireLogin(() => setView('DINH_DOC_LAP_3D'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -657,6 +663,10 @@ function App() {
 
           {view === 'GAME_TUY_CHINH' && (
             <GameTuyChinh onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'DINH_DOC_LAP_3D' && (
+            <DinhDocLap3D onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'PRIVACY' && (

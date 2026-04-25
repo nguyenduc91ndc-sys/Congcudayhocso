@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Trải nghiệm 3D tương tác Dinh Độc Lập - Kỷ niệm ngày 30/4 lịch sử. Khám phá di sản qua không gian thực tế ảo.">
+    <title>3D Dinh Độc Lập — Hào Quang Chiến Thắng</title>
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🏛️</text></svg>">
+    <link rel="stylesheet" href="style.css">
+    <script type="importmap">
+        {
+            "imports": {
+                "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+                "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+            }
+        }
+    </script>
+</head>
+<body>
+    <canvas id="bg-particles"></canvas>
+    <div id="vignette"></div>
+    <div id="error-log" style="position: absolute; top: 0; left: 0; z-index: 9999; color: red; background: black; padding: 10px; display: none;"></div>
+    <script>
+        window.onerror = function(msg, url, lineNo, columnNo, error) {
+            var log = document.getElementById('error-log');
+            log.style.display = 'block';
+            log.innerHTML += '<br>Error: ' + msg + ' at ' + lineNo + ':' + columnNo;
+            return false;
+        };
+    </script>
+
+    <!-- Màn hình khởi đầu (Cinematic Landing) -->
+    <div id="start-overlay">
+        <!-- Trang trí Bóng bay (2D UI Overlay) -->
+        <img src="—Pngtree—bunch of heart balloons_19977801.png" class="deco-balloons deco-left" alt="">
+        <img src="—Pngtree—bunch of heart balloons_19977801.png" class="deco-balloons deco-right" alt="">
+        
+        <canvas id="particles"></canvas>
+        <div class="corner-frame corner-tl"></div>
+        <div class="corner-frame corner-tr"></div>
+        <div class="corner-frame corner-bl"></div>
+        <div class="corner-frame corner-br"></div>
+
+        <div class="overlay-content">
+            <div class="anim-item anim-delay-1">
+                <p class="overlay-subtitle">TRẢI NGHIỆM DI SẢN LỊCH SỬ 3D</p>
+            </div>
+            <div class="anim-item anim-delay-2">
+                <h1 class="overlay-title">DINH ĐỘC LẬP</h1>
+            </div>
+            <div class="anim-item anim-delay-3">
+                <div class="separator">
+                    <span class="sep-line"></span>
+                    <span class="sep-star">★</span>
+                    <span class="sep-line"></span>
+                </div>
+            </div>
+            <div class="anim-item anim-delay-4">
+                <p class="overlay-tagline">HÀO QUANG CHIẾN THẮNG — 30 THÁNG 4</p>
+            </div>
+            <div class="anim-item anim-delay-5">
+                <p class="overlay-desc">Hành trình di sản qua không gian thực tế ảo 3D</p>
+            </div>
+            <div class="anim-item anim-delay-6">
+                <button id="start-btn">
+                    <span class="btn-text">KHÁM PHÁ NGAY</span>
+                    <span class="btn-icon">→</span>
+                </button>
+            </div>
+        </div>
+
+        <div class="overlay-footer">
+            <div class="footer-badge">
+                <span class="icon">🎓</span>
+                <span>Sản phẩm giáo dục bởi <strong>Thế Đức Edu</strong></span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Màn hình loading -->
+    <div id="loading">
+        <div class="loader-wrapper">
+            <div class="spinner-outer"></div>
+            <div class="spinner-inner"></div>
+            <div class="spinner-icon">★</div>
+        </div>
+        <div id="progress-bar">
+            <div id="progress-fill"></div>
+        </div>
+        <p class="loading-text">Đang giải mã dữ liệu lịch sử<span class="typing-dots"></span></p>
+    </div>
+
+    <!-- Modal Thông tin Lịch sử (Museum Card) -->
+    <div id="info-modal" class="hidden">
+        <div class="modal-backdrop"></div>
+        <div class="modal-panel">
+            <div class="modal-header">
+                <div class="modal-header-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                      <line x1="3" y1="22" x2="21" y2="22"></line>
+                      <line x1="6" y1="18" x2="6" y2="11"></line>
+                      <line x1="10" y1="18" x2="10" y2="11"></line>
+                      <line x1="14" y1="18" x2="14" y2="11"></line>
+                      <line x1="18" y1="18" x2="18" y2="11"></line>
+                      <polygon points="12 2 20 7 4 7"></polygon>
+                    </svg>
+                </div>
+                <span class="modal-header-label">THÔNG TIN LỊCH SỬ</span>
+                <button id="close-modal">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+                </button>
+            </div>
+            <div class="modal-body">
+                <img id="modal-image" src="" alt="Lịch sử Dinh Độc Lập" class="hidden">
+                <h3 id="modal-title">Tiêu đề</h3>
+                <div class="modal-divider"></div>
+                <button id="btn-audio-guide">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 10 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+                    <span id="audio-text">Nghe thuyết minh</span>
+                </button>
+                <p id="modal-desc">Nội dung chi tiết...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Reference Controls -->
+    <div id="ref-controls" class="hidden">
+        <button id="btn-color" title="Đổi nền">🎨</button>
+        <button id="btn-wireframe" title="Khung dây">🔲</button>
+        <button id="btn-autorotate" title="Tự động xoay">🌀</button>
+        <button id="btn-reset" title="Đặt lại">🔄</button>
+        <button id="btn-fullscreen" title="Toàn màn">⛶</button>
+        <button id="btn-lang" title="Ngôn ngữ (EN/VI)">🌐</button>
+        <button id="btn-music" title="Bật/tắt nhạc">🔊</button>
+    </div>
+    <button id="btn-info" class="hidden">💬 Thông tin</button>
+    <div id="credit-label">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path>
+            <circle cx="12" cy="7" r="4"></circle>
+        </svg>
+        <span><strong>Thế Đức</strong> — Giáo viên yêu công nghệ</span>
+    </div>
+    <!-- Robot Guide Video Widget -->
+    <div id="robot-guide">
+        <div class="robot-header">
+            <span class="robot-title"><span class="live-dot"></span> AI GUIDE</span>
+            <button id="close-robot">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="robot-video-frame">
+            <video id="robot-video" src="RobotGT.mp4" autoplay loop muted playsinline></video>
+            <div class="unmute-hint">Bấm để bật tiếng</div>
+        </div>
+    </div>
+
+    <!-- Container cho 3D Canvas -->
+    <div id="canvas-container"></div>
+
+    <script type="module" src="app.js"></script>
+</body>
+</html>

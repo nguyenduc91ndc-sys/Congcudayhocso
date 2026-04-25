@@ -1,0 +1,12 @@
+{
+  "name": "game-30-4-diorama",
+  "version": "1.0.0",
+  "description": "3D Historical Diorama - Independence Palace",
+  "scripts": {
+    "dev": "npx serve ."
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "serve": "^14.2.4"
+  }
+}
