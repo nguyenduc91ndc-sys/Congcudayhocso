@@ -21,7 +21,13 @@
     <div id="vignette"></div>
     <div id="error-log" style="position: absolute; top: 0; left: 0; z-index: 9999; color: red; background: black; padding: 10px; display: none;"></div>
     <script>
+        var _errorSeen = {};
+        var _errorCount = 0;
         window.onerror = function(msg, url, lineNo, columnNo, error) {
+            var key = msg + ':' + lineNo;
+            if (_errorSeen[key] || _errorCount >= 10) return false;
+            _errorSeen[key] = true;
+            _errorCount++;
             var log = document.getElementById('error-log');
             log.style.display = 'block';
             log.innerHTML += '<br>Error: ' + msg + ' at ' + lineNo + ':' + columnNo;

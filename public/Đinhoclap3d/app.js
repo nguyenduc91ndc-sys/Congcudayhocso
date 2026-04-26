@@ -74,18 +74,25 @@ textureLoader.load('sharp_panorama.png', function(texture) {
 });
 
 // =============================================
-// 2. ÂM THANH
+// 2. ÂM THANH (HTML5 Audio — tránh lỗi linearRampToValueAtTime của Three.js AudioListener)
 // =============================================
-const listener = new THREE.AudioListener();
-camera.add(listener);
-const sound = new THREE.Audio(listener);
-const audioLoader = new THREE.AudioLoader();
+const sound = new Audio('music.mp3');
+sound.loop = true;
+sound.volume = 0.5;
+// Thêm thuộc tính tương thích với code cũ dùng THREE.Audio API
+sound.isPlaying = false;
+sound.buffer = null;
+sound.setVolume = function(v) { this.volume = v; };
 
-audioLoader.load('music.mp3', function(buffer) {
-    sound.setBuffer(buffer);
-    sound.setLoop(true);
-    sound.setVolume(0.5);
-});
+// Đánh dấu buffer sẵn sàng khi file load xong
+sound.addEventListener('canplaythrough', function() {
+    sound.buffer = true; // Đánh dấu đã load xong (dùng cho logic ở startBtn)
+}, { once: true });
+
+// Cập nhật trạng thái isPlaying
+sound.addEventListener('play', function() { sound.isPlaying = true; });
+sound.addEventListener('pause', function() { sound.isPlaying = false; });
+sound.addEventListener('ended', function() { sound.isPlaying = false; });
 
 // =============================================
 // 3. HẬU KỲ (BLOOM)
@@ -962,7 +969,7 @@ startBtn.addEventListener('click', () => {
         controls.autoRotate = false;
     }, 1200);
     
-    if (sound.buffer) sound.play();
+    if (sound.buffer) sound.play().catch(e => console.log('Autoplay blocked:', e));
     
     document.getElementById('canvas-container').style.pointerEvents = 'auto';
     document.getElementById('ref-controls').classList.remove('hidden');
@@ -1122,16 +1129,12 @@ const btnMusic = document.getElementById('btn-music');
 let musicPlaying = false;
 
 btnMusic?.addEventListener('click', () => {
-    if (sound.isPlaying) {
+    if (!sound.paused) {
         sound.pause();
-        musicPlaying = false;
         btnMusic.textContent = '🔇';
     } else {
-        if (sound.buffer) {
-            sound.play();
-            musicPlaying = true;
-            btnMusic.textContent = '🔊';
-        }
+        sound.play().catch(e => console.log('Play blocked:', e));
+        btnMusic.textContent = '🔊';
     }
 });
 
