@@ -169,7 +169,7 @@ controls.dampingFactor = 0.05;
 controls.maxPolarAngle = Math.PI / 2 - 0.1;
 controls.autoRotate = true; 
 controls.autoRotateSpeed = 0.4;
-controls.minDistance = 20;
+controls.minDistance = 80;
 controls.maxDistance = 800;
 
 // Camera presets cho nút "Đổi góc nhìn"
