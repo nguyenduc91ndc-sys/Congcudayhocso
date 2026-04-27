@@ -10,7 +10,7 @@ import { UnrealBloomPass } from 'three/addons/postprocessing/UnrealBloomPass.js'
 // =============================================
 const scene = new THREE.Scene();
 
-const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 5000);
+const camera = new THREE.PerspectiveCamera(40, window.innerWidth / window.innerHeight, 0.1, 20000);
 camera.position.set(180, 70, 220);
 
 const container = document.getElementById('canvas-container');
@@ -169,6 +169,8 @@ controls.dampingFactor = 0.05;
 controls.maxPolarAngle = Math.PI / 2 - 0.1;
 controls.autoRotate = true; 
 controls.autoRotateSpeed = 0.4;
+controls.minDistance = 20;
+controls.maxDistance = 800;
 
 // Camera presets cho nút "Đổi góc nhìn"
 const cameraPresets = [
