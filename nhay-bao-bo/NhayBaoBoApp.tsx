@@ -15,6 +15,7 @@ export const NhayBaoBoApp: React.FC<Props> = ({ onBack }) => {
       <GamePlay 
         questions={questions} 
         onBackToSettings={() => setQuestions(null)} 
+        onHome={onBack}
       />
     );
   }

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Play, Upload, Plus, Trash2, HelpCircle, Download } from 'lucide-react';
+import { Play, Upload, Plus, Trash2, HelpCircle, Download, Home as HomeIcon } from 'lucide-react';
 import { Question } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -249,7 +249,8 @@ export const Settings: React.FC<SettingsProps> = ({ onStartGame, onBack }) => {
             onClick={onBack}
             className="flex items-center gap-2 px-6 py-3 text-gray-500 hover:text-gray-800 hover:bg-gray-200 font-bold rounded-xl transition-all"
           >
-            Quay lại
+            <HomeIcon size={20} />
+            Trở lại trang chủ
           </button>
           
           <button

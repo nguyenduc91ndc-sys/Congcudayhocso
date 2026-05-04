@@ -3,7 +3,7 @@ import { Track } from './Track';
 import { PlayerPanel } from './PlayerPanel';
 import { Question, TeamId, GameState, INITIAL_TEAM_STATE } from '../types';
 import confetti from 'canvas-confetti';
-import { Maximize, Settings as SettingsIcon, RotateCcw } from 'lucide-react';
+import { Maximize, Settings as SettingsIcon, RotateCcw, Home as HomeIcon } from 'lucide-react';
 
 let audioCtx: AudioContext | null = null;
 const getAudioContext = () => {
@@ -51,9 +51,10 @@ const playSound = (type: 'correct' | 'incorrect' | 'win') => {
 interface GamePlayProps {
   questions: Question[];
   onBackToSettings: () => void;
+  onHome: () => void;
 }
 
-export const GamePlay: React.FC<GamePlayProps> = ({ questions, onBackToSettings }) => {
+export const GamePlay: React.FC<GamePlayProps> = ({ questions, onBackToSettings, onHome }) => {
   const [gameState, setGameState] = useState<GameState>({
     status: 'playing',
     questions: questions,
@@ -206,6 +207,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ questions, onBackToSettings 
               <button onClick={onBackToSettings} className="px-8 py-4 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition text-xl flex items-center gap-2">
                 <SettingsIcon /> Về cài đặt
               </button>
+              <button onClick={onHome} className="px-8 py-4 bg-gray-700 text-white font-bold rounded-full hover:bg-gray-600 transition text-xl flex items-center gap-2">
+                <HomeIcon /> Trang chủ
+              </button>
             </div>
           </div>
         </div>
@@ -221,6 +225,9 @@ export const GamePlay: React.FC<GamePlayProps> = ({ questions, onBackToSettings 
         </button>
         <button onClick={onBackToSettings} className="bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow transition" title="Cấu hình">
           <SettingsIcon size={20} />
+        </button>
+        <button onClick={onHome} className="bg-white/90 hover:bg-white text-gray-800 p-2 rounded-full shadow transition" title="Trang chủ">
+          <HomeIcon size={20} />
         </button>
       </div>
 

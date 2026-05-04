@@ -195,42 +195,342 @@ const WinnerModal: React.FC<{ isOpen: boolean; winnerName: string | null; onCont
     );
 };
 
-// ===== EDIT MODAL =====
+// ===== EDIT MODAL (WITH GOOGLE PICKER) =====
+declare global {
+    interface Window {
+        gapi: any;
+        google: any;
+    }
+}
+
+const GoogleSheetsIcon = () => (
+    <svg className="w-5 h-5" viewBox="0 0 24 24" fill="none">
+        <path d="M14 2H6C4.9 2 4 2.9 4 4V20C4 21.1 4.9 22 6 22H18C19.1 22 20 21.1 20 20V8L14 2Z" fill="#0F9D58" />
+        <path d="M14 2V8H20L14 2Z" fill="#87CEAC" />
+        <path d="M8 12H16V14H8V12ZM8 16H14V18H8V16Z" fill="white" />
+    </svg>
+);
+
 const EditModal: React.FC<{ isOpen: boolean; onClose: () => void; onSave: (text: string) => void; onClear?: () => void; currentStudents: string[] }> = ({
     isOpen, onClose, onSave, onClear, currentStudents
 }) => {
     const [editText, setEditText] = useState("");
+    const [isLoading, setIsLoading] = useState(false);
+    const [importError, setImportError] = useState("");
+    const [selectedColumn, setSelectedColumn] = useState(0); // 0 = Cột A, 1 = Cột B, 2 = Cột C
+
+    // --- Google Picker Integration ---
+    const CLIENT_ID = '270974453484-vpsgvnih68hcmuhm8nn358pok8335e4a.apps.googleusercontent.com';
+    const API_KEY = 'AIzaSyC0TqnPxCDWc8HutyBJKL_rbmAF_Ar8QKY'; 
+
+    const [isGapiLoaded, setIsGapiLoaded] = useState(false);
+    const [isGsiLoaded, setIsGsiLoaded] = useState(false);
+    const [tokenClient, setTokenClient] = useState<any>(null);
 
     useEffect(() => {
-        if (isOpen) setEditText(currentStudents.join('\n'));
+        if (isOpen) {
+            setEditText(currentStudents.join('\n'));
+            setImportError("");
+        }
     }, [isOpen, currentStudents]);
+
+    useEffect(() => {
+        const initGapi = () => {
+            if (window.gapi) {
+                window.gapi.load('picker', () => {
+                    setIsGapiLoaded(true);
+                });
+            }
+        };
+
+        let gapiScript = document.querySelector('script[src="https://apis.google.com/js/api.js"]') as HTMLScriptElement;
+        if (!gapiScript) {
+            gapiScript = document.createElement('script');
+            gapiScript.src = 'https://apis.google.com/js/api.js';
+            gapiScript.async = true;
+            gapiScript.defer = true;
+            document.body.appendChild(gapiScript);
+        }
+        gapiScript.addEventListener('load', initGapi);
+        if (window.gapi) initGapi();
+
+        const initGsi = () => {
+            setIsGsiLoaded(true);
+        };
+
+        let gsiScript = document.querySelector('script[src="https://accounts.google.com/gsi/client"]') as HTMLScriptElement;
+        if (!gsiScript) {
+            gsiScript = document.createElement('script');
+            gsiScript.src = 'https://accounts.google.com/gsi/client';
+            gsiScript.async = true;
+            gsiScript.defer = true;
+            document.body.appendChild(gsiScript);
+        }
+        gsiScript.addEventListener('load', initGsi);
+        if (window.google && window.google.accounts) initGsi();
+
+        return () => {
+            gapiScript.removeEventListener('load', initGapi);
+            gsiScript.removeEventListener('load', initGsi);
+        };
+    }, []);
+
+    useEffect(() => {
+        if (isGsiLoaded && window.google && window.google.accounts) {
+            const client = window.google.accounts.oauth2.initTokenClient({
+                client_id: CLIENT_ID,
+                scope: 'https://www.googleapis.com/auth/drive.readonly',
+                callback: '', 
+            });
+            setTokenClient(client);
+        }
+    }, [isGsiLoaded]);
+
+    const processCsvData = (csvText: string) => {
+        const lines = csvText.split('\n');
+        const names: string[] = [];
+
+        for (const line of lines) {
+            const cells = line.split(',');
+            const selectedCell = cells[selectedColumn]?.trim().replace(/"/g, '');
+            if (selectedCell && selectedCell !== '') {
+                names.push(selectedCell);
+            }
+        }
+
+        if (names.length === 0) {
+            throw new Error("Không tìm thấy dữ liệu trong cột được chọn!");
+        }
+
+        setEditText(names.join('\n'));
+        setImportError("");
+    };
+
+    const handleGooglePicker = () => {
+        if (!tokenClient || !isGapiLoaded) {
+            setImportError("Google Service chưa sẵn sàng, vui lòng đợi thêm chút...");
+            return;
+        }
+
+        setIsLoading(true);
+
+        tokenClient.callback = async (response: any) => {
+            if (response.error !== undefined) {
+                console.error("Auth error:", response);
+                setIsLoading(false);
+                setImportError("Lỗi xác thực Google: " + response.error);
+                return;
+            }
+            createPicker(response.access_token);
+        };
+
+        tokenClient.requestAccessToken({ prompt: '' });
+    };
+
+    const createPicker = (accessToken: string) => {
+        if (!isGapiLoaded) {
+            setIsLoading(false);
+            return;
+        }
+
+        const view = new window.google.picker.View(window.google.picker.ViewId.SPREADSHEETS);
+        view.setMimeTypes("application/vnd.google-apps.spreadsheet");
+
+        const pickerBuilder = new window.google.picker.PickerBuilder()
+            .enableFeature(window.google.picker.Feature.NAV_HIDDEN)
+            .enableFeature(window.google.picker.Feature.MULTISELECT_ENABLED)
+            .setDeveloperKey(API_KEY)
+            .setAppId(CLIENT_ID.split('-')[0])
+            .setOAuthToken(accessToken)
+            .addView(view)
+            .addView(new window.google.picker.DocsUploadView())
+            .setCallback((data: any) => pickerCallback(data, accessToken));
+
+        const picker = pickerBuilder.build();
+        picker.setVisible(true);
+    };
+
+    const pickerCallback = async (data: any, accessToken: string) => {
+        if (data.action === window.google.picker.Action.PICKED) {
+            const fileId = data.docs[0].id;
+            try {
+                const response = await fetch(`https://docs.google.com/spreadsheets/d/${fileId}/export?format=csv`, {
+                    headers: {
+                        Authorization: `Bearer ${accessToken}`
+                    }
+                });
+
+                if (!response.ok) {
+                    throw new Error("Không thể tải nội dung file.");
+                }
+
+                const csvText = await response.text();
+                processCsvData(csvText);
+            } catch (error: any) {
+                console.error("Error fetching sheet:", error);
+                setImportError("Lỗi khi đọc file: " + (error.message || "Không xác định"));
+            } finally {
+                setIsLoading(false);
+            }
+        } else if (data.action === window.google.picker.Action.CANCEL) {
+            setIsLoading(false);
+        }
+    };
 
     if (!isOpen) return null;
 
     return (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm p-4">
-            <div className="bg-gradient-to-br from-pink-100 to-white p-6 rounded-3xl shadow-2xl w-full max-w-md border-4 border-pink-200">
-                <h2 className="text-2xl font-bold text-pink-500 text-center mb-4">Chỉnh Sửa Danh Sách</h2>
-                <p className="text-center text-pink-400 mb-4 text-sm">Nhập tên mỗi học sinh trên một dòng.</p>
-                <textarea
-                    className="w-full h-64 p-4 rounded-xl bg-pink-50 text-pink-800 border-2 border-pink-200 focus:border-pink-400 outline-none resize-none"
-                    value={editText}
-                    onChange={(e) => setEditText(e.target.value)}
-                    placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;..."
-                />
-                <div className="flex justify-between items-center mt-4">
+        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50 backdrop-blur-sm p-4 animate-[fade-in_0.3s_ease-out_forwards]">
+            <div className="bg-gradient-to-br from-pink-100 to-white p-6 rounded-3xl shadow-2xl w-full max-w-md mx-4 border-4 border-pink-200 flex flex-col max-h-[90vh]">
+                <h2 className="text-2xl font-bold text-pink-500 text-center mb-4 tracking-wider">Chỉnh Sửa Danh Sách</h2>
+
+                <div className="overflow-y-auto pr-2 custom-scrollbar flex-1">
+                    {/* Hướng dẫn đăng nhập Google */}
+                    <div className="mb-3 p-3 bg-amber-50 rounded-xl border border-amber-200">
+                        <div className="flex items-start gap-2">
+                            <span className="text-amber-500 text-lg">💡</span>
+                            <div className="text-xs text-amber-700">
+                                <p className="font-bold mb-1">Lưu ý khi đăng nhập Google:</p>
+                                <p>Nếu thấy cảnh báo <strong>"Google chưa xác minh ứng dụng này"</strong>, hãy nhấn <strong>"Nâng cao"</strong> → <strong>"Truy cập giaoviencn.io.vn"</strong> để tiếp tục.</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Column Selector */}
+                    <div className="mb-3">
+                        <label className="block text-sm font-bold text-pink-500 mb-2">Chọn cột dữ liệu từ bảng tính:</label>
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => setSelectedColumn(0)}
+                                className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 0
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                    }`}
+                            >
+                                Cột A (Dòng 1)
+                            </button>
+                            <button
+                                onClick={() => setSelectedColumn(1)}
+                                className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 1
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                    }`}
+                            >
+                                Cột B (Dòng 2)
+                            </button>
+                            <button
+                                onClick={() => setSelectedColumn(2)}
+                                className={`flex-1 py-2 px-3 rounded-xl font-bold text-sm transition-all ${selectedColumn === 2
+                                    ? 'bg-gradient-to-r from-pink-500 to-rose-500 text-white shadow-lg'
+                                    : 'bg-pink-100 text-pink-600 hover:bg-pink-200'
+                                    }`}
+                            >
+                                Cột C (Dòng 3)
+                            </button>
+                        </div>
+                    </div>
+
+                    {/* Google Sheets Import */}
+                    <div className="mb-4 p-3 bg-white/50 rounded-xl border border-pink-200">
+                        <p className="text-sm text-pink-600 font-bold mb-2">📥 Tải từ Google Sheet</p>
+                        
+                        {/* URL Paste Fallback */}
+                        <div className="flex gap-2 mb-3">
+                            <input
+                                type="text"
+                                placeholder="Hoặc dán link Google Sheet..."
+                                className="flex-1 px-3 py-2 text-sm border-2 border-pink-200 rounded-xl focus:border-pink-400 outline-none w-full"
+                                onChange={async (e) => {
+                                    const val = e.target.value;
+                                    if(!val.trim()) return;
+                                    const match = val.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+                                    if(match) {
+                                        setIsLoading(true);
+                                        setImportError("");
+                                        try {
+                                            const res = await fetch(`https://docs.google.com/spreadsheets/d/${match[1]}/export?format=csv&gid=0`);
+                                            if (!res.ok) throw new Error('Cần bật chia sẻ "Bất kỳ ai có liên kết"');
+                                            const csvText = await res.text();
+                                            processCsvData(csvText);
+                                            e.target.value = "";
+                                            alert("Đã tải dữ liệu thành công!");
+                                        } catch (error: any) {
+                                            setImportError("Lỗi tải link: " + error.message);
+                                        } finally {
+                                            setIsLoading(false);
+                                        }
+                                    }
+                                }}
+                            />
+                        </div>
+
+                        {/* Google Sheets Import Button */}
+                        <button
+                            onClick={handleGooglePicker}
+                            disabled={isLoading || !isGapiLoaded}
+                            className="w-full mb-2 flex items-center justify-center gap-2 py-2.5 px-4 bg-gradient-to-r from-green-500 to-emerald-600 hover:from-green-400 hover:to-emerald-500 text-white font-bold rounded-xl shadow-lg transition-all transform hover:scale-[1.02] disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isLoading ? (
+                                <>
+                                    <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                                    </svg>
+                                    Đang xử lý...
+                                </>
+                            ) : (
+                                <>
+                                    <GoogleSheetsIcon />
+                                    Chọn từ Drive (Cần đăng nhập)
+                                </>
+                            )}
+                        </button>
+
+                        {importError && (
+                            <div className="mt-2 p-2 bg-red-50 rounded-lg border border-red-200 text-red-600 text-xs font-bold text-center">
+                                {importError}
+                            </div>
+                        )}
+                        <p className="text-xs text-pink-500 mt-2">⚠️ <span className="font-semibold">Lưu ý:</span> Sheet cần được chia sẻ <strong>"Bất kỳ ai có liên kết"</strong>. Dữ liệu sẽ lấy từ cột bạn chọn.</p>
+                    </div>
+
+                    <p className="text-center text-pink-400 mb-2 text-sm font-bold">Hoặc nhập tay (mỗi học sinh một dòng):</p>
+                    <textarea
+                        className="w-full h-48 p-4 rounded-xl bg-pink-50 text-pink-800 border-2 border-pink-200 focus:border-pink-400 focus:ring-4 focus:ring-pink-200/50 outline-none resize-none font-sans shadow-inner placeholder-pink-300"
+                        value={editText}
+                        onChange={(e) => setEditText(e.target.value)}
+                        placeholder="Nguyễn Văn A&#10;Trần Thị B&#10;..."
+                        spellCheck={false}
+                    />
+                </div>
+
+                <div className="flex justify-between gap-3 mt-4 pt-4 border-t border-pink-200 shrink-0">
                     {onClear && (
                         <button
                             onClick={onClear}
-                            className="px-4 py-2 bg-red-500 hover:bg-red-600 text-white rounded-full font-bold flex items-center gap-2 transition-colors"
-                            title="Xóa danh sách đã lưu"
+                            className="text-sm md:text-base bg-red-500 hover:bg-red-600 text-white py-2 px-4 rounded-full shadow-md transform active:scale-95 transition-all flex items-center gap-1 font-bold"
+                            title="Xóa toàn bộ danh sách đã lưu"
                         >
-                            <Trash2 size={16} /> Xóa
+                            <Trash2 size={16} />
+                            Xóa
                         </button>
                     )}
-                    <div className="flex gap-3 ml-auto">
-                        <button onClick={onClose} className="px-5 py-2 bg-gray-400 text-white rounded-full font-bold">Hủy</button>
-                        <button onClick={() => onSave(editText)} className="px-6 py-2 bg-gradient-to-r from-pink-500 to-rose-500 text-white rounded-full font-bold">Lưu</button>
+                    
+                    {!onClear && <div></div>}
+
+                    <div className="flex gap-2">
+                        <button
+                            onClick={onClose}
+                            className="text-sm md:text-base bg-gray-400 hover:bg-gray-500 text-white py-2 px-4 rounded-full shadow-md transform active:scale-95 transition-all font-bold"
+                        >
+                            Hủy
+                        </button>
+                        <button
+                            onClick={() => onSave(editText)}
+                            className="text-sm md:text-base bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white py-2 px-6 rounded-full shadow-lg transform active:scale-95 transition-all ring-4 ring-pink-200 font-bold"
+                        >
+                            Lưu Thay Đổi
+                        </button>
                     </div>
                 </div>
             </div>
