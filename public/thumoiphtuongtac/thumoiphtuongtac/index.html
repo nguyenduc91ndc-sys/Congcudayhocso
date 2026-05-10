@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Thư mời họp phụ huynh cuối năm">
+    <title>✉️ Thư Mời Họp Phụ Huynh</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+<body>
+    <div class="petals-container" id="petals"></div>
+
+    <!-- AUDIO ELEMENTS (Local Files) -->
+    <!-- Bỏ file nhạc nền vào thư mục images và đổi tên thành nhac.mp3 -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="images/nhac.mp3" type="audio/mpeg">
+    </audio>
+
+    <!-- Music Toggle -->
+    <button id="btnMusicToggle" class="music-toggle" title="Tắt/Bật nhạc">🎵</button>
+
+    <!-- ===== SETTINGS BUTTON (chỉ GV thấy khi chưa có config) ===== -->
+    <button class="settings-fab" id="settingsFab" title="Cài đặt giáo viên">
+        <span class="fab-icon">⚙️</span>
+        <span class="fab-text">Tạo thư mời cho lớp bạn</span>
+    </button>
+
+    <!-- ===== SETTINGS MODAL ===== -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-card settings-modal-card">
+            <h2 class="modal-title script-font">⚙️ Cài đặt giáo viên</h2>
+            <p class="settings-desc">Nhập thông tin bên dưới, sau đó copy link chia sẻ cho phụ huynh.</p>
+            <form id="settingsForm">
+                <div class="form-group">
+                    <label for="cfgTeacher">👩‍🏫 Tên giáo viên chủ nhiệm</label>
+                    <input type="text" id="cfgTeacher" placeholder="Ví dụ: Thầy/Cô Nguyễn Văn A" required>
+                </div>
+                <div class="form-group">
+                    <label for="cfgSchool">🏫 Tên trường</label>
+                    <input type="text" id="cfgSchool" placeholder="Ví dụ: Trường Tiểu học ABC" required>
+                </div>
+                <div class="form-group">
+                    <label for="cfgClass">📚 Lớp chủ nhiệm</label>
+                    <input type="text" id="cfgClass" placeholder="Ví dụ: 5A1" required>
+                </div>
+                <div class="form-group">
+                    <label for="cfgDate">📅 Ngày họp</label>
+                    <input type="text" id="cfgDate" placeholder="Ví dụ: 08:00, Chủ nhật ngày 18/05/2026" required>
+                </div>
+                <div class="form-group">
+                    <label for="cfgLocation">📍 Địa điểm</label>
+                    <input type="text" id="cfgLocation" placeholder="Ví dụ: Hội trường lớn - Tầng 2" required>
+                </div>
+                <div class="form-group">
+                    <label for="cfgDeadline">⏰ Hạn xác nhận</label>
+                    <input type="text" id="cfgDeadline" placeholder="Ví dụ: 20/05/2026" required>
+                </div>
+                <div class="form-group">
+                    <label for="cfgEmail">📧 Email nhận phản hồi</label>
+                    <input type="email" id="cfgEmail" placeholder="email@gmail.com" required>
+                    <p class="input-hint">Phản hồi từ PH sẽ gửi về email này (qua formsubmit.co miễn phí)</p>
+                </div>
+                <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #e8d5c0;">
+                <div class="form-group">
+                    <label>📋 Chương trình họp (Timeline)</label>
+                    <p class="input-hint" style="margin-bottom: 10px;">Thay đổi các mục trong chương trình bên dưới</p>
+                    <div id="timelineEditor">
+                        <!-- Timeline items will be injected here -->
+                    </div>
+                    <button type="button" id="btnAddTimeline" class="btn-secondary">+ Thêm mục chương trình</button>
+                </div>
+                <button type="submit" class="btn-submit" style="margin-top: 24px;">✅ Lưu & Tạo link chia sẻ</button>
+            </form>
+            <div class="share-link-box" id="shareLinkBox" style="display:none">
+                <label>🔗 Link chia sẻ cho phụ huynh:</label>
+                <div class="share-link-row">
+                    <input type="text" id="shareLink" readonly>
+                    <button type="button" class="btn-copy" id="btnCopy">📋 Copy</button>
+                </div>
+                <p class="share-hint" id="copyStatus"></p>
+            </div>
+            <button type="button" class="btn-close-settings" id="btnCloseSettings">👀 Xem trước (Đóng & Tải lại)</button>
+        </div>
+    </div>
+
+    <!-- ===== COVER: ENVELOPE ===== -->
+    <section class="cover-section" id="coverSection">
+        <div class="cover-bg-blur"></div>
+        <div class="animated-env-wrapper" id="envWrapper">
+            <div class="env-back"></div>
+            
+            <div class="env-letter" id="envLetter">
+                <div class="env-letter-content">
+                    <div class="env-letter-stamp">HÂN HẠNH<br>ĐÓN TIẾP!</div>
+                    <h3 class="env-letter-top script-font">Thư mời</h3>
+                    <h2 class="env-letter-title">HỌP PHỤ HUYNH<br>CUỐI NĂM</h2>
+                    <p class="env-letter-year">✦ NĂM HỌC 2025 - 2026 ✦</p>
+                </div>
+            </div>
+            
+            <div class="env-front">
+                <div class="env-front-left"></div>
+                <div class="env-front-right"></div>
+                <div class="env-front-bottom"></div>
+                <div class="env-wax-seal">GV</div>
+            </div>
+            
+            <div class="env-flap" id="envFlap"></div>
+        </div>
+        <div class="cover-tap-hint" id="tapHint">
+            <span class="tap-hand">👆</span>
+            <span>Nhấn để mở thư</span>
+        </div>
+    </section>
+
+    <!-- ===== MAIN INVITATION ===== -->
+    <main class="invitation-main" id="invitationMain">
+        <section class="inv-section header-section">
+            <div class="header-img-wrapper">
+                <img src="images/school_header.png?v=2" alt="Trường học" class="header-school-img">
+            </div>
+            <div class="header-title-overlay">
+                <h1 class="inv-title script-font">Thư mời</h1>
+                <h2 class="inv-subtitle">HỌP PHỤ HUYNH<br>CUỐI NĂM</h2>
+                <p class="inv-year">✦ NĂM HỌC 2025 - 2026 ✦</p>
+            </div>
+        </section>
+
+        <section class="inv-section letter-section">
+            <div class="letter-paper">
+                <img src="images/letter_bg.png" alt="" class="letter-bg-img">
+                <div class="letter-text-content">
+                    <p class="letter-greeting">Kính gửi Quý Phụ Huynh,</p>
+                    <p>Một năm học đang dần khép lại, đánh dấu hành trình trưởng thành đầy nỗ lực của các con.</p>
+                    <p>Nhà trường và giáo viên chủ nhiệm trân trọng kính mời Quý phụ huynh tham dự buổi <strong>họp phụ huynh cuối năm</strong> để cùng nhìn lại hành trình học tập, chia sẻ những thành quả, đồng thời cùng đồng hành định hướng cho chặng đường tiếp theo của các con.</p>
+                    <div class="letter-info">
+                        <p><strong>Thời gian:</strong> <span id="dispDate">08:00, Chủ nhật ngày 18/05/2026</span></p>
+                        <p><strong>Địa điểm:</strong> <span id="dispLocation">Hội trường lớn - Tầng 2</span>, <span id="dispSchool">Trường Tiểu học ABC</span></p>
+                    </div>
+                    <p class="letter-closing">Sự hiện diện của Quý phụ huynh là niềm động viên lớn lao đối với GVCN và các con.</p>
+                    <p class="letter-sign">Trân trọng kính mời!</p>
+                </div>
+            </div>
+        </section>
+
+        <section class="inv-section schedule-section">
+            <div class="schedule-header">
+                <img src="images/program_banner.png?v=3" alt="" class="program-banner-img">
+                <div class="schedule-title-overlay">
+                    <h2 class="schedule-title script-font">Chương trình</h2>
+                    <h3 class="schedule-subtitle">BUỔI HỌP PHỤ HUYNH</h3>
+                </div>
+            </div>
+            <div class="schedule-timeline">
+                <div class="sch-item" data-aos><div class="sch-time">07:30 -<br>8:00</div><div class="sch-icon"><span>📋</span></div><div class="sch-content"><h4>ĐÓN TIẾP PHỤ HUYNH</h4><p>Ổn định tổ chức, đón tiếp phụ huynh và ổn định chỗ ngồi.</p></div></div>
+                <div class="sch-item" data-aos><div class="sch-time">08:00 -<br>08:15</div><div class="sch-icon"><span>❤️</span></div><div class="sch-content"><h4>KHAI MẠC CHƯƠNG TRÌNH</h4><p>Tuyên bố lý do, giới thiệu đại biểu và nội dung chương trình.</p></div></div>
+                <div class="sch-item" data-aos><div class="sch-time">08:15 -<br>08:30</div><div class="sch-icon"><span>📖</span></div><div class="sch-content"><h4>BÁO CÁO TỔNG KẾT NĂM HỌC</h4><p>Đánh giá kết quả học tập và rèn luyện của học sinh trong năm học.</p></div></div>
+                <div class="sch-item" data-aos><div class="sch-time">09:00 -<br>09:30</div><div class="sch-icon"><span>💬</span></div><div class="sch-content"><h4>THẢO LUẬN & NÊU Ý KIẾN</h4><p>Trao đổi, thảo luận và lắng nghe ý kiến đóng góp từ phụ huynh.</p></div></div>
+                <div class="sch-item" data-aos><div class="sch-time">09:30 -<br>10:00</div><div class="sch-icon"><span>🤝</span></div><div class="sch-content"><h4>CHIA SẺ & ĐỒNG HÀNH</h4><p>Trao đổi những lưu ý cần thiết để cùng hỗ trợ học sinh phát triển tốt hơn.</p></div></div>
+                <div class="sch-item" data-aos><div class="sch-time">10:00 -<br>10:20</div><div class="sch-icon"><span>🎉</span></div><div class="sch-content"><h4>CẢM ƠN & BẾ MẠC</h4><p>Cảm ơn sự tham dự của Quý phụ huynh và kết thúc chương trình.</p></div></div>
+            </div>
+        </section>
+
+        <section class="inv-section rsvp-section">
+            <div class="rsvp-header">
+                <h2 class="rsvp-title script-font">Xác nhận tham dự</h2>
+                <p class="rsvp-desc">Để công tác tổ chức được chu đáo, kính mong Quý phụ huynh xác nhận tham dự bên dưới.</p>
+            </div>
+            <form class="rsvp-form" id="rsvpForm">
+                <div class="form-group">
+                    <label for="parentName">Phụ huynh học sinh:</label>
+                    <input type="text" id="parentName" placeholder="Họ và tên phụ huynh..." required>
+                </div>
+                <div class="form-group">
+                    <label for="studentName">Học sinh:</label>
+                    <input type="text" id="studentName" placeholder="Họ và tên học sinh..." required>
+                </div>
+                <div class="form-group" id="classFieldGroup">
+                    <label for="className">Lớp:</label>
+                    <input type="text" id="className" placeholder="Ví dụ: 5A1" required>
+                </div>
+                <div class="form-group rsvp-choice-group">
+                    <label>Xác nhận tham dự:</label>
+                    <div class="rsvp-choices">
+                        <label class="rsvp-choice" id="choiceAttend"><input type="radio" name="attendance" value="attend" required><div class="choice-btn choice-attend">Tôi sẽ tham dự</div></label>
+                        <label class="rsvp-choice" id="choiceAbsent"><input type="radio" name="attendance" value="absent"><div class="choice-btn choice-absent">Tôi xin phép vắng mặt</div></label>
+                    </div>
+                </div>
+                <div class="form-note">
+                    <strong>Đã lưu cần trả lời</strong>
+                    <p>Quý phụ huynh vui lòng xác nhận trước ngày <span id="dispDeadline">20/05/2026</span> qua biểu mẫu hoặc liên hệ giáo viên chủ nhiệm.</p>
+                </div>
+                <button type="submit" class="btn-submit" id="btnSubmit">Gửi xác nhận</button>
+            </form>
+        </section>
+
+        <section class="inv-section thankyou-section">
+            <div class="thankyou-card">
+                <h2 class="thankyou-title script-font">Thư cảm ơn</h2>
+                <div class="thankyou-text">
+                    <p>Cảm ơn Quý phụ huynh đã luôn đồng hành, tin tưởng và phối hợp cùng GVCN trong suốt năm học vừa qua.</p>
+                    <p>Sự yêu thương, quan tâm và sẻ chia của Quý phụ huynh là nguồn động lực to lớn để chúng tôi tiếp tục nỗ lực mỗi ngày vì sự trưởng thành và hạnh phúc của các con.</p>
+                    <p class="thankyou-invite">Trân trọng kính mời Quý phụ huynh<br>tham dự buổi họp cuối năm.</p>
+                    <p class="thankyou-wish"><em>Hẹn gặp lại trong buổi gặp gỡ đầy ý nghĩa!</em></p>
+                    <p class="thankyou-sign" id="dispTeacher">Giáo viên chủ nhiệm</p>
+                </div>
+                <div class="thankyou-img-wrapper">
+                    <img src="images/thankyou.png" alt="Cảm ơn" class="thankyou-img">
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- SUCCESS MODAL -->
+    <div class="modal-overlay" id="successModal">
+        <div class="modal-card">
+            <div class="modal-confetti" id="confetti"></div>
+            <span class="modal-emoji">🎊</span>
+            <h2 class="modal-title script-font">Cảm ơn bạn!</h2>
+            <p class="modal-msg" id="modalMsg"></p>
+            <button class="modal-btn" id="btnCloseModal">Đóng</button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
