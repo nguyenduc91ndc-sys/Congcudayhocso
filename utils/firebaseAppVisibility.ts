@@ -13,6 +13,7 @@ export const ALL_APP_IDS = [
     'phongTranh3D', // Phòng Tranh 3D Tùy Chỉnh
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
     'nhanXetTT27', // Nhận Xét TT27
+    'thuMoiTuongTac', // Thư Mời Tương Tác
 ] as const;
 
 export type AppId = typeof ALL_APP_IDS[number];
@@ -57,6 +58,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     phongTranh3D: { name: 'Phòng Tranh 3D Tùy Chỉnh', icon: '🖼️', section: 'Ứng dụng 3D & VR' },
     sangKienKinhNghiem: { name: 'Viết SKKN & Báo Cáo', icon: '✍️', section: 'Khóa học & AI' },
     nhanXetTT27: { name: 'Nhận Xét TT27', icon: '📝', section: 'Khóa học & AI' },
+    thuMoiTuongTac: { name: 'Thư Mời Họp Phụ Huynh', icon: '✉️', section: 'Học liệu tương tác' },
 };
 
 
