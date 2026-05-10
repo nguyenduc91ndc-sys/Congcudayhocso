@@ -7,6 +7,9 @@ import { processExcel, getCellText, detectHeaders } from './remark_engine.js';
 
 // ===== STATE =====
 let currentMode = 'bank';
+let uploadType = 'multi'; // 'multi' = bảng tổng hợp, 'single' = file đơn môn
+let selectedSubject = ''; // Mã môn (AN, MT, GDTC...)
+let selectedGrade = '';   // Khối lớp (1, 2, 3, 45)
 let uploadedBuffer = null;
 let uploadedFileName = '';
 let resultBuffer = null;
@@ -46,6 +49,16 @@ const openGuideBtn = document.getElementById('openGuideBtn');
 const closeGuideBtn = document.getElementById('closeGuideBtn');
 const modeGuide = document.getElementById('modeGuide');
 
+// DOM cho upload type mới
+const uploadTypeTabs = document.getElementById('uploadTypeTabs');
+const uploadMulti = document.getElementById('uploadMulti');
+const uploadSingle = document.getElementById('uploadSingle');
+const subjectSelect = document.getElementById('subjectSelect');
+const gradeSelect = document.getElementById('gradeSelect');
+const browseBtnSingle = document.getElementById('browseBtnSingle');
+const fileInputSingle = document.getElementById('fileInputSingle');
+const singleDropArea = document.getElementById('singleDropArea');
+
 // ===== INIT =====
 groqKey.value = localStorage.getItem('groqKey') || '';
 groqModel.value = localStorage.getItem('groqModel') || 'llama-3.1-8b-instant';
@@ -74,6 +87,27 @@ modeSwitch.addEventListener('click', e => {
   }
 });
 
+// ===== UPLOAD TYPE TABS =====
+uploadTypeTabs.addEventListener('click', e => {
+  const tab = e.target.closest('.upload-tab');
+  if (!tab) return;
+  uploadType = tab.dataset.type;
+  document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+
+  if (uploadType === 'multi') {
+    uploadMulti.classList.remove('hidden');
+    uploadSingle.classList.add('hidden');
+  } else {
+    uploadMulti.classList.add('hidden');
+    uploadSingle.classList.remove('hidden');
+  }
+});
+
+// ===== SUBJECT / GRADE SELECT =====
+subjectSelect.addEventListener('change', () => { selectedSubject = subjectSelect.value; });
+gradeSelect.addEventListener('change', () => { selectedGrade = gradeSelect.value; });
+
 // ===== SAVE SETTINGS =====
 groqKey.addEventListener('change', () => localStorage.setItem('groqKey', groqKey.value));
 groqModel.addEventListener('change', () => localStorage.setItem('groqModel', groqModel.value));
@@ -100,7 +134,7 @@ function showAiStatus(msg, type) {
   aiStatus.className = `status-msg ${type}`;
 }
 
-// ===== UPLOAD =====
+// ===== UPLOAD (multi - bảng tổng hợp) =====
 browseBtn.addEventListener('click', () => fileInput.click());
 fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
 
@@ -110,8 +144,42 @@ uploadZone.addEventListener('drop', e => {
   e.preventDefault();
   uploadZone.classList.remove('drag-over');
   const f = e.dataTransfer.files[0];
-  if (f) handleFile(f);
+  if (f) {
+    // Nếu đang ở tab single thì xử lý khác
+    if (uploadType === 'single') {
+      handleFileSingle(f);
+    } else {
+      handleFile(f);
+    }
+  }
 });
+
+// ===== UPLOAD (single - file đơn môn) =====
+browseBtnSingle.addEventListener('click', () => fileInputSingle.click());
+fileInputSingle.addEventListener('change', e => { if (e.target.files[0]) handleFileSingle(e.target.files[0]); });
+
+singleDropArea.addEventListener('dragover', e => { e.preventDefault(); singleDropArea.classList.add('drag-over'); });
+singleDropArea.addEventListener('dragleave', () => singleDropArea.classList.remove('drag-over'));
+singleDropArea.addEventListener('drop', e => {
+  e.preventDefault();
+  singleDropArea.classList.remove('drag-over');
+  const f = e.dataTransfer.files[0];
+  if (f) handleFileSingle(f);
+});
+
+// Validate + handle file đơn môn
+function handleFileSingle(file) {
+  if (!selectedSubject) {
+    alert('⚠️ Vui lòng chọn Môn học trước khi tải file!');
+    return;
+  }
+  if (!selectedGrade) {
+    alert('⚠️ Vui lòng chọn Khối lớp trước khi tải file!');
+    return;
+  }
+  // Reuse handleFile nhưng ghi nhớ rằng đây là mode single
+  handleFile(file);
+}
 
 async function handleFile(file) {
   if (!file || !file.name.match(/\.xlsx?$/i)) {
@@ -149,7 +217,10 @@ async function renderPreview(buffer, name) {
   let validCount = 0;
   
   currentWb.eachSheet(ws => {
-    if (ws.rowCount > 0 && detectHeaders(ws).length > 0) {
+    // Ở mode single, cho phép sheet dù không detect được header chuẩn (vì sẽ forceSubject)
+    const hasHeaders = detectHeaders(ws).length > 0;
+    const isValid = ws.rowCount > 0 && (hasHeaders || uploadType === 'single');
+    if (isValid) {
       const opt = document.createElement('option');
       opt.value = ws.name;
       opt.textContent = ws.name;
@@ -236,9 +307,24 @@ function renderSheet(sheetName) {
     previewBody.innerHTML = `<tr><td colspan="${maxCol}" style="text-align:center;padding:1rem;color:#94a3b8;">Không có dữ liệu</td></tr>`;
   }
 
-  statsBadge.textContent = totalLevelCells > 0
-    ? `Sheet "${sheetName}" có ~${totalLevelCells} mức đánh giá`
-    : `Sheet "${sheetName}" — nhấn nút để xử lý`;
+  // Badge hiển thị thông tin
+  let badgeText = '';
+  if (uploadType === 'single' && selectedSubject) {
+    const subjectNames = {
+      TOAN: 'Toán', TV: 'Tiếng Việt', TA: 'Tiếng Anh',
+      AN: 'Âm nhạc', MT: 'Mĩ thuật', GDTC: 'Thể chất',
+      TIN: 'Tin học', CN: 'Công nghệ', DD: 'Đạo đức',
+      TNXH: 'TN&XH', KHOA: 'Khoa học', LSDL: 'LS&ĐL',
+      HDTN: 'Trải nghiệm', NLPC: 'NL chung', PC: 'Phẩm chất'
+    };
+    badgeText = `📝 Đơn môn: ${subjectNames[selectedSubject] || selectedSubject} — Lớp ${selectedGrade === '45' ? '4-5' : selectedGrade}`;
+    if (totalLevelCells > 0) badgeText += ` (~${totalLevelCells} mức)`;
+  } else {
+    badgeText = totalLevelCells > 0
+      ? `Sheet "${sheetName}" có ~${totalLevelCells} mức đánh giá`
+      : `Sheet "${sheetName}" — nhấn nút để xử lý`;
+  }
+  statsBadge.textContent = badgeText;
 }
 
 sheetSelect.addEventListener('change', () => {
@@ -250,6 +336,12 @@ sheetSelect.addEventListener('change', () => {
 processBtn.addEventListener('click', async () => {
   if (!uploadedBuffer) return;
 
+  // Validate single mode
+  if (uploadType === 'single') {
+    if (!selectedSubject) { alert('⚠️ Vui lòng chọn Môn học!'); return; }
+    if (!selectedGrade) { alert('⚠️ Vui lòng chọn Khối lớp!'); return; }
+  }
+
   if (currentMode === 'ai') {
     const key = groqKey.value.trim();
     if (!key) { alert('Vui lòng nhập Groq API Key!'); return; }
@@ -260,7 +352,7 @@ processBtn.addEventListener('click', async () => {
   progressText.textContent = 'Đang đọc và phân tích file...';
 
   try {
-    const result = await processExcel(uploadedBuffer, {
+    const processOptions = {
       mode: currentMode,
       apiKey: groqKey.value.trim(),
       model: groqModel.value,
@@ -269,7 +361,15 @@ processBtn.addEventListener('click', async () => {
         progressFill.style.width = `${pct}%`;
         progressText.textContent = `Đã xử lý ${done}/${total} học sinh (${pct}%)`;
       }
-    });
+    };
+
+    // Nếu đang ở chế độ đơn môn → truyền thêm forceSubject và forceGrade
+    if (uploadType === 'single') {
+      processOptions.forceSubject = selectedSubject;
+      processOptions.forceGrade = selectedGrade;
+    }
+
+    const result = await processExcel(uploadedBuffer, processOptions);
 
     resultBuffer = result;
     progressFill.style.width = '100%';
@@ -323,6 +423,7 @@ function doReset() {
   resultBuffer = null;
   uploadedFileName = '';
   fileInput.value = '';
+  fileInputSingle.value = '';
   showSection('upload');
 }
 resetBtn.addEventListener('click', doReset);

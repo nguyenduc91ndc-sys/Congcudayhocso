@@ -52,13 +52,81 @@ body {
 
 /* ===== UPLOAD ZONE ===== */
 .upload-zone {
-  border: 2px dashed #cbd5e1; border-radius: 20px; padding: 4rem 2rem; text-align: center;
-  transition: all 0.3s; cursor: pointer; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
+  border: 2px dashed #cbd5e1; border-radius: 20px; padding: 2rem;
+  transition: all 0.3s; background: #ffffff; box-shadow: 0 1px 3px rgba(0,0,0,0.02);
 }
-.upload-zone:hover, .upload-zone.drag-over { border-color: #0284c7; background: #f0f9ff; }
-.upload-icon { font-size: 4rem; margin-bottom: 1rem; }
-.upload-content h2 { font-size: 1.4rem; margin-bottom: 0.5rem; color: #0f172a; }
+.upload-zone:hover { border-color: #0284c7; }
+.upload-zone.drag-over { border-color: #0284c7; background: #f0f9ff; }
+.upload-icon { font-size: 3.5rem; margin-bottom: 0.8rem; }
+.upload-content { text-align: center; padding: 2rem 1rem; }
+.upload-content h2 { font-size: 1.3rem; margin-bottom: 0.5rem; color: #0f172a; }
 .upload-content p { color: #64748b; margin-bottom: 1.5rem; }
+
+/* ===== UPLOAD TYPE TABS ===== */
+.upload-type-tabs {
+  display: flex; gap: 0.75rem; justify-content: center; margin-bottom: 1.5rem;
+  padding-bottom: 1.5rem; border-bottom: 1px solid #e2e8f0;
+}
+.upload-tab {
+  display: flex; flex-direction: column; align-items: center; gap: 0.3rem;
+  padding: 1rem 1.5rem; border-radius: 14px;
+  border: 2px solid #e2e8f0; background: #f8fafc;
+  cursor: pointer; transition: all 0.25s; min-width: 170px;
+  position: relative; overflow: hidden;
+}
+.upload-tab::before {
+  content: ''; position: absolute; inset: 0;
+  background: linear-gradient(135deg, rgba(2,132,199,0.05), rgba(79,70,229,0.05));
+  opacity: 0; transition: opacity 0.25s;
+}
+.upload-tab:hover { border-color: #93c5fd; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.06); }
+.upload-tab:hover::before { opacity: 1; }
+.upload-tab.active {
+  border-color: #0284c7; background: linear-gradient(135deg, #eff6ff, #eef2ff);
+  box-shadow: 0 4px 16px rgba(2,132,199,0.15);
+}
+.upload-tab.active::before { opacity: 1; }
+.upload-tab-icon { font-size: 1.8rem; position: relative; z-index: 1; }
+.upload-tab-label { font-weight: 700; font-size: 0.95rem; color: #0f172a; position: relative; z-index: 1; }
+.upload-tab-desc { font-size: 0.75rem; color: #64748b; position: relative; z-index: 1; }
+.upload-tab.active .upload-tab-label { color: #0284c7; }
+
+/* ===== SINGLE SUBJECT CONFIG ===== */
+.single-subject-config {
+  background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 14px;
+  padding: 1.2rem 1.5rem; margin-bottom: 1.5rem;
+}
+.config-row {
+  display: flex; gap: 1rem; justify-content: center; flex-wrap: wrap;
+}
+.config-item {
+  display: flex; flex-direction: column; gap: 0.4rem; min-width: 200px;
+}
+.config-item label {
+  font-size: 0.85rem; font-weight: 700; color: #475569;
+}
+.config-item select {
+  background: #ffffff; border: 1.5px solid #cbd5e1; border-radius: 10px;
+  padding: 0.6rem 1rem; color: #0f172a; font-size: 0.9rem;
+  cursor: pointer; transition: all 0.2s; font-family: 'Inter', sans-serif;
+}
+.config-item select:focus {
+  outline: none; border-color: #0284c7; box-shadow: 0 0 0 3px rgba(2,132,199,0.15);
+}
+.upload-drop-area {
+  text-align: center; padding: 2rem 1rem;
+  border: 2px dashed #e2e8f0; border-radius: 14px;
+  transition: all 0.3s; cursor: pointer;
+}
+.upload-drop-area:hover { border-color: #93c5fd; background: #f0f9ff; }
+.upload-drop-area.drag-over { border-color: #0284c7; background: #eff6ff; }
+
+@media (max-width: 600px) {
+  .upload-type-tabs { flex-direction: column; align-items: stretch; }
+  .upload-tab { flex-direction: row; gap: 0.8rem; min-width: auto; padding: 0.8rem 1rem; }
+  .config-row { flex-direction: column; }
+  .config-item { min-width: auto; }
+}
 
 /* ===== BUTTONS ===== */
 .btn-primary {

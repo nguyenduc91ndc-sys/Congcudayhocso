@@ -164,7 +164,7 @@ CẤM GIẢI THÍCH (Vd cấm đoạn "để phát triển thêm..."). Phải đ
  * @returns {ArrayBuffer} - file đã điền nhận xét
  */
 export async function processExcel(buffer, options = {}) {
-  const { mode = 'bank', apiKey, model, onProgress } = options;
+  const { mode = 'bank', apiKey, model, onProgress, forceSubject, forceGrade } = options;
 
   const wb = new ExcelJS.Workbook();
   await wb.xlsx.load(buffer);
@@ -188,14 +188,21 @@ export async function processExcel(buffer, options = {}) {
     const sheetInfo = { name: ws.name, filled: 0 };
     
     // Phát hiện cấu trúc: trả về mảng các cặp cột Mức - Nhận xét
-    const headers = detectHeaders(ws);
+    let headers = detectHeaders(ws);
+    
+    // Nếu không detect được header chuẩn VÀ đang ở mode đơn môn → fallback detect đơn giản
+    if ((!headers || headers.length === 0) && forceSubject) {
+      headers = detectHeadersFallback(ws);
+    }
     if (!headers || headers.length === 0) { report.sheets.push(sheetInfo); continue; }
     
-    const grade = detectGrade(ws); // Nhận diện khối lớp từ trang tính
+    // Khối lớp: ưu tiên forceGrade nếu có, nếu không thì tự nhận diện
+    const grade = forceGrade || detectGrade(ws);
 
     for (const header of headers) {
         const { subjectCol, levelCol, remarkCol, subjectName } = header;
-        const subject = normalizeSubject(subjectName);
+        // Ưu tiên forceSubject nếu có (GV bộ môn đã chọn sẵn)
+        const subject = forceSubject || normalizeSubject(subjectName);
 
         let studentIndex = 0;
         ws.eachRow((row, rowNum) => {
@@ -256,13 +263,16 @@ export async function processExcel(buffer, options = {}) {
 }
 
 async function processAiMode(wb, options, report) {
-  const { apiKey, model, bookSet, onProgress } = options;
+  const { apiKey, model, bookSet, onProgress, forceSubject, forceGrade } = options;
 
   for (const ws of wb.worksheets) {
-    const headers = detectHeaders(ws);
+    let headers = detectHeaders(ws);
+    if ((!headers || headers.length === 0) && forceSubject) {
+      headers = detectHeadersFallback(ws);
+    }
     if (!headers || headers.length === 0) continue;
     
-    const grade = detectGrade(ws); // Khối lớp
+    const grade = forceGrade || detectGrade(ws); // Khối lớp
     
     const tasks = [];
     
@@ -293,7 +303,8 @@ async function processAiMode(wb, options, report) {
           
           const remarkCell = row.getCell(remarkCol);
           if (getCellText(remarkCell)) return;
-          tasks.push({ row, remarkCell, subject: normalizeSubject(subject), level, grade });
+          // Ưu tiên forceSubject nếu có
+          tasks.push({ row, remarkCell, subject: forceSubject || normalizeSubject(subject), level, grade });
         });
     }
 
@@ -424,6 +435,75 @@ function detectHeaders(ws) {
   });
 
   return headers;
+}
+
+/**
+ * Fallback detect cho file đơn môn đơn giản
+ * Tìm cột có chứa T/H/C (level) và cột trống ngay sau (remark)
+ */
+function detectHeadersFallback(ws) {
+  // Tìm hàng header: dòng đầu tiên có chứa text
+  let headerRow = 1;
+  for (let r = 1; r <= Math.min(5, ws.rowCount); r++) {
+    const row = ws.getRow(r);
+    let hasText = false;
+    row.eachCell(c => { if (getCellText(c)) hasText = true; });
+    if (hasText) { headerRow = r; break; }
+  }
+
+  // Quét các dòng data để tìm cột chứa giá trị T/H/C
+  let levelCol = -1;
+  let remarkCol = -1;
+  const maxCol = Math.min(ws.columnCount || 20, 30);
+
+  // Đếm số lần xuất hiện T/H/C theo từng cột
+  const colLevelCount = {};
+  for (let r = headerRow + 1; r <= Math.min(ws.rowCount, 20); r++) {
+    const row = ws.getRow(r);
+    for (let c = 1; c <= maxCol; c++) {
+      const val = getCellText(row.getCell(c));
+      if (toLevel(val)) {
+        colLevelCount[c] = (colLevelCount[c] || 0) + 1;
+      }
+    }
+  }
+
+  // Cột level = cột có nhiều giá trị T/H/C nhất
+  let maxCount = 0;
+  for (const [col, count] of Object.entries(colLevelCount)) {
+    if (count > maxCount) {
+      maxCount = count;
+      levelCol = parseInt(col);
+    }
+  }
+
+  if (levelCol < 0) return [];
+
+  // Cột nhận xét = cột trống ngay sau cột level (hoặc cột cuối cùng + 1)
+  // Tìm cột trống tiếp theo sau levelCol
+  for (let c = levelCol + 1; c <= maxCol + 1; c++) {
+    let isEmpty = true;
+    for (let r = headerRow + 1; r <= Math.min(ws.rowCount, 10); r++) {
+      const val = getCellText(ws.getRow(r).getCell(c));
+      if (val && !isLevelValue(val)) { isEmpty = false; break; }
+      // Nếu val là level thì cũng không phải remark
+      if (val && isLevelValue(val)) { isEmpty = false; break; }
+    }
+    if (isEmpty) {
+      remarkCol = c;
+      break;
+    }
+  }
+
+  // Nếu không tìm được cột trống, lấy cột ngay sau level
+  if (remarkCol < 0) remarkCol = levelCol + 1;
+
+  return [{
+    headerRow: headerRow,
+    remarkCol: remarkCol,
+    levelCol: levelCol,
+    subjectName: '' // Sẽ được override bởi forceSubject
+  }];
 }
 
 function isLevelValue(v) {
