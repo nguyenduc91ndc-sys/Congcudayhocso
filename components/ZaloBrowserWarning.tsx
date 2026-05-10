@@ -20,6 +20,12 @@ const ZaloBrowserWarning: React.FC<ZaloBrowserWarningProps> = ({ onClose }) => {
     const [show, setShow] = useState(false);
 
     useEffect(() => {
+        const urlParams = new URLSearchParams(window.location.search);
+        // Không hiện cảnh báo Zalo đối với link Thư mời
+        if (urlParams.get('app') === 'thu_moi_tuong_tac') {
+            return;
+        }
+
         // Check if user is on mobile Zalo browser
         if (isMobile() && isZaloBrowser()) {
             setShow(true);
