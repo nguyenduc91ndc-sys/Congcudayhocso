@@ -59,6 +59,7 @@ import SolarSystemSimulation from './components/SolarSystemSimulation';
 import KeoCoTriTueApp from './keo-co-tri-tue/App';
 import GameTuyChinh from './components/GameTuyChinh';
 import DinhDocLap3D from './components/DinhDocLap3D';
+import ThuMoiTuongTac from './components/ThuMoiTuongTac';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -430,7 +431,9 @@ function App() {
                   onSolarSystem={() => requireLogin(() => setView('SOLAR_SYSTEM'))}
                   onKeoCoTriTue={() => requireLogin(() => setView('KEO_CO_TRI_TUE'))}
                   onGameTuyChinh={() => setView('GAME_TUY_CHINH')}
-                   onDinhDocLap3D={() => requireLogin(() => setView('DINH_DOC_LAP_3D'))}
+                  onDinhDocLap3D={() => requireLogin(() => setView('DINH_DOC_LAP_3D'))}
+                  onThuMoiHopPH={() => setView('THU_MOI_TUONG_TAC')}
+                  onThuMoiTuongTac={() => setView('THU_MOI_TUONG_TAC')}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -667,6 +670,10 @@ function App() {
 
           {view === 'DINH_DOC_LAP_3D' && (
             <DinhDocLap3D onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'THU_MOI_TUONG_TAC' && (
+            <ThuMoiTuongTac onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'PRIVACY' && (
