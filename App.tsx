@@ -680,7 +680,12 @@ function App() {
           )}
 
           {view === 'THU_MOI_TUONG_TAC' && (
-            <ThuMoiTuongTac onBack={() => setView('DASHBOARD')} sharedId={sharedThuMoiId} />
+            <ThuMoiTuongTac 
+              user={user ? { email: user.email || '', name: user.name || '' } : null}
+              onRequireLogin={() => setShowLoginModal(true)}
+              onBack={() => setView('DASHBOARD')} 
+              sharedId={sharedThuMoiId} 
+            />
           )}
 
           {view === 'PRIVACY' && (

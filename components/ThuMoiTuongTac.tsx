@@ -4,9 +4,11 @@ import { saveSharedThuMoi, getSharedThuMoi } from '../utils/firebaseThuMoi';
 interface Props {
   onBack: () => void;
   sharedId?: string | null;
+  user?: { email: string; name: string } | null;
+  onRequireLogin?: () => void;
 }
 
-const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId }) => {
+const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin }) => {
   const [iframeSrc, setIframeSrc] = useState<string>('/thumoiphtuongtac/thumoiphtuongtac/index.html');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
@@ -22,6 +24,12 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId }) => {
     };
     loadSharedData();
   }, [sharedId]);
+
+  useEffect(() => {
+    if (!sharedId && !user && onRequireLogin) {
+      onRequireLogin();
+    }
+  }, [sharedId, user, onRequireLogin]);
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
@@ -53,6 +61,10 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId }) => {
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
   }, []);
+
+  if (!sharedId && !user) {
+    return null;
+  }
 
   return (
     <div className="flex flex-col bg-slate-900" style={{ height: '100vh', overflow: 'hidden' }}>
