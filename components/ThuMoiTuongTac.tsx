@@ -9,7 +9,7 @@ interface Props {
 }
 
 const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin }) => {
-  const [iframeSrc, setIframeSrc] = useState<string>('/thumoiphtuongtac/thumoiphtuongtac/index.html');
+  const [iframeSrc, setIframeSrc] = useState<string | null>(sharedId ? null : '/thumoiphtuongtac/thumoiphtuongtac/index.html');
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   useEffect(() => {
@@ -19,6 +19,8 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
         if (config) {
           const encoded = btoa(encodeURIComponent(JSON.stringify(config)));
           setIframeSrc(`/thumoiphtuongtac/thumoiphtuongtac/index.html#${encoded}`);
+        } else {
+          setIframeSrc('/thumoiphtuongtac/thumoiphtuongtac/index.html');
         }
       }
     };
@@ -89,14 +91,23 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
       </div>
 
       {/* Iframe */}
-      <iframe
-        ref={iframeRef}
-        src={iframeSrc}
-        title="Thư Mời Họp Phụ Huynh"
-        className="flex-1 w-full border-none"
-        style={{ height: 'calc(100vh - 56px)' }}
-        allow="autoplay; clipboard-write"
-      />
+      {iframeSrc ? (
+        <iframe
+          ref={iframeRef}
+          src={iframeSrc}
+          title="Thư Mời Họp Phụ Huynh"
+          className="flex-1 w-full border-none"
+          style={{ height: 'calc(100vh - 56px)' }}
+          allow="autoplay; clipboard-write"
+        />
+      ) : (
+        <div className="flex-1 flex items-center justify-center text-white">
+          <div className="text-center">
+            <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin mx-auto mb-3" />
+            <p className="text-white/70">Đang tải thư mời...</p>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
