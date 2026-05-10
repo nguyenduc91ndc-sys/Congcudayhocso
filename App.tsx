@@ -73,6 +73,7 @@ function App() {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null); // Action after login
   const [showNewYearWelcome, setShowNewYearWelcome] = useState(false); // New Year welcome modal
   const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
+  const [sharedThuMoiId, setSharedThuMoiId] = useState<string | null>(null);
 
   // Lấy storage key theo email user
   const getLessonsStorageKey = (email?: string): string => {
@@ -162,6 +163,9 @@ function App() {
           case 'dinh_doc_lap':
             defaultView = 'DINH_DOC_LAP_3D';
             break;
+          case 'thu_moi_tuong_tac':
+            defaultView = 'THU_MOI_TUONG_TAC';
+            break;
           // Có thể thêm case cho các app khác ở đây sau
         }
         // Dọn sạch URL: chỉ giữ ?app=..., xóa fbclid, utm_*, aem_* v.v. Cần giữ lại tham số 'id' nếu có để hỗ trợ chức năng chia sẻ Cloud
@@ -169,6 +173,9 @@ function App() {
         const idParam = urlParams.get('id');
         if (idParam) {
           cleanUrl += `&id=${idParam}`;
+          if (appParam.toLowerCase() === 'thu_moi_tuong_tac') {
+            setSharedThuMoiId(idParam);
+          }
         }
         window.history.replaceState({}, document.title, cleanUrl);
       }
@@ -673,7 +680,7 @@ function App() {
           )}
 
           {view === 'THU_MOI_TUONG_TAC' && (
-            <ThuMoiTuongTac onBack={() => setView('DASHBOARD')} />
+            <ThuMoiTuongTac onBack={() => setView('DASHBOARD')} sharedId={sharedThuMoiId} />
           )}
 
           {view === 'PRIVACY' && (
