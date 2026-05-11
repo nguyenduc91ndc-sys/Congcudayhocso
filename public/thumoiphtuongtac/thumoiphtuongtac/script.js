@@ -189,14 +189,57 @@ document.addEventListener('DOMContentLoaded', () => {
         window.history.replaceState(null, '', fallbackURL);
     });
 
+    // ===== QR CODE =====
+    let qrCode = null;
+    if (window.QRCodeStyling) {
+        qrCode = new QRCodeStyling({
+            width: 200,
+            height: 200,
+            type: "svg",
+            data: "",
+            dotsOptions: {
+                color: "#c0392b",
+                type: "rounded"
+            },
+            backgroundOptions: {
+                color: "#ffffff",
+            },
+            cornersSquareOptions: {
+                color: "#27ae60",
+                type: "extra-rounded"
+            },
+            cornersDotOptions: {
+                color: "#27ae60",
+                type: "dot"
+            }
+        });
+    }
+
     // Lắng nghe link rút gọn từ React App trả về
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'THU_MOI_SHORT_URL') {
-            document.getElementById('shareLink').value = event.data.url;
+            const shortUrl = event.data.url;
+            document.getElementById('shareLink').value = shortUrl;
             document.getElementById('copyStatus').textContent = '✅ Đã tạo link rút gọn thành công!';
             document.getElementById('copyStatus').style.color = '#27ae60';
+            
+            if (qrCode) {
+                document.getElementById('qrCodeWrapper').style.display = 'block';
+                document.getElementById('qrCodeContainer').innerHTML = '';
+                qrCode.update({ data: shortUrl });
+                qrCode.append(document.getElementById('qrCodeContainer'));
+            }
         }
     });
+
+    const btnDownloadQr = document.getElementById('btnDownloadQr');
+    if (btnDownloadQr) {
+        btnDownloadQr.addEventListener('click', () => {
+            if (qrCode) {
+                qrCode.download({ name: "MaQR_ThuMoiHopPhuHuynh", extension: "png" });
+            }
+        });
+    }
 
     document.getElementById('btnCopy').addEventListener('click', () => {
         const linkInput = document.getElementById('shareLink');

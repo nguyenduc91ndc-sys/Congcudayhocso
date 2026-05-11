@@ -80,6 +80,12 @@
                     <button type="button" class="btn-copy" id="btnCopy">📋 Copy</button>
                 </div>
                 <p class="share-hint" id="copyStatus"></p>
+                
+                <div class="qr-code-wrapper" style="text-align: center; margin-top: 15px; display: none; padding-top: 15px; border-top: 1px dashed #e8d5c0;" id="qrCodeWrapper">
+                    <label style="margin-bottom: 10px; display: block; font-weight: 600; color: #e74c3c;">📱 Mã QR (Phụ huynh quét để mở)</label>
+                    <div id="qrCodeContainer" style="display: flex; justify-content: center; margin-bottom: 10px;"></div>
+                    <button type="button" class="btn-secondary" id="btnDownloadQr" style="font-size: 0.9rem; padding: 6px 12px; border-radius: 8px;">⬇️ Tải mã QR</button>
+                </div>
             </div>
             <button type="button" class="btn-close-settings" id="btnCloseSettings">👀 Xem trước (Đóng & Tải lại)</button>
         </div>
@@ -225,6 +231,8 @@
         </div>
     </div>
 
+    <!-- QR Code Styling Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
     <script src="script.js"></script>
 </body>
 </html>
