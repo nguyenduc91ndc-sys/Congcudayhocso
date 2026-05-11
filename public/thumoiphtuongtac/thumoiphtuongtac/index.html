@@ -62,7 +62,36 @@
                     <input type="email" id="cfgEmail" placeholder="email@gmail.com" required>
                     <p class="input-hint" style="color:#e74c3c;">Lưu ý: Bạn cần kiểm tra hộp thư (cả thư Rác/Spam) để bấm <strong>"Activate Form"</strong> trong lần đầu tiên dùng email này.</p>
                 </div>
-                <hr style="margin: 20px 0; border: 0; border-top: 1px dashed #e8d5c0;">
+                <hr style="margin: 20px 0; border: 0; border-top: 1px dashed var(--border-input, #e8d5c0);">
+                <div class="form-group">
+                    <label>🎨 Chọn mẫu nền</label>
+                    <p class="input-hint" style="margin-bottom: 8px;">Chọn giao diện phù hợp với phong cách của bạn</p>
+                    <div class="theme-picker">
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="classic" checked>
+                            <div class="theme-card theme-preview-classic">
+                                <span class="theme-card-icon">🌹</span>
+                                <span class="theme-card-name">Cổ điển</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="ocean">
+                            <div class="theme-card theme-preview-ocean">
+                                <span class="theme-card-icon">🌊</span>
+                                <span class="theme-card-name">Xanh biển</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="lavender">
+                            <div class="theme-card theme-preview-lavender">
+                                <span class="theme-card-icon">🌸</span>
+                                <span class="theme-card-name">Lavender</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+                <hr style="margin: 20px 0; border: 0; border-top: 1px dashed var(--border-input, #e8d5c0);">
+
                 <div class="form-group">
                     <label>📋 Chương trình họp (Timeline)</label>
                     <p class="input-hint" style="margin-bottom: 10px;">Thay đổi các mục trong chương trình bên dưới</p>

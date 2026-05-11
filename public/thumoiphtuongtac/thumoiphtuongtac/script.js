@@ -12,6 +12,7 @@ document.addEventListener('DOMContentLoaded', () => {
         location: '',
         deadline: '',
         email: '',
+        theme: 'classic',
         timeline: [
             { time: "07:30 - 08:00", title: "ĐÓN TIẾP PHỤ HUYNH", desc: "Ổn định tổ chức, đón tiếp phụ huynh và ổn định chỗ ngồi." },
             { time: "08:00 - 08:15", title: "KHAI MẠC CHƯƠNG TRÌNH", desc: "Tuyên bố lý do, giới thiệu đại biểu và nội dung chương trình." },
@@ -54,6 +55,18 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         renderTimelineDisplay();
+
+        // Apply theme
+        applyTheme(CONFIG.theme || 'classic');
+    }
+
+    function applyTheme(theme) {
+        document.body.className = document.body.className.replace(/theme-\S+/g, '').trim();
+        if (theme && theme !== 'classic') {
+            document.body.classList.add('theme-' + theme);
+        } else {
+            document.body.classList.add('theme-classic');
+        }
     }
 
     // --- Hiển thị timeline ra trang ---
@@ -96,7 +109,9 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (hasConfig) {
         applyConfig();
-        settingsFab.style.display = 'none';
+        // Đổi nút thành "Chỉnh sửa" rõ ràng để GV dễ hiểu
+        settingsFab.innerHTML = '<span class="fab-icon">✏️</span><span class="fab-text">Chỉnh sửa</span>';
+        settingsFab.style.animation = 'none';
     }
 
     settingsFab.addEventListener('click', (evt) => {
@@ -111,6 +126,18 @@ document.addEventListener('DOMContentLoaded', () => {
         if (CONFIG.deadline) document.getElementById('cfgDeadline').value = CONFIG.deadline;
         if (CONFIG.email) document.getElementById('cfgEmail').value = CONFIG.email;
         
+        // Pre-fill theme radio
+        const themeVal = CONFIG.theme || 'classic';
+        const themeRadio = document.querySelector(`input[name="cfgTheme"][value="${themeVal}"]`);
+        if (themeRadio) themeRadio.checked = true;
+
+        // Live preview: apply theme immediately when GV clicks a theme card
+        document.querySelectorAll('input[name="cfgTheme"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                applyTheme(radio.value);
+            });
+        });
+
         renderTimelineEditor();
     });
 
@@ -159,6 +186,11 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
         CONFIG.timeline = tItems;
+
+        // Save theme
+        const themeRadio = document.querySelector('input[name="cfgTheme"]:checked');
+        CONFIG.theme = themeRadio ? themeRadio.value : 'classic';
+        applyTheme(CONFIG.theme);
     }
 
     document.getElementById('btnCloseSettings').addEventListener('click', () => {
@@ -265,7 +297,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const size = Math.random() * 8 + 8;
         p.style.width = size + 'px';
         p.style.height = size + 'px';
-        p.style.background = Math.random() > 0.5 ? '#e74c3c' : '#ff6b6b';
+        p.style.background = Math.random() > 0.5
+            ? getComputedStyle(document.documentElement).getPropertyValue('--petal-color-1').trim() || '#e74c3c'
+            : getComputedStyle(document.documentElement).getPropertyValue('--petal-color-2').trim() || '#ff6b6b';
         petalsEl.appendChild(p);
     }
 
