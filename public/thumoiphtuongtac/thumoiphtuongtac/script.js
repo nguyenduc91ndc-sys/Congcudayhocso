@@ -367,6 +367,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    // ===== AUTO SUBMIT KHI CHỌN RADIO =====
+    const attendanceRadios = form.querySelectorAll('input[name="attendance"]');
+    attendanceRadios.forEach(radio => {
+        radio.addEventListener('change', () => {
+            const parent = document.getElementById('parentName').value.trim();
+            const student = document.getElementById('studentName').value.trim();
+            const cls = document.getElementById('className').value.trim();
+            
+            // Nếu đã điền đủ thông tin mà click chọn -> tự động Gửi luôn
+            if (parent && student && cls) {
+                btnSubmit.click();
+            } else {
+                // Nếu chưa điền đủ mà click -> nhắc nhở điền thông tin
+                form.reportValidity();
+            }
+        });
+    });
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const parent = document.getElementById('parentName').value.trim();
@@ -419,8 +437,10 @@ document.addEventListener('DOMContentLoaded', () => {
             // --- Hiển thị kết quả ---
             if (isAttend) {
                 modalMsg.innerHTML = `Phụ huynh <strong>${parent}</strong> đã xác nhận <span style="color:#27ae60;font-weight:700">THAM DỰ</span> buổi họp phụ huynh.<br><br>Học sinh: <strong>${student}</strong> — Lớp <strong>${cls}</strong><br><br>Hẹn gặp Quý Phụ Huynh tại buổi họp! 🎉`;
+                playSuccessSound();
             } else {
                 modalMsg.innerHTML = `Phụ huynh <strong>${parent}</strong> đã xác nhận <span style="color:#c0392b;font-weight:700">XIN PHÉP VẮNG MẶT</span>.<br><br>Học sinh: <strong>${student}</strong> — Lớp <strong>${cls}</strong><br><br>Nhà trường ghi nhận. Cảm ơn phản hồi! 🙏`;
+                playNeutralSound();
             }
 
             modal.classList.add('show');
@@ -460,6 +480,42 @@ document.addEventListener('DOMContentLoaded', () => {
     modal.addEventListener('click', (e) => {
         if (e.target === modal) modal.classList.remove('show');
     });
+
+    // ===== AUDIO EFFECTS =====
+    let audioCtx = null;
+    function initAudio() {
+        if (!audioCtx) {
+            audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+    }
+
+    function playTone(freq, type, duration, vol, delay=0) {
+        initAudio();
+        const t = audioCtx.currentTime + delay;
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = type;
+        osc.frequency.value = freq;
+        gain.gain.setValueAtTime(vol, t);
+        gain.gain.exponentialRampToValueAtTime(0.001, t + duration);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start(t);
+        osc.stop(t + duration);
+    }
+
+    function playSuccessSound() {
+        playTone(523.25, 'sine', 0.15, 0.4, 0);      
+        playTone(659.25, 'sine', 0.15, 0.4, 0.15);   
+        playTone(783.99, 'sine', 0.15, 0.4, 0.3);    
+        playTone(1046.50, 'sine', 0.5, 0.4, 0.45);   
+    }
+
+    function playNeutralSound() {
+        playTone(440.00, 'triangle', 0.2, 0.4, 0);   
+        playTone(329.63, 'triangle', 0.4, 0.4, 0.2); 
+    }
 
     function spawnConfetti() {
         const container = document.getElementById('confetti');
