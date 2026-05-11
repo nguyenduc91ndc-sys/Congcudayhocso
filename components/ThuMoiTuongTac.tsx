@@ -1,5 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { saveSharedThuMoi, getSharedThuMoi } from '../utils/firebaseThuMoi';
+import { saveSharedThuMoi, getSharedThuMoi, checkStudentRSVP, saveStudentRSVP } from '../utils/firebaseThuMoi';
 
 interface Props {
   onBack: () => void;
@@ -18,7 +18,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
         const config = await getSharedThuMoi(sharedId);
         if (config) {
           const encoded = btoa(encodeURIComponent(JSON.stringify(config)));
-          setIframeSrc(`/thumoiphtuongtac/thumoiphtuongtac/index.html#${encoded}`);
+          setIframeSrc(`/thumoiphtuongtac/thumoiphtuongtac/index.html?id=${sharedId}#${encoded}`);
         } else {
           setIframeSrc('/thumoiphtuongtac/thumoiphtuongtac/index.html');
         }
@@ -50,12 +50,27 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
           } else {
             // Fallback nếu lưu lỗi
             const encoded = event.data.encoded;
-            const fallbackUrl = `${window.location.origin}/thumoiphtuongtac/thumoiphtuongtac/index.html#${encoded}`;
+            const fallbackUrl = `${window.location.origin}/thumoiphtuongtac/thumoiphtuongtac/index.html?id=${shortId}#${encoded}`;
             iframeRef.current?.contentWindow?.postMessage({
               type: 'THU_MOI_SHORT_URL',
               url: fallbackUrl
             }, '*');
           }
+        }
+      } else if (event.data && event.data.type === 'CHECK_RSVP') {
+        const { studentName, requestId } = event.data;
+        if (sharedId && studentName) {
+            const hasSubmitted = await checkStudentRSVP(sharedId, studentName);
+            iframeRef.current?.contentWindow?.postMessage({
+                type: 'RSVP_CHECK_RESULT',
+                requestId,
+                hasSubmitted
+            }, '*');
+        }
+      } else if (event.data && event.data.type === 'SAVE_RSVP') {
+        const { studentName } = event.data;
+        if (sharedId && studentName) {
+            await saveStudentRSVP(sharedId, studentName);
         }
       }
     };

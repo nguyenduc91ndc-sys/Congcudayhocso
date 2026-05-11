@@ -96,7 +96,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (hasConfig) {
         applyConfig();
-        settingsFab.classList.add('fab-small');
+        settingsFab.style.display = 'none';
     }
 
     settingsFab.addEventListener('click', (evt) => {
@@ -317,6 +317,56 @@ document.addEventListener('DOMContentLoaded', () => {
     const modalMsg = document.getElementById('modalMsg');
     const btnSubmit = document.getElementById('btnSubmit');
 
+    // Check localStorage to prevent multiple submissions
+    const getStorageKey = () => {
+        const hash = window.location.hash.slice(1);
+        if (!hash) return 'thumoihop_rsvp_local';
+        let hashNum = 0;
+        for (let i = 0; i < hash.length; i++) {
+            const char = hash.charCodeAt(i);
+            hashNum = ((hashNum << 5) - hashNum) + char;
+            hashNum = hashNum & hashNum;
+        }
+        return 'thumoihop_rsvp_' + hashNum;
+    };
+
+    const storageKey = getStorageKey();
+    if (localStorage.getItem(storageKey)) {
+        form.innerHTML = `
+            <div style="text-align:center; padding: 30px 20px; background: rgba(255,255,255,0.9); border-radius: 12px; border: 2px dashed #27ae60; margin-top: 20px;">
+                <h3 style="color: #27ae60; font-family: 'Quicksand', sans-serif; font-size: 1.3rem; margin-bottom: 10px;">✅ Bạn đã gửi xác nhận</h3>
+                <p style="color: #555;">Cảm ơn Quý phụ huynh đã phản hồi.</p>
+            </div>
+        `;
+    }
+
+    function checkRsvpGlobal(studentName) {
+        return new Promise((resolve) => {
+            const requestId = Date.now().toString();
+            
+            const handleResult = (event) => {
+                if (event.data && event.data.type === 'RSVP_CHECK_RESULT' && event.data.requestId === requestId) {
+                    window.removeEventListener('message', handleResult);
+                    resolve(event.data.hasSubmitted);
+                }
+            };
+            
+            window.addEventListener('message', handleResult);
+            
+            window.parent.postMessage({
+                type: 'CHECK_RSVP',
+                studentName: studentName,
+                requestId: requestId
+            }, '*');
+            
+            // Timeout in case it doesn't respond
+            setTimeout(() => {
+                window.removeEventListener('message', handleResult);
+                resolve(false); // Fail open
+            }, 3000);
+        });
+    }
+
     form.addEventListener('submit', async (e) => {
         e.preventDefault();
         const parent = document.getElementById('parentName').value.trim();
@@ -329,6 +379,21 @@ document.addEventListener('DOMContentLoaded', () => {
         const attendanceText = isAttend ? 'Tham dự' : 'Vắng mặt';
 
         btnSubmit.disabled = true;
+        btnSubmit.textContent = '⏳ Đang kiểm tra...';
+
+        const urlParams = new URLSearchParams(window.location.search);
+        const sharedId = urlParams.get('id');
+
+        if (sharedId) {
+            const hasSubmitted = await checkRsvpGlobal(student);
+            if (hasSubmitted) {
+                alert(`Học sinh "${student}" đã được gửi xác nhận trước đó!`);
+                btnSubmit.disabled = false;
+                btnSubmit.textContent = 'Gửi xác nhận';
+                return;
+            }
+        }
+
         btnSubmit.textContent = '⏳ Đang gửi...';
 
         try {
@@ -360,10 +425,23 @@ document.addEventListener('DOMContentLoaded', () => {
 
             modal.classList.add('show');
             if (isAttend) spawnConfetti();
-            form.reset();
-            if (CONFIG.className) {
-                document.getElementById('className').value = CONFIG.className;
+            
+            // Lock the form after successful submission
+            localStorage.setItem(storageKey, 'true');
+            
+            if (sharedId) {
+                window.parent.postMessage({
+                    type: 'SAVE_RSVP',
+                    studentName: student
+                }, '*');
             }
+
+            form.innerHTML = `
+                <div style="text-align:center; padding: 30px 20px; background: rgba(255,255,255,0.9); border-radius: 12px; border: 2px dashed #27ae60; margin-top: 20px;">
+                    <h3 style="color: #27ae60; font-family: 'Quicksand', sans-serif; font-size: 1.3rem; margin-bottom: 10px;">✅ Bạn đã gửi xác nhận</h3>
+                    <p style="color: #555;">Cảm ơn Quý phụ huynh đã phản hồi.</p>
+                </div>
+            `;
 
         } catch (err) {
             console.error('Lỗi gửi:', err);

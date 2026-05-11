@@ -46,3 +46,54 @@ export const getSharedThuMoi = async (shortId: string): Promise<any | null> => {
         return null;
     }
 };
+
+export const getFullKeyFromShortId = async (shortId: string): Promise<string | null> => {
+    try {
+        const thumoiRef = ref(database, SHARED_THUMOI_REF);
+        const snapshot = await get(thumoiRef);
+        if (!snapshot.exists()) return null;
+
+        const data = snapshot.val();
+        for (const fullKey of Object.keys(data)) {
+            if (fullKey.endsWith(shortId)) {
+                return fullKey;
+            }
+        }
+        return null;
+    } catch (error) {
+        console.error('[ShareLink] Error getting full key:', error);
+        return null;
+    }
+};
+
+export const checkStudentRSVP = async (shortId: string, studentName: string): Promise<boolean> => {
+    try {
+        const fullKey = await getFullKeyFromShortId(shortId);
+        if (!fullKey) return false;
+
+        const encodedName = btoa(encodeURIComponent(studentName.trim().toLowerCase()));
+        const rsvpRef = ref(database, `${SHARED_THUMOI_REF}/${fullKey}/rsvps/${encodedName}`);
+        const snapshot = await get(rsvpRef);
+        return snapshot.exists();
+    } catch (error) {
+        console.error('[ShareLink] Error checking RSVP:', error);
+        return false; // Fail open if error
+    }
+};
+
+export const saveStudentRSVP = async (shortId: string, studentName: string): Promise<boolean> => {
+    try {
+        const fullKey = await getFullKeyFromShortId(shortId);
+        if (!fullKey) return false;
+
+        const encodedName = btoa(encodeURIComponent(studentName.trim().toLowerCase()));
+        const rsvpRef = ref(database, `${SHARED_THUMOI_REF}/${fullKey}/rsvps/${encodedName}`);
+        await set(rsvpRef, {
+            timestamp: Date.now()
+        });
+        return true;
+    } catch (error) {
+        console.error('[ShareLink] Error saving RSVP:', error);
+        return false;
+    }
+};
