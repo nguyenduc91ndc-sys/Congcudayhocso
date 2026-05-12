@@ -109,9 +109,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (hasConfig) {
         applyConfig();
-        // Đổi nút thành "Chỉnh sửa" rõ ràng để GV dễ hiểu
-        settingsFab.innerHTML = '<span class="fab-icon">✏️</span><span class="fab-text">Chỉnh sửa</span>';
-        settingsFab.style.animation = 'none';
+        // Kiểm tra: nếu PH mở link chia sẻ (?id=xxx) → ẩn hoàn toàn nút settings
+        const isSharedLink = new URLSearchParams(window.location.search).has('id');
+        if (isSharedLink) {
+            settingsFab.style.display = 'none';
+        } else {
+            // GV xem trước (chỉ có hash) → hiện nút "Chỉnh sửa"
+            settingsFab.innerHTML = '<span class="fab-icon">✏️</span><span class="fab-text">Chỉnh sửa</span>';
+            settingsFab.style.animation = 'none';
+        }
     }
 
     settingsFab.addEventListener('click', (evt) => {
