@@ -535,11 +535,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.body.appendChild(formDest);
                 formDest.submit();
 
-                // Dọn dẹp iframe và form sau khi gửi xong (chờ 3s để form gửi kịp)
+                // KHÔNG xóa iframe lập tức. Việc xóa iframe quá sớm (3s) trên mạng di động chậm 
+                // sẽ khiến trình duyệt HỦY luôn kết nối POST đang gửi dở dang, làm mất dữ liệu.
+                // Iframe ẩn này không tốn tài nguyên nên ta cứ để đó hoặc xóa sau thời gian rất dài.
                 setTimeout(() => {
                     if (document.body.contains(formDest)) document.body.removeChild(formDest);
                     if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                }, 3000);
+                }, 60000); // Đợi hẳn 60s rồi mới dọn dẹp
             }
 
             // --- Hiển thị kết quả ---
