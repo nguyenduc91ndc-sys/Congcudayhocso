@@ -500,24 +500,55 @@ document.addEventListener('DOMContentLoaded', () => {
         try {
             // --- Gửi qua formsubmit.co (nếu có email) ---
             if (CONFIG.email) {
-                const data = new FormData();
-                data.append('Phụ huynh', parent);
-                data.append('Học sinh', student);
-                data.append('Lớp', cls);
-                data.append('Xác nhận', attendanceText);
-                data.append('Thời gian gửi', new Date().toLocaleString('vi-VN'));
-                // formsubmit.co settings
-                data.append('_subject', `📋 Phản hồi họp PH: ${parent} - ${attendanceText}`);
-                data.append('_captcha', 'false');
-                data.append('_template', 'table');
+                const data = {
+                    "Phụ huynh": parent,
+                    "Học sinh": student,
+                    "Lớp": cls,
+                    "Xác nhận": attendanceText,
+                    "Thời gian gửi": new Date().toLocaleString('vi-VN'),
+                    "_subject": `📋 Phản hồi họp PH: ${parent} - ${attendanceText}`,
+                    "_captcha": "false",
+                    "_template": "table"
+                };
 
-                await fetch(`https://formsubmit.co/ajax/${CONFIG.email}`, {
-                    method: 'POST',
-                    body: data
-                });
+                let response;
+                try {
+                    response = await fetch(`https://formsubmit.co/ajax/${CONFIG.email.trim()}`, {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json'
+                        },
+                        body: JSON.stringify(data)
+                    });
+                } catch (fetchErr) {
+                    throw new Error("NETWORK_ERROR");
+                }
+                
+                if (!response.ok) {
+                    throw new Error('NOT_ACTIVATED');
+                }
+
+                // Đọc JSON trả về để kiểm tra kỹ (FormSubmit đôi khi trả về 200 nhưng success là false)
+                try {
+                    const result = await response.json();
+                    if (result.success === "false" || result.success === false) {
+                        throw new Error("FORMSUBMIT_REJECTED: " + (result.message || ""));
+                    }
+                } catch (jsonErr) {
+                    // Ignore JSON parsing errors, but if we explicitly threw FORMSUBMIT_REJECTED, rethrow it
+                    if (jsonErr.message && jsonErr.message.includes("FORMSUBMIT_REJECTED")) {
+                        throw jsonErr;
+                    }
+                }
             }
 
             // --- Hiển thị kết quả ---
+            const modalTitle = document.querySelector('#successModal .modal-title');
+            const modalEmoji = document.querySelector('#successModal .modal-emoji');
+            if (modalTitle) modalTitle.innerHTML = 'Cảm ơn bạn!';
+            if (modalEmoji) modalEmoji.innerHTML = '🎊';
+
             if (isAttend) {
                 modalMsg.innerHTML = `Phụ huynh <strong>${parent}</strong> đã xác nhận <span style="color:#27ae60;font-weight:700">THAM DỰ</span> buổi họp phụ huynh.<br><br>Học sinh: <strong>${student}</strong> — Lớp <strong>${cls}</strong><br><br>Hẹn gặp Quý Phụ Huynh tại buổi họp! 🎉`;
                 playSuccessSound();
@@ -529,14 +560,22 @@ document.addEventListener('DOMContentLoaded', () => {
             modal.classList.add('show');
             if (isAttend) spawnConfetti();
             
-            // Lock the form after successful submission
-            localStorage.setItem(storageKey, 'true');
+            // Bọc try-catch cho localStorage (tránh lỗi trên trình duyệt Zalo/ẩn danh)
+            try {
+                localStorage.setItem(storageKey, 'true');
+            } catch (storageErr) {
+                console.warn('Lỗi lưu localStorage:', storageErr);
+            }
             
             if (sharedId) {
-                window.parent.postMessage({
-                    type: 'SAVE_RSVP',
-                    studentName: student
-                }, '*');
+                try {
+                    window.parent.postMessage({
+                        type: 'SAVE_RSVP',
+                        studentName: student
+                    }, '*');
+                } catch (msgErr) {
+                    console.warn('Lỗi postMessage:', msgErr);
+                }
             }
 
             form.innerHTML = `
@@ -548,7 +587,20 @@ document.addEventListener('DOMContentLoaded', () => {
 
         } catch (err) {
             console.error('Lỗi gửi:', err);
-            modalMsg.innerHTML = `⚠️ Có lỗi xảy ra khi gửi.<br>Vui lòng thử lại hoặc liên hệ giáo viên chủ nhiệm.`;
+            
+            const modalTitle = document.querySelector('#successModal .modal-title');
+            const modalEmoji = document.querySelector('#successModal .modal-emoji');
+            if (modalTitle) modalTitle.innerHTML = 'Thông báo';
+            if (modalEmoji) modalEmoji.innerHTML = '⚠️';
+            document.getElementById('confetti').innerHTML = '';
+            
+            if (err.message === 'NETWORK_ERROR' || err.message === 'NOT_ACTIVATED') {
+                modalMsg.innerHTML = `⚠️ <b>Lỗi kết nối:</b><br><br>Không thể gửi dữ liệu. Có thể kết nối mạng không ổn định hoặc giáo viên chưa kích hoạt FormSubmit trong email <b>${CONFIG.email}</b>.<br><br><i>Vui lòng thử lại sau!</i>`;
+            } else if (err.message.includes('FORMSUBMIT_REJECTED')) {
+                modalMsg.innerHTML = `⚠️ Hệ thống từ chối gửi tin nhắn.<br>Giáo viên cần kiểm tra lại cấu hình FormSubmit.<br><br>Chi tiết: ${err.message.replace('FORMSUBMIT_REJECTED: ', '')}`;
+            } else {
+                modalMsg.innerHTML = `⚠️ Có lỗi xảy ra khi gửi.<br>Vui lòng thử lại hoặc liên hệ giáo viên chủ nhiệm.`;
+            }
             modal.classList.add('show');
         } finally {
             btnSubmit.disabled = false;
@@ -589,15 +641,19 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function playSuccessSound() {
-        playTone(523.25, 'sine', 0.15, 0.4, 0);      
-        playTone(659.25, 'sine', 0.15, 0.4, 0.15);   
-        playTone(783.99, 'sine', 0.15, 0.4, 0.3);    
-        playTone(1046.50, 'sine', 0.5, 0.4, 0.45);   
+        try {
+            playTone(523.25, 'sine', 0.15, 0.4, 0);      
+            playTone(659.25, 'sine', 0.15, 0.4, 0.15);   
+            playTone(783.99, 'sine', 0.15, 0.4, 0.3);    
+            playTone(1046.50, 'sine', 0.5, 0.4, 0.45);   
+        } catch (e) { console.warn('Audio error', e); }
     }
 
     function playNeutralSound() {
-        playTone(440.00, 'triangle', 0.2, 0.4, 0);   
-        playTone(329.63, 'triangle', 0.4, 0.4, 0.2); 
+        try {
+            playTone(440.00, 'triangle', 0.2, 0.4, 0);   
+            playTone(329.63, 'triangle', 0.4, 0.4, 0.2); 
+        } catch (e) { console.warn('Audio error', e); }
     }
 
     function spawnConfetti() {
