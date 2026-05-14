@@ -511,36 +511,35 @@ document.addEventListener('DOMContentLoaded', () => {
                     "_template": "table"
                 };
 
-                let response;
-                try {
-                    response = await fetch(`https://formsubmit.co/ajax/${CONFIG.email.trim()}`, {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json'
-                        },
-                        body: JSON.stringify(data)
-                    });
-                } catch (fetchErr) {
-                    throw new Error("NETWORK_ERROR");
-                }
-                
-                if (!response.ok) {
-                    throw new Error('NOT_ACTIVATED');
+                // Dùng kỹ thuật Hidden Iframe để vượt qua chặn CORS của Zalo Browser
+                const iframeName = 'formsubmit_iframe_' + Date.now();
+                let iframe = document.createElement('iframe');
+                iframe.name = iframeName;
+                iframe.style.display = 'none';
+                document.body.appendChild(iframe);
+
+                const formDest = document.createElement('form');
+                formDest.target = iframeName;
+                formDest.method = 'POST';
+                // Gửi dạng form chuẩn (không dùng /ajax/ nữa để tránh CORS)
+                formDest.action = `https://formsubmit.co/${CONFIG.email.trim()}`;
+
+                for (let key in data) {
+                    const inp = document.createElement('input');
+                    inp.type = 'hidden';
+                    inp.name = key;
+                    inp.value = data[key];
+                    formDest.appendChild(inp);
                 }
 
-                // Đọc JSON trả về để kiểm tra kỹ (FormSubmit đôi khi trả về 200 nhưng success là false)
-                try {
-                    const result = await response.json();
-                    if (result.success === "false" || result.success === false) {
-                        throw new Error("FORMSUBMIT_REJECTED: " + (result.message || ""));
-                    }
-                } catch (jsonErr) {
-                    // Ignore JSON parsing errors, but if we explicitly threw FORMSUBMIT_REJECTED, rethrow it
-                    if (jsonErr.message && jsonErr.message.includes("FORMSUBMIT_REJECTED")) {
-                        throw jsonErr;
-                    }
-                }
+                document.body.appendChild(formDest);
+                formDest.submit();
+
+                // Dọn dẹp iframe và form sau khi gửi xong (chờ 3s để form gửi kịp)
+                setTimeout(() => {
+                    if (document.body.contains(formDest)) document.body.removeChild(formDest);
+                    if (document.body.contains(iframe)) document.body.removeChild(iframe);
+                }, 3000);
             }
 
             // --- Hiển thị kết quả ---
@@ -594,9 +593,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modalEmoji) modalEmoji.innerHTML = '⚠️';
             document.getElementById('confetti').innerHTML = '';
             
-            if (err.message === 'NETWORK_ERROR' || err.message === 'NOT_ACTIVATED') {
-                modalMsg.innerHTML = `⚠️ <b>Lỗi kết nối:</b><br><br>Không thể gửi dữ liệu. Có thể kết nối mạng không ổn định hoặc giáo viên chưa kích hoạt FormSubmit trong email <b>${CONFIG.email}</b>.<br><br><i>Vui lòng thử lại sau!</i>`;
-            } else if (err.message.includes('FORMSUBMIT_REJECTED')) {
+            if (err.message && err.message.includes('FORMSUBMIT_REJECTED')) {
                 modalMsg.innerHTML = `⚠️ Hệ thống từ chối gửi tin nhắn.<br>Giáo viên cần kiểm tra lại cấu hình FormSubmit.<br><br>Chi tiết: ${err.message.replace('FORMSUBMIT_REJECTED: ', '')}`;
             } else {
                 modalMsg.innerHTML = `⚠️ Có lỗi xảy ra khi gửi.<br>Vui lòng thử lại hoặc liên hệ giáo viên chủ nhiệm.`;
