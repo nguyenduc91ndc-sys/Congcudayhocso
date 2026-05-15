@@ -582,7 +582,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 try {
                     window.parent.postMessage({
                         type: 'SAVE_RSVP',
-                        studentName: student
+                        studentName: student,
+                        parentName: parent,
+                        attendance: attendanceText
                     }, '*');
                 } catch (msgErr) {
                     console.warn('Lỗi postMessage:', msgErr);

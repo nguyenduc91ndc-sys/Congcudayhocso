@@ -7,7 +7,7 @@ const createShortId = (pushKey: string): string => {
     return pushKey.slice(-8);
 };
 
-export const saveSharedThuMoi = async (config: any): Promise<string | null> => {
+export const saveSharedThuMoi = async (config: any, userId?: string, userEmail?: string): Promise<string | null> => {
     try {
         const thumoiRef = ref(database, SHARED_THUMOI_REF);
         const newRef = push(thumoiRef);
@@ -17,6 +17,8 @@ export const saveSharedThuMoi = async (config: any): Promise<string | null> => {
 
         await set(newRef, {
             config,
+            userId: userId || null,
+            userEmail: userEmail || config.email || null,
             createdAt: Date.now()
         });
 
@@ -132,7 +134,7 @@ export const checkStudentRSVP = async (shortId: string, studentName: string): Pr
     }
 };
 
-export const saveStudentRSVP = async (shortId: string, studentName: string): Promise<boolean> => {
+export const saveStudentRSVP = async (shortId: string, studentName: string, parentName: string = '', attendance: string = ''): Promise<boolean> => {
     try {
         const fullKey = await getFullKeyFromShortId(shortId);
         if (!fullKey) return false;
@@ -140,11 +142,72 @@ export const saveStudentRSVP = async (shortId: string, studentName: string): Pro
         const encodedName = btoa(encodeURIComponent(studentName.trim().toLowerCase()));
         const rsvpRef = ref(database, `${SHARED_THUMOI_REF}/${fullKey}/rsvps/${encodedName}`);
         await set(rsvpRef, {
-            timestamp: Date.now()
+            timestamp: Date.now(),
+            studentName: studentName.trim(),
+            parentName: parentName.trim(),
+            attendance: attendance.trim()
         });
         return true;
     } catch (error) {
         console.error('[ShareLink] Error saving RSVP:', error);
         return false;
+    }
+};
+
+export const getUserThuMoiList = async (userEmail: string): Promise<any[]> => {
+    try {
+        const thumoiRef = ref(database, SHARED_THUMOI_REF);
+        const snapshot = await get(thumoiRef);
+        if (!snapshot.exists()) return [];
+
+        const data = snapshot.val();
+        const list: any[] = [];
+        
+        for (const fullKey of Object.keys(data)) {
+            const item = data[fullKey];
+            const itemEmail = item.userEmail || (item.config && item.config.email);
+            if (itemEmail && itemEmail.toLowerCase() === userEmail.toLowerCase()) {
+                list.push({
+                    shortId: createShortId(fullKey),
+                    config: item.config,
+                    createdAt: item.createdAt || 0,
+                    rsvpCount: item.rsvps ? Object.keys(item.rsvps).length : 0
+                });
+            }
+        }
+        
+        return list.sort((a, b) => b.createdAt - a.createdAt);
+    } catch (error) {
+        console.error('[ShareLink] Error getting user Thu Moi list:', error);
+        return [];
+    }
+};
+
+export const getRSVPs = async (shortId: string): Promise<any[]> => {
+    try {
+        const fullKey = await getFullKeyFromShortId(shortId);
+        if (!fullKey) return [];
+
+        const rsvpsRef = ref(database, `${SHARED_THUMOI_REF}/${fullKey}/rsvps`);
+        const snapshot = await get(rsvpsRef);
+        
+        if (!snapshot.exists()) return [];
+        
+        const rsvps = snapshot.val();
+        const list: any[] = [];
+        
+        for (const key of Object.keys(rsvps)) {
+            list.push({
+                ...rsvps[key],
+                id: key,
+                // Fallback decode if missing fields from old data
+                studentName: rsvps[key].studentName || decodeURIComponent(atob(key))
+            });
+        }
+        
+        return list.sort((a, b) => b.timestamp - a.timestamp);
+    } catch (error) {
+        console.error('[ShareLink] Error getting RSVPs:', error);
+        return [];
     }
 };
