@@ -511,37 +511,43 @@ document.addEventListener('DOMContentLoaded', () => {
                     "_template": "table"
                 };
 
-                // Dùng kỹ thuật Hidden Iframe để vượt qua chặn CORS của Zalo Browser
-                const iframeName = 'formsubmit_iframe_' + Date.now();
-                let iframe = document.createElement('iframe');
-                iframe.name = iframeName;
-                iframe.style.display = 'none';
-                document.body.appendChild(iframe);
-
-                const formDest = document.createElement('form');
-                formDest.target = iframeName;
-                formDest.method = 'POST';
-                // Gửi dạng form chuẩn (không dùng /ajax/ nữa để tránh CORS)
-                formDest.action = `https://formsubmit.co/${CONFIG.email.trim()}`;
-
-                for (let key in data) {
-                    const inp = document.createElement('input');
-                    inp.type = 'hidden';
-                    inp.name = key;
-                    inp.value = data[key];
-                    formDest.appendChild(inp);
+                // Chuyển đổi data object sang dạng chuỗi URL-encoded để gửi đi
+                const params = new URLSearchParams();
+                for (const key in data) {
+                    params.append(key, data[key]);
                 }
 
-                document.body.appendChild(formDest);
-                formDest.submit();
+                let response;
+                try {
+                    // Sử dụng Content-Type là application/x-www-form-urlencoded để tránh bị trình duyệt
+                    // (đặc biệt là Zalo) gửi request preflight (OPTIONS) gây lỗi CORS.
+                    response = await fetch(`https://formsubmit.co/ajax/${CONFIG.email.trim()}`, {
+                        method: 'POST',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/x-www-form-urlencoded'
+                        },
+                        body: params.toString()
+                    });
+                } catch (fetchErr) {
+                    throw new Error("NETWORK_ERROR");
+                }
+                
+                if (!response.ok) {
+                    throw new Error('NOT_ACTIVATED');
+                }
 
-                // KHÔNG xóa iframe lập tức. Việc xóa iframe quá sớm (3s) trên mạng di động chậm 
-                // sẽ khiến trình duyệt HỦY luôn kết nối POST đang gửi dở dang, làm mất dữ liệu.
-                // Iframe ẩn này không tốn tài nguyên nên ta cứ để đó hoặc xóa sau thời gian rất dài.
-                setTimeout(() => {
-                    if (document.body.contains(formDest)) document.body.removeChild(formDest);
-                    if (document.body.contains(iframe)) document.body.removeChild(iframe);
-                }, 60000); // Đợi hẳn 60s rồi mới dọn dẹp
+                // Đọc JSON trả về để kiểm tra kỹ
+                try {
+                    const result = await response.json();
+                    if (result.success === "false" || result.success === false) {
+                        throw new Error("FORMSUBMIT_REJECTED: " + (result.message || ""));
+                    }
+                } catch (jsonErr) {
+                    if (jsonErr.message && jsonErr.message.includes("FORMSUBMIT_REJECTED")) {
+                        throw jsonErr;
+                    }
+                }
             }
 
             // --- Hiển thị kết quả ---
