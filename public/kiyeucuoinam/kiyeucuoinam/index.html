@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="referrer" content="strict-origin-when-cross-origin">
+    <meta name="description" content="Kỉ yếu cuối năm - Lưu giữ khoảnh khắc đẹp nhất">
+    <title>🎓 Kỉ Yếu Cuối Năm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Pacifico&family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="sakura">
+
+    <!-- PARTICLES CONTAINER -->
+    <div class="particles-container" id="particles"></div>
+
+    <!-- AUDIO -->
+    <audio id="bgMusic" loop preload="auto"></audio>
+    <button id="btnMusicToggle" class="music-toggle" title="Tắt/Bật nhạc">
+        <span class="music-icon">🎵</span>
+        <span class="music-bars">
+            <span></span><span></span><span></span><span></span>
+        </span>
+    </button>
+
+    <!-- ===== SETTINGS FAB ===== -->
+    <button class="settings-fab" id="settingsFab" title="Tạo kỉ yếu cho lớp bạn">
+        <span class="fab-icon">✨</span>
+        <span class="fab-text">Tạo kỉ yếu</span>
+    </button>
+
+    <!-- ===== IMPORT FAB (for viewers) ===== -->
+    <button class="import-fab" id="importFab" title="Mở kỉ yếu từ file">
+        <span class="fab-icon">📂</span>
+        <span class="fab-text">Mở kỉ yếu</span>
+    </button>
+
+    <!-- ===== SETTINGS MODAL ===== -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-card settings-modal-card">
+            <button class="modal-close-btn" id="btnCloseSettingsX" title="Đóng">✕</button>
+            <h2 class="modal-title script-font">✨ Tạo Kỉ Yếu Lớp</h2>
+            <p class="settings-desc">Làm lần lượt từ Bước 1 đến Bước 4 để tạo, chỉnh và xuất kỉ yếu cho lớp.</p>
+
+            <!-- TABS -->
+            <div class="settings-tabs" aria-label="Các bước tạo kỉ yếu">
+                <button class="tab-btn active" data-tab="tab-info">
+                    <span class="tab-number">1</span>
+                    <span class="tab-copy">
+                        <span class="tab-step">Bước 1</span>
+                        <span class="tab-title">Thông tin</span>
+                    </span>
+                </button>
+                <button class="tab-btn" data-tab="tab-photos">
+                    <span class="tab-number">2</span>
+                    <span class="tab-copy">
+                        <span class="tab-step">Bước 2</span>
+                        <span class="tab-title">Ảnh/Video</span>
+                    </span>
+                </button>
+                <button class="tab-btn" data-tab="tab-customize">
+                    <span class="tab-number">3</span>
+                    <span class="tab-copy">
+                        <span class="tab-step">Bước 3</span>
+                        <span class="tab-title">Giao diện</span>
+                    </span>
+                </button>
+                <button class="tab-btn" data-tab="tab-export">
+                    <span class="tab-number">4</span>
+                    <span class="tab-copy">
+                        <span class="tab-step">Bước 4</span>
+                        <span class="tab-title">Xuất/Nhập</span>
+                    </span>
+                </button>
+            </div>
+
+            <!-- TAB: THÔNG TIN -->
+            <div class="tab-content active" id="tab-info">
+                <form id="infoForm">
+                    <div class="form-group">
+                        <label for="cfgClassName">📚 Lớp</label>
+                        <input type="text" id="cfgClassName" placeholder="Ví dụ: 5A1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgSchool">🏫 Tên trường</label>
+                        <input type="text" id="cfgSchool" placeholder="Ví dụ: Trường Tiểu học ABC" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgYear">📅 Năm học</label>
+                        <input type="text" id="cfgYear" placeholder="2025 - 2026" value="2025 - 2026">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgTeacher">👩‍🏫 Giáo viên chủ nhiệm</label>
+                        <input type="text" id="cfgTeacher" placeholder="Ví dụ: Cô Nguyễn Thị B">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgTitle">✏️ Tiêu đề kỉ yếu</label>
+                        <input type="text" id="cfgTitle" placeholder="Ví dụ: Những khoảnh khắc đáng nhớ" value="Kỉ Yếu Cuối Năm">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgSlogan">💬 Slogan / Lời nhắn</label>
+                        <textarea id="cfgSlogan" rows="3" placeholder="Ví dụ: Hẹn gặp lại sau mùa hè, nhớ nhau nhiều nha!">Hẹn gặp lại sau mùa hè nhé! 🌻</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgMessage">💌 Lời nhắn của GVCN</label>
+                        <textarea id="cfgMessage" rows="4" placeholder="Viết lời nhắn gửi cả lớp...">Các con ơi, một năm học đã qua thật nhanh. Cô/Thầy rất tự hào về mỗi bạn trong lớp mình. Chúc các con có một mùa hè thật vui và ý nghĩa! ❤️</textarea>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB: ẢNH / VIDEO HỌC SINH -->
+            <div class="tab-content" id="tab-photos">
+                <div class="photo-upload-area" id="photoUploadArea">
+                    <div class="upload-zone" id="uploadZone">
+                        <span class="upload-icon">📸</span>
+                        <p>Kéo thả ảnh hoặc video ngắn vào đây</p>
+                        <label class="upload-btn" for="photoInput">Chọn ảnh / video</label>
+                        <input type="file" id="photoInput" multiple accept="image/*,video/*" hidden>
+                        <p class="upload-hint">Mặc định: 50 mục, 2 video/link, 10 MB mỗi video.</p>
+                    </div>
+                </div>
+                <div class="video-link-box">
+                    <label for="videoLinkInput">🔗 Nhúng video YouTube / Google Drive</label>
+                    <div class="video-link-row">
+                        <input type="url" id="videoLinkInput" placeholder="Dán link YouTube hoặc Google Drive...">
+                        <button type="button" id="btnAddVideoLink">Thêm link</button>
+                    </div>
+                    <p>Link nhúng không làm nặng file xuất như video upload trực tiếp.</p>
+                </div>
+                <div class="media-limit-box">
+                    <div class="limit-field">
+                        <label for="cfgMaxMedia">Tối đa ảnh/video</label>
+                        <input type="number" id="cfgMaxMedia" min="1" max="200" value="50">
+                    </div>
+                    <div class="limit-field">
+                        <label for="cfgMaxVideos">Tối đa video/link</label>
+                        <input type="number" id="cfgMaxVideos" min="0" max="20" value="2">
+                    </div>
+                    <div class="limit-field">
+                        <label for="cfgMaxVideoMB">MB / video</label>
+                        <input type="number" id="cfgMaxVideoMB" min="1" max="100" value="10">
+                    </div>
+                </div>
+                <div class="photo-list" id="photoList">
+                    <!-- Photo items will be rendered here -->
+                </div>
+                <div class="photo-count" id="photoCount">0 / 50 mục • Video 0 / 2</div>
+            </div>
+
+            <!-- TAB: GIAO DIỆN -->
+            <div class="tab-content" id="tab-customize">
+                <!-- Theme Picker -->
+                <div class="form-group">
+                    <label>🎨 Chọn theme màu</label>
+                    <div class="theme-picker" id="themePicker">
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="sakura" checked>
+                            <div class="theme-card theme-preview-sakura">
+                                <span class="theme-card-icon">🌸</span>
+                                <span class="theme-card-name">Sakura</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="galaxy">
+                            <div class="theme-card theme-preview-galaxy">
+                                <span class="theme-card-icon">🌌</span>
+                                <span class="theme-card-name">Galaxy</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="nature">
+                            <div class="theme-card theme-preview-nature">
+                                <span class="theme-card-icon">🌿</span>
+                                <span class="theme-card-name">Nature</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="ocean">
+                            <div class="theme-card theme-preview-ocean">
+                                <span class="theme-card-icon">🌊</span>
+                                <span class="theme-card-name">Ocean</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="sunset">
+                            <div class="theme-card theme-preview-sunset">
+                                <span class="theme-card-icon">🌅</span>
+                                <span class="theme-card-name">Sunset</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Font Picker -->
+                <div class="form-group">
+                    <label>✏️ Font chữ tiêu đề</label>
+                    <div class="font-picker" id="fontPicker">
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="dancing" checked>
+                            <div class="font-card" style="font-family:'Dancing Script',cursive">Abc Xyz</div>
+                        </label>
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="great-vibes">
+                            <div class="font-card" style="font-family:'Great Vibes',cursive">Abc Xyz</div>
+                        </label>
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="pacifico">
+                            <div class="font-card" style="font-family:'Pacifico',cursive">Abc Xyz</div>
+                        </label>
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="lobster">
+                            <div class="font-card" style="font-family:'Lobster',cursive">Abc Xyz</div>
+                        </label>
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="playfair">
+                            <div class="font-card" style="font-family:'Playfair Display',serif">Abc Xyz</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Effect Picker -->
+                <div class="form-group">
+                    <label>✨ Hiệu ứng nền</label>
+                    <div class="effect-picker" id="effectPicker">
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="petals" checked>
+                            <div class="effect-card">🌸 Hoa rơi</div>
+                        </label>
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="bubbles">
+                            <div class="effect-card">🫧 Bong bóng</div>
+                        </label>
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="stars">
+                            <div class="effect-card">⭐ Ngôi sao</div>
+                        </label>
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="confetti">
+                            <div class="effect-card">🎊 Confetti</div>
+                        </label>
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="none">
+                            <div class="effect-card">❌ Không</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Gallery Layout -->
+                <div class="form-group">
+                    <label>🖼️ Kiểu hiển thị ảnh</label>
+                    <div class="layout-picker" id="layoutPicker">
+                        <label class="layout-option">
+                            <input type="radio" name="cfgLayout" value="bubble" checked>
+                            <div class="layout-card">🫧 Bong bóng xà phòng</div>
+                        </label>
+                        <label class="layout-option">
+                            <input type="radio" name="cfgLayout" value="grid">
+                            <div class="layout-card">📷 Polaroid ký ức</div>
+                        </label>
+                        <label class="layout-option">
+                            <input type="radio" name="cfgLayout" value="carousel">
+                            <div class="layout-card">🎞️ Dải phim ngang</div>
+                        </label>
+                        <label class="layout-option">
+                            <input type="radio" name="cfgLayout" value="spotlight">
+                            <div class="layout-card">🌟 Poster hot</div>
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label class="sound-toggle">
+                        <input type="checkbox" id="cfgMemberHoverSound" checked>
+                        <span class="sound-toggle-ui"></span>
+                        <span>
+                            <strong>Âm thanh khi di chuột vào thành viên</strong>
+                            <small>Hiệu ứng sparkle nhẹ, chạy cả trong bản web xuất ZIP.</small>
+                        </span>
+                    </label>
+                </div>
+
+                <!-- Creative Sections -->
+                <div class="form-group creative-editor">
+                    <div class="creative-editor-header">
+                        <div>
+                            <label>✨ Tuỳ chỉnh hành trình & lưu bút</label>
+                            <p>Sửa chữ ở hai khung sáng tạo phía dưới kỷ yếu. Nội dung này sẽ đi theo bản web xuất ZIP.</p>
+                        </div>
+                    </div>
+
+                    <details class="creative-editor-panel" open>
+                        <summary>🌈 Hành trình năm học</summary>
+                        <div class="creative-editor-grid">
+                            <div class="creative-item-card">
+                                <span class="creative-item-index">01</span>
+                                <div class="creative-mini-row">
+                                    <label class="mini-field">Icon
+                                        <input type="text" id="cfgTimelineIcon0" maxlength="4" placeholder="🌱">
+                                    </label>
+                                    <label class="mini-field is-wide">Tiêu đề
+                                        <input type="text" id="cfgTimelineTitle0" placeholder="Ngày đầu thật mới">
+                                    </label>
+                                </div>
+                                <label class="mini-field">Nội dung
+                                    <textarea id="cfgTimelineText0" rows="2"></textarea>
+                                </label>
+                            </div>
+                            <div class="creative-item-card">
+                                <span class="creative-item-index">02</span>
+                                <div class="creative-mini-row">
+                                    <label class="mini-field">Icon
+                                        <input type="text" id="cfgTimelineIcon1" maxlength="4" placeholder="📚">
+                                    </label>
+                                    <label class="mini-field is-wide">Tiêu đề
+                                        <input type="text" id="cfgTimelineTitle1" placeholder="Cùng nhau cố gắng">
+                                    </label>
+                                </div>
+                                <label class="mini-field">Nội dung
+                                    <textarea id="cfgTimelineText1" rows="2"></textarea>
+                                </label>
+                            </div>
+                            <div class="creative-item-card">
+                                <span class="creative-item-index">03</span>
+                                <div class="creative-mini-row">
+                                    <label class="mini-field">Icon
+                                        <input type="text" id="cfgTimelineIcon2" maxlength="4" placeholder="🎉">
+                                    </label>
+                                    <label class="mini-field is-wide">Tiêu đề
+                                        <input type="text" id="cfgTimelineTitle2" placeholder="Những khoảnh khắc rực rỡ">
+                                    </label>
+                                </div>
+                                <label class="mini-field">Nội dung
+                                    <textarea id="cfgTimelineText2" rows="2"></textarea>
+                                </label>
+                            </div>
+                            <div class="creative-item-card">
+                                <span class="creative-item-index">04</span>
+                                <div class="creative-mini-row">
+                                    <label class="mini-field">Icon
+                                        <input type="text" id="cfgTimelineIcon3" maxlength="4" placeholder="🌈">
+                                    </label>
+                                    <label class="mini-field is-wide">Tiêu đề
+                                        <input type="text" id="cfgTimelineTitle3" placeholder="Hẹn gặp lại">
+                                    </label>
+                                </div>
+                                <label class="mini-field">Nội dung
+                                    <textarea id="cfgTimelineText3" rows="2"></textarea>
+                                </label>
+                            </div>
+                        </div>
+                    </details>
+
+                    <details class="creative-editor-panel">
+                        <summary>💌 Sổ lưu bút</summary>
+                        <div class="creative-editor-grid">
+                            <div class="creative-item-card">
+                                <span class="creative-item-index">01</span>
+                                <label class="mini-field">Tiêu đề
+                                    <input type="text" id="cfgGuestTitle0" placeholder="Gửi cả lớp">
+                                </label>
+                                <label class="mini-field">Lời nhắn
+                                    <textarea id="cfgGuestText0" rows="3"></textarea>
+                                </label>
+                                <label class="mini-field">Chữ ký
+                                    <input type="text" id="cfgGuestSign0" placeholder="Giáo viên chủ nhiệm">
+                                </label>
+                            </div>
+                            <div class="creative-item-card">
+                                <span class="creative-item-index">02</span>
+                                <label class="mini-field">Tiêu đề
+                                    <input type="text" id="cfgGuestTitle1" placeholder="Điều muốn nhớ">
+                                </label>
+                                <label class="mini-field">Lời nhắn
+                                    <textarea id="cfgGuestText1" rows="3"></textarea>
+                                </label>
+                                <label class="mini-field">Chữ ký
+                                    <input type="text" id="cfgGuestSign1" placeholder="Kỉ yếu cuối năm">
+                                </label>
+                            </div>
+                            <div class="creative-item-card">
+                                <span class="creative-item-index">03</span>
+                                <label class="mini-field">Tiêu đề
+                                    <input type="text" id="cfgGuestTitle2" placeholder="Lời hẹn">
+                                </label>
+                                <label class="mini-field">Lời nhắn
+                                    <textarea id="cfgGuestText2" rows="3"></textarea>
+                                </label>
+                                <label class="mini-field">Chữ ký
+                                    <input type="text" id="cfgGuestSign2" placeholder="2025 - 2026">
+                                </label>
+                            </div>
+                            <div class="creative-item-card">
+                                <span class="creative-item-index">04</span>
+                                <label class="mini-field">Tiêu đề
+                                    <input type="text" id="cfgGuestTitle3" placeholder="Cảm ơn">
+                                </label>
+                                <label class="mini-field">Lời nhắn
+                                    <textarea id="cfgGuestText3" rows="3"></textarea>
+                                </label>
+                                <label class="mini-field">Chữ ký
+                                    <input type="text" id="cfgGuestSign3" placeholder="Lớp mình">
+                                </label>
+                            </div>
+                        </div>
+                    </details>
+                </div>
+
+                <!-- Background Music -->
+                <div class="form-group">
+                    <label>🎵 Nhạc nền</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <label class="btn-secondary" for="audioInput" style="cursor:pointer; font-size:0.85rem; padding:6px 12px;">Tải nhạc lên</label>
+                        <input type="file" id="audioInput" accept="audio/*" hidden>
+                        <span id="audioName" style="font-size:0.85rem;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Mặc định hệ thống</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: XUẤT / NHẬP -->
+            <div class="tab-content" id="tab-export">
+                <div class="export-section">
+                    <div class="export-guide-card">
+                        <div class="export-guide-header">
+                            <span class="export-guide-icon">▶</span>
+                            <div>
+                                <h3>Video hướng dẫn xuất, nhập và chia sẻ kỷ yếu</h3>
+                                <p>Xem nhanh video này trước khi xuất file để biết cách tạo bản web, đưa lên mạng và tạo mã QR gửi phụ huynh.</p>
+                            </div>
+                        </div>
+                        <div class="export-video-frame">
+                            <iframe
+                                src="https://www.youtube.com/embed/Wz15BtV1rsg"
+                                title="Video hướng dẫn xuất, nhập và chia sẻ kỷ yếu"
+                                loading="lazy"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+                    <hr class="export-divider">
+                    <div class="export-card">
+                        <span class="export-icon">📤</span>
+                        <h3>Xuất file JSON</h3>
+                        <p>Lưu toàn bộ kỉ yếu (thông tin + ảnh/video + cài đặt) thành 1 file JSON. Gửi file này cho PH/HS để mở.</p>
+                        <button class="btn-export" id="btnExport">📥 Xuất file kỉ yếu (.json)</button>
+                    </div>
+                    <hr class="export-divider">
+                    <div class="export-card">
+                        <span class="export-icon">📂</span>
+                        <h3>Nhập file JSON</h3>
+                        <p>Mở file kỉ yếu đã xuất trước đó để xem hoặc chỉnh sửa.</p>
+                        <label class="btn-import" for="jsonImportInput">📂 Chọn file kỉ yếu (.json)</label>
+                        <input type="file" id="jsonImportInput" accept=".json" hidden>
+                    </div>
+                    <hr class="export-divider">
+                    <div class="export-card">
+                        <span class="export-icon">🌐</span>
+                        <h3>Xuất web tương tác & chia sẻ online</h3>
+                        <p>Đóng gói thành <strong>bản web tương tác</strong> gồm index, CSS, JS, ảnh/video/nhạc và asset nền để phụ huynh xem đúng giao diện đang làm.</p>
+                        <button class="btn-export" id="btnShareHTML" style="margin-bottom: 12px;">🌐 Bước 1: Xuất bản web (.zip)</button>
+                        
+                        <div style="background:var(--bg);border-radius:12px;padding:14px;margin:8px 0;text-align:left;font-size:.82rem;line-height:1.7;color:var(--text2);border:1px dashed var(--card-border);">
+                            <strong style="color:var(--text);">📋 Hướng dẫn đưa lên mạng:</strong><br>
+                            ① Bấm nút trên để tải file ZIP chứa trọn bộ web tương tác<br>
+                            ② Vào <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;">app.netlify.com/drop ↗</a> (miễn phí)<br>
+                            ③ Kéo thả file ZIP vào trang Netlify<br>
+                            ④ Copy link Netlify → dán vào ô bên dưới → Tạo QR!
+                        </div>
+
+                        <div style="margin-top:12px;">
+                            <label style="font-weight:600;font-size:.85rem;color:var(--text);display:block;margin-bottom:6px;">🔗 Bước 2: Dán link Netlify để tạo QR</label>
+                            <div style="display:flex;gap:6px;">
+                                <input type="text" id="netlifyUrl" placeholder="Dán link Netlify vào đây..." style="flex:1;padding:10px 14px;border:2px solid var(--card-border);border-radius:10px;font-size:.9rem;background:var(--bg);color:var(--text);font-family:'Quicksand',sans-serif;">
+                                <button class="btn-export" id="btnGenQR" style="padding:10px 16px;white-space:nowrap;">📱 Tạo QR</button>
+                            </div>
+                        </div>
+
+                        <div id="qrResultBox" style="display:none;margin-top:16px;text-align:center;">
+                            <div style="display:flex;gap:6px;margin-bottom:10px;">
+                                <input type="text" id="finalLink" readonly style="flex:1;padding:8px 12px;border:2px solid var(--primary2);border-radius:10px;font-size:.85rem;background:var(--bg);color:var(--text);">
+                                <button id="btnCopyLink" style="padding:8px 12px;border:none;border-radius:10px;background:var(--primary);color:#fff;cursor:pointer;font-size:1rem;" title="Copy">📋</button>
+                            </div>
+                            <div id="qrCodeContainer" style="display:inline-block;padding:12px;background:#fff;border-radius:16px;box-shadow:var(--shadow);"></div>
+                            <br>
+                            <button class="btn-secondary" id="btnDownloadQr" style="margin-top:10px;">⬇️ Tải ảnh QR</button>
+                            <p style="font-size:.78rem;color:var(--text2);margin-top:8px;">✅ Gửi QR này cho PH — quét là xem kỉ yếu ngay!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" id="btnPreview" class="btn-preview">👀 Xem trước (Đóng & Áp dụng)</button>
+        </div>
+    </div>
+
+    <!-- ===== COVER SECTION ===== -->
+    <section class="cover-section" id="coverSection">
+        <div class="cover-bg">
+            <div class="cover-gradient"></div>
+        </div>
+        <div class="cover-ambient" aria-hidden="true">
+            <span></span><span></span><span></span><span></span><span></span><span></span>
+        </div>
+        <div class="cover-content">
+            <div class="cover-copy">
+                <p class="cover-kicker">Album kỉ niệm cuối năm</p>
+                <h1 class="cover-heading script-font" id="coverHeroTitle">Kỉ Yếu Cuối Năm</h1>
+                <p class="cover-subtitle" id="coverHeroSlogan">Hẹn gặp lại sau mùa hè nhé! 🌻</p>
+                <div class="cover-meta">
+                    <span id="coverHeroClass">Lớp ___</span>
+                    <span>•</span>
+                    <span id="coverHeroYear">2025 - 2026</span>
+                </div>
+            </div>
+
+            <div class="cover-stage">
+                <div class="cover-book" id="coverBook">
+                    <div class="book-spine"></div>
+                    <div class="book-front" id="bookFront">
+                        <div class="book-corner book-corner-left"></div>
+                        <div class="book-corner book-corner-right"></div>
+                        <div class="book-decoration book-decoration-top"></div>
+                        <div class="book-badge">📸</div>
+                        <h1 class="book-title script-font" id="coverTitle">Kỉ Yếu Cuối Năm</h1>
+                        <p class="book-tagline">Một năm thật đáng nhớ</p>
+                        <div class="book-class-info">
+                            <span class="book-class" id="coverClass">Lớp ___</span>
+                            <span class="book-divider">✦</span>
+                            <span class="book-year" id="coverYear">2025 - 2026</span>
+                        </div>
+                        <p class="book-school" id="coverSchool">Trường ___</p>
+                        <div class="book-decoration book-decoration-bottom"></div>
+                    </div>
+                </div>
+                <div class="cover-tap-hint" id="tapHint">
+                    <span class="tap-hand">👆</span>
+                    <span>Nhấn để mở album</span>
+                </div>
+            </div>
+
+            <div class="cover-art-live" aria-hidden="true">
+                <span class="cover-art-year-start" id="coverArtYearStart">2025</span>
+                <span class="cover-art-year-end" id="coverArtYearEnd">2026</span>
+                <span class="cover-art-book-class" id="coverArtBookClass">Lớp ___</span>
+                <span class="cover-art-book-year" id="coverArtBookYear">2025 - 2026</span>
+                <span class="cover-art-book-school" id="coverArtBookSchool">Trường ___</span>
+            </div>
+
+            <div class="cover-preview-strip" aria-hidden="true">
+                <div class="cover-preview-card">
+                    <span>📸</span>
+                    <strong>Ảnh lớp</strong>
+                </div>
+                <div class="cover-preview-card">
+                    <span>💌</span>
+                    <strong>Lời nhắn</strong>
+                </div>
+                <div class="cover-preview-card">
+                    <span>🎬</span>
+                    <strong>Slideshow</strong>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== MAIN YEARBOOK CONTENT ===== -->
+    <main class="yearbook-main" id="yearbookMain">
+        
+        <!-- HEADER SECTION -->
+        <section class="yb-section header-section" id="headerSection">
+            <div class="header-content">
+                <h1 class="yb-title script-font" id="ybTitle">Kỉ Yếu Cuối Năm</h1>
+                <h2 class="yb-class" id="ybClass">Lớp ___</h2>
+                <p class="yb-school" id="ybSchool">Trường ___</p>
+                <p class="yb-year" id="ybYear">✦ Năm học 2025 - 2026 ✦</p>
+                <p class="yb-slogan" id="ybSlogan">Hẹn gặp lại sau mùa hè nhé! 🌻</p>
+                <button id="btnPlayMainMusic" class="btn-secondary" style="margin-top: 16px; border-radius: 20px; box-shadow: var(--shadow);">🎵 Phát / Tắt Nhạc</button>
+            </div>
+        </section>
+
+        <!-- GALLERY SECTION -->
+        <section class="yb-section gallery-section" id="gallerySection">
+            <h2 class="section-title script-font">📸 Thành viên lớp</h2>
+            <div class="gallery-container" id="galleryContainer">
+                <!-- Photo bubbles / grid / carousel rendered here -->
+            </div>
+        </section>
+
+        <!-- MEMORY DISC SECTION -->
+        <section class="yb-section cd-section" id="cdSection">
+            <div class="section-eyebrow">Album xoay</div>
+            <h2 class="section-title script-font">💿 Đĩa CD ký ức</h2>
+            <button type="button" class="memory-cd" id="memoryCd" aria-pressed="false">
+                <span class="cd-surface">
+                    <span class="cd-photo-ring" id="cdPhotoRing"></span>
+                    <span class="cd-core">
+                        <span class="cd-core-icon">▶</span>
+                        <span class="cd-core-text" id="cdCoreText">Bấm để quay</span>
+                    </span>
+                </span>
+            </button>
+        </section>
+
+        <!-- YEAR HIGHLIGHTS SECTION -->
+        <section class="yb-section timeline-section" id="timelineSection">
+            <div class="section-eyebrow">Dấu ấn đáng nhớ</div>
+            <h2 class="section-title script-font">✨ Hành trình năm học</h2>
+            <div class="timeline-board" id="timelineBoard"></div>
+        </section>
+
+        <!-- MEMORY NOTES SECTION -->
+        <section class="yb-section guestbook-section" id="guestbookSection">
+            <div class="section-eyebrow">Sổ lưu bút</div>
+            <h2 class="section-title script-font">💌 Những lời gửi lại</h2>
+            <div class="guestbook-grid" id="guestbookGrid"></div>
+        </section>
+
+        <!-- TEACHER MESSAGE SECTION -->
+        <section class="yb-section message-section" id="messageSection">
+            <div class="message-card">
+                <h2 class="section-title script-font">💌 Lời nhắn của GVCN</h2>
+                <div class="message-content" id="messageContent">
+                    <p>Các con ơi, một năm học đã qua thật nhanh...</p>
+                </div>
+                <p class="message-sign" id="messageSign">— Giáo viên chủ nhiệm —</p>
+            </div>
+        </section>
+
+        <!-- SLIDESHOW SECTION -->
+        <section class="yb-section slideshow-section" id="slideshowSection">
+            <h2 class="section-title script-font">🎬 Slideshow kỉ niệm</h2>
+            <div class="slideshow-wrapper">
+                <div class="slideshow-stage" id="slideshowStage">
+                    <div class="slide-image" id="slideImage"></div>
+                    <div class="slide-info">
+                        <p class="slide-name" id="slideName"></p>
+                        <p class="slide-msg" id="slideMsg"></p>
+                    </div>
+                </div>
+                <div class="slideshow-controls">
+                    <button class="slide-btn" id="btnPrevSlide">◀</button>
+                    <button class="slide-btn slide-play" id="btnPlaySlide">▶ Auto</button>
+                    <button class="slide-btn" id="btnNextSlide">▶</button>
+                </div>
+                <div class="slideshow-dots" id="slideshowDots"></div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="yb-footer">
+            <p class="footer-text">Được tạo với ❤️ bởi <span id="footerTeacher">GVCN</span></p>
+            <p class="footer-year" id="footerYear">Năm học 2025 - 2026</p>
+        </footer>
+    </main>
+
+    <!-- FLOATING ACTIONS AFTER OPENING -->
+    <div class="yearbook-actions" id="yearbookActions" aria-label="Tương tác kỉ yếu">
+        <button type="button" class="yearbook-close-btn" id="btnCloseYearbook" title="Đóng kỉ yếu">
+            <span>✕</span>
+        </button>
+        <div class="reaction-actions">
+            <button type="button" class="reaction-btn" data-reaction="heart" title="Thả tim">
+                <span class="reaction-icon">❤️</span>
+                <span class="reaction-count" id="heartCount">0</span>
+            </button>
+            <button type="button" class="reaction-btn" data-reaction="like" title="Like">
+                <span class="reaction-icon">👍</span>
+                <span class="reaction-count" id="likeCount">0</span>
+            </button>
+        </div>
+    </div>
+
+    <!-- PHOTO VIEWER MODAL -->
+    <div class="modal-overlay photo-viewer-modal" id="photoViewerModal">
+        <div class="photo-viewer-card">
+            <button class="modal-close-btn" id="btnCloseViewer">✕</button>
+            <div class="viewer-image-wrapper">
+                <img id="viewerImage" src="" alt="">
+                <video id="viewerVideo" src="" controls playsinline style="display:none"></video>
+                <div class="viewer-thumb" id="viewerThumb" style="display:none">
+                    <img id="viewerThumbImage" src="" alt="">
+                    <button type="button" id="viewerThumbPlay" class="viewer-thumb-play">▶</button>
+                    <a id="viewerThumbLink" class="viewer-thumb-link" href="#" target="_blank" rel="noopener">Dự phòng: mở YouTube</a>
+                </div>
+                <iframe id="viewerEmbed" src="" title="Video nhúng" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen style="display:none"></iframe>
+            </div>
+            <div class="viewer-info">
+                <span class="viewer-badge" id="viewerBadge">Gương mặt kỷ yếu</span>
+                <h3 class="viewer-name" id="viewerName"></h3>
+                <p class="viewer-msg" id="viewerMsg"></p>
+                <p class="viewer-quote" id="viewerQuote"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMPTY STATE (no data loaded) -->
+    <div class="empty-state" id="emptyState" style="display:none">
+        <div class="empty-card">
+            <span class="empty-icon">📸</span>
+            <h2>Chưa có kỉ yếu nào</h2>
+            <p>Bấm <strong>"Tạo kỉ yếu"</strong> để bắt đầu tạo mới, hoặc <strong>"Mở kỉ yếu"</strong> để nhập file JSON.</p>
+        </div>
+    </div>
+
+    <!-- JSZip Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <script src="style-inline.js?v=20260514a"></script>
+    <script src="asset-inline.js?v=20260514a"></script>
+    <script src="script.js"></script>
+</body>
+</html>

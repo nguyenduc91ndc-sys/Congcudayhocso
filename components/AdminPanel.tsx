@@ -12,6 +12,7 @@ import { uploadImage, isValidImage } from '../utils/firebaseStorage';
 import { saveProKey, deleteProKey, subscribeToProKeys, ProKey, revokeProForEmail } from '../utils/firebaseProKeys';
 import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode, revokeBeeProForEmail } from '../utils/firebaseBeeProKeys';
 import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, generateSKKNProCode, revokeSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
+import { saveKyYeuAccessCode, deleteKyYeuAccessCode, subscribeToKyYeuAccessCodes, generateKyYeuAccessCode, setKyYeuAccessCodeActive, KyYeuAccessCode } from '../utils/firebaseKyYeuAccess';
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
 
 interface AdminPanelProps {
@@ -39,7 +40,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [skknKeys, setSkknKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
-    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn'>('pro');
+    const [kyYeuKeys, setKyYeuKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string; active: boolean; usageCount?: number }[]>([]);
+    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn' | 'kyyeu'>('pro');
     const [newNote, setNewNote] = useState('');
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
@@ -128,6 +130,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             setSkknKeys(formattedKeys);
         });
 
+        // Subscribe to KyYeu access codes
+        const unsubscribeKyYeuKeys = subscribeToKyYeuAccessCodes((firebaseKeys) => {
+            const formattedKeys = firebaseKeys.map(k => ({
+                key: k.key,
+                createdAt: new Date(k.createdAt).toLocaleDateString('vi-VN'),
+                note: k.note,
+                usedBy: k.usedBy,
+                active: k.active !== false,
+                usageCount: k.usageCount || 0
+            }));
+            setKyYeuKeys(formattedKeys);
+        });
+
         // Subscribe to videos
         const unsubscribeVideos = subscribeToVideos(setVideos);
         // Subscribe to orders
@@ -148,6 +163,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             unsubscribeProKeys();
             unsubscribeBeeKeys();
             unsubscribeSkknKeys();
+            unsubscribeKyYeuKeys();
             unsubscribeVideos();
             unsubscribeOrders();
             unsubscribeAppVis();
@@ -372,6 +388,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const handleDeleteSKKNKey = async (keyToDelete: string) => {
         if (window.confirm('Xóa mã SKKN này?')) {
             await deleteSKKNProKey(keyToDelete);
+        }
+    };
+
+    const handleCreateKyYeuKey = async () => {
+        const newKey = generateKyYeuAccessCode();
+        const note = newNote || 'Mã Kỷ Yếu cộng đồng';
+        const success = await saveKyYeuAccessCode(newKey, note);
+        if (!success) {
+            alert('Lỗi khi lưu mã Kỷ Yếu lên Firebase!');
+            return;
+        }
+
+        setNewNote('');
+        setShowCreateForm(false);
+        navigator.clipboard.writeText(newKey);
+        setCopiedKey(newKey);
+        setTimeout(() => setCopiedKey(null), 2000);
+    };
+
+    const handleDeleteKyYeuKey = async (keyToDelete: string) => {
+        if (window.confirm('Xóa hẳn mã Kỷ Yếu này? Người đã dùng mã này sẽ không vào được nữa.')) {
+            await deleteKyYeuAccessCode(keyToDelete);
+        }
+    };
+
+    const handleToggleKyYeuKey = async (keyToToggle: string, active: boolean) => {
+        const action = active ? 'mở lại' : 'thu hồi';
+        if (window.confirm(`Bạn muốn ${action} mã ${keyToToggle}?`)) {
+            await setKyYeuAccessCodeActive(keyToToggle, active);
         }
     };
 
@@ -835,9 +880,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 >
                                     ✍️ SKKN- Viết SKKN ({skknKeys.length})
                                 </button>
+                                <button
+                                    onClick={() => setKeySubTab('kyyeu')}
+                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'kyyeu'
+                                        ? 'bg-rose-500 text-white shadow-lg'
+                                        : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
+                                        }`}
+                                >
+                                    🎓 Kỷ Yếu ({kyYeuKeys.length})
+                                </button>
                             </div>
 
-                            {/* Nút tạo mã */}
+                            {/* Button tao ma */}
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -846,10 +900,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                     ? 'bg-gradient-to-r from-green-500 to-emerald-600'
                                     : keySubTab === 'bee'
                                         ? 'bg-gradient-to-r from-orange-500 to-amber-600'
-                                        : 'bg-gradient-to-r from-teal-500 to-emerald-600'
+                                        : keySubTab === 'skkn'
+                                            ? 'bg-gradient-to-r from-teal-500 to-emerald-600'
+                                            : 'bg-gradient-to-r from-rose-500 to-pink-600'
                                     }`}
                             >
-                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : 'Tạo mã SKKN- (Viết SKKN)'}
+                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : 'Tạo mã KYYEU- (Kỷ Yếu)'}
                             </motion.button>
 
                             <AnimatePresence>
@@ -860,8 +916,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         exit={{ opacity: 0, height: 0 }}
                                         className="bg-white rounded-2xl p-4 mb-4 shadow-lg"
                                     >
-                                        <div className={`text-sm font-semibold mb-2 ${keySubTab === 'pro' ? 'text-purple-600' : keySubTab === 'bee' ? 'text-orange-600' : 'text-emerald-600'}`}>
-                                            {keySubTab === 'pro' ? '🔑 Tạo mã PRO- (dùng cho nhiều game)' : keySubTab === 'bee' ? '🐝 Tạo mã BEE- (chỉ dùng cho Ong về Tổ)' : '✍️ Tạo mã SKKN- (chỉ dùng cho Viết SKKN)'}
+                                        <div className={`text-sm font-semibold mb-2 ${keySubTab === 'pro' ? 'text-purple-600' : keySubTab === 'bee' ? 'text-orange-600' : keySubTab === 'skkn' ? 'text-emerald-600' : 'text-rose-600'}`}>
+                                            {keySubTab === 'pro' ? '🔑 Tạo mã PRO- (dùng cho nhiều game)' : keySubTab === 'bee' ? '🐝 Tạo mã BEE- (chỉ dùng cho Ong về Tổ)' : keySubTab === 'skkn' ? '✍️ Tạo mã SKKN- (chỉ dùng cho Viết SKKN)' : '🎓 Tạo mã KYYEU- (thu hồi được, dùng cho app Kỷ Yếu)'}
                                         </div>
                                         <input
                                             type="text"
@@ -872,17 +928,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                 ? 'border-purple-200 focus:border-purple-500'
                                                 : keySubTab === 'bee'
                                                     ? 'border-orange-200 focus:border-orange-500'
-                                                    : 'border-emerald-200 focus:border-emerald-500'
+                                                    : keySubTab === 'skkn'
+                                                        ? 'border-emerald-200 focus:border-emerald-500'
+                                                        : 'border-rose-200 focus:border-rose-500'
                                                 }`}
                                         />
                                         <div className="flex gap-2">
                                             <button
-                                                onClick={keySubTab === 'pro' ? handleCreateKey : keySubTab === 'bee' ? handleCreateBeeKey : handleCreateSKKNKey}
+                                                onClick={keySubTab === 'pro' ? handleCreateKey : keySubTab === 'bee' ? handleCreateBeeKey : keySubTab === 'skkn' ? handleCreateSKKNKey : handleCreateKyYeuKey}
                                                 className={`flex-1 text-white font-bold py-2 rounded-xl ${keySubTab === 'pro'
                                                     ? 'bg-purple-600 hover:bg-purple-700'
                                                     : keySubTab === 'bee'
                                                         ? 'bg-orange-500 hover:bg-orange-600'
-                                                        : 'bg-emerald-500 hover:bg-emerald-600'
+                                                        : keySubTab === 'skkn'
+                                                            ? 'bg-emerald-500 hover:bg-emerald-600'
+                                                            : 'bg-rose-500 hover:bg-rose-600'
                                                     }`}
                                             >
                                                 Tạo & Copy
@@ -971,7 +1031,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                             </div>
                                         </motion.div>
                                     ))
-                                ) : (
+                                ) : keySubTab === 'skkn' ? (
                                     // SKKN Keys List
                                     skknKeys.length === 0 ? (
                                         <div className="text-center text-gray-500 py-10">
@@ -1004,6 +1064,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     <Copy size={18} />
                                                 </button>
                                                 <button onClick={() => handleDeleteSKKNKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    ))
+                                ) : (
+                                    kyYeuKeys.length === 0 ? (
+                                        <div className="text-center text-gray-500 py-10">
+                                            <span className="text-5xl block mb-4">🎓</span>
+                                            <p>Chưa có mã Kỷ Yếu nào</p>
+                                            <p className="text-sm mt-2">Mã KYYEU dùng cho app Kỷ Yếu Cuối Năm, có thể thu hồi bất kỳ lúc nào.</p>
+                                        </div>
+                                    ) : kyYeuKeys.map((item) => (
+                                        <motion.div key={item.key} className={`rounded-2xl p-4 shadow-md flex items-center justify-between border ${item.active ? 'bg-gradient-to-r from-rose-50 to-pink-50 border-rose-200' : 'bg-gray-100 border-gray-200 opacity-75'}`}>
+                                            <div>
+                                                <div className={`font-mono text-lg font-bold flex items-center gap-2 ${item.active ? 'text-rose-700' : 'text-gray-500'}`}>
+                                                    🎓 {item.key}
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${item.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {item.active ? 'Đang mở' : 'Đã thu hồi'}
+                                                    </span>
+                                                    {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
+                                                </div>
+                                                <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
+                                                <div className="text-xs text-gray-500 mt-1">
+                                                    Lượt kích hoạt: {item.usageCount || 0}{item.usedBy ? ` • Gần nhất: ${item.usedBy}` : ''}
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200" title="Copy mã">
+                                                    <Copy size={18} />
+                                                </button>
+                                                <button onClick={() => handleToggleKyYeuKey(item.key, !item.active)} className={`p-2 rounded-lg ${item.active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`} title={item.active ? 'Thu hồi mã' : 'Mở lại mã'}>
+                                                    {item.active ? <XCircle size={18} /> : <CheckCircle size={18} />}
+                                                </button>
+                                                <button onClick={() => handleDeleteKyYeuKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200" title="Xóa mã">
                                                     <Trash2 size={18} />
                                                 </button>
                                             </div>

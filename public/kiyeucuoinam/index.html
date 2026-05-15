@@ -1,0 +1,432 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="description" content="Kỉ yếu cuối năm - Lưu giữ khoảnh khắc đẹp nhất">
+    <title>🎓 Kỉ Yếu Cuối Năm</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&family=Pacifico&family=Lobster&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body data-theme="sakura">
+
+    <!-- PARTICLES CONTAINER -->
+    <div class="particles-container" id="particles"></div>
+
+    <!-- AUDIO -->
+    <audio id="bgMusic" loop preload="auto">
+        <source src="assets/nhac-ky-yeu.mp3" type="audio/mpeg">
+    </audio>
+    <button id="btnMusicToggle" class="music-toggle" title="Tắt/Bật nhạc">
+        <span class="music-icon">🎵</span>
+        <span class="music-bars">
+            <span></span><span></span><span></span><span></span>
+        </span>
+    </button>
+
+    <!-- ===== SETTINGS FAB ===== -->
+    <button class="settings-fab" id="settingsFab" title="Tạo kỉ yếu cho lớp bạn">
+        <span class="fab-icon">✨</span>
+        <span class="fab-text">Tạo kỉ yếu cho lớp bạn</span>
+    </button>
+
+    <!-- ===== IMPORT FAB (for viewers) ===== -->
+    <button class="import-fab" id="importFab" title="Mở kỉ yếu từ file">
+        <span class="fab-icon">📂</span>
+        <span class="fab-text">Mở kỉ yếu</span>
+    </button>
+
+    <!-- ===== SETTINGS MODAL ===== -->
+    <div class="modal-overlay" id="settingsModal">
+        <div class="modal-card settings-modal-card">
+            <button class="modal-close-btn" id="btnCloseSettingsX" title="Đóng">✕</button>
+            <h2 class="modal-title script-font">✨ Tạo Kỉ Yếu Lớp</h2>
+            <p class="settings-desc">Nhập thông tin, upload ảnh học sinh, tuỳ chỉnh giao diện, rồi xuất file JSON để chia sẻ.</p>
+
+            <!-- TABS -->
+            <div class="settings-tabs">
+                <button class="tab-btn active" data-tab="tab-info">📝 Thông tin</button>
+                <button class="tab-btn" data-tab="tab-photos">📸 Ảnh HS</button>
+                <button class="tab-btn" data-tab="tab-customize">🎨 Giao diện</button>
+                <button class="tab-btn" data-tab="tab-export">📤 Xuất/Nhập</button>
+            </div>
+
+            <!-- TAB: THÔNG TIN -->
+            <div class="tab-content active" id="tab-info">
+                <form id="infoForm">
+                    <div class="form-group">
+                        <label for="cfgClassName">📚 Lớp</label>
+                        <input type="text" id="cfgClassName" placeholder="Ví dụ: 5A1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgSchool">🏫 Tên trường</label>
+                        <input type="text" id="cfgSchool" placeholder="Ví dụ: Trường Tiểu học ABC" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgYear">📅 Năm học</label>
+                        <input type="text" id="cfgYear" placeholder="2025 - 2026" value="2025 - 2026">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgTeacher">👩‍🏫 Giáo viên chủ nhiệm</label>
+                        <input type="text" id="cfgTeacher" placeholder="Ví dụ: Cô Nguyễn Thị B">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgTitle">✏️ Tiêu đề kỉ yếu</label>
+                        <input type="text" id="cfgTitle" placeholder="Ví dụ: Những khoảnh khắc đáng nhớ" value="Kỉ Yếu Cuối Năm">
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgSlogan">💬 Slogan / Lời nhắn</label>
+                        <textarea id="cfgSlogan" rows="3" placeholder="Ví dụ: Hẹn gặp lại sau mùa hè, nhớ nhau nhiều nha!">Hẹn gặp lại sau mùa hè nhé! 🌻</textarea>
+                    </div>
+                    <div class="form-group">
+                        <label for="cfgMessage">💌 Lời nhắn của GVCN</label>
+                        <textarea id="cfgMessage" rows="4" placeholder="Viết lời nhắn gửi cả lớp...">Các con ơi, một năm học đã qua thật nhanh. Cô/Thầy rất tự hào về mỗi bạn trong lớp mình. Chúc các con có một mùa hè thật vui và ý nghĩa! ❤️</textarea>
+                    </div>
+                </form>
+            </div>
+
+            <!-- TAB: ẢNH HỌC SINH -->
+            <div class="tab-content" id="tab-photos">
+                <div class="photo-upload-area" id="photoUploadArea">
+                    <div class="upload-zone" id="uploadZone">
+                        <span class="upload-icon">📸</span>
+                        <p>Kéo thả ảnh vào đây hoặc</p>
+                        <label class="upload-btn" for="photoInput">Chọn ảnh</label>
+                        <input type="file" id="photoInput" multiple accept="image/*" hidden>
+                        <p class="upload-hint">Hỗ trợ JPG, PNG. Tối đa 50 ảnh.</p>
+                    </div>
+                </div>
+                <div class="photo-list" id="photoList">
+                    <!-- Photo items will be rendered here -->
+                </div>
+                <div class="photo-count" id="photoCount">0 / 50 ảnh</div>
+            </div>
+
+            <!-- TAB: GIAO DIỆN -->
+            <div class="tab-content" id="tab-customize">
+                <!-- Theme Picker -->
+                <div class="form-group">
+                    <label>🎨 Chọn theme màu</label>
+                    <div class="theme-picker" id="themePicker">
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="sakura" checked>
+                            <div class="theme-card theme-preview-sakura">
+                                <span class="theme-card-icon">🌸</span>
+                                <span class="theme-card-name">Sakura</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="galaxy">
+                            <div class="theme-card theme-preview-galaxy">
+                                <span class="theme-card-icon">🌌</span>
+                                <span class="theme-card-name">Galaxy</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="nature">
+                            <div class="theme-card theme-preview-nature">
+                                <span class="theme-card-icon">🌿</span>
+                                <span class="theme-card-name">Nature</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="ocean">
+                            <div class="theme-card theme-preview-ocean">
+                                <span class="theme-card-icon">🌊</span>
+                                <span class="theme-card-name">Ocean</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="sunset">
+                            <div class="theme-card theme-preview-sunset">
+                                <span class="theme-card-icon">🌅</span>
+                                <span class="theme-card-name">Sunset</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Font Picker -->
+                <div class="form-group">
+                    <label>✏️ Font chữ tiêu đề</label>
+                    <div class="font-picker" id="fontPicker">
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="dancing" checked>
+                            <div class="font-card" style="font-family:'Dancing Script',cursive">Abc Xyz</div>
+                        </label>
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="great-vibes">
+                            <div class="font-card" style="font-family:'Great Vibes',cursive">Abc Xyz</div>
+                        </label>
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="pacifico">
+                            <div class="font-card" style="font-family:'Pacifico',cursive">Abc Xyz</div>
+                        </label>
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="lobster">
+                            <div class="font-card" style="font-family:'Lobster',cursive">Abc Xyz</div>
+                        </label>
+                        <label class="font-option">
+                            <input type="radio" name="cfgFont" value="playfair">
+                            <div class="font-card" style="font-family:'Playfair Display',serif">Abc Xyz</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Effect Picker -->
+                <div class="form-group">
+                    <label>✨ Hiệu ứng nền</label>
+                    <div class="effect-picker" id="effectPicker">
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="petals" checked>
+                            <div class="effect-card">🌸 Hoa rơi</div>
+                        </label>
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="bubbles">
+                            <div class="effect-card">🫧 Bong bóng</div>
+                        </label>
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="stars">
+                            <div class="effect-card">⭐ Ngôi sao</div>
+                        </label>
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="confetti">
+                            <div class="effect-card">🎊 Confetti</div>
+                        </label>
+                        <label class="effect-option">
+                            <input type="radio" name="cfgEffect" value="none">
+                            <div class="effect-card">❌ Không</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Gallery Layout -->
+                <div class="form-group">
+                    <label>🖼️ Kiểu hiển thị ảnh</label>
+                    <div class="layout-picker" id="layoutPicker">
+                        <label class="layout-option">
+                            <input type="radio" name="cfgLayout" value="bubble" checked>
+                            <div class="layout-card">🫧 Bubble nổi</div>
+                        </label>
+                        <label class="layout-option">
+                            <input type="radio" name="cfgLayout" value="grid">
+                            <div class="layout-card">📐 Lưới đều</div>
+                        </label>
+                        <label class="layout-option">
+                            <input type="radio" name="cfgLayout" value="carousel">
+                            <div class="layout-card">🎠 Xoay vòng</div>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Background Music -->
+                <div class="form-group">
+                    <label>🎵 Nhạc nền</label>
+                    <div style="display:flex; gap:10px; align-items:center;">
+                        <label class="btn-secondary" for="audioInput" style="cursor:pointer; font-size:0.85rem; padding:6px 12px;">Tải nhạc lên</label>
+                        <input type="file" id="audioInput" accept="audio/*" hidden>
+                        <span id="audioName" style="font-size:0.85rem;color:var(--text2);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">Mặc định hệ thống</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- TAB: XUẤT / NHẬP -->
+            <div class="tab-content" id="tab-export">
+                <div class="export-section">
+                    <div class="export-guide-card">
+                        <div class="export-guide-header">
+                            <span class="export-guide-icon">▶</span>
+                            <div>
+                                <h3>Video hướng dẫn xuất, nhập và chia sẻ kỷ yếu</h3>
+                                <p>Xem nhanh video này trước khi xuất file để biết cách tạo bản web, đưa lên mạng và tạo mã QR gửi phụ huynh.</p>
+                            </div>
+                        </div>
+                        <div class="export-video-frame">
+                            <iframe
+                                src="https://www.youtube.com/embed/Wz15BtV1rsg"
+                                title="Video hướng dẫn xuất, nhập và chia sẻ kỷ yếu"
+                                loading="lazy"
+                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                referrerpolicy="strict-origin-when-cross-origin"
+                                allowfullscreen>
+                            </iframe>
+                        </div>
+                    </div>
+                    <hr class="export-divider">
+                    <div class="export-card">
+                        <span class="export-icon">📤</span>
+                        <h3>Xuất file JSON</h3>
+                        <p>Lưu toàn bộ kỉ yếu (thông tin + ảnh + cài đặt) thành 1 file JSON. Gửi file này cho PH/HS để mở.</p>
+                        <button class="btn-export" id="btnExport">📥 Xuất file kỉ yếu (.json)</button>
+                    </div>
+                    <hr class="export-divider">
+                    <div class="export-card">
+                        <span class="export-icon">📂</span>
+                        <h3>Nhập file JSON</h3>
+                        <p>Mở file kỉ yếu đã xuất trước đó để xem hoặc chỉnh sửa.</p>
+                        <label class="btn-import" for="jsonImportInput">📂 Chọn file kỉ yếu (.json)</label>
+                        <input type="file" id="jsonImportInput" accept=".json" hidden>
+                    </div>
+                    <hr class="export-divider">
+                    <div class="export-card">
+                        <span class="export-icon">🌐</span>
+                        <h3>Xuất HTML & Chia sẻ Online</h3>
+                        <p>Xuất file HTML chứa <strong>toàn bộ ảnh + thông tin</strong> ở chất lượng cao nhất.</p>
+                        <button class="btn-export" id="btnShareHTML" style="margin-bottom: 12px;">🌐 Bước 1: Xuất file HTML</button>
+                        
+                        <div style="background:var(--bg);border-radius:12px;padding:14px;margin:8px 0;text-align:left;font-size:.82rem;line-height:1.7;color:var(--text2);border:1px dashed var(--card-border);">
+                            <strong style="color:var(--text);">📋 Hướng dẫn đưa lên mạng:</strong><br>
+                            ① Bấm nút trên để tải file HTML<br>
+                            ② Vào <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;">app.netlify.com/drop ↗</a> (miễn phí)<br>
+                            ③ Kéo thả file HTML vào trang Netlify<br>
+                            ④ Copy link Netlify → dán vào ô bên dưới → Tạo QR!
+                        </div>
+
+                        <div style="margin-top:12px;">
+                            <label style="font-weight:600;font-size:.85rem;color:var(--text);display:block;margin-bottom:6px;">🔗 Bước 2: Dán link Netlify để tạo QR</label>
+                            <div style="display:flex;gap:6px;">
+                                <input type="text" id="netlifyUrl" placeholder="Dán link Netlify vào đây..." style="flex:1;padding:10px 14px;border:2px solid var(--card-border);border-radius:10px;font-size:.9rem;background:var(--bg);color:var(--text);font-family:'Quicksand',sans-serif;">
+                                <button class="btn-export" id="btnGenQR" style="padding:10px 16px;white-space:nowrap;">📱 Tạo QR</button>
+                            </div>
+                        </div>
+
+                        <div id="qrResultBox" style="display:none;margin-top:16px;text-align:center;">
+                            <div style="display:flex;gap:6px;margin-bottom:10px;">
+                                <input type="text" id="finalLink" readonly style="flex:1;padding:8px 12px;border:2px solid var(--primary2);border-radius:10px;font-size:.85rem;background:var(--bg);color:var(--text);">
+                                <button id="btnCopyLink" style="padding:8px 12px;border:none;border-radius:10px;background:var(--primary);color:#fff;cursor:pointer;font-size:1rem;" title="Copy">📋</button>
+                            </div>
+                            <div id="qrCodeContainer" style="display:inline-block;padding:12px;background:#fff;border-radius:16px;box-shadow:var(--shadow);"></div>
+                            <br>
+                            <button class="btn-secondary" id="btnDownloadQr" style="margin-top:10px;">⬇️ Tải ảnh QR</button>
+                            <p style="font-size:.78rem;color:var(--text2);margin-top:8px;">✅ Gửi QR này cho PH — quét là xem kỉ yếu ngay!</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <button type="button" id="btnPreview" style="width: 100%; padding: 14px; margin-top: 20px; border-radius: 12px; font-weight: 700; font-family: 'Quicksand', sans-serif; font-size: 1rem; border: none; background: var(--gradient); color: white; cursor: pointer; transition: 0.2s; box-shadow: var(--shadow);">👀 Xem trước (Đóng & Áp dụng)</button>
+        </div>
+    </div>
+
+    <!-- ===== COVER SECTION ===== -->
+    <section class="cover-section" id="coverSection">
+        <div class="cover-bg">
+            <div class="cover-gradient"></div>
+        </div>
+        <div class="cover-content">
+            <div class="cover-book" id="coverBook">
+                <div class="book-spine"></div>
+                <div class="book-front" id="bookFront">
+                    <div class="book-decoration book-decoration-top"></div>
+                    <div class="book-badge">📸</div>
+                    <h1 class="book-title script-font" id="coverTitle">Kỉ Yếu Cuối Năm</h1>
+                    <div class="book-class-info">
+                        <span class="book-class" id="coverClass">Lớp ___</span>
+                        <span class="book-divider">✦</span>
+                        <span class="book-year" id="coverYear">2025 - 2026</span>
+                    </div>
+                    <p class="book-school" id="coverSchool">Trường ___</p>
+                    <div class="book-decoration book-decoration-bottom"></div>
+                </div>
+            </div>
+            <div class="cover-tap-hint" id="tapHint">
+                <span class="tap-hand">👆</span>
+                <span>Nhấn để mở kỉ yếu</span>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== MAIN YEARBOOK CONTENT ===== -->
+    <main class="yearbook-main" id="yearbookMain">
+        
+        <!-- HEADER SECTION -->
+        <section class="yb-section header-section" id="headerSection">
+            <div class="header-content">
+                <h1 class="yb-title script-font" id="ybTitle">Kỉ Yếu Cuối Năm</h1>
+                <h2 class="yb-class" id="ybClass">Lớp ___</h2>
+                <p class="yb-school" id="ybSchool">Trường ___</p>
+                <p class="yb-year" id="ybYear">✦ Năm học 2025 - 2026 ✦</p>
+                <p class="yb-slogan" id="ybSlogan">Hẹn gặp lại sau mùa hè nhé! 🌻</p>
+                <button id="btnPlayMainMusic" class="btn-secondary" style="margin-top: 16px; border-radius: 20px; box-shadow: var(--shadow);">🎵 Phát / Tắt Nhạc</button>
+            </div>
+        </section>
+
+        <!-- GALLERY SECTION -->
+        <section class="yb-section gallery-section" id="gallerySection">
+            <h2 class="section-title script-font">📸 Thành viên lớp</h2>
+            <div class="gallery-container" id="galleryContainer">
+                <!-- Photo bubbles / grid / carousel rendered here -->
+            </div>
+        </section>
+
+        <!-- TEACHER MESSAGE SECTION -->
+        <section class="yb-section message-section" id="messageSection">
+            <div class="message-card">
+                <h2 class="section-title script-font">💌 Lời nhắn của GVCN</h2>
+                <div class="message-content" id="messageContent">
+                    <p>Các con ơi, một năm học đã qua thật nhanh...</p>
+                </div>
+                <p class="message-sign" id="messageSign">— Giáo viên chủ nhiệm —</p>
+            </div>
+        </section>
+
+        <!-- SLIDESHOW SECTION -->
+        <section class="yb-section slideshow-section" id="slideshowSection">
+            <h2 class="section-title script-font">🎬 Slideshow kỉ niệm</h2>
+            <div class="slideshow-wrapper">
+                <div class="slideshow-stage" id="slideshowStage">
+                    <div class="slide-image" id="slideImage"></div>
+                    <div class="slide-info">
+                        <p class="slide-name" id="slideName"></p>
+                        <p class="slide-msg" id="slideMsg"></p>
+                    </div>
+                </div>
+                <div class="slideshow-controls">
+                    <button class="slide-btn" id="btnPrevSlide">◀</button>
+                    <button class="slide-btn slide-play" id="btnPlaySlide">▶ Auto</button>
+                    <button class="slide-btn" id="btnNextSlide">▶</button>
+                </div>
+                <div class="slideshow-dots" id="slideshowDots"></div>
+            </div>
+        </section>
+
+        <!-- FOOTER -->
+        <footer class="yb-footer">
+            <p class="footer-text">Được tạo với ❤️ bởi <span id="footerTeacher">GVCN</span></p>
+            <p class="footer-year" id="footerYear">Năm học 2025 - 2026</p>
+            <p class="footer-credit">Kỉ Yếu Online • Thế Đức Edu</p>
+        </footer>
+    </main>
+
+    <!-- PHOTO VIEWER MODAL -->
+    <div class="modal-overlay photo-viewer-modal" id="photoViewerModal">
+        <div class="photo-viewer-card">
+            <button class="modal-close-btn" id="btnCloseViewer">✕</button>
+            <div class="viewer-image-wrapper">
+                <img id="viewerImage" src="" alt="">
+            </div>
+            <div class="viewer-info">
+                <h3 class="viewer-name" id="viewerName"></h3>
+                <p class="viewer-msg" id="viewerMsg"></p>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMPTY STATE (no data loaded) -->
+    <div class="empty-state" id="emptyState" style="display:none">
+        <div class="empty-card">
+            <span class="empty-icon">📸</span>
+            <h2>Chưa có kỉ yếu nào</h2>
+            <p>Bấm <strong>"Tạo kỉ yếu"</strong> để bắt đầu tạo mới, hoặc <strong>"Mở kỉ yếu"</strong> để nhập file JSON.</p>
+        </div>
+    </div>
+
+    <!-- JSZip Library -->
+    <script src="https://cdn.jsdelivr.net/npm/jszip@3.10.1/dist/jszip.min.js"></script>
+    <!-- QR Code Library -->
+    <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
+    <script src="script.js"></script>
+</body>
+</html>

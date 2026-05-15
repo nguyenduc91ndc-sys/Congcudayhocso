@@ -60,6 +60,7 @@ import KeoCoTriTueApp from './keo-co-tri-tue/App';
 import GameTuyChinh from './components/GameTuyChinh';
 import DinhDocLap3D from './components/DinhDocLap3D';
 import ThuMoiTuongTac from './components/ThuMoiTuongTac';
+import KyYeuTuyChinh from './components/KyYeuTuyChinh';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -134,6 +135,7 @@ function App() {
       else if (pathname === '/terms') defaultView = 'TERMS' as ViewState;
       else if (pathname === '/contact') defaultView = 'CONTACT' as ViewState;
       else if (pathname === '/dinh-doc-lap-3d') defaultView = 'DINH_DOC_LAP_3D' as ViewState;
+      else if (pathname === '/ky-yeu-cuoi-nam') defaultView = 'KY_YEU_CUOI_NAM' as ViewState;
 
       // Parse ?app= from URL
       const appParam = urlParams.get('app');
@@ -165,6 +167,9 @@ function App() {
             break;
           case 'thu_moi_tuong_tac':
             defaultView = 'THU_MOI_TUONG_TAC';
+            break;
+          case 'ky_yeu_cuoi_nam':
+            defaultView = 'KY_YEU_CUOI_NAM';
             break;
           // Có thể thêm case cho các app khác ở đây sau
         }
@@ -441,6 +446,7 @@ function App() {
                   onDinhDocLap3D={() => requireLogin(() => setView('DINH_DOC_LAP_3D'))}
                   onThuMoiHopPH={() => setView('THU_MOI_TUONG_TAC')}
                   onThuMoiTuongTac={() => setView('THU_MOI_TUONG_TAC')}
+                  onKyYeuCuoiNam={() => requireLogin(() => setView('KY_YEU_CUOI_NAM'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
@@ -685,6 +691,14 @@ function App() {
               onRequireLogin={() => setShowLoginModal(true)}
               onBack={() => setView('DASHBOARD')} 
               sharedId={sharedThuMoiId} 
+            />
+          )}
+
+          {view === 'KY_YEU_CUOI_NAM' && (
+            <KyYeuTuyChinh
+              onBack={() => setView('DASHBOARD')}
+              userEmail={user?.email}
+              userName={user?.name}
             />
           )}
 
