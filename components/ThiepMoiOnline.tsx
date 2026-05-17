@@ -260,6 +260,45 @@ const defaultRsvpOptions: Record<RsvpStatus, InvitationRsvpOption> = {
   no: { label: 'Rất tiếc', color: '#f43f5e' }
 };
 
+type BuiltInMusicId = 'builtin:soft-bells' | 'builtin:warm-piano' | 'builtin:ceremony';
+
+const builtInMusicOptions: Array<{
+  id: BuiltInMusicId;
+  label: string;
+  caption: string;
+  notes: number[];
+  tempo: number;
+  wave: OscillatorType;
+}> = [
+  {
+    id: 'builtin:soft-bells',
+    label: 'Chuông nhẹ',
+    caption: 'Dịu, hợp thôi nôi/sinh nhật',
+    notes: [523.25, 659.25, 783.99, 659.25, 587.33, 698.46, 880, 698.46],
+    tempo: 620,
+    wave: 'sine'
+  },
+  {
+    id: 'builtin:warm-piano',
+    label: 'Ấm áp',
+    caption: 'Nhẹ nhàng, dùng đa số thiệp',
+    notes: [392, 493.88, 587.33, 659.25, 587.33, 493.88, 440, 523.25],
+    tempo: 760,
+    wave: 'triangle'
+  },
+  {
+    id: 'builtin:ceremony',
+    label: 'Trang trọng',
+    caption: 'Hợp lễ cưới/lễ tốt nghiệp',
+    notes: [349.23, 440, 523.25, 698.46, 659.25, 523.25, 440, 392],
+    tempo: 840,
+    wave: 'sine'
+  }
+];
+
+const getBuiltInMusic = (value: string) =>
+  builtInMusicOptions.find((option) => option.id === value);
+
 const getRsvpOptions = (options?: Partial<Record<RsvpStatus, InvitationRsvpOption>>) => ({
   yes: { ...defaultRsvpOptions.yes, ...(options?.yes || {}) },
   maybe: { ...defaultRsvpOptions.maybe, ...(options?.maybe || {}) },
@@ -717,7 +756,11 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
                 <Field label="Tiêu đề thiệp" value={invitation.title} onChange={(value) => updateField('title', value)} />
                 <Field label="Dòng phụ" value={invitation.subtitle} onChange={(value) => updateField('subtitle', value)} />
                 <Field label="Tên nhân vật chính / sự kiện" value={invitation.honoredName} onChange={(value) => updateField('honoredName', value)} />
-                <Field label="Nhạc nền tùy chọn" value={invitation.musicUrl} onChange={(value) => updateField('musicUrl', value)} placeholder="Dán link mp3 nếu có" />
+                <Field label="Nhạc nền tùy chọn" value={invitation.musicUrl} onChange={(value) => updateField('musicUrl', value)} placeholder="Dán link mp3 công khai" />
+                <BuiltInMusicPicker
+                  value={invitation.musicUrl}
+                  onChange={(value) => updateField('musicUrl', value)}
+                />
                 <MusicLinkGuide />
                 <FontStylePicker
                   value={invitation.fontStyle || 'softScript'}
@@ -866,26 +909,68 @@ function MusicLinkGuide() {
       <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold text-slate-900">
         <span className="flex items-center gap-2">
           <Music2 className="h-4 w-4 text-rose-500" />
-          Cách lấy link nhạc nhanh
+          Cách dùng nhạc không tốn dung lượng của app
         </span>
         <span className="text-xs font-medium text-slate-500 group-open:hidden">Bấm để xem</span>
         <span className="hidden text-xs font-medium text-slate-500 group-open:inline">Thu gọn</span>
       </summary>
       <div className="mt-3 grid gap-2 leading-6 sm:grid-cols-3">
         <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">1.</span> Tải file `.mp3` lên Google Drive.
+          <span className="font-semibold text-rose-600">1.</span> Tải file `.mp3` lên nơi lưu trữ bên ngoài.
         </div>
         <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">2.</span> Chia sẻ cho “Bất kỳ ai có đường liên kết”.
+          <span className="font-semibold text-rose-600">2.</span> Bật chia sẻ công khai hoặc lấy link phát trực tiếp.
         </div>
         <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">3.</span> Copy link rồi dán vào ô nhạc.
+          <span className="font-semibold text-rose-600">3.</span> Dán link `.mp3` công khai vào ô nhạc.
         </div>
       </div>
       <p className="mt-3 text-xs font-medium leading-5 text-slate-500">
-        Link YouTube thường không phát trực tiếp trong thiệp. Link mp3 công khai hoặc link Google Drive công khai là dễ dùng nhất.
+        App chỉ lưu đường dẫn, không lưu file nhạc lên Firebase của mình. Link YouTube thường không phát trực tiếp; link mp3 công khai là ổn nhất.
       </p>
     </details>
+  );
+}
+
+function BuiltInMusicPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
+  return (
+    <div>
+      <label className={labelClass}>Nhạc mặc định</label>
+      <div className="grid gap-2 sm:grid-cols-4">
+        <button
+          type="button"
+          onClick={() => onChange('')}
+          className={`rounded-2xl border px-3 py-3 text-left text-sm transition hover:-translate-y-0.5 ${
+            !value ? 'border-pink-300 bg-pink-50 shadow-md shadow-pink-900/10' : 'border-slate-200 bg-white hover:border-slate-300'
+          }`}
+        >
+          <span className="block font-semibold text-slate-900">Không nhạc</span>
+          <span className="mt-1 block text-xs leading-4 text-slate-500">Tắt nhạc nền</span>
+        </button>
+        {builtInMusicOptions.map((option) => {
+          const active = value === option.id;
+          return (
+            <button
+              key={option.id}
+              type="button"
+              onClick={() => onChange(option.id)}
+              className={`rounded-2xl border px-3 py-3 text-left text-sm transition hover:-translate-y-0.5 ${
+                active ? 'border-pink-300 bg-gradient-to-br from-pink-50 to-amber-50 shadow-md shadow-pink-900/10' : 'border-slate-200 bg-white hover:border-pink-200'
+              }`}
+            >
+              <span className="mb-2 flex h-8 w-8 items-center justify-center rounded-full bg-pink-50 text-pink-500">
+                <Music2 className="h-4 w-4" />
+              </span>
+              <span className="block font-semibold text-slate-900">{option.label}</span>
+              <span className="mt-1 block text-xs leading-4 text-slate-500">{option.caption}</span>
+            </button>
+          );
+        })}
+      </div>
+      <p className="mt-2 rounded-2xl bg-emerald-50 px-4 py-2 text-xs font-medium leading-5 text-emerald-700">
+        Nhạc mặc định được tạo trực tiếp trên trình duyệt, không cần link và không lưu file nhạc lên hệ thống.
+      </p>
+    </div>
   );
 }
 
@@ -1113,13 +1198,112 @@ function normalizeMusicUrl(url: string) {
   return trimmed;
 }
 
+function playBuiltInNote(
+  context: AudioContext,
+  masterGain: GainNode,
+  frequency: number,
+  wave: OscillatorType,
+  startAt: number,
+  duration = 0.46
+) {
+  const oscillator = context.createOscillator();
+  const noteGain = context.createGain();
+  oscillator.type = wave;
+  oscillator.frequency.setValueAtTime(frequency, startAt);
+  noteGain.gain.setValueAtTime(0.0001, startAt);
+  noteGain.gain.exponentialRampToValueAtTime(0.16, startAt + 0.03);
+  noteGain.gain.exponentialRampToValueAtTime(0.0001, startAt + duration);
+  oscillator.connect(noteGain);
+  noteGain.connect(masterGain);
+  oscillator.start(startAt);
+  oscillator.stop(startAt + duration + 0.05);
+}
+
 function BackgroundMusic({ url, accent }: { url: string; accent: string }) {
   const audioRef = useRef<HTMLAudioElement | null>(null);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const builtInGainRef = useRef<GainNode | null>(null);
+  const builtInTimerRef = useRef<number | null>(null);
+  const builtInIndexRef = useRef(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [hasError, setHasError] = useState(false);
-  const src = useMemo(() => normalizeMusicUrl(url), [url]);
+  const builtInMusic = useMemo(() => getBuiltInMusic(url), [url]);
+  const src = useMemo(() => (builtInMusic ? '' : normalizeMusicUrl(url)), [url, builtInMusic]);
+
+  const stopBuiltInMusic = () => {
+    if (builtInTimerRef.current) {
+      window.clearInterval(builtInTimerRef.current);
+      builtInTimerRef.current = null;
+    }
+    builtInIndexRef.current = 0;
+    builtInGainRef.current?.gain.setTargetAtTime(0.0001, audioContextRef.current?.currentTime || 0, 0.08);
+  };
+
+  const startBuiltInMusic = async () => {
+    if (!builtInMusic) return;
+    const AudioContextClass = window.AudioContext || (window as Window & typeof globalThis & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) {
+      setHasError(true);
+      return;
+    }
+
+    const context = audioContextRef.current || new AudioContextClass();
+    audioContextRef.current = context;
+    if (context.state === 'suspended') await context.resume();
+
+    let masterGain = builtInGainRef.current;
+    if (!masterGain) {
+      masterGain = context.createGain();
+      masterGain.connect(context.destination);
+      builtInGainRef.current = masterGain;
+    }
+    stopBuiltInMusic();
+    masterGain.gain.setTargetAtTime(0.18, context.currentTime, 0.08);
+
+    const playNext = () => {
+      const note = builtInMusic.notes[builtInIndexRef.current % builtInMusic.notes.length];
+      playBuiltInNote(context, masterGain, note, builtInMusic.wave, context.currentTime);
+      if (builtInIndexRef.current % 2 === 0) {
+        playBuiltInNote(context, masterGain, note / 2, builtInMusic.wave, context.currentTime + 0.04, 0.58);
+      }
+      builtInIndexRef.current += 1;
+    };
+
+    playNext();
+    builtInTimerRef.current = window.setInterval(playNext, builtInMusic.tempo);
+    setIsPlaying(true);
+    setHasError(false);
+  };
 
   useEffect(() => {
+    const gestureEvents = ['pointerdown', 'click', 'touchstart', 'keydown'] as const;
+    const listenerOptions = { capture: true };
+    let removeGestureListeners = () => {};
+
+    if (builtInMusic) {
+      const playAudio = () => {
+        startBuiltInMusic()
+          .then(() => {
+            if (builtInTimerRef.current) removeGestureListeners();
+          })
+          .catch(() => setHasError(true));
+      };
+
+      setIsPlaying(false);
+      setHasError(false);
+      gestureEvents.forEach((eventName) => window.addEventListener(eventName, playAudio, listenerOptions));
+      removeGestureListeners = () => {
+        gestureEvents.forEach((eventName) => window.removeEventListener(eventName, playAudio, listenerOptions));
+      };
+      playAudio();
+
+      return () => {
+        removeGestureListeners();
+        stopBuiltInMusic();
+        setIsPlaying(false);
+      };
+    }
+
     const audio = audioRef.current;
     if (!audio || !src) return;
 
@@ -1133,24 +1317,36 @@ function BackgroundMusic({ url, accent }: { url: string; accent: string }) {
         .then(() => {
           setIsPlaying(true);
           setHasError(false);
+          removeGestureListeners();
         })
         .catch(() => setIsPlaying(false));
     };
 
+    gestureEvents.forEach((eventName) => window.addEventListener(eventName, playAudio, listenerOptions));
+    removeGestureListeners = () => {
+      gestureEvents.forEach((eventName) => window.removeEventListener(eventName, playAudio, listenerOptions));
+    };
     playAudio();
-    window.addEventListener('pointerdown', playAudio, { once: true });
-    window.addEventListener('keydown', playAudio, { once: true });
 
     return () => {
-      window.removeEventListener('pointerdown', playAudio);
-      window.removeEventListener('keydown', playAudio);
+      removeGestureListeners();
       audio.pause();
     };
-  }, [src]);
+  }, [src, builtInMusic]);
 
-  if (!src) return null;
+  if (!src && !builtInMusic) return null;
 
   const toggleMusic = () => {
+    if (builtInMusic) {
+      if (isPlaying) {
+        stopBuiltInMusic();
+        setIsPlaying(false);
+      } else {
+        startBuiltInMusic().catch(() => setHasError(true));
+      }
+      return;
+    }
+
     const audio = audioRef.current;
     if (!audio) return;
 
@@ -1169,18 +1365,20 @@ function BackgroundMusic({ url, accent }: { url: string; accent: string }) {
 
   return (
     <div className="fixed right-4 top-4 z-40 flex flex-col items-end gap-2">
-      <audio
-        ref={audioRef}
-        src={src}
-        loop
-        preload="auto"
-        onPlay={() => setIsPlaying(true)}
-        onPause={() => setIsPlaying(false)}
-        onError={() => {
-          setIsPlaying(false);
-          setHasError(true);
-        }}
-      />
+      {src && (
+        <audio
+          ref={audioRef}
+          src={src}
+          loop
+          preload="auto"
+          onPlay={() => setIsPlaying(true)}
+          onPause={() => setIsPlaying(false)}
+          onError={() => {
+            setIsPlaying(false);
+            setHasError(true);
+          }}
+        />
+      )}
       <button
         type="button"
         onClick={toggleMusic}
@@ -1192,7 +1390,7 @@ function BackgroundMusic({ url, accent }: { url: string; accent: string }) {
       </button>
       {hasError && (
         <span className="max-w-[210px] rounded-2xl bg-white/90 px-3 py-2 text-right text-xs font-medium leading-4 text-rose-700 shadow-lg backdrop-blur">
-          Link nhạc chưa phát được. Nên dùng link mp3 công khai.
+          Nhạc chưa phát được. Hãy bấm lại nút bật nhạc hoặc dùng link mp3 công khai.
         </span>
       )}
     </div>
