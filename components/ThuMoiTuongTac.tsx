@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { saveSharedThuMoi, getSharedThuMoi, checkStudentRSVP, saveStudentRSVP, getUserThuMoiList, getRSVPs } from '../utils/firebaseThuMoi';
-import { Mail, Users, Plus, ArrowLeft, Calendar, MapPin, X, CheckCircle, XCircle } from 'lucide-react';
+import { saveSharedThuMoi, updateSharedThuMoi, getSharedThuMoi, checkStudentRSVP, saveStudentRSVP, getUserThuMoiList, getRSVPs } from '../utils/firebaseThuMoi';
+import { Mail, Users, Plus, ArrowLeft, Calendar, MapPin, X, CheckCircle, XCircle, Pencil } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
@@ -12,6 +12,7 @@ interface Props {
 const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin }) => {
   const [view, setView] = useState<'DASHBOARD' | 'IFRAME'>(sharedId ? 'IFRAME' : 'DASHBOARD');
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+  const [editingShortId, setEditingShortId] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Dashboard states
@@ -57,10 +58,10 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
     };
     if (view === 'IFRAME' && sharedId) {
       loadSharedData();
-    } else if (view === 'IFRAME' && !sharedId) {
+    } else if (view === 'IFRAME' && !sharedId && !editingShortId) {
       setIframeSrc('/thumoiphtuongtac/thumoiphtuongtac/index.html');
     }
-  }, [sharedId, view]);
+  }, [sharedId, view, editingShortId]);
 
   useEffect(() => {
     const handleMessage = async (event: MessageEvent) => {
@@ -68,13 +69,22 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
       if (event.data && event.data.type === 'THU_MOI_SHARE') {
         const config = event.data.config;
         if (config) {
-          const shortId = await saveSharedThuMoi(config, user?.id, user?.email);
+          const updated = editingShortId
+            ? await updateSharedThuMoi(editingShortId, config, user?.id, user?.email)
+            : true;
+          const shortId = editingShortId || await saveSharedThuMoi(config, user?.id, user?.email);
           if (shortId) {
             const shortUrl = `${window.location.origin}?app=thu_moi_tuong_tac&id=${shortId}`;
             iframeRef.current?.contentWindow?.postMessage({
               type: 'THU_MOI_SHORT_URL',
-              url: shortUrl
+              url: shortUrl,
+              closeAfterSave: Boolean(event.data.closeAfterSave && editingShortId && updated)
             }, '*');
+            if (updated && editingShortId) {
+              loadUserList();
+            } else if (editingShortId && !updated) {
+              alert('Chưa cập nhật được thư mời. Vui lòng thử lại.');
+            }
           } else {
             const encoded = event.data.encoded;
             const fallbackUrl = `${window.location.origin}/thumoiphtuongtac/thumoiphtuongtac/index.html?id=${shortId}#${encoded}`;
@@ -99,12 +109,17 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
         if (sharedId && studentName) {
             await saveStudentRSVP(sharedId, studentName, parentName, attendance);
         }
+      } else if (event.data && event.data.type === 'THU_MOI_CLOSE_EDITOR') {
+        setView('DASHBOARD');
+        setEditingShortId(null);
+        setIframeSrc(null);
+        loadUserList();
       }
     };
 
     window.addEventListener('message', handleMessage);
     return () => window.removeEventListener('message', handleMessage);
-  }, [sharedId, user]);
+  }, [sharedId, user, editingShortId]);
 
   const handleOpenRsvp = async (shortId: string, className: string) => {
     setShowRsvpModal({ shortId, className });
@@ -114,11 +129,25 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
     setLoadingRsvp(false);
   };
 
+  const handleCreateNew = () => {
+    setEditingShortId(null);
+    setIframeSrc('/thumoiphtuongtac/thumoiphtuongtac/index.html');
+    setView('IFRAME');
+  };
+
+  const handleEditInvitation = (item: any) => {
+    const encoded = btoa(encodeURIComponent(JSON.stringify(item.config || {})));
+    setEditingShortId(item.shortId);
+    setIframeSrc(`/thumoiphtuongtac/thumoiphtuongtac/index.html?edit=${item.shortId}#${encoded}`);
+    setView('IFRAME');
+  };
+
   const handleCloseIframe = () => {
     if (sharedId) {
       onBack(); // Nếu là link xem thẳng thì back về nơi xuất phát
     } else {
       setView('DASHBOARD');
+      setEditingShortId(null);
       loadUserList(); // Load lại để update ds
     }
   };
@@ -159,7 +188,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                 <p className="text-white/60">Quản lý các thư mời và xem danh sách phụ huynh xác nhận.</p>
               </div>
               <button
-                onClick={() => setView('IFRAME')}
+                onClick={handleCreateNew}
                 className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-400 hover:to-rose-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-pink-500/25"
               >
                 <Plus className="w-5 h-5" />
@@ -179,7 +208,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                 <h3 className="text-xl font-bold text-white mb-2">Chưa có thư mời nào</h3>
                 <p className="text-white/50 mb-6">Bạn chưa tạo thư mời họp phụ huynh nào. Hãy bắt đầu tạo ngay nhé!</p>
                 <button
-                  onClick={() => setView('IFRAME')}
+                  onClick={handleCreateNew}
                   className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all border border-white/10"
                 >
                   Tạo thư mời đầu tiên
@@ -217,6 +246,14 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                         className="flex-1 bg-white/10 hover:bg-white/20 text-white px-4 py-2 rounded-xl text-sm font-medium transition-colors"
                       >
                         Xem phản hồi
+                      </button>
+                      <button
+                        onClick={() => handleEditInvitation(item)}
+                        className="p-2 bg-amber-500/15 hover:bg-amber-500/25 text-amber-200 rounded-xl transition-colors"
+                        title="Chỉnh sửa thư mời"
+                        aria-label="Chỉnh sửa thư mời"
+                      >
+                        <Pencil className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => {

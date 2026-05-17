@@ -101,6 +101,14 @@ document.addEventListener('DOMContentLoaded', () => {
     const shareLinkBox = document.getElementById('shareLinkBox');
     const timelineEditor = document.getElementById('timelineEditor');
     const btnAddTimeline = document.getElementById('btnAddTimeline');
+    const isEditMode = new URLSearchParams(window.location.search).has('edit');
+    const btnSubmitSettings = document.getElementById('btnSubmitSettings');
+    const btnSaveAndClose = document.getElementById('btnSaveAndClose');
+
+    if (isEditMode) {
+        if (btnSubmitSettings) btnSubmitSettings.textContent = '✅ Lưu chỉnh sửa';
+        if (btnSaveAndClose) btnSaveAndClose.style.display = 'block';
+    }
 
     const hasConfig = loadConfigFromURL();
     
@@ -146,6 +154,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
         renderTimelineEditor();
     });
+
+    if (isEditMode) {
+        setTimeout(() => settingsFab.click(), 250);
+    }
 
     // --- Timeline Editor Logic ---
     function renderTimelineEditor() {
@@ -205,6 +217,20 @@ document.addEventListener('DOMContentLoaded', () => {
         window.location.reload();
     });
 
+    if (btnSaveAndClose) {
+        btnSaveAndClose.addEventListener('click', () => {
+            saveConfigFromForm();
+            btnSaveAndClose.disabled = true;
+            btnSaveAndClose.textContent = '⏳ Đang lưu...';
+            window.parent.postMessage({
+                type: 'THU_MOI_SHARE',
+                config: CONFIG,
+                encoded: btoa(encodeURIComponent(JSON.stringify(CONFIG))),
+                closeAfterSave: true
+            }, '*');
+        });
+    }
+
     settingsForm.addEventListener('submit', (e) => {
         e.preventDefault();
         saveConfigFromForm();
@@ -219,7 +245,8 @@ document.addEventListener('DOMContentLoaded', () => {
         window.parent.postMessage({ 
             type: 'THU_MOI_SHARE', 
             config: CONFIG,
-            encoded: encoded
+            encoded: encoded,
+            closeAfterSave: false
         }, '*');
         
         // Cập nhật hash URL nội bộ (fallback)
@@ -258,8 +285,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (event.data && event.data.type === 'THU_MOI_SHORT_URL') {
             const shortUrl = event.data.url;
             document.getElementById('shareLink').value = shortUrl;
-            document.getElementById('copyStatus').textContent = '✅ Đã tạo link rút gọn thành công!';
+            document.getElementById('copyStatus').textContent = isEditMode ? '✅ Đã lưu chỉnh sửa thành công!' : '✅ Đã tạo link rút gọn thành công!';
             document.getElementById('copyStatus').style.color = '#27ae60';
+            if (btnSaveAndClose) {
+                btnSaveAndClose.disabled = false;
+                btnSaveAndClose.textContent = '✅ Lưu chỉnh sửa & đóng';
+            }
+            if (event.data.closeAfterSave) {
+                window.parent.postMessage({ type: 'THU_MOI_CLOSE_EDITOR' }, '*');
+                return;
+            }
             
             if (qrCode) {
                 document.getElementById('qrCodeWrapper').style.display = 'block';

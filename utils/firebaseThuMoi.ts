@@ -1,5 +1,5 @@
 import { database } from './firebaseConfig';
-import { ref, push, set, get } from 'firebase/database';
+import { ref, push, set, get, update } from 'firebase/database';
 
 const SHARED_THUMOI_REF = 'shared-thumoi';
 
@@ -26,6 +26,25 @@ export const saveSharedThuMoi = async (config: any, userId?: string, userEmail?:
     } catch (error) {
         console.error('[ShareLink] Error saving shared Thu Moi:', error);
         return null;
+    }
+};
+
+export const updateSharedThuMoi = async (shortId: string, config: any, userId?: string, userEmail?: string): Promise<boolean> => {
+    try {
+        const fullKey = await getFullKeyFromShortId(shortId);
+        if (!fullKey) return false;
+
+        await update(ref(database, `${SHARED_THUMOI_REF}/${fullKey}`), {
+            config,
+            userId: userId || null,
+            userEmail: userEmail || config.email || null,
+            updatedAt: Date.now()
+        });
+
+        return true;
+    } catch (error) {
+        console.error('[ShareLink] Error updating shared Thu Moi:', error);
+        return false;
     }
 };
 
