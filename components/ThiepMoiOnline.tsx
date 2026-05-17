@@ -862,26 +862,30 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: { label: 
 
 function MusicLinkGuide() {
   return (
-    <div className="rounded-3xl border border-amber-100 bg-gradient-to-br from-amber-50 via-rose-50 to-sky-50 p-4 text-sm text-slate-700">
-      <div className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
-        <Music2 className="h-4 w-4 text-rose-500" />
-        Cách lấy link nhạc nhanh
-      </div>
-      <div className="grid gap-2 leading-6 sm:grid-cols-3">
+    <details className="group rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-rose-50 to-sky-50 px-4 py-3 text-sm text-slate-700">
+      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold text-slate-900">
+        <span className="flex items-center gap-2">
+          <Music2 className="h-4 w-4 text-rose-500" />
+          Cách lấy link nhạc nhanh
+        </span>
+        <span className="text-xs font-medium text-slate-500 group-open:hidden">Bấm để xem</span>
+        <span className="hidden text-xs font-medium text-slate-500 group-open:inline">Thu gọn</span>
+      </summary>
+      <div className="mt-3 grid gap-2 leading-6 sm:grid-cols-3">
         <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">1.</span> Tải file nhạc `.mp3` lên Google Drive.
+          <span className="font-semibold text-rose-600">1.</span> Tải file `.mp3` lên Google Drive.
         </div>
         <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">2.</span> Bấm chia sẻ, chọn “Bất kỳ ai có đường liên kết”.
+          <span className="font-semibold text-rose-600">2.</span> Chia sẻ cho “Bất kỳ ai có đường liên kết”.
         </div>
         <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">3.</span> Sao chép liên kết rồi dán vào ô nhạc.
+          <span className="font-semibold text-rose-600">3.</span> Copy link rồi dán vào ô nhạc.
         </div>
       </div>
       <p className="mt-3 text-xs font-medium leading-5 text-slate-500">
         Link YouTube thường không phát trực tiếp trong thiệp. Link mp3 công khai hoặc link Google Drive công khai là dễ dùng nhất.
       </p>
-    </div>
+    </details>
   );
 }
 
@@ -939,32 +943,30 @@ function RsvpStyleCustomizer({
   return (
     <div>
       <label className={labelClass}>Tùy chỉnh nút phản hồi</label>
-      <div className="grid gap-3 rounded-3xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-3">
+      <div className="grid gap-2 rounded-3xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-3">
         {statusOrder.map((status) => {
           const option = options[status];
           return (
-            <div key={status} className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-white">
-              <div className="mb-3 flex items-center justify-between gap-2">
-                <span
-                  className="rounded-full px-3 py-1 text-xs font-semibold"
-                  style={{ backgroundColor: hexToRgba(option.color, 0.12), color: option.color }}
-                >
-                  {option.label}
-                </span>
-                <input
-                  type="color"
-                  value={option.color}
-                  onChange={(event) => updateOption(status, { color: event.target.value })}
-                  className="h-8 w-10 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
-                  aria-label={`Chọn màu ${option.label}`}
-                />
-              </div>
+            <div key={status} className="grid grid-cols-[minmax(0,1fr)_42px] items-center gap-2 rounded-2xl bg-white p-2 shadow-sm ring-1 ring-white">
               <input
                 value={option.label}
                 onChange={(event) => updateOption(status, { label: event.target.value })}
-                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
+                className="min-w-0 rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
                 placeholder="Tên nút"
               />
+              <input
+                type="color"
+                value={option.color}
+                onChange={(event) => updateOption(status, { color: event.target.value })}
+                className="h-10 w-10 cursor-pointer rounded-xl border border-slate-200 bg-white p-1"
+                aria-label={`Chọn màu ${option.label}`}
+              />
+              <span
+                className="col-span-2 min-h-[34px] rounded-full px-3 py-2 text-center text-xs font-semibold leading-4"
+                style={{ backgroundColor: hexToRgba(option.color, 0.12), color: option.color, overflowWrap: 'anywhere' }}
+              >
+                {option.label || 'Tên nút'}
+              </span>
             </div>
           );
         })}
@@ -1069,7 +1071,12 @@ function InvitationPreview({ invitation, template }: { invitation: OnlineInvitat
             <InfoRow icon={<MapPin className="h-4 w-4" />} label={invitation.locationName || invitation.address} />
             <p className="line-clamp-3 text-sm font-medium leading-6 text-slate-600">{invitation.message}</p>
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <button className="rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${rsvpOptions.yes.color}, ${template.accent2})` }}>{rsvpOptions.yes.label}</button>
+              <button
+                className="min-h-[44px] rounded-2xl px-4 py-3 text-center text-sm font-semibold leading-5 text-white shadow-lg"
+                style={{ background: `linear-gradient(135deg, ${rsvpOptions.yes.color}, ${template.accent2})`, overflowWrap: 'anywhere' }}
+              >
+                {rsvpOptions.yes.label}
+              </button>
               <button className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow ring-1 ring-slate-100">Bản đồ</button>
             </div>
           </div>
@@ -1281,13 +1288,14 @@ function InvitationViewer({
                         <button
                           key={statusKey}
                           onClick={() => setRsvpForm((f) => ({ ...f, status: statusKey }))}
-                          className="rounded-full px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5"
+                          className="min-h-[48px] rounded-full px-2 py-2 text-center text-sm font-semibold leading-5 transition hover:-translate-y-0.5"
                           style={{
                             background: isActive
                               ? `linear-gradient(135deg, ${option.color}, ${hexToRgba(option.color, 0.68)})`
                               : hexToRgba(option.color, 0.1),
                             color: isActive ? '#ffffff' : option.color,
-                            boxShadow: isActive ? `0 14px 26px ${hexToRgba(option.color, 0.22)}` : 'none'
+                            boxShadow: isActive ? `0 14px 26px ${hexToRgba(option.color, 0.22)}` : 'none',
+                            overflowWrap: 'anywhere'
                           }}
                         >
                           {option.label}
