@@ -9,7 +9,7 @@ export const ALL_APP_IDS = [
     'clockExperiment', 'yogurtExperiment', 'earthSeasons',
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D', 'thatLuong3D',
-    'bangCuuChuong', 'gameTuongTac', 'gameTuyChinh', 'kyYeuCuoiNam',
+    'bangCuuChuong', 'gameTuongTac', 'gameTuyChinh', 'kyYeuCuoiNam', 'thiepMoiOnline',
     'phongTranh3D', // Phòng Tranh 3D Tùy Chỉnh
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
     'nhanXetTT27', // Nhận Xét TT27
@@ -55,6 +55,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
     gameTuyChinh: { name: 'Game Tùy Chỉnh', icon: '🎮', section: 'Công cụ dạy học' },
     kyYeuCuoiNam: { name: 'Kỷ Yếu Cuối Năm', icon: '🎓', section: 'Học liệu tương tác' },
+    thiepMoiOnline: { name: 'Thiệp Mời Online', icon: '💌', section: 'Học liệu tương tác' },
     // ── Ứng dụng 3D & VR ──
     phongTranh3D: { name: 'Phòng Tranh 3D Tùy Chỉnh', icon: '🖼️', section: 'Ứng dụng 3D & VR' },
     sangKienKinhNghiem: { name: 'Viết SKKN & Báo Cáo', icon: '✍️', section: 'Khóa học & AI' },

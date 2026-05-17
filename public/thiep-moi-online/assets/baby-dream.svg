@@ -1,0 +1,35 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" role="img" aria-label="Pastel baby invitation background">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff7ed"/>
+      <stop offset=".48" stop-color="#ffe4f1"/>
+      <stop offset="1" stop-color="#dff7ff"/>
+    </linearGradient>
+    <radialGradient id="sun" cx=".5" cy=".38" r=".42">
+      <stop stop-color="#fff" stop-opacity=".98"/>
+      <stop offset=".72" stop-color="#fff" stop-opacity=".35"/>
+      <stop offset="1" stop-color="#fff" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="1600" fill="url(#bg)"/>
+  <circle cx="610" cy="585" r="435" fill="url(#sun)"/>
+  <path d="M0 1175c180-125 360-120 540 15 195 145 430 140 660-35v445H0z" fill="#fff" opacity=".72"/>
+  <path d="M85 240c95-110 215-96 275 0 60-96 180-110 275 0 75 88 60 235-275 430C25 475 10 328 85 240z" fill="#fff" opacity=".42"/>
+  <g fill="none" stroke-linecap="round" stroke-width="18" opacity=".55">
+    <path d="M120 885c95-60 175-60 240 0s145 60 240 0 175-60 240 0 145 60 240 0" stroke="#ff9ec8"/>
+    <path d="M155 985c95-58 175-58 240 0s145 58 240 0 175-58 240 0 145 58 240 0" stroke="#79d7ee"/>
+  </g>
+  <g opacity=".9">
+    <circle cx="955" cy="230" r="72" fill="#ffb4d3"/>
+    <circle cx="1030" cy="330" r="56" fill="#ffe08a"/>
+    <circle cx="875" cy="340" r="62" fill="#9fe7f5"/>
+    <path d="M956 300c-16 125-58 215-126 270" fill="none" stroke="#b5896a" stroke-width="7" stroke-linecap="round"/>
+  </g>
+  <g fill="#fff" opacity=".9">
+    <circle cx="180" cy="1330" r="6"/>
+    <circle cx="255" cy="1260" r="9"/>
+    <circle cx="980" cy="1220" r="7"/>
+    <circle cx="1065" cy="1360" r="10"/>
+    <circle cx="760" cy="1325" r="8"/>
+  </g>
+</svg>

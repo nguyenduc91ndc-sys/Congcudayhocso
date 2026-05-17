@@ -1,0 +1,32 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" role="img" aria-label="Modern coming of age invitation background">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#14121f"/>
+      <stop offset=".5" stop-color="#31213c"/>
+      <stop offset="1" stop-color="#0f172a"/>
+    </linearGradient>
+    <linearGradient id="neon" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#38bdf8"/>
+      <stop offset=".5" stop-color="#f472b6"/>
+      <stop offset="1" stop-color="#facc15"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1600" fill="url(#bg)"/>
+  <path d="M120 1210 1090 420" stroke="url(#neon)" stroke-width="120" stroke-linecap="round" opacity=".12"/>
+  <path d="M120 1340 1090 550" stroke="url(#neon)" stroke-width="34" stroke-linecap="round" opacity=".35"/>
+  <circle cx="300" cy="360" r="170" fill="#38bdf8" opacity=".14"/>
+  <circle cx="900" cy="980" r="260" fill="#f472b6" opacity=".12"/>
+  <rect x="180" y="250" width="840" height="1100" rx="70" fill="#fff" opacity=".06" stroke="#fff" stroke-opacity=".16" stroke-width="2"/>
+  <g fill="none" stroke="#fff" stroke-opacity=".55" stroke-width="6">
+    <path d="M300 455h600"/>
+    <path d="M240 510h720"/>
+    <path d="M330 565h540"/>
+  </g>
+  <g fill="#fff" opacity=".75">
+    <circle cx="210" cy="190" r="4"/>
+    <circle cx="955" cy="210" r="7"/>
+    <circle cx="1060" cy="730" r="5"/>
+    <circle cx="175" cy="1010" r="6"/>
+    <circle cx="735" cy="1320" r="5"/>
+  </g>
+</svg>

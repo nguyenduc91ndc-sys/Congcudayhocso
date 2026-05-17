@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" role="img" aria-label="Abstract custom invitation background">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff1f2"/>
+      <stop offset=".5" stop-color="#eef2ff"/>
+      <stop offset="1" stop-color="#ecfeff"/>
+    </linearGradient>
+    <radialGradient id="a" cx=".25" cy=".2" r=".5">
+      <stop stop-color="#fb7185" stop-opacity=".56"/>
+      <stop offset="1" stop-color="#fb7185" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="b" cx=".75" cy=".75" r=".55">
+      <stop stop-color="#38bdf8" stop-opacity=".52"/>
+      <stop offset="1" stop-color="#38bdf8" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+  <rect width="1200" height="1600" fill="url(#bg)"/>
+  <rect width="1200" height="1600" fill="url(#a)"/>
+  <rect width="1200" height="1600" fill="url(#b)"/>
+  <path d="M125 295c220-135 410-120 570 45s325 170 505 38v260c-165 122-342 104-530-50S315 415 125 545z" fill="#fff" opacity=".42"/>
+  <path d="M0 1190c210-128 420-120 630 24s400 137 570-24v410H0z" fill="#fff" opacity=".55"/>
+  <g fill="none" stroke="#fff" stroke-width="4" opacity=".7">
+    <rect x="150" y="180" width="900" height="1240" rx="64"/>
+    <rect x="196" y="226" width="808" height="1148" rx="46"/>
+  </g>
+</svg>

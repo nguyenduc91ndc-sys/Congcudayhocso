@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" role="img" aria-label="Fresh housewarming invitation background">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#ecfeff"/>
+      <stop offset=".48" stop-color="#f0fdf4"/>
+      <stop offset="1" stop-color="#fff7ed"/>
+    </linearGradient>
+    <linearGradient id="leaf" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#16a34a"/>
+      <stop offset="1" stop-color="#0f766e"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1600" fill="url(#bg)"/>
+  <circle cx="600" cy="720" r="430" fill="#fff" opacity=".58"/>
+  <path d="M300 720 600 470l300 250v430H300z" fill="#fff" stroke="#0f766e" stroke-opacity=".2" stroke-width="8"/>
+  <path d="M250 750 600 455l350 295" fill="none" stroke="#0f766e" stroke-width="44" stroke-linecap="round" stroke-linejoin="round" opacity=".85"/>
+  <rect x="510" y="885" width="180" height="265" rx="16" fill="#fdba74"/>
+  <rect x="365" y="790" width="120" height="120" rx="18" fill="#a7f3d0"/>
+  <rect x="715" y="790" width="120" height="120" rx="18" fill="#a7f3d0"/>
+  <g fill="url(#leaf)" opacity=".74">
+    <path d="M100 340c185-20 285 68 330 215-160 14-285-46-330-215z"/>
+    <path d="M1100 1260c-185 20-285-68-330-215 160-14 285 46 330 215z"/>
+  </g>
+  <path d="M0 1325c180-95 365-95 555 0 210 105 420 108 645 0v275H0z" fill="#d1fae5" opacity=".8"/>
+</svg>

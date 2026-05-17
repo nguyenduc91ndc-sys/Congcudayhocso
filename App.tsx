@@ -61,6 +61,7 @@ import GameTuyChinh from './components/GameTuyChinh';
 import DinhDocLap3D from './components/DinhDocLap3D';
 import ThuMoiTuongTac from './components/ThuMoiTuongTac';
 import KyYeuTuyChinh from './components/KyYeuTuyChinh';
+import ThiepMoiOnline from './components/ThiepMoiOnline';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -75,6 +76,7 @@ function App() {
   const [showNewYearWelcome, setShowNewYearWelcome] = useState(false); // New Year welcome modal
   const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
   const [sharedThuMoiId, setSharedThuMoiId] = useState<string | null>(null);
+  const [sharedThiepMoiId, setSharedThiepMoiId] = useState<string | null>(null);
 
   // Lấy storage key theo email user
   const getLessonsStorageKey = (email?: string): string => {
@@ -136,6 +138,11 @@ function App() {
       else if (pathname === '/contact') defaultView = 'CONTACT' as ViewState;
       else if (pathname === '/dinh-doc-lap-3d') defaultView = 'DINH_DOC_LAP_3D' as ViewState;
       else if (pathname === '/ky-yeu-cuoi-nam') defaultView = 'KY_YEU_CUOI_NAM' as ViewState;
+      else if (pathname === '/thiep-moi-online') {
+        defaultView = 'THIEP_MOI_ONLINE' as ViewState;
+        const idParam = urlParams.get('id');
+        if (idParam) setSharedThiepMoiId(idParam);
+      }
 
       // Parse ?app= from URL
       const appParam = urlParams.get('app');
@@ -171,6 +178,9 @@ function App() {
           case 'ky_yeu_cuoi_nam':
             defaultView = 'KY_YEU_CUOI_NAM';
             break;
+          case 'thiep_moi_online':
+            defaultView = 'THIEP_MOI_ONLINE';
+            break;
           // Có thể thêm case cho các app khác ở đây sau
         }
         // Dọn sạch URL: chỉ giữ ?app=..., xóa fbclid, utm_*, aem_* v.v. Cần giữ lại tham số 'id' nếu có để hỗ trợ chức năng chia sẻ Cloud
@@ -180,6 +190,8 @@ function App() {
           cleanUrl += `&id=${idParam}`;
           if (appParam.toLowerCase() === 'thu_moi_tuong_tac') {
             setSharedThuMoiId(idParam);
+          } else if (appParam.toLowerCase() === 'thiep_moi_online') {
+            setSharedThiepMoiId(idParam);
           }
         }
         window.history.replaceState({}, document.title, cleanUrl);
@@ -446,6 +458,7 @@ function App() {
                   onDinhDocLap3D={() => requireLogin(() => setView('DINH_DOC_LAP_3D'))}
                   onThuMoiHopPH={() => setView('THU_MOI_TUONG_TAC')}
                   onThuMoiTuongTac={() => setView('THU_MOI_TUONG_TAC')}
+                  onThiepMoiOnline={() => requireLogin(() => { setSharedThiepMoiId(null); setView('THIEP_MOI_ONLINE'); })}
                   onKyYeuCuoiNam={() => requireLogin(() => setView('KY_YEU_CUOI_NAM'))}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
@@ -691,6 +704,15 @@ function App() {
               onRequireLogin={() => setShowLoginModal(true)}
               onBack={() => setView('DASHBOARD')} 
               sharedId={sharedThuMoiId} 
+            />
+          )}
+
+          {view === 'THIEP_MOI_ONLINE' && (
+            <ThiepMoiOnline
+              user={user ? { email: user.email || '', name: user.name || '', id: user.id || user.email || '' } : null}
+              onRequireLogin={() => setShowLoginModal(true)}
+              onBack={() => setView('DASHBOARD')}
+              sharedId={sharedThiepMoiId}
             />
           )}
 

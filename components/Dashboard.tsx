@@ -55,6 +55,7 @@ interface DashboardProps {
     onGameTuongTac: () => void;
     onThuMoiHopPH: () => void;
     onThuMoiTuongTac: () => void;
+    onThiepMoiOnline: () => void;
     onYogurtExperiment: () => void;
     onKiemTraDaoVan: () => void;
     onPhongTranh3D: () => void;
@@ -285,7 +286,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -863,6 +864,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('bangCuuChuong') && <ToolCard title="Bảng Cửu Chương Số" description="Học liệu tương tác bảng cửu chương" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onBangCuuChuong} badge="Mới" />}
                                         {!hiddenApps.includes('gameTuongTac') && <ToolCard title="Game Tương Tác" description="Học liệu tương tác dạng game vui nhộn" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={onGameTuongTac} badge="Mới" />}
                                         {!hiddenApps.includes('thuMoiTuongTac') && <ToolCard title="Thư Mời Họp Phụ Huynh" description="Tạo thư mời tương tác đẹp, nhận xác nhận phụ huynh qua email" icon={<span className="text-2xl">✉️</span>} accentColor="bg-gradient-to-br from-rose-500 to-pink-600" onClick={onThuMoiTuongTac} badge="Mới" />}
+                                        {!hiddenApps.includes('thiepMoiOnline') && <ToolCard title="Thiệp Mời Online" description="Tạo thiệp đẹp cho thôi nôi, cưới hỏi, tốt nghiệp, tân gia và mọi loại tiệc" icon={<span className="text-2xl">💌</span>} accentColor="bg-gradient-to-br from-fuchsia-500 via-rose-500 to-orange-400" onClick={onThiepMoiOnline} badge="Mới" />}
                                         {!hiddenApps.includes('kyYeuCuoiNam') && <ToolCard title="Kỷ Yếu Cuối Năm" description="Tạo kỷ yếu lớp, lưu giữ ảnh/video và xuất file chia sẻ" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-pink-500 to-rose-600" onClick={onKyYeuCuoiNam} badge="Mới" />}
                                     </div>
                                 </section>

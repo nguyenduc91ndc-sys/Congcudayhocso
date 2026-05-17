@@ -1,0 +1,29 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1600" role="img" aria-label="Elegant rose wedding invitation background">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#fff8f6"/>
+      <stop offset=".55" stop-color="#f8e2df"/>
+      <stop offset="1" stop-color="#ffeef2"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="1">
+      <stop stop-color="#d4a84f"/>
+      <stop offset=".55" stop-color="#fff1b7"/>
+      <stop offset="1" stop-color="#b9852b"/>
+    </linearGradient>
+  </defs>
+  <rect width="1200" height="1600" fill="url(#bg)"/>
+  <rect x="86" y="92" width="1028" height="1416" rx="52" fill="none" stroke="url(#gold)" stroke-width="5"/>
+  <rect x="124" y="130" width="952" height="1340" rx="38" fill="none" stroke="#fff" stroke-width="2" opacity=".8"/>
+  <g opacity=".94">
+    <path d="M74 250c115-170 330-145 392 28-182-15-285 48-392-28z" fill="#d96d7c"/>
+    <path d="M0 70c185 15 315 105 372 275C205 310 78 245 0 70z" fill="#b94457"/>
+    <path d="M1120 1315c-120 170-330 140-392-32 183 18 285-45 392 32z" fill="#d96d7c"/>
+    <path d="M1200 1490c-185-18-315-108-370-278 166 38 292 103 370 278z" fill="#b94457"/>
+  </g>
+  <g fill="none" stroke="#9a6b32" stroke-width="8" stroke-linecap="round" opacity=".55">
+    <path d="M350 345c-80 120-115 248-94 385"/>
+    <path d="M845 1235c80-120 115-250 94-385"/>
+  </g>
+  <circle cx="600" cy="800" r="270" fill="#fff" opacity=".5"/>
+  <circle cx="600" cy="800" r="210" fill="#fff" opacity=".55"/>
+</svg>
