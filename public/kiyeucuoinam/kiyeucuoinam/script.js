@@ -29,6 +29,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_MAX_VIDEOS = 2;
     const DEFAULT_MAX_VIDEO_MB = 10;
     const CREATIVE_ITEM_COUNT = 4;
+    const DRAFT_DB_NAME = 'kiyeu-yearbook-drafts';
+    const DRAFT_STORE_NAME = 'drafts';
+    const DRAFT_KEY = 'active';
+    const DRAFT_FALLBACK_KEY = 'kiyeu_yearbook_draft_v1';
+    let draftDbPromise = null;
+    let draftSaveTimer = null;
+    let isRestoringDraft = false;
     
     const AI_TRAITS = [
         "Học bá Toán học 🧮", "Cây hài của lớp 😂", "Giọng ca vàng 🎤", 
@@ -48,6 +55,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCloseSettingsX = document.getElementById('btnCloseSettingsX');
     const jsonImportInput = document.getElementById('jsonImportInput');
     const emptyState = document.getElementById('emptyState');
+    const draftStatusEl = document.getElementById('draftStatus');
+    const btnClearDraft = document.getElementById('btnClearDraft');
     
     // Cover & Main Content
     const coverSection = document.getElementById('coverSection');
@@ -109,6 +118,161 @@ document.addEventListener('DOMContentLoaded', () => {
     function setText(id, value) {
         const el = document.getElementById(id);
         if (el) el.textContent = repairMojibakeText(value);
+    }
+
+    function setDraftStatus(text, mode = 'loading') {
+        if (!draftStatusEl) return;
+        draftStatusEl.textContent = text;
+        draftStatusEl.classList.remove('is-ok', 'is-error', 'is-loading');
+        draftStatusEl.classList.add(`is-${mode}`);
+    }
+
+    function formatDraftTime(timestamp) {
+        if (!timestamp) return '';
+        try {
+            return new Date(timestamp).toLocaleString('vi-VN', {
+                day: '2-digit',
+                month: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit'
+            });
+        } catch {
+            return '';
+        }
+    }
+
+    function openDraftDb() {
+        if (!window.indexedDB) return Promise.reject(new Error('IndexedDB is not available'));
+        if (draftDbPromise) return draftDbPromise;
+
+        draftDbPromise = new Promise((resolve, reject) => {
+            const request = indexedDB.open(DRAFT_DB_NAME, 1);
+            request.onupgradeneeded = () => {
+                const db = request.result;
+                if (!db.objectStoreNames.contains(DRAFT_STORE_NAME)) {
+                    db.createObjectStore(DRAFT_STORE_NAME, { keyPath: 'key' });
+                }
+            };
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = () => reject(request.error || new Error('Cannot open draft database'));
+        });
+
+        return draftDbPromise;
+    }
+
+    async function readIndexedDraft() {
+        const db = await openDraftDb();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(DRAFT_STORE_NAME, 'readonly');
+            const request = transaction.objectStore(DRAFT_STORE_NAME).get(DRAFT_KEY);
+            request.onsuccess = () => resolve(request.result || null);
+            request.onerror = () => reject(request.error || new Error('Cannot read draft'));
+        });
+    }
+
+    async function writeIndexedDraft(draft) {
+        const db = await openDraftDb();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(DRAFT_STORE_NAME, 'readwrite');
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error || new Error('Cannot save draft'));
+            transaction.objectStore(DRAFT_STORE_NAME).put(draft);
+        });
+    }
+
+    async function deleteIndexedDraft() {
+        const db = await openDraftDb();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(DRAFT_STORE_NAME, 'readwrite');
+            transaction.oncomplete = () => resolve();
+            transaction.onerror = () => reject(transaction.error || new Error('Cannot delete draft'));
+            transaction.objectStore(DRAFT_STORE_NAME).delete(DRAFT_KEY);
+        });
+    }
+
+    async function readDraft() {
+        try {
+            const draft = await readIndexedDraft();
+            if (draft) return draft;
+        } catch (err) {
+            console.warn('IndexedDB draft read failed, trying localStorage fallback.', err);
+        }
+
+        try {
+            const raw = localStorage.getItem(DRAFT_FALLBACK_KEY);
+            return raw ? JSON.parse(raw) : null;
+        } catch (err) {
+            console.warn('localStorage draft read failed.', err);
+            return null;
+        }
+    }
+
+    async function saveDraftNow(showStatus = false) {
+        if (isRestoringDraft) return;
+        if (settingsModal && settingsModal.classList.contains('show')) saveFormToState();
+        normalizeStateText();
+
+        const updatedAt = Date.now();
+        const draft = {
+            key: DRAFT_KEY,
+            version: 1,
+            updatedAt,
+            state: window.structuredClone ? structuredClone(STATE) : JSON.parse(JSON.stringify(STATE))
+        };
+
+        if (showStatus) setDraftStatus('Đang lưu bản nháp...', 'loading');
+
+        try {
+            await writeIndexedDraft(draft);
+            setDraftStatus(`Đã tự lưu: ${formatDraftTime(updatedAt)}`, 'ok');
+        } catch (err) {
+            console.warn('IndexedDB draft save failed, trying localStorage fallback.', err);
+            try {
+                localStorage.setItem(DRAFT_FALLBACK_KEY, JSON.stringify(draft));
+                setDraftStatus(`Đã tự lưu: ${formatDraftTime(updatedAt)}`, 'ok');
+            } catch (fallbackErr) {
+                console.error('Draft save failed.', fallbackErr);
+                setDraftStatus('Chưa lưu được bản nháp. Hãy xuất JSON dự phòng.', 'error');
+            }
+        }
+    }
+
+    function scheduleDraftSave(showStatus = false) {
+        if (isRestoringDraft) return;
+        if (showStatus) setDraftStatus('Đang lưu bản nháp...', 'loading');
+        clearTimeout(draftSaveTimer);
+        draftSaveTimer = setTimeout(() => {
+            saveDraftNow(showStatus);
+        }, 500);
+    }
+
+    async function restoreDraftIfAvailable() {
+        isRestoringDraft = true;
+        setDraftStatus('Đang kiểm tra bản nháp...', 'loading');
+        try {
+            const draft = await readDraft();
+            if (draft && draft.state && draft.state.config) {
+                STATE = draft.state;
+                setDraftStatus(`Đã khôi phục bản nháp: ${formatDraftTime(draft.updatedAt)}`, 'ok');
+            } else {
+                setDraftStatus('Chưa có bản nháp trên trình duyệt này.', 'loading');
+            }
+        } finally {
+            isRestoringDraft = false;
+        }
+    }
+
+    async function clearDraft() {
+        clearTimeout(draftSaveTimer);
+        setDraftStatus('Đang xóa bản nháp...', 'loading');
+        try {
+            await deleteIndexedDraft();
+        } catch (err) {
+            console.warn('IndexedDB draft delete failed.', err);
+        }
+        try { localStorage.removeItem(DRAFT_FALLBACK_KEY); } catch {}
+        setDraftStatus('Đã xóa bản nháp trên trình duyệt này.', 'loading');
     }
 
     const CP1252_BYTE_MAP = {
@@ -494,6 +658,7 @@ document.addEventListener('DOMContentLoaded', () => {
     btnCloseSettingsX.addEventListener('click', () => {
         saveFormToState();
         applyStateToUI();
+        scheduleDraftSave(true);
         settingsModal.classList.remove('show');
     });
 
@@ -502,7 +667,30 @@ document.addEventListener('DOMContentLoaded', () => {
         btnPreview.addEventListener('click', () => {
             saveFormToState();
             applyStateToUI();
+            scheduleDraftSave(true);
             settingsModal.classList.remove('show');
+        });
+    }
+
+    settingsModal.addEventListener('input', (e) => {
+        const target = e.target;
+        if (!target || target.type === 'file' || target.classList.contains('p-name') || target.classList.contains('p-msg')) return;
+        saveFormToState();
+        scheduleDraftSave();
+    });
+
+    settingsModal.addEventListener('change', (e) => {
+        const target = e.target;
+        if (!target || target.type === 'file' || target.classList.contains('p-name') || target.classList.contains('p-msg')) return;
+        saveFormToState();
+        scheduleDraftSave();
+    });
+
+    if (btnClearDraft) {
+        btnClearDraft.addEventListener('click', () => {
+            if (confirm('Xóa bản nháp đang lưu trên trình duyệt này? File JSON/ZIP đã tải về sẽ không bị ảnh hưởng.')) {
+                clearDraft();
+            }
         });
     }
 
@@ -592,6 +780,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         videoLinkInput.value = '';
         renderPhotoList();
+        scheduleDraftSave(true);
     }
 
     function handleFiles(files) {
@@ -640,6 +829,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     msg: ''
                 });
                 renderPhotoList();
+                scheduleDraftSave(true);
             };
             reader.readAsDataURL(file);
         });
@@ -679,16 +869,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = e.target.dataset.id;
                 STATE.photos = STATE.photos.filter(p => p.id !== id);
                 renderPhotoList();
+                scheduleDraftSave(true);
             });
         });
 
         document.querySelectorAll('.p-name, .p-msg').forEach(input => {
-            input.addEventListener('change', (e) => {
+            const syncPhotoText = (e) => {
                 const id = e.target.dataset.id;
                 const field = e.target.classList.contains('p-name') ? 'name' : 'msg';
                 const photo = STATE.photos.find(p => p.id === id);
                 if (photo) photo[field] = e.target.value;
-            });
+                scheduleDraftSave();
+            };
+            input.addEventListener('input', syncPhotoText);
+            input.addEventListener('change', syncPhotoText);
         });
 
         document.querySelectorAll('.btn-ai-trait').forEach(btn => {
@@ -701,6 +895,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     photo.msg = randomTrait;
                     const input = e.target.parentElement.querySelector('.p-msg');
                     if (input) input.value = randomTrait;
+                    scheduleDraftSave();
                 }
             });
         });
@@ -807,6 +1002,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.mediaMimeType = file.type;
                     updateTimelineMediaLabel(idx);
                     applyStateToUI();
+                    scheduleDraftSave(true);
                 };
                 reader.readAsDataURL(file);
             });
@@ -826,6 +1022,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (input) input.value = '';
                 updateTimelineMediaLabel(idx);
                 applyStateToUI();
+                scheduleDraftSave(true);
             });
         });
     }
@@ -842,6 +1039,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     STATE.config.customAudioName = file.name;
                     if (audioName) audioName.textContent = file.name;
                     applyStateToUI(); // Immediately apply audio change
+                    scheduleDraftSave(true);
                 };
                 reader.readAsDataURL(file);
             }
@@ -1481,6 +1679,7 @@ document.addEventListener('DOMContentLoaded', () => {
     
     btnExport.addEventListener('click', () => {
         saveFormToState();
+        scheduleDraftSave(true);
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(STATE));
         const downloadAnchorNode = document.createElement('a');
         downloadAnchorNode.setAttribute("href", dataStr);
@@ -1603,6 +1802,7 @@ document.addEventListener('DOMContentLoaded', () => {
         btnShareHTML.addEventListener('click', async () => {
             saveFormToState();
             normalizeStateText();
+            scheduleDraftSave(true);
             if (STATE.photos.length === 0) {
                 alert('Vui lòng thêm ít nhất 1 ảnh hoặc video trước!');
                 return;
@@ -2106,6 +2306,7 @@ ${cdHTML ? `<section class="yb-section cd-section">
                 if (importedState && importedState.config) {
                     STATE = importedState;
                     applyStateToUI();
+                    scheduleDraftSave(true);
                     alert('Nhập kỉ yếu thành công!');
                 } else {
                     alert('File không đúng định dạng kỉ yếu!');
@@ -2185,7 +2386,18 @@ ${cdHTML ? `<section class="yb-section cd-section">
         sections.forEach(s => observer.observe(s));
     }
 
+    window.addEventListener('beforeunload', () => {
+        if (settingsModal && settingsModal.classList.contains('show')) saveFormToState();
+        if (draftSaveTimer) {
+            clearTimeout(draftSaveTimer);
+            saveDraftNow();
+        }
+    });
+
     // ===== INIT =====
-    setupYearbookActions();
-    applyStateToUI();
+    (async () => {
+        await restoreDraftIfAvailable();
+        setupYearbookActions();
+        applyStateToUI();
+    })();
 });
