@@ -16,13 +16,23 @@ const isMobile = (): boolean => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
+const isInvitationFlow = (): boolean => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const app = urlParams.get('app');
+    const pathname = window.location.pathname.toLowerCase().replace(/\/$/, '');
+
+    return app === 'thu_moi_tuong_tac' ||
+        app === 'thiep_moi_online' ||
+        pathname === '/thiep-moi-online';
+};
+
 const ZaloBrowserWarning: React.FC<ZaloBrowserWarningProps> = ({ onClose }) => {
     const [show, setShow] = useState(false);
 
     useEffect(() => {
-        const urlParams = new URLSearchParams(window.location.search);
-        // Không hiện cảnh báo Zalo đối với link Thư mời
-        if (urlParams.get('app') === 'thu_moi_tuong_tac') {
+        // Không hiện cảnh báo Zalo đối với các luồng thư/thiệp mời.
+        // Khách mời cần vào thẳng thiệp, còn người tạo thiệp sẽ thấy hộp đăng nhập trực tiếp.
+        if (isInvitationFlow()) {
             return;
         }
 
