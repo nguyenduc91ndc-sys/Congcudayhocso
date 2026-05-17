@@ -365,6 +365,25 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
     }
   };
 
+  const downloadQrCode = () => {
+    if (!shareUrl) return;
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=900x900&format=png&data=${encodeURIComponent(shareUrl)}`;
+    const link = document.createElement('a');
+    const safeTitle = (invitation.title || 'thiep-moi')
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^a-zA-Z0-9_-]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .toLowerCase();
+    link.href = qrUrl;
+    link.download = `QR_${safeTitle || 'thiep-moi'}.png`;
+    link.target = '_blank';
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+    setNotice('Đã tải QR. Nếu trình duyệt mở ảnh ở tab mới, hãy bấm lưu ảnh.');
+  };
+
   const openSaved = async (shortId: string) => {
     setIsLoading(true);
     const data = await getOnlineInvitation(shortId);
@@ -616,6 +635,13 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
                         className="mx-auto h-48 w-48 rounded-2xl bg-white p-2"
                       />
                       <div className="mt-2 text-xs font-bold text-slate-500">Quét QR để mở thiệp</div>
+                      <button
+                        onClick={downloadQrCode}
+                        className="mt-3 inline-flex items-center justify-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white transition hover:bg-slate-800"
+                      >
+                        <Download className="h-4 w-4" />
+                        Tải QR
+                      </button>
                     </div>
                   </div>
                 )}
