@@ -756,12 +756,10 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
                 <Field label="Tiêu đề thiệp" value={invitation.title} onChange={(value) => updateField('title', value)} />
                 <Field label="Dòng phụ" value={invitation.subtitle} onChange={(value) => updateField('subtitle', value)} />
                 <Field label="Tên nhân vật chính / sự kiện" value={invitation.honoredName} onChange={(value) => updateField('honoredName', value)} />
-                <Field label="Nhạc nền tùy chọn" value={invitation.musicUrl} onChange={(value) => updateField('musicUrl', value)} placeholder="Dán link mp3 công khai" />
                 <BuiltInMusicPicker
                   value={invitation.musicUrl}
                   onChange={(value) => updateField('musicUrl', value)}
                 />
-                <MusicLinkGuide />
                 <FontStylePicker
                   value={invitation.fontStyle || 'softScript'}
                   onChange={(value) => updateField('fontStyle', value)}
@@ -903,39 +901,13 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: { label: 
   );
 }
 
-function MusicLinkGuide() {
-  return (
-    <details className="group rounded-2xl border border-amber-100 bg-gradient-to-br from-amber-50 via-rose-50 to-sky-50 px-4 py-3 text-sm text-slate-700">
-      <summary className="flex cursor-pointer list-none items-center justify-between gap-3 font-semibold text-slate-900">
-        <span className="flex items-center gap-2">
-          <Music2 className="h-4 w-4 text-rose-500" />
-          Cách dùng nhạc không tốn dung lượng của app
-        </span>
-        <span className="text-xs font-medium text-slate-500 group-open:hidden">Bấm để xem</span>
-        <span className="hidden text-xs font-medium text-slate-500 group-open:inline">Thu gọn</span>
-      </summary>
-      <div className="mt-3 grid gap-2 leading-6 sm:grid-cols-3">
-        <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">1.</span> Tải file `.mp3` lên nơi lưu trữ bên ngoài.
-        </div>
-        <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">2.</span> Bật chia sẻ công khai hoặc lấy link phát trực tiếp.
-        </div>
-        <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
-          <span className="font-semibold text-rose-600">3.</span> Dán link `.mp3` công khai vào ô nhạc.
-        </div>
-      </div>
-      <p className="mt-3 text-xs font-medium leading-5 text-slate-500">
-        App chỉ lưu đường dẫn, không lưu file nhạc lên Firebase của mình. Link YouTube thường không phát trực tiếp; link mp3 công khai là ổn nhất.
-      </p>
-    </details>
-  );
-}
-
 function BuiltInMusicPicker({ value, onChange }: { value: string; onChange: (value: string) => void }) {
   return (
-    <div>
-      <label className={labelClass}>Nhạc mặc định</label>
+    <div className="rounded-3xl border border-slate-100 bg-slate-50 p-3">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <span className={labelClass}>Nhạc nền</span>
+        <span className="text-[11px] font-medium text-slate-400">Không cần link mp3</span>
+      </div>
       <div className="grid gap-2 sm:grid-cols-4">
         <button
           type="button"
@@ -967,8 +939,8 @@ function BuiltInMusicPicker({ value, onChange }: { value: string; onChange: (val
           );
         })}
       </div>
-      <p className="mt-2 rounded-2xl bg-emerald-50 px-4 py-2 text-xs font-medium leading-5 text-emerald-700">
-        Nhạc mặc định được tạo trực tiếp trên trình duyệt, không cần link và không lưu file nhạc lên hệ thống.
+      <p className="mt-2 px-1 text-xs font-medium leading-5 text-slate-500">
+        Nhạc được tạo trực tiếp trên trình duyệt, không lưu file lên hệ thống. Khách chỉ cần chạm vào thiệp để bật nhạc.
       </p>
     </div>
   );
