@@ -1,5 +1,5 @@
 import { database } from './firebaseConfig';
-import { ref, push, set, get, update } from 'firebase/database';
+import { ref, push, set, get, update, remove } from 'firebase/database';
 import { InvitationRsvp, OnlineInvitation } from '../types/invitationTypes';
 
 const INVITATIONS_REF = 'online-invitations';
@@ -101,6 +101,18 @@ export const getUserOnlineInvitations = async (userEmail: string): Promise<Array
   } catch (error) {
     console.error('[OnlineInvitation] Error getting user invitations:', error);
     return [];
+  }
+};
+
+export const deleteOnlineInvitation = async (shortId: string): Promise<boolean> => {
+  try {
+    const fullKey = await findFullKeyFromShortId(shortId);
+    if (!fullKey) return false;
+    await remove(ref(database, `${INVITATIONS_REF}/${fullKey}`));
+    return true;
+  } catch (error) {
+    console.error('[OnlineInvitation] Error deleting invitation:', error);
+    return false;
   }
 };
 

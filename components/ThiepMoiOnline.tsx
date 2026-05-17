@@ -5,6 +5,7 @@ import {
   CheckCircle2,
   Clipboard,
   Copy,
+  Trash2,
   Download,
   Eye,
   Heart,
@@ -24,6 +25,7 @@ import {
   getOnlineInvitation,
   getOnlineInvitationRsvps,
   getUserOnlineInvitations,
+  deleteOnlineInvitation,
   saveOnlineInvitation,
   saveOnlineInvitationRsvp,
   updateOnlineInvitation
@@ -417,6 +419,27 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
     setIsLoading(false);
   };
 
+  const deleteSavedInvitation = async (shortId: string, title: string) => {
+    if (!user?.email) return;
+    const ok = confirm(`Xóa thiệp "${title || 'đã lưu'}"? Toàn bộ phản hồi của thiệp này cũng sẽ bị xóa.`);
+    if (!ok) return;
+
+    setNotice('Đang xóa thiệp...');
+    const deleted = await deleteOnlineInvitation(shortId);
+    if (!deleted) {
+      setNotice('Chưa xóa được thiệp. Vui lòng thử lại.');
+      return;
+    }
+
+    setSavedInvitations((items) => items.filter((item) => item.shortId !== shortId));
+    if (activeShortId === shortId) {
+      setActiveShortId(null);
+      setShareUrl('');
+      setRsvps([]);
+    }
+    setNotice('Đã xóa thiệp đã lưu.');
+  };
+
   const submitRsvp = async () => {
     if (!activeShortId || !rsvpForm.guestName.trim()) {
       setNotice('Vui lòng nhập tên khách mời.');
@@ -520,14 +543,26 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
             <Panel title="Thiệp đã lưu" icon={<Clipboard className="h-4 w-4" />}>
               <div className="space-y-2">
                 {savedInvitations.slice(0, 5).map((item) => (
-                  <button
+                  <div
                     key={item.shortId}
-                    onClick={() => openSaved(item.shortId)}
-                    className="w-full rounded-2xl border border-slate-200 bg-white p-3 text-left transition hover:border-pink-200 hover:bg-pink-50"
+                    className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-slate-200 bg-white p-2 transition hover:border-pink-200 hover:bg-pink-50"
                   >
-                    <div className="line-clamp-1 text-sm font-black text-slate-900">{item.title}</div>
-                    <div className="mt-1 text-xs font-semibold text-slate-500">{item.rsvpCount} phản hồi</div>
-                  </button>
+                    <button
+                      onClick={() => openSaved(item.shortId)}
+                      className="min-w-0 rounded-xl px-2 py-1.5 text-left"
+                    >
+                      <div className="line-clamp-1 text-sm font-black text-slate-900">{item.title}</div>
+                      <div className="mt-1 text-xs font-semibold text-slate-500">{item.rsvpCount} phản hồi</div>
+                    </button>
+                    <button
+                      onClick={() => deleteSavedInvitation(item.shortId, item.title)}
+                      className="flex h-9 w-9 items-center justify-center rounded-xl text-slate-400 transition hover:bg-red-50 hover:text-red-600"
+                      title="Xóa thiệp"
+                      aria-label="Xóa thiệp"
+                    >
+                      <Trash2 className="h-4 w-4" />
+                    </button>
+                  </div>
                 ))}
               </div>
             </Panel>
