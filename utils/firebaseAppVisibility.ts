@@ -9,6 +9,7 @@ export const ALL_APP_IDS = [
     'clockExperiment', 'yogurtExperiment', 'earthSeasons',
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D', 'thatLuong3D',
+    'dinhDocLap3D',
     'bangCuuChuong', 'gameTuongTac', 'gameTuyChinh', 'kyYeuCuoiNam', 'thiepMoiOnline',
     'phongTranh3D', // Phòng Tranh 3D Tùy Chỉnh
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
@@ -50,6 +51,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     vietnamMap: { name: 'Bản đồ Việt Nam', icon: '🗺️', section: 'Ứng dụng 3D & VR' },
     denHung3D: { name: 'Phòng Tranh 3D - Đền Hùng', icon: '🏛️', section: 'Ứng dụng 3D & VR' },
     thatLuong3D: { name: 'Mô hình 3D - Thạt Luổng', icon: '🕍', section: 'Ứng dụng 3D & VR' },
+    dinhDocLap3D: { name: 'Khám phá Dinh Độc Lập 3D', icon: '🏛️', section: 'Ứng dụng 3D & VR' },
     // ── Học liệu tương tác ──
     bangCuuChuong: { name: 'Bảng Cửu Chương Số', icon: '🔢', section: 'Học liệu tương tác' },
     gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
