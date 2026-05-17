@@ -161,6 +161,33 @@ const templates: InvitationTemplate[] = [
     }
   },
   {
+    id: 'parentMeeting',
+    eventType: 'parentMeeting',
+    label: 'Họp phụ huynh',
+    caption: 'Trang nhã, rõ thông tin lớp',
+    asset: '/thiep-moi-online/assets/parent-meeting.svg',
+    accent: '#2563eb',
+    accent2: '#f59e0b',
+    ink: '#1e3a8a',
+    glow: 'rgba(37,99,235,.2)',
+    dark: false,
+    sample: {
+      title: 'Thư Mời Họp Phụ Huynh',
+      subtitle: 'Trao đổi tình hình học tập và rèn luyện',
+      honoredName: 'Quý phụ huynh lớp 5A1',
+      hostNames: 'Giáo viên chủ nhiệm và Ban đại diện cha mẹ học sinh',
+      message: 'Trân trọng kính mời quý phụ huynh tham dự buổi họp để cùng trao đổi, phối hợp và đồng hành trong việc học tập, rèn luyện của các em học sinh.',
+      dressCode: 'Trang phục lịch sự, gọn gàng',
+      locationName: 'Phòng học lớp 5A1',
+      address: 'Trường Tiểu học ...',
+      schedule: [
+        { time: '07:45', title: 'Đón phụ huynh', note: 'Ổn định chỗ ngồi và điểm danh' },
+        { time: '08:00', title: 'Nội dung họp', note: 'Thông tin tình hình lớp, kế hoạch học tập và hoạt động' },
+        { time: '09:15', title: 'Trao đổi riêng', note: 'Phụ huynh đặt câu hỏi và trao đổi với giáo viên' }
+      ]
+    }
+  },
+  {
     id: 'customGlow',
     eventType: 'custom',
     label: 'Tùy chỉnh mềm mại',
@@ -208,6 +235,11 @@ const dressCodePresets: Record<InvitationThemeId, Array<{ label: string; value: 
     { label: 'Xanh - trắng', value: 'Trắng, xanh lá nhạt hoặc màu kem', colors: ['#ffffff', '#bbf7d0', '#fef3c7'] },
     { label: 'Gia đình ấm cúng', value: 'Trang phục gia đình ấm cúng, màu sáng', colors: ['#fef3c7', '#fed7aa', '#ffffff'] }
   ],
+  parentMeeting: [
+    { label: 'Lịch sự gọn gàng', value: 'Trang phục lịch sự, gọn gàng', colors: ['#ffffff', '#2563eb', '#f59e0b'] },
+    { label: 'Sơ mi - công sở', value: 'Áo sơ mi, trang phục công sở hoặc trang phục lịch sự', colors: ['#eff6ff', '#1e3a8a', '#f8fafc'] },
+    { label: 'Tự do lịch sự', value: 'Trang phục tự do nhưng lịch sự, phù hợp môi trường trường học', colors: ['#e5e7eb', '#ffffff', '#93c5fd'] }
+  ],
   customGlow: [
     { label: 'Tùy sự kiện', value: 'Trang phục phù hợp với sự kiện', colors: ['#a78bfa', '#67e8f9', '#ffffff'] },
     { label: 'Trắng - pastel', value: 'Trắng, pastel hoặc màu trung tính', colors: ['#ffffff', '#fbcfe8', '#bfdbfe'] },
@@ -227,8 +259,8 @@ const createDefaultInvitation = (template = templates[0]): OnlineInvitation => (
   honoredName: template.sample.honoredName || 'Tên sự kiện',
   date: defaultDate,
   time: '18:00',
-  locationName: 'Trung tâm sự kiện',
-  address: 'Nhập địa chỉ tổ chức tại đây',
+  locationName: template.sample.locationName || 'Trung tâm sự kiện',
+  address: template.sample.address || 'Nhập địa chỉ tổ chức tại đây',
   mapUrl: '',
   message: template.sample.message || '',
   dressCode: template.sample.dressCode || '',
@@ -237,7 +269,7 @@ const createDefaultInvitation = (template = templates[0]): OnlineInvitation => (
   coverImage: '',
   musicUrl: '',
   gallery: [],
-  schedule: [
+  schedule: template.sample.schedule || [
     { time: '17:30', title: 'Đón khách', note: 'Check-in và chụp hình' },
     { time: '18:00', title: 'Khai tiệc', note: 'Bắt đầu chương trình chính' },
     { time: '19:30', title: 'Giao lưu', note: 'Lưu lại lời chúc và khoảnh khắc đẹp' }

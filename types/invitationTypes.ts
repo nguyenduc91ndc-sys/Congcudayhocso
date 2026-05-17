@@ -4,6 +4,7 @@ export type InvitationEventType =
   | 'graduation'
   | 'comingOfAge'
   | 'housewarming'
+  | 'parentMeeting'
   | 'custom';
 
 export type InvitationThemeId =
@@ -12,6 +13,7 @@ export type InvitationThemeId =
   | 'goldGraduate'
   | 'midnightAge'
   | 'freshHome'
+  | 'parentMeeting'
   | 'customGlow';
 
 export type RsvpStatus = 'yes' | 'maybe' | 'no';
