@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
             memberHoverSound: true,
             customAudioData: '',
             customAudioName: '',
-            maxMedia: 50,
+            maxMedia: 120,
             maxVideos: 2,
             maxVideoMB: 10,
             timelineItems: [],
@@ -25,7 +25,8 @@ document.addEventListener('DOMContentLoaded', () => {
         photos: [] // Array of { id, dataUrl/embedUrl, type, mimeType, name, msg }
     };
 
-    const DEFAULT_MAX_MEDIA = 50;
+    const DEFAULT_MAX_MEDIA = 120;
+    const HARD_MAX_MEDIA = 300;
     const DEFAULT_MAX_VIDEOS = 2;
     const DEFAULT_MAX_VIDEO_MB = 10;
     const CREATIVE_ITEM_COUNT = 4;
@@ -554,7 +555,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const maxVideosInput = document.getElementById('cfgMaxVideos');
         const maxVideoMBInput = document.getElementById('cfgMaxVideoMB');
         return {
-            maxMedia: clampNumber(maxMediaInput?.value ?? STATE.config.maxMedia, 1, 200, DEFAULT_MAX_MEDIA),
+            maxMedia: clampNumber(maxMediaInput?.value ?? STATE.config.maxMedia, 1, HARD_MAX_MEDIA, DEFAULT_MAX_MEDIA),
             maxVideos: clampNumber(maxVideosInput?.value ?? STATE.config.maxVideos, 0, 20, DEFAULT_MAX_VIDEOS),
             maxVideoMB: clampNumber(maxVideoMBInput?.value ?? STATE.config.maxVideoMB, 1, 100, DEFAULT_MAX_VIDEO_MB)
         };
@@ -835,6 +836,44 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function replaceMediaFile(id, file) {
+        if (!file || (!file.type.startsWith('image/') && !file.type.startsWith('video/'))) {
+            alert('Vui lòng chọn file ảnh hoặc video.');
+            return;
+        }
+
+        const photo = STATE.photos.find(p => p.id === id);
+        if (!photo) return;
+
+        const limits = getMediaLimits();
+        const nextIsVideo = file.type.startsWith('video/');
+        const currentIsVideoLike = isVideoLike(photo);
+
+        if (nextIsVideo && file.size > limits.maxVideoMB * 1024 * 1024) {
+            alert(`Video lớn hơn ${limits.maxVideoMB} MB. Hãy chọn video nhẹ hơn hoặc tăng giới hạn MB/video.`);
+            return;
+        }
+
+        if (nextIsVideo && !currentIsVideoLike && countVideoItems() >= limits.maxVideos) {
+            alert(`Kỉ yếu đang đặt tối đa ${limits.maxVideos} video/link video. Hãy xoá bớt video/link cũ hoặc tăng giới hạn.`);
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (event) => {
+            photo.dataUrl = event.target.result;
+            photo.type = nextIsVideo ? 'video' : 'image';
+            photo.mimeType = file.type;
+            photo.embedUrl = '';
+            photo.sourceUrl = '';
+            if (!photo.name) photo.name = file.name.split('.')[0];
+            renderPhotoList();
+            applyStateToUI();
+            scheduleDraftSave(true);
+        };
+        reader.readAsDataURL(file);
+    }
+
     function renderPhotoList() {
         photoList.innerHTML = '';
         STATE.photos.forEach((photo, index) => {
@@ -844,10 +883,14 @@ document.addEventListener('DOMContentLoaded', () => {
             const safeMsg = escapeHtml(photo.msg);
             const mediaKind = isEmbed(photo) ? 'Link' : (isVideo(photo) ? 'Video' : 'Ảnh');
             div.innerHTML = `
-                <button class="photo-item-remove" data-id="${photo.id}">✕</button>
+                <button class="photo-item-remove" data-id="${photo.id}" title="Xóa ảnh/video này">Xóa ảnh</button>
                 <div class="media-preview">
                     ${mediaPreviewHtml(photo, safeName)}
                     <span class="media-type-badge">${mediaKind}</span>
+                    <label class="photo-item-replace" title="Thay ảnh/video này">
+                        <input type="file" class="p-replace-input" data-id="${photo.id}" accept="image/*,video/*" hidden>
+                        <span>Thay ảnh</span>
+                    </label>
                 </div>
                 <div class="photo-item-info">
                     <input type="text" placeholder="Tên HS" value="${safeName}" class="p-name" data-id="${photo.id}">
@@ -870,6 +913,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 STATE.photos = STATE.photos.filter(p => p.id !== id);
                 renderPhotoList();
                 scheduleDraftSave(true);
+            });
+        });
+
+        document.querySelectorAll('.p-replace-input').forEach(input => {
+            input.addEventListener('change', (e) => {
+                const id = e.target.dataset.id;
+                const file = e.target.files && e.target.files[0];
+                replaceMediaFile(id, file);
+                e.target.value = '';
             });
         });
 
@@ -910,7 +962,7 @@ document.addEventListener('DOMContentLoaded', () => {
         STATE.config.title = document.getElementById('cfgTitle').value;
         STATE.config.slogan = document.getElementById('cfgSlogan').value;
         STATE.config.message = document.getElementById('cfgMessage').value;
-        STATE.config.maxMedia = clampNumber(document.getElementById('cfgMaxMedia')?.value, 1, 200, DEFAULT_MAX_MEDIA);
+        STATE.config.maxMedia = clampNumber(document.getElementById('cfgMaxMedia')?.value, 1, HARD_MAX_MEDIA, DEFAULT_MAX_MEDIA);
         STATE.config.maxVideos = clampNumber(document.getElementById('cfgMaxVideos')?.value, 0, 20, DEFAULT_MAX_VIDEOS);
         STATE.config.maxVideoMB = clampNumber(document.getElementById('cfgMaxVideoMB')?.value, 1, 100, DEFAULT_MAX_VIDEO_MB);
 

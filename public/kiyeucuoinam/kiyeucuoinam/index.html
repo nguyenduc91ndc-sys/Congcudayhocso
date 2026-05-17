@@ -118,7 +118,7 @@
                         <p>Kéo thả ảnh hoặc video ngắn vào đây</p>
                         <label class="upload-btn" for="photoInput">Chọn ảnh / video</label>
                         <input type="file" id="photoInput" multiple accept="image/*,video/*" hidden>
-                        <p class="upload-hint">Mặc định: 50 mục, 2 video/link, 10 MB mỗi video.</p>
+                        <p class="upload-hint">Mặc định: 120 mục. Có thể tăng tối đa 300 ảnh/video ở phần giới hạn bên dưới.</p>
                     </div>
                 </div>
                 <div class="video-link-box">
@@ -132,7 +132,7 @@
                 <div class="media-limit-box">
                     <div class="limit-field">
                         <label for="cfgMaxMedia">Tối đa ảnh/video</label>
-                        <input type="number" id="cfgMaxMedia" min="1" max="200" value="50">
+                        <input type="number" id="cfgMaxMedia" min="1" max="300" value="120">
                     </div>
                     <div class="limit-field">
                         <label for="cfgMaxVideos">Tối đa video/link</label>
@@ -146,7 +146,7 @@
                 <div class="photo-list" id="photoList">
                     <!-- Photo items will be rendered here -->
                 </div>
-                <div class="photo-count" id="photoCount">0 / 50 mục • Video 0 / 2</div>
+                <div class="photo-count" id="photoCount">0 / 120 mục • Video 0 / 2</div>
             </div>
 
             <!-- TAB: GIAO DIỆN -->
