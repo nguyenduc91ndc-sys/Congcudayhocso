@@ -36,6 +36,7 @@ import {
   InvitationEventType,
   InvitationFontStyle,
   InvitationRsvp,
+  InvitationRsvpOption,
   InvitationThemeId,
   OnlineInvitation,
   RsvpStatus
@@ -253,6 +254,18 @@ const fontOptions: Array<{
 const getFontOption = (id?: InvitationFontStyle) =>
   fontOptions.find((font) => font.id === id) || fontOptions[0];
 
+const defaultRsvpOptions: Record<RsvpStatus, InvitationRsvpOption> = {
+  yes: { label: 'Tham dự', color: '#10b981' },
+  maybe: { label: 'Có thể', color: '#f59e0b' },
+  no: { label: 'Rất tiếc', color: '#f43f5e' }
+};
+
+const getRsvpOptions = (options?: Partial<Record<RsvpStatus, InvitationRsvpOption>>) => ({
+  yes: { ...defaultRsvpOptions.yes, ...(options?.yes || {}) },
+  maybe: { ...defaultRsvpOptions.maybe, ...(options?.maybe || {}) },
+  no: { ...defaultRsvpOptions.no, ...(options?.no || {}) }
+});
+
 const dressCodePresets: Record<InvitationThemeId, Array<{ label: string; value: string; colors: string[] }>> = {
   babyDream: [
     { label: 'Pastel nhẹ', value: 'Pastel, trắng hoặc hồng nhạt', colors: ['#f9a8d4', '#bfdbfe', '#ffffff'] },
@@ -313,6 +326,7 @@ const createDefaultInvitation = (template = templates[0]): OnlineInvitation => (
   coverImage: '',
   musicUrl: '',
   fontStyle: 'softScript',
+  rsvpOptions: defaultRsvpOptions,
   gallery: [],
   schedule: template.sample.schedule || [
     { time: '17:30', title: 'Đón khách', note: 'Check-in và chụp hình' },
@@ -336,19 +350,14 @@ const formatDate = (date: string) => {
 
 const inputClass = 'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100';
 const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
-const rsvpStatusStyles: Record<RsvpStatus, { active: string; inactive: string }> = {
-  yes: {
-    active: 'bg-gradient-to-r from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-200',
-    inactive: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-  },
-  maybe: {
-    active: 'bg-gradient-to-r from-amber-300 to-orange-400 text-white shadow-lg shadow-amber-200',
-    inactive: 'bg-amber-50 text-amber-700 hover:bg-amber-100'
-  },
-  no: {
-    active: 'bg-gradient-to-r from-rose-400 to-pink-500 text-white shadow-lg shadow-rose-200',
-    inactive: 'bg-rose-50 text-rose-700 hover:bg-rose-100'
-  }
+const hexToRgba = (hex: string, alpha: number) => {
+  const clean = hex.replace('#', '');
+  if (!/^[0-9a-f]{6}$/i.test(clean)) return `rgba(236,72,153,${alpha})`;
+  const value = parseInt(clean, 16);
+  const r = (value >> 16) & 255;
+  const g = (value >> 8) & 255;
+  const b = value & 255;
+  return `rgba(${r},${g},${b},${alpha})`;
 };
 
 const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequireLogin, sharedId }) => {
@@ -701,6 +710,9 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
                       <input type="file" accept="image/*" className="hidden" onChange={handleCoverUpload} />
                     </label>
                   </div>
+                  <p className="mt-2 rounded-2xl bg-sky-50 px-4 py-2 text-xs font-medium leading-5 text-sky-700">
+                    Nên dùng ảnh ngang tỷ lệ 16:9, ví dụ 1920x1080 hoặc 1280x720, để ảnh bìa lên thiệp không bị cắt mất chữ.
+                  </p>
                 </div>
                 <Field label="Tiêu đề thiệp" value={invitation.title} onChange={(value) => updateField('title', value)} />
                 <Field label="Dòng phụ" value={invitation.subtitle} onChange={(value) => updateField('subtitle', value)} />
@@ -710,6 +722,10 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
                 <FontStylePicker
                   value={invitation.fontStyle || 'softScript'}
                   onChange={(value) => updateField('fontStyle', value)}
+                />
+                <RsvpStyleCustomizer
+                  value={invitation.rsvpOptions}
+                  onChange={(value) => updateField('rsvpOptions', value)}
                 />
               </div>
             )}
@@ -801,7 +817,12 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
             )}
 
             {creatorTab === 'rsvp' && (
-              <RsvpList rsvps={rsvps} activeShortId={activeShortId} reload={() => activeShortId && getOnlineInvitationRsvps(activeShortId).then(setRsvps)} />
+              <RsvpList
+                rsvps={rsvps}
+                activeShortId={activeShortId}
+                rsvpOptions={invitation.rsvpOptions}
+                reload={() => activeShortId && getOnlineInvitationRsvps(activeShortId).then(setRsvps)}
+              />
             )}
           </div>
         </main>
@@ -895,6 +916,63 @@ function FontStylePicker({ value, onChange }: { value: InvitationFontStyle; onCh
   );
 }
 
+function RsvpStyleCustomizer({
+  value,
+  onChange
+}: {
+  value?: Partial<Record<RsvpStatus, InvitationRsvpOption>>;
+  onChange: (value: Partial<Record<RsvpStatus, InvitationRsvpOption>>) => void;
+}) {
+  const options = getRsvpOptions(value);
+  const statusOrder: RsvpStatus[] = ['yes', 'maybe', 'no'];
+
+  const updateOption = (status: RsvpStatus, patch: Partial<InvitationRsvpOption>) => {
+    onChange({
+      ...options,
+      [status]: {
+        ...options[status],
+        ...patch
+      }
+    });
+  };
+
+  return (
+    <div>
+      <label className={labelClass}>Tùy chỉnh nút phản hồi</label>
+      <div className="grid gap-3 rounded-3xl border border-slate-100 bg-slate-50 p-3 sm:grid-cols-3">
+        {statusOrder.map((status) => {
+          const option = options[status];
+          return (
+            <div key={status} className="rounded-2xl bg-white p-3 shadow-sm ring-1 ring-white">
+              <div className="mb-3 flex items-center justify-between gap-2">
+                <span
+                  className="rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{ backgroundColor: hexToRgba(option.color, 0.12), color: option.color }}
+                >
+                  {option.label}
+                </span>
+                <input
+                  type="color"
+                  value={option.color}
+                  onChange={(event) => updateOption(status, { color: event.target.value })}
+                  className="h-8 w-10 cursor-pointer rounded-lg border border-slate-200 bg-white p-1"
+                  aria-label={`Chọn màu ${option.label}`}
+                />
+              </div>
+              <input
+                value={option.label}
+                onChange={(event) => updateOption(status, { label: event.target.value })}
+                className="w-full rounded-xl border border-slate-200 px-3 py-2 text-sm font-medium text-slate-800 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100"
+                placeholder="Tên nút"
+              />
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DressCodeQuickPicks({
   themeId,
   value,
@@ -948,6 +1026,7 @@ function DressCodeQuickPicks({
 function InvitationPreview({ invitation, template }: { invitation: OnlineInvitation; template: InvitationTemplate }) {
   const foreground = template.dark ? 'text-white' : 'text-slate-950';
   const font = getFontOption(invitation.fontStyle);
+  const rsvpOptions = getRsvpOptions(invitation.rsvpOptions);
   const titleStyle = { fontFamily: font.titleFont, fontWeight: font.titleWeight, letterSpacing: 0 };
   const nameStyle = { fontFamily: font.nameFont, fontWeight: 600, letterSpacing: 0 };
   return (
@@ -967,7 +1046,12 @@ function InvitationPreview({ invitation, template }: { invitation: OnlineInvitat
 
           <div className="mt-12 rounded-[30px] bg-white/70 p-5 text-slate-950 shadow-2xl backdrop-blur-xl ring-1 ring-white/70">
             {invitation.coverImage ? (
-              <img src={invitation.coverImage} alt={invitation.honoredName} className="mb-5 h-48 w-full rounded-[24px] object-cover shadow-lg" />
+              <img
+                src={invitation.coverImage}
+                alt={invitation.honoredName}
+                className="mb-5 w-full rounded-[24px] object-cover shadow-lg"
+                style={{ aspectRatio: '16 / 9' }}
+              />
             ) : (
               <div className="mb-5 flex h-48 items-center justify-center rounded-[24px] bg-white/45 shadow-inner">
                 <Sparkles className="h-14 w-14" style={{ color: template.accent }} />
@@ -985,7 +1069,7 @@ function InvitationPreview({ invitation, template }: { invitation: OnlineInvitat
             <InfoRow icon={<MapPin className="h-4 w-4" />} label={invitation.locationName || invitation.address} />
             <p className="line-clamp-3 text-sm font-medium leading-6 text-slate-600">{invitation.message}</p>
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <button className="rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${template.accent}, ${template.accent2})` }}>Tham dự</button>
+              <button className="rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${rsvpOptions.yes.color}, ${template.accent2})` }}>{rsvpOptions.yes.label}</button>
               <button className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow ring-1 ring-slate-100">Bản đồ</button>
             </div>
           </div>
@@ -1128,6 +1212,7 @@ function InvitationViewer({
   notice: string;
 }) {
   const font = getFontOption(invitation.fontStyle);
+  const rsvpOptions = getRsvpOptions(invitation.rsvpOptions);
   const titleStyle = { fontFamily: font.titleFont, fontWeight: font.titleWeight, letterSpacing: 0 };
   const nameStyle = { fontFamily: font.nameFont, fontWeight: 600, letterSpacing: 0 };
 
@@ -1173,7 +1258,12 @@ function InvitationViewer({
 
           <div className="rounded-[34px] bg-white p-5 shadow-2xl">
             {invitation.coverImage ? (
-              <img src={invitation.coverImage} alt={invitation.honoredName} className="mb-4 h-64 w-full rounded-[26px] object-cover" />
+              <img
+                src={invitation.coverImage}
+                alt={invitation.honoredName}
+                className="mb-4 w-full rounded-[26px] object-cover"
+                style={{ aspectRatio: '16 / 9' }}
+              />
             ) : (
               <InvitationPreview invitation={invitation} template={template} />
             )}
@@ -1184,21 +1274,23 @@ function InvitationViewer({
                   <input className={inputClass} value={rsvpForm.guestName} onChange={(event) => setRsvpForm((f) => ({ ...f, guestName: event.target.value }))} placeholder="Tên khách mời" />
                   <input className={inputClass} value={rsvpForm.phone} onChange={(event) => setRsvpForm((f) => ({ ...f, phone: event.target.value }))} placeholder="Số điện thoại" />
                   <div className="grid grid-cols-3 gap-2">
-                    {[
-                      ['yes', 'Tham dự'],
-                      ['maybe', 'Có thể'],
-                      ['no', 'Rất tiếc']
-                    ].map(([status, label]) => {
-                      const statusKey = status as RsvpStatus;
+                    {(['yes', 'maybe', 'no'] as RsvpStatus[]).map((statusKey) => {
+                      const option = rsvpOptions[statusKey];
+                      const isActive = rsvpForm.status === statusKey;
                       return (
                         <button
-                          key={status}
+                          key={statusKey}
                           onClick={() => setRsvpForm((f) => ({ ...f, status: statusKey }))}
-                          className={`rounded-full px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5 ${
-                            rsvpForm.status === statusKey ? rsvpStatusStyles[statusKey].active : rsvpStatusStyles[statusKey].inactive
-                          }`}
+                          className="rounded-full px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5"
+                          style={{
+                            background: isActive
+                              ? `linear-gradient(135deg, ${option.color}, ${hexToRgba(option.color, 0.68)})`
+                              : hexToRgba(option.color, 0.1),
+                            color: isActive ? '#ffffff' : option.color,
+                            boxShadow: isActive ? `0 14px 26px ${hexToRgba(option.color, 0.22)}` : 'none'
+                          }}
                         >
-                          {label}
+                          {option.label}
                         </button>
                       );
                     })}
@@ -1234,7 +1326,18 @@ function InfoPill({ icon, title, note }: { icon: React.ReactNode; title: string;
   );
 }
 
-function RsvpList({ rsvps, activeShortId, reload }: { rsvps: InvitationRsvp[]; activeShortId: string | null; reload: () => void }) {
+function RsvpList({
+  rsvps,
+  activeShortId,
+  rsvpOptions,
+  reload
+}: {
+  rsvps: InvitationRsvp[];
+  activeShortId: string | null;
+  rsvpOptions?: Partial<Record<RsvpStatus, InvitationRsvpOption>>;
+  reload: () => void;
+}) {
+  const options = getRsvpOptions(rsvpOptions);
   const totals = rsvps.reduce(
     (acc, item) => {
       acc[item.status] += 1;
@@ -1251,9 +1354,9 @@ function RsvpList({ rsvps, activeShortId, reload }: { rsvps: InvitationRsvp[]; a
   return (
     <div className="space-y-4">
       <div className="grid gap-3 sm:grid-cols-4">
-        <Stat label="Tham dự" value={totals.yes} />
-        <Stat label="Có thể" value={totals.maybe} />
-        <Stat label="Rất tiếc" value={totals.no} />
+        <Stat label={options.yes.label} value={totals.yes} />
+        <Stat label={options.maybe.label} value={totals.maybe} />
+        <Stat label={options.no.label} value={totals.no} />
         <Stat label="Tổng khách" value={totals.guests} />
       </div>
       <button onClick={reload} className="inline-flex items-center gap-2 rounded-2xl bg-slate-950 px-4 py-2 text-sm font-black text-white">
@@ -1271,7 +1374,12 @@ function RsvpList({ rsvps, activeShortId, reload }: { rsvps: InvitationRsvp[]; a
                   <div className="font-black text-slate-950">{item.guestName}</div>
                   <div className="mt-1 text-xs font-bold text-slate-500">{item.phone || 'Chưa nhập SĐT'} • {item.guestCount} người</div>
                 </div>
-                <span className="rounded-full bg-pink-50 px-3 py-1 text-xs font-black text-pink-600">{item.status === 'yes' ? 'Tham dự' : item.status === 'maybe' ? 'Có thể' : 'Rất tiếc'}</span>
+                <span
+                  className="rounded-full px-3 py-1 text-xs font-semibold"
+                  style={{ backgroundColor: hexToRgba(options[item.status].color, 0.12), color: options[item.status].color }}
+                >
+                  {options[item.status].label}
+                </span>
               </div>
               {item.wish && <p className="mt-3 rounded-2xl bg-slate-50 px-4 py-3 text-sm font-semibold leading-6 text-slate-600">{item.wish}</p>}
             </div>

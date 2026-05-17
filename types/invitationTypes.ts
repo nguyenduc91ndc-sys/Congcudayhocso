@@ -20,6 +20,11 @@ export type RsvpStatus = 'yes' | 'maybe' | 'no';
 
 export type InvitationFontStyle = 'softScript' | 'classicSerif' | 'modernRounded';
 
+export interface InvitationRsvpOption {
+  label: string;
+  color: string;
+}
+
 export interface InvitationScheduleItem {
   time: string;
   title: string;
@@ -46,6 +51,7 @@ export interface OnlineInvitation {
   coverImage: string;
   musicUrl: string;
   fontStyle?: InvitationFontStyle;
+  rsvpOptions?: Partial<Record<RsvpStatus, InvitationRsvpOption>>;
   gallery: string[];
   schedule: InvitationScheduleItem[];
   rsvpEnabled: boolean;
