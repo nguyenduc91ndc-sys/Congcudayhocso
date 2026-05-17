@@ -18,6 +18,8 @@ export type InvitationThemeId =
 
 export type RsvpStatus = 'yes' | 'maybe' | 'no';
 
+export type InvitationFontStyle = 'softScript' | 'classicSerif' | 'modernRounded';
+
 export interface InvitationScheduleItem {
   time: string;
   title: string;
@@ -43,6 +45,7 @@ export interface OnlineInvitation {
   zalo: string;
   coverImage: string;
   musicUrl: string;
+  fontStyle?: InvitationFontStyle;
   gallery: string[];
   schedule: InvitationScheduleItem[];
   rsvpEnabled: boolean;

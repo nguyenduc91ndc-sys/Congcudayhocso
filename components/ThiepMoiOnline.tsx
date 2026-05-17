@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   ArrowLeft,
   CalendarDays,
@@ -13,12 +13,14 @@ import {
   Loader2,
   MapPin,
   MessageCircle,
+  Music2,
   Palette,
   Phone,
   QrCode,
   Save,
   Send,
   Sparkles,
+  VolumeX,
   Users
 } from 'lucide-react';
 import {
@@ -32,6 +34,7 @@ import {
 } from '../utils/firebaseThiepMoiOnline';
 import {
   InvitationEventType,
+  InvitationFontStyle,
   InvitationRsvp,
   InvitationThemeId,
   OnlineInvitation,
@@ -209,6 +212,47 @@ const templates: InvitationTemplate[] = [
   }
 ];
 
+const fontOptions: Array<{
+  id: InvitationFontStyle;
+  label: string;
+  caption: string;
+  titleFont: string;
+  nameFont: string;
+  bodyFont: string;
+  titleWeight: React.CSSProperties['fontWeight'];
+}> = [
+  {
+    id: 'softScript',
+    label: 'Mềm mại',
+    caption: 'Chữ bay nhẹ kiểu thiệp online',
+    titleFont: "'Great Vibes', 'Dancing Script', cursive",
+    nameFont: "'Dancing Script', 'Great Vibes', cursive",
+    bodyFont: "'Quicksand', 'Poppins', sans-serif",
+    titleWeight: 400
+  },
+  {
+    id: 'classicSerif',
+    label: 'Thanh lịch',
+    caption: 'Có chân, trang trọng và dễ đọc',
+    titleFont: "'Playfair Display', 'Cormorant Garamond', serif",
+    nameFont: "'Cormorant Garamond', 'Playfair Display', serif",
+    bodyFont: "'Quicksand', 'Poppins', sans-serif",
+    titleWeight: 600
+  },
+  {
+    id: 'modernRounded',
+    label: 'Tròn nhẹ',
+    caption: 'Hiện đại, thân thiện',
+    titleFont: "'Quicksand', 'Poppins', sans-serif",
+    nameFont: "'Dancing Script', 'Quicksand', cursive",
+    bodyFont: "'Quicksand', 'Poppins', sans-serif",
+    titleWeight: 700
+  }
+];
+
+const getFontOption = (id?: InvitationFontStyle) =>
+  fontOptions.find((font) => font.id === id) || fontOptions[0];
+
 const dressCodePresets: Record<InvitationThemeId, Array<{ label: string; value: string; colors: string[] }>> = {
   babyDream: [
     { label: 'Pastel nhẹ', value: 'Pastel, trắng hoặc hồng nhạt', colors: ['#f9a8d4', '#bfdbfe', '#ffffff'] },
@@ -268,6 +312,7 @@ const createDefaultInvitation = (template = templates[0]): OnlineInvitation => (
   zalo: '',
   coverImage: '',
   musicUrl: '',
+  fontStyle: 'softScript',
   gallery: [],
   schedule: template.sample.schedule || [
     { time: '17:30', title: 'Đón khách', note: 'Check-in và chụp hình' },
@@ -289,8 +334,22 @@ const formatDate = (date: string) => {
   });
 };
 
-const inputClass = 'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-semibold text-slate-800 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100';
-const labelClass = 'mb-1.5 block text-xs font-black uppercase tracking-wide text-slate-500';
+const inputClass = 'w-full rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm font-medium text-slate-800 outline-none transition focus:border-pink-300 focus:ring-4 focus:ring-pink-100';
+const labelClass = 'mb-1.5 block text-xs font-semibold uppercase tracking-wide text-slate-500';
+const rsvpStatusStyles: Record<RsvpStatus, { active: string; inactive: string }> = {
+  yes: {
+    active: 'bg-gradient-to-r from-emerald-400 to-teal-500 text-white shadow-lg shadow-emerald-200',
+    inactive: 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+  },
+  maybe: {
+    active: 'bg-gradient-to-r from-amber-300 to-orange-400 text-white shadow-lg shadow-amber-200',
+    inactive: 'bg-amber-50 text-amber-700 hover:bg-amber-100'
+  },
+  no: {
+    active: 'bg-gradient-to-r from-rose-400 to-pink-500 text-white shadow-lg shadow-rose-200',
+    inactive: 'bg-rose-50 text-rose-700 hover:bg-rose-100'
+  }
+};
 
 const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequireLogin, sharedId }) => {
   const [invitation, setInvitation] = useState<OnlineInvitation>(() => createDefaultInvitation());
@@ -647,6 +706,11 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
                 <Field label="Dòng phụ" value={invitation.subtitle} onChange={(value) => updateField('subtitle', value)} />
                 <Field label="Tên nhân vật chính / sự kiện" value={invitation.honoredName} onChange={(value) => updateField('honoredName', value)} />
                 <Field label="Nhạc nền tùy chọn" value={invitation.musicUrl} onChange={(value) => updateField('musicUrl', value)} placeholder="Dán link mp3 nếu có" />
+                <MusicLinkGuide />
+                <FontStylePicker
+                  value={invitation.fontStyle || 'softScript'}
+                  onChange={(value) => updateField('fontStyle', value)}
+                />
               </div>
             )}
 
@@ -775,6 +839,62 @@ function Field({ label, value, onChange, placeholder, type = 'text' }: { label: 
   );
 }
 
+function MusicLinkGuide() {
+  return (
+    <div className="rounded-3xl border border-amber-100 bg-gradient-to-br from-amber-50 via-rose-50 to-sky-50 p-4 text-sm text-slate-700">
+      <div className="mb-2 flex items-center gap-2 font-semibold text-slate-900">
+        <Music2 className="h-4 w-4 text-rose-500" />
+        Cách lấy link nhạc nhanh
+      </div>
+      <div className="grid gap-2 leading-6 sm:grid-cols-3">
+        <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
+          <span className="font-semibold text-rose-600">1.</span> Tải file nhạc `.mp3` lên Google Drive.
+        </div>
+        <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
+          <span className="font-semibold text-rose-600">2.</span> Bấm chia sẻ, chọn “Bất kỳ ai có đường liên kết”.
+        </div>
+        <div className="rounded-2xl bg-white/75 p-3 shadow-sm ring-1 ring-white">
+          <span className="font-semibold text-rose-600">3.</span> Sao chép liên kết rồi dán vào ô nhạc.
+        </div>
+      </div>
+      <p className="mt-3 text-xs font-medium leading-5 text-slate-500">
+        Link YouTube thường không phát trực tiếp trong thiệp. Link mp3 công khai hoặc link Google Drive công khai là dễ dùng nhất.
+      </p>
+    </div>
+  );
+}
+
+function FontStylePicker({ value, onChange }: { value: InvitationFontStyle; onChange: (value: InvitationFontStyle) => void }) {
+  return (
+    <div>
+      <label className={labelClass}>Kiểu chữ</label>
+      <div className="grid gap-2 sm:grid-cols-3">
+        {fontOptions.map((font) => {
+          const active = value === font.id;
+          return (
+            <button
+              key={font.id}
+              type="button"
+              onClick={() => onChange(font.id)}
+              className={`rounded-2xl border px-3 py-3 text-left transition hover:-translate-y-0.5 ${
+                active
+                  ? 'border-pink-300 bg-gradient-to-br from-pink-50 to-sky-50 shadow-md shadow-pink-900/10'
+                  : 'border-slate-200 bg-white hover:border-pink-200 hover:bg-pink-50/50'
+              }`}
+            >
+              <span className="block text-2xl leading-none text-slate-900" style={{ fontFamily: font.titleFont, fontWeight: font.titleWeight, letterSpacing: 0 }}>
+                Aa
+              </span>
+              <span className="mt-2 block text-xs font-semibold text-slate-800">{font.label}</span>
+              <span className="mt-1 block text-[11px] font-medium leading-4 text-slate-500">{font.caption}</span>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 function DressCodeQuickPicks({
   themeId,
   value,
@@ -827,11 +947,13 @@ function DressCodeQuickPicks({
 
 function InvitationPreview({ invitation, template }: { invitation: OnlineInvitation; template: InvitationTemplate }) {
   const foreground = template.dark ? 'text-white' : 'text-slate-950';
-  const muted = template.dark ? 'text-white/72' : 'text-slate-600';
+  const font = getFontOption(invitation.fontStyle);
+  const titleStyle = { fontFamily: font.titleFont, fontWeight: font.titleWeight, letterSpacing: 0 };
+  const nameStyle = { fontFamily: font.nameFont, fontWeight: 600, letterSpacing: 0 };
   return (
     <div
       className="overflow-hidden rounded-[34px] border border-white/20 bg-white shadow-2xl shadow-black/40"
-      style={{ boxShadow: `0 30px 80px ${template.glow}` }}
+      style={{ boxShadow: `0 30px 80px ${template.glow}`, fontFamily: font.bodyFont }}
     >
       <div className="relative min-h-[720px] bg-cover bg-center p-5" style={{ backgroundImage: `url(${template.asset})` }}>
         <div className="absolute inset-0 bg-gradient-to-b from-black/5 via-transparent to-black/10" />
@@ -852,19 +974,19 @@ function InvitationPreview({ invitation, template }: { invitation: OnlineInvitat
               </div>
             )}
             <div className="text-center">
-              <p className="text-xs font-black uppercase tracking-[0.24em]" style={{ color: template.accent }}>{invitation.subtitle}</p>
-              <h2 className="mt-3 text-4xl font-black leading-tight" style={{ color: template.ink }}>{invitation.title}</h2>
-              <p className="mt-3 text-2xl font-black" style={{ color: template.accent }}>{invitation.honoredName}</p>
+              <p className="text-xs font-semibold uppercase tracking-[0.24em]" style={{ color: template.accent }}>{invitation.subtitle}</p>
+              <h2 className="mt-3 break-words text-5xl leading-tight" style={{ color: template.ink, ...titleStyle }}>{invitation.title}</h2>
+              <p className="mt-3 text-3xl" style={{ color: template.accent, ...nameStyle }}>{invitation.honoredName}</p>
             </div>
           </div>
 
           <div className="mt-auto space-y-3 rounded-[28px] bg-white/78 p-4 text-slate-900 shadow-xl backdrop-blur-xl ring-1 ring-white/70">
             <InfoRow icon={<CalendarDays className="h-4 w-4" />} label={`${formatDate(invitation.date)} • ${invitation.time}`} />
             <InfoRow icon={<MapPin className="h-4 w-4" />} label={invitation.locationName || invitation.address} />
-            <p className="line-clamp-3 text-sm font-semibold leading-6 text-slate-600">{invitation.message}</p>
+            <p className="line-clamp-3 text-sm font-medium leading-6 text-slate-600">{invitation.message}</p>
             <div className="grid grid-cols-2 gap-2 pt-1">
-              <button className="rounded-2xl px-4 py-3 text-sm font-black text-white" style={{ background: template.accent }}>Tham dự</button>
-              <button className="rounded-2xl bg-slate-950 px-4 py-3 text-sm font-black text-white">Bản đồ</button>
+              <button className="rounded-2xl px-4 py-3 text-sm font-semibold text-white shadow-lg" style={{ background: `linear-gradient(135deg, ${template.accent}, ${template.accent2})` }}>Tham dự</button>
+              <button className="rounded-2xl bg-white px-4 py-3 text-sm font-semibold text-slate-800 shadow ring-1 ring-slate-100">Bản đồ</button>
             </div>
           </div>
         </div>
@@ -878,6 +1000,110 @@ function InfoRow({ icon, label }: { icon: React.ReactNode; label: string }) {
     <div className="flex items-center gap-2 text-sm font-black">
       <span className="flex h-8 w-8 items-center justify-center rounded-2xl bg-slate-100 text-slate-700">{icon}</span>
       <span className="min-w-0 flex-1 truncate">{label}</span>
+    </div>
+  );
+}
+
+function normalizeMusicUrl(url: string) {
+  const trimmed = url.trim();
+  if (!trimmed) return '';
+
+  if (trimmed.includes('drive.google.com')) {
+    const driveMatch = trimmed.match(/drive\.google\.com\/file\/d\/([^/]+)/) || trimmed.match(/[?&]id=([^&]+)/);
+    if (driveMatch?.[1]) {
+      return `https://drive.google.com/uc?export=download&id=${driveMatch[1]}`;
+    }
+  }
+
+  if (trimmed.includes('dropbox.com')) {
+    return trimmed.replace('www.dropbox.com', 'dl.dropboxusercontent.com').replace(/[?&]dl=0\b/, '?raw=1');
+  }
+
+  return trimmed;
+}
+
+function BackgroundMusic({ url, accent }: { url: string; accent: string }) {
+  const audioRef = useRef<HTMLAudioElement | null>(null);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [hasError, setHasError] = useState(false);
+  const src = useMemo(() => normalizeMusicUrl(url), [url]);
+
+  useEffect(() => {
+    const audio = audioRef.current;
+    if (!audio || !src) return;
+
+    setIsPlaying(false);
+    setHasError(false);
+    audio.volume = 0.72;
+    audio.load();
+
+    const playAudio = () => {
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+          setHasError(false);
+        })
+        .catch(() => setIsPlaying(false));
+    };
+
+    playAudio();
+    window.addEventListener('pointerdown', playAudio, { once: true });
+    window.addEventListener('keydown', playAudio, { once: true });
+
+    return () => {
+      window.removeEventListener('pointerdown', playAudio);
+      window.removeEventListener('keydown', playAudio);
+      audio.pause();
+    };
+  }, [src]);
+
+  if (!src) return null;
+
+  const toggleMusic = () => {
+    const audio = audioRef.current;
+    if (!audio) return;
+
+    if (audio.paused) {
+      audio.play()
+        .then(() => {
+          setIsPlaying(true);
+          setHasError(false);
+        })
+        .catch(() => setHasError(true));
+    } else {
+      audio.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  return (
+    <div className="fixed right-4 top-4 z-40 flex flex-col items-end gap-2">
+      <audio
+        ref={audioRef}
+        src={src}
+        loop
+        preload="auto"
+        onPlay={() => setIsPlaying(true)}
+        onPause={() => setIsPlaying(false)}
+        onError={() => {
+          setIsPlaying(false);
+          setHasError(true);
+        }}
+      />
+      <button
+        type="button"
+        onClick={toggleMusic}
+        className="inline-flex items-center gap-2 rounded-full px-4 py-2.5 text-sm font-semibold text-white shadow-xl backdrop-blur transition hover:-translate-y-0.5"
+        style={{ background: `linear-gradient(135deg, ${accent}, #f59e0b)` }}
+      >
+        {isPlaying ? <VolumeX className="h-4 w-4" /> : <Music2 className="h-4 w-4" />}
+        {isPlaying ? 'Tắt nhạc' : 'Bật nhạc'}
+      </button>
+      {hasError && (
+        <span className="max-w-[210px] rounded-2xl bg-white/90 px-3 py-2 text-right text-xs font-medium leading-4 text-rose-700 shadow-lg backdrop-blur">
+          Link nhạc chưa phát được. Nên dùng link mp3 công khai.
+        </span>
+      )}
     </div>
   );
 }
@@ -901,8 +1127,13 @@ function InvitationViewer({
   onBack: () => void;
   notice: string;
 }) {
+  const font = getFontOption(invitation.fontStyle);
+  const titleStyle = { fontFamily: font.titleFont, fontWeight: font.titleWeight, letterSpacing: 0 };
+  const nameStyle = { fontFamily: font.nameFont, fontWeight: 600, letterSpacing: 0 };
+
   return (
-    <div className="min-h-screen bg-slate-950">
+    <div className="min-h-screen bg-slate-950" style={{ fontFamily: font.bodyFont }}>
+      <BackgroundMusic url={invitation.musicUrl} accent={template.accent} />
       <button onClick={onBack} className="fixed left-4 top-4 z-30 rounded-2xl bg-white/85 px-4 py-2 text-sm font-black text-slate-900 shadow-xl backdrop-blur">
         ← Trang chủ
       </button>
@@ -910,10 +1141,10 @@ function InvitationViewer({
         <div className="absolute inset-0 bg-black/10" />
         <div className="relative mx-auto grid max-w-6xl items-center gap-6 lg:grid-cols-[1fr_420px]">
           <div className={`rounded-[40px] bg-white/75 p-6 shadow-2xl backdrop-blur-xl ring-1 ring-white/70 ${template.dark ? 'lg:bg-slate-950/70 lg:text-white' : ''}`}>
-            <p className="text-sm font-black uppercase tracking-[0.32em]" style={{ color: template.accent }}>{invitation.subtitle}</p>
-            <h1 className="mt-4 text-5xl font-black leading-none sm:text-7xl" style={{ color: template.dark ? '#fff' : template.ink }}>{invitation.title}</h1>
-            <p className="mt-4 text-3xl font-black" style={{ color: template.accent }}>{invitation.honoredName}</p>
-            <p className={`mt-5 max-w-2xl text-base font-semibold leading-8 ${template.dark ? 'text-white/75' : 'text-slate-700'}`}>{invitation.message}</p>
+            <p className="text-sm font-semibold uppercase tracking-[0.32em]" style={{ color: template.accent }}>{invitation.subtitle}</p>
+            <h1 className="mt-4 break-words text-6xl leading-none sm:text-8xl" style={{ color: template.dark ? '#fff' : template.ink, ...titleStyle }}>{invitation.title}</h1>
+            <p className="mt-4 text-4xl" style={{ color: template.accent, ...nameStyle }}>{invitation.honoredName}</p>
+            <p className={`mt-5 max-w-2xl text-base font-medium leading-8 ${template.dark ? 'text-white/75' : 'text-slate-700'}`}>{invitation.message}</p>
             <div className="mt-6 grid gap-3 sm:grid-cols-2">
               <InfoPill icon={<CalendarDays className="h-5 w-5" />} title={formatDate(invitation.date)} note={invitation.time} />
               <InfoPill icon={<MapPin className="h-5 w-5" />} title={invitation.locationName} note={invitation.address} />
@@ -957,19 +1188,24 @@ function InvitationViewer({
                       ['yes', 'Tham dự'],
                       ['maybe', 'Có thể'],
                       ['no', 'Rất tiếc']
-                    ].map(([status, label]) => (
-                      <button
-                        key={status}
-                        onClick={() => setRsvpForm((f) => ({ ...f, status: status as RsvpStatus }))}
-                        className={`rounded-2xl px-3 py-2 text-xs font-black ${rsvpForm.status === status ? 'bg-pink-500 text-white' : 'bg-slate-100 text-slate-600'}`}
-                      >
-                        {label}
-                      </button>
-                    ))}
+                    ].map(([status, label]) => {
+                      const statusKey = status as RsvpStatus;
+                      return (
+                        <button
+                          key={status}
+                          onClick={() => setRsvpForm((f) => ({ ...f, status: statusKey }))}
+                          className={`rounded-full px-3 py-3 text-sm font-semibold transition hover:-translate-y-0.5 ${
+                            rsvpForm.status === statusKey ? rsvpStatusStyles[statusKey].active : rsvpStatusStyles[statusKey].inactive
+                          }`}
+                        >
+                          {label}
+                        </button>
+                      );
+                    })}
                   </div>
                   <input className={inputClass} type="number" min={1} value={rsvpForm.guestCount} onChange={(event) => setRsvpForm((f) => ({ ...f, guestCount: Number(event.target.value) || 1 }))} placeholder="Số người" />
                   <textarea className={`${inputClass} min-h-[90px] resize-y`} value={rsvpForm.wish} onChange={(event) => setRsvpForm((f) => ({ ...f, wish: event.target.value }))} placeholder="Lời chúc" />
-                  <button onClick={onSubmitRsvp} disabled={isSendingRsvp} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-4 py-3 text-sm font-black text-white">
+                  <button onClick={onSubmitRsvp} disabled={isSendingRsvp} className="flex w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-400 via-rose-400 to-amber-300 px-4 py-3 text-sm font-semibold text-white shadow-lg shadow-pink-100 transition hover:-translate-y-0.5 disabled:opacity-60">
                     {isSendingRsvp ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     Gửi xác nhận
                   </button>
