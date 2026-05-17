@@ -227,16 +227,22 @@ function App() {
       } // Đóng thẻ else bên trên
 
       const hasSharedAppId = Boolean(urlParams.get('id'));
+      const isDirectThiepCreator = defaultView === 'THIEP_MOI_ONLINE' && !hasSharedAppId;
       const shouldRequireDirectLogin =
         !savedUser &&
         (
           defaultView === 'KY_YEU_CUOI_NAM' ||
-          (defaultView === 'THIEP_MOI_ONLINE' && !hasSharedAppId)
+          isDirectThiepCreator
         );
 
       if (shouldRequireDirectLogin) {
-        const protectedView = defaultView;
-        setPendingAction(() => () => setView(protectedView));
+        if (isDirectThiepCreator) {
+          setSharedThiepMoiId(null);
+          window.history.replaceState({}, document.title, '/');
+        } else {
+          const protectedView = defaultView;
+          setPendingAction(() => () => setView(protectedView));
+        }
         setShowLoginModal(true);
         defaultView = 'DASHBOARD';
       }
