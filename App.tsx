@@ -226,6 +226,21 @@ function App() {
         }
       } // Đóng thẻ else bên trên
 
+      const hasSharedAppId = Boolean(urlParams.get('id'));
+      const shouldRequireDirectLogin =
+        !savedUser &&
+        (
+          defaultView === 'KY_YEU_CUOI_NAM' ||
+          (defaultView === 'THIEP_MOI_ONLINE' && !hasSharedAppId)
+        );
+
+      if (shouldRequireDirectLogin) {
+        const protectedView = defaultView;
+        setPendingAction(() => () => setView(protectedView));
+        setShowLoginModal(true);
+        defaultView = 'DASHBOARD';
+      }
+
       if (savedUser) {
         const parsedUser = JSON.parse(savedUser);
         setUser(parsedUser);
@@ -311,11 +326,13 @@ function App() {
     }
     setShowLoginModal(false);
     // Execute pending action if any
-    if (pendingAction) {
-      pendingAction();
+    const actionToRun = pendingAction;
+    if (actionToRun) {
+      actionToRun();
       setPendingAction(null);
+    } else {
+      setView('DASHBOARD');
     }
-    setView('DASHBOARD');
   };
 
   const handleLogout = () => {
