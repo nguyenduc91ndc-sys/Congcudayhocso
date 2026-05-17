@@ -883,7 +883,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const safeMsg = escapeHtml(photo.msg);
             const mediaKind = isEmbed(photo) ? 'Link' : (isVideo(photo) ? 'Video' : 'Ảnh');
             div.innerHTML = `
-                <button class="photo-item-remove" data-id="${photo.id}" title="Xóa ảnh/video này">Xóa ảnh</button>
+                <button class="photo-item-remove" data-id="${photo.id}" title="Xóa ảnh/video này" aria-label="Xóa ảnh/video này">X</button>
                 <div class="media-preview">
                     ${mediaPreviewHtml(photo, safeName)}
                     <span class="media-type-badge">${mediaKind}</span>
