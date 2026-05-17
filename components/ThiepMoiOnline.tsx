@@ -365,23 +365,43 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
     }
   };
 
-  const downloadQrCode = () => {
+  const downloadQrCode = async () => {
     if (!shareUrl) return;
     const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=900x900&format=png&data=${encodeURIComponent(shareUrl)}`;
-    const link = document.createElement('a');
     const safeTitle = (invitation.title || 'thiep-moi')
       .normalize('NFD')
       .replace(/[\u0300-\u036f]/g, '')
       .replace(/[^a-zA-Z0-9_-]+/g, '-')
       .replace(/^-+|-+$/g, '')
       .toLowerCase();
-    link.href = qrUrl;
-    link.download = `QR_${safeTitle || 'thiep-moi'}.png`;
-    link.target = '_blank';
-    document.body.appendChild(link);
-    link.click();
-    link.remove();
-    setNotice('Đã tải QR. Nếu trình duyệt mở ảnh ở tab mới, hãy bấm lưu ảnh.');
+    const fileName = `QR_${safeTitle || 'thiep-moi'}.png`;
+
+    try {
+      setNotice('Đang tải QR về máy...');
+      const response = await fetch(qrUrl);
+      if (!response.ok) throw new Error('Cannot fetch QR image');
+
+      const blob = await response.blob();
+      const objectUrl = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = objectUrl;
+      link.download = fileName;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(objectUrl);
+      setNotice(`Đã tải file ${fileName} về máy.`);
+    } catch (error) {
+      console.error('QR download failed:', error);
+      const link = document.createElement('a');
+      link.href = qrUrl;
+      link.download = fileName;
+      link.target = '_blank';
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      setNotice('Trình duyệt không cho tải trực tiếp. Ảnh QR đã được mở, hãy bấm lưu ảnh.');
+    }
   };
 
   const openSaved = async (shortId: string) => {
