@@ -97,7 +97,8 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                     src="/kiyeucuoinam/kiyeucuoinam/index.html"
                     className="min-h-0 flex-1 border-0"
                     title="Kỷ yếu cuối năm"
-                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; camera; microphone"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; camera; microphone; fullscreen"
+                    allowFullScreen
                     sandbox="allow-scripts allow-same-origin allow-modals allow-forms allow-popups allow-downloads"
                 />
             ) : (
