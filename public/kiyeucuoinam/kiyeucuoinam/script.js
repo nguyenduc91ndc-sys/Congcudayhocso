@@ -30,6 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
     const DEFAULT_MAX_VIDEOS = 2;
     const DEFAULT_MAX_VIDEO_MB = 10;
     const CREATIVE_ITEM_COUNT = 4;
+    const DISC_PAGE_SIZE = 12;
+    const DISC_AUTO_PAGE_MS = 7000;
     const DRAFT_DB_NAME = 'kiyeu-yearbook-drafts';
     const DRAFT_STORE_NAME = 'drafts';
     const DRAFT_KEY = 'active';
@@ -375,8 +377,19 @@ document.addEventListener('DOMContentLoaded', () => {
     function getDiscPhotos(photos = STATE.photos) {
         return photos
             .map((photo, idx) => ({ photo, idx }))
-            .filter(item => item.photo && !isEmbed(item.photo))
-            .slice(0, 12);
+            .filter(item => item.photo && !isEmbed(item.photo));
+    }
+
+    function getDiscPageItems(photos = STATE.photos, page = 0) {
+        const items = getDiscPhotos(photos);
+        const totalPages = Math.max(1, Math.ceil(items.length / DISC_PAGE_SIZE));
+        const safePage = ((Number(page) || 0) % totalPages + totalPages) % totalPages;
+        return {
+            items: items.slice(safePage * DISC_PAGE_SIZE, (safePage + 1) * DISC_PAGE_SIZE),
+            page: safePage,
+            totalPages,
+            totalItems: items.length
+        };
     }
 
     function creativeMediaThumb(item, altText = '') {
@@ -1425,6 +1438,25 @@ document.addEventListener('DOMContentLoaded', () => {
         bindMemberHoverSounds(container);
     }
 
+    let memoryDiscAutoTimer = null;
+
+    function clearMemoryDiscAutoTimer() {
+        if (memoryDiscAutoTimer) {
+            clearTimeout(memoryDiscAutoTimer);
+            memoryDiscAutoTimer = null;
+        }
+    }
+
+    function scheduleMemoryDiscAutoPage(disc, totalPages) {
+        clearMemoryDiscAutoTimer();
+        if (!disc || !disc.classList.contains('playing') || totalPages <= 1) return;
+        memoryDiscAutoTimer = setTimeout(() => {
+            const currentPage = Number(disc.dataset.page || 0);
+            disc.dataset.page = String((currentPage + 1) % totalPages);
+            renderMemoryDisc();
+        }, DISC_AUTO_PAGE_MS);
+    }
+
     function renderMemoryDisc() {
         const section = document.getElementById('cdSection');
         const disc = document.getElementById('memoryCd');
@@ -1432,15 +1464,19 @@ document.addEventListener('DOMContentLoaded', () => {
         const text = document.getElementById('cdCoreText');
         if (!section || !disc || !ring) return;
 
-        const items = getDiscPhotos();
-        if (!items.length) {
+        const allItems = getDiscPhotos();
+        if (!allItems.length) {
             section.style.display = 'none';
+            clearMemoryDiscAutoTimer();
             return;
         }
         section.style.display = '';
 
-        ring.innerHTML = items.map((item, order) => {
-            const angle = (360 / items.length) * order;
+        const pageData = getDiscPageItems(STATE.photos, Number(disc.dataset.page || 0));
+        disc.dataset.page = String(pageData.page);
+
+        ring.innerHTML = pageData.items.map((item, order) => {
+            const angle = (360 / pageData.items.length) * order;
             const photo = item.photo;
             const safeName = escapeHtml(photo.name || `Ảnh ${order + 1}`);
             return `
@@ -1458,6 +1494,35 @@ document.addEventListener('DOMContentLoaded', () => {
             });
         });
 
+        let controls = section.querySelector('.cd-controls');
+        if (!controls) {
+            controls = document.createElement('div');
+            controls.className = 'cd-controls';
+            controls.innerHTML = `
+                <button type="button" class="cd-page-btn" data-cd-step="-1" aria-label="Nhóm trước">‹</button>
+                <span class="cd-page-label" id="cdPageLabel"></span>
+                <button type="button" class="cd-page-btn" data-cd-step="1" aria-label="Nhóm sau">›</button>
+            `;
+            disc.insertAdjacentElement('afterend', controls);
+        }
+
+        controls.style.display = pageData.totalPages > 1 ? 'flex' : 'none';
+        const pageLabel = controls.querySelector('.cd-page-label');
+        if (pageLabel) pageLabel.textContent = `Nhóm ${pageData.page + 1}/${pageData.totalPages}`;
+
+        if (!controls.dataset.bound) {
+            controls.dataset.bound = '1';
+            controls.querySelectorAll('[data-cd-step]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    const latestTotal = getDiscPageItems().totalPages;
+                    const currentPage = Number(disc.dataset.page || 0);
+                    const step = Number(btn.dataset.cdStep || 0);
+                    disc.dataset.page = String((currentPage + step + latestTotal) % latestTotal);
+                    renderMemoryDisc();
+                });
+            });
+        }
+
         if (!disc.dataset.bound) {
             disc.dataset.bound = '1';
             disc.addEventListener('click', () => {
@@ -1466,12 +1531,14 @@ document.addEventListener('DOMContentLoaded', () => {
                 disc.setAttribute('aria-pressed', playing ? 'true' : 'false');
                 const label = document.getElementById('cdCoreText');
                 const icon = disc.querySelector('.cd-core-icon');
+                scheduleMemoryDiscAutoPage(disc, getDiscPageItems().totalPages);
                 if (label) label.textContent = playing ? 'Đang quay' : 'Bấm để quay';
                 if (icon) icon.textContent = playing ? 'Ⅱ' : '▶';
             });
         }
 
         if (text && !disc.classList.contains('playing')) text.textContent = 'Bấm để quay';
+        scheduleMemoryDiscAutoPage(disc, pageData.totalPages);
     }
 
     // ===== PHOTO VIEWER MODAL =====
@@ -1932,7 +1999,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     }
                 });
                 if (c.layout === 'carousel') gHTML = `<div class="carousel-track">${gHTML}</div>`;
-                const cdItems = getDiscPhotos(packagedPhotos);
+                const cdItems = getDiscPageItems(packagedPhotos, 0).items;
                 const cdHTML = cdItems.map((item, order) => {
                     const angle = (360 / cdItems.length) * order;
                     const p = item.photo;
@@ -1958,10 +2025,15 @@ document.addEventListener('DOMContentLoaded', () => {
 var photos = ${JSON.stringify(packagedPhotos)};
 var currentSlide = 0, slideInterval = null, isMusicPlaying = false, isSlideAutoPlaying = false;
 var IMAGE_SLIDE_MS = 4500, MAX_VIDEO_SLIDE_MS = 30000;
+var DISC_PAGE_SIZE = 12, DISC_AUTO_PAGE_MS = 7000, memoryDiscPage = 0, memoryDiscAutoTimer = null;
 var bgMusic = document.getElementById('bgMusic');
 var btnMT = document.getElementById('btnMusicToggle');
 function isEmbed(p){return p&&p.type==='embed';}
 function isVideo(p){return p&&(p.type==='video'||(p.mimeType&&p.mimeType.indexOf('video/')===0)||(p.dataUrl&&p.dataUrl.indexOf('data:video/')===0));}
+function escapeHtmlValue(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+function getDiscItems(){return photos.map(function(photo,idx){return {photo:photo,idx:idx};}).filter(function(item){return item.photo&&!isEmbed(item.photo);});}
+function getDiscPageData(page){var items=getDiscItems();var totalPages=Math.max(1,Math.ceil(items.length/DISC_PAGE_SIZE));var safePage=(((Number(page)||0)%totalPages)+totalPages)%totalPages;return {items:items.slice(safePage*DISC_PAGE_SIZE,(safePage+1)*DISC_PAGE_SIZE),page:safePage,totalPages:totalPages,totalItems:items.length};}
+function cdThumbHtml(p,alt){if(!p)return '';if(isVideo(p))return '<video src="'+escapeHtmlValue(p.dataUrl)+'" muted preload="metadata" playsinline></video>';return '<img src="'+escapeHtmlValue(p.dataUrl)+'" alt="'+escapeHtmlValue(alt)+'">';}
 function getYouTubeIdFromUrl(rawUrl){try{var u=new URL(String(rawUrl||'').trim());var h=u.hostname.replace(/^www\\./,'');if(h==='youtu.be')return u.pathname.split('/').filter(Boolean)[0]||'';if(h==='youtube.com'||h==='m.youtube.com'||h==='youtube-nocookie.com'){var parts=u.pathname.split('/').filter(Boolean);return u.searchParams.get('v')||((['shorts','embed','live'].indexOf(parts[0])>=0)?parts[1]:'')||'';}}catch(e){}return '';}
 function getEmbedThumbnailUrl(p){var id=getYouTubeIdFromUrl((p&&p.sourceUrl)||(p&&p.embedUrl)||'');return id?'https://i.ytimg.com/vi/'+id+'/hqdefault.jpg':'';}
 var CP1252_BYTE_MAP={'€':128,'‚':130,'ƒ':131,'„':132,'…':133,'†':134,'‡':135,'ˆ':136,'‰':137,'Š':138,'‹':139,'Œ':140,'Ž':142,'‘':145,'’':146,'“':147,'”':148,'•':149,'–':150,'—':151,'˜':152,'™':153,'š':154,'›':155,'œ':156,'ž':158,'Ÿ':159};
@@ -2052,7 +2124,7 @@ document.querySelectorAll('[data-idx]').forEach(function(el){
 });
 
 var memoryCd=document.getElementById('memoryCd');
-if(memoryCd){
+if(false&&memoryCd){
     memoryCd.addEventListener('click',function(){
         var playing=!memoryCd.classList.contains('playing');
         memoryCd.classList.toggle('playing',playing);
@@ -2070,6 +2142,60 @@ if(memoryCd){
     });
 }
 
+function clearMemoryDiscAuto(){if(memoryDiscAutoTimer){clearTimeout(memoryDiscAutoTimer);memoryDiscAutoTimer=null;}}
+function scheduleMemoryDiscAuto(memoryCd,totalPages){clearMemoryDiscAuto();if(!memoryCd||!memoryCd.classList.contains('playing')||totalPages<=1)return;memoryDiscAutoTimer=setTimeout(function(){renderMemoryCdPage(memoryDiscPage+1);},DISC_AUTO_PAGE_MS);}
+function renderMemoryCdPage(page){
+    var memoryCd=document.getElementById('memoryCd');
+    var ring=memoryCd?memoryCd.querySelector('.cd-photo-ring'):null;
+    if(!memoryCd||!ring)return;
+    var data=getDiscPageData(page);
+    memoryDiscPage=data.page;
+    ring.innerHTML=data.items.map(function(item,order){
+        var angle=data.items.length?(360/data.items.length)*order:0;
+        var p=item.photo||{};
+        var name=escapeHtmlValue(p.name||('Anh '+(order+1)));
+        return '<span class="cd-photo" style="--angle:'+angle+'deg;--reverse-angle:'+(-angle)+'deg" data-cd-idx="'+item.idx+'" title="'+name+'">'+cdThumbHtml(p,name)+'</span>';
+    }).join('');
+    ring.querySelectorAll('[data-cd-idx]').forEach(function(el){
+        el.addEventListener('click',function(e){
+            e.stopPropagation();
+            var i=parseInt(this.dataset.cdIdx,10);
+            var target=document.querySelector('[data-idx="'+i+'"]');
+            if(target)target.click();
+        });
+    });
+    var controls=memoryCd.parentElement.querySelector('.cd-controls');
+    if(!controls){
+        controls=document.createElement('div');
+        controls.className='cd-controls';
+        controls.innerHTML='<button type="button" class="cd-page-btn" data-cd-step="-1" aria-label="Nhom truoc">‹</button><span class="cd-page-label"></span><button type="button" class="cd-page-btn" data-cd-step="1" aria-label="Nhom sau">›</button>';
+        memoryCd.insertAdjacentElement('afterend',controls);
+    }
+    controls.style.display=data.totalPages>1?'flex':'none';
+    var label=controls.querySelector('.cd-page-label');if(label)label.textContent='Nhom '+(data.page+1)+'/'+data.totalPages;
+    if(!controls.dataset.bound){
+        controls.dataset.bound='1';
+        controls.querySelectorAll('[data-cd-step]').forEach(function(btn){
+            btn.addEventListener('click',function(){
+                var step=parseInt(this.dataset.cdStep,10)||0;
+                renderMemoryCdPage(memoryDiscPage+step);
+            });
+        });
+    }
+    scheduleMemoryDiscAuto(memoryCd,data.totalPages);
+}
+memoryCd=document.getElementById('memoryCd');
+if(memoryCd){
+    renderMemoryCdPage(0);
+    memoryCd.addEventListener('click',function(){
+        var playing=!memoryCd.classList.contains('playing');
+        memoryCd.classList.toggle('playing',playing);
+        memoryCd.setAttribute('aria-pressed',playing?'true':'false');
+        var label=document.getElementById('cdCoreText');if(label)label.textContent=playing?'Äang quay':'Báº¥m Ä‘á»ƒ quay';
+        var icon=memoryCd.querySelector('.cd-core-icon');if(icon)icon.textContent=playing?'â…¡':'â–¶';
+        scheduleMemoryDiscAuto(memoryCd,getDiscPageData(memoryDiscPage).totalPages);
+    });
+}
 function closeViewer(){var v=document.getElementById('viewerVideo');var e=document.getElementById('viewerEmbed');var m=document.getElementById('photoViewerModal');var t=document.getElementById('viewerThumb');var ti=document.getElementById('viewerThumbImage');if(v){v.pause();v.removeAttribute('src');}if(e)e.removeAttribute('src');if(t)t.style.display='none';if(ti)ti.removeAttribute('src');m.classList.remove('video-mode');m.classList.remove('show');}
 document.getElementById('btnCloseViewer').addEventListener('click',closeViewer);
 document.getElementById('photoViewerModal').addEventListener('click',function(e){if(e.target===this)closeViewer();});
