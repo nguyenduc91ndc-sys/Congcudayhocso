@@ -1779,6 +1779,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const btnTvSlide = document.getElementById('btnTvSlide');
     const slideshowWrapper = document.querySelector('.slideshow-wrapper');
+    let tvControlsTimer = null;
 
     function updateTvSlideButton() {
         if (!btnTvSlide || !slideshowWrapper) return;
@@ -1786,10 +1787,20 @@ document.addEventListener('DOMContentLoaded', () => {
         btnTvSlide.classList.toggle('active', slideshowWrapper.classList.contains('tv-mode'));
     }
 
+    function showTvSlideControls() {
+        if (!slideshowWrapper || !slideshowWrapper.classList.contains('tv-mode')) return;
+        slideshowWrapper.classList.remove('tv-controls-hidden');
+        clearTimeout(tvControlsTimer);
+        tvControlsTimer = setTimeout(() => {
+            slideshowWrapper.classList.add('tv-controls-hidden');
+        }, 2600);
+    }
+
     async function enterTvSlideMode() {
         if (!slideshowWrapper) return;
         slideshowWrapper.classList.add('tv-mode');
         updateTvSlideButton();
+        showTvSlideControls();
         if (!document.fullscreenElement && slideshowWrapper.requestFullscreen) {
             try {
                 await slideshowWrapper.requestFullscreen();
@@ -1804,7 +1815,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 await document.exitFullscreen();
             } catch {}
         }
-        slideshowWrapper.classList.remove('tv-mode');
+        clearTimeout(tvControlsTimer);
+        slideshowWrapper.classList.remove('tv-mode', 'tv-controls-hidden');
         updateTvSlideButton();
     }
 
@@ -1818,9 +1830,13 @@ document.addEventListener('DOMContentLoaded', () => {
         });
         document.addEventListener('fullscreenchange', () => {
             if (document.fullscreenElement !== slideshowWrapper) {
-                slideshowWrapper.classList.remove('tv-mode');
+                clearTimeout(tvControlsTimer);
+                slideshowWrapper.classList.remove('tv-mode', 'tv-controls-hidden');
             }
             updateTvSlideButton();
+        });
+        ['mousemove', 'pointerdown', 'touchstart', 'keydown'].forEach(eventName => {
+            slideshowWrapper.addEventListener(eventName, showTvSlideControls, { passive: true });
         });
     }
 
@@ -2270,12 +2286,15 @@ function playSS(){document.getElementById('btnPlaySlide').textContent='⏸ Pause
 function pauseSS(){document.getElementById('btnPlaySlide').textContent='▶ Auto';document.getElementById('btnPlaySlide').classList.remove('active');isSlideAutoPlaying=false;clearSlideTimer();var v=document.getElementById('slideImage').querySelector('video');if(v)v.pause();}
 var btnTvSlide=document.getElementById('btnTvSlide');
 var slideshowWrapper=document.querySelector('.slideshow-wrapper');
+var tvControlsTimer=null;
 function updateTvSlideButton(){if(!btnTvSlide||!slideshowWrapper)return;var on=slideshowWrapper.classList.contains('tv-mode');btnTvSlide.textContent=on?'Thu nhỏ':'Phóng to';btnTvSlide.classList.toggle('active',on);}
-function enterTvSlideMode(){if(!slideshowWrapper)return;slideshowWrapper.classList.add('tv-mode');updateTvSlideButton();if(!document.fullscreenElement&&slideshowWrapper.requestFullscreen){slideshowWrapper.requestFullscreen().catch(function(){});}}
-function exitTvSlideMode(){if(!slideshowWrapper)return;if(document.fullscreenElement===slideshowWrapper&&document.exitFullscreen){document.exitFullscreen().catch(function(){});}slideshowWrapper.classList.remove('tv-mode');updateTvSlideButton();}
+function showTvSlideControls(){if(!slideshowWrapper||!slideshowWrapper.classList.contains('tv-mode'))return;slideshowWrapper.classList.remove('tv-controls-hidden');clearTimeout(tvControlsTimer);tvControlsTimer=setTimeout(function(){slideshowWrapper.classList.add('tv-controls-hidden');},2600);}
+function enterTvSlideMode(){if(!slideshowWrapper)return;slideshowWrapper.classList.add('tv-mode');updateTvSlideButton();showTvSlideControls();if(!document.fullscreenElement&&slideshowWrapper.requestFullscreen){slideshowWrapper.requestFullscreen().catch(function(){});}}
+function exitTvSlideMode(){if(!slideshowWrapper)return;if(document.fullscreenElement===slideshowWrapper&&document.exitFullscreen){document.exitFullscreen().catch(function(){});}clearTimeout(tvControlsTimer);slideshowWrapper.classList.remove('tv-mode','tv-controls-hidden');updateTvSlideButton();}
 if(btnTvSlide&&slideshowWrapper){
     btnTvSlide.addEventListener('click',function(){if(slideshowWrapper.classList.contains('tv-mode'))exitTvSlideMode();else enterTvSlideMode();});
-    document.addEventListener('fullscreenchange',function(){if(document.fullscreenElement!==slideshowWrapper)slideshowWrapper.classList.remove('tv-mode');updateTvSlideButton();});
+    document.addEventListener('fullscreenchange',function(){if(document.fullscreenElement!==slideshowWrapper){clearTimeout(tvControlsTimer);slideshowWrapper.classList.remove('tv-mode','tv-controls-hidden');}updateTvSlideButton();});
+    ['mousemove','pointerdown','touchstart','keydown'].forEach(function(eventName){slideshowWrapper.addEventListener(eventName,showTvSlideControls,{passive:true});});
 }
 document.getElementById('btnNextSlide').addEventListener('click',function(){nextS();pauseSS();});
 document.getElementById('btnPrevSlide').addEventListener('click',function(){prevS();pauseSS();});
