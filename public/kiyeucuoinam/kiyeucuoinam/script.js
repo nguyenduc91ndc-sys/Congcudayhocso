@@ -1782,7 +1782,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function updateTvSlideButton() {
         if (!btnTvSlide || !slideshowWrapper) return;
-        btnTvSlide.textContent = slideshowWrapper.classList.contains('tv-mode') ? 'Exit' : 'TV';
+        btnTvSlide.textContent = slideshowWrapper.classList.contains('tv-mode') ? 'Thu nhỏ' : 'Phóng to';
         btnTvSlide.classList.toggle('active', slideshowWrapper.classList.contains('tv-mode'));
     }
 
@@ -2270,7 +2270,7 @@ function playSS(){document.getElementById('btnPlaySlide').textContent='⏸ Pause
 function pauseSS(){document.getElementById('btnPlaySlide').textContent='▶ Auto';document.getElementById('btnPlaySlide').classList.remove('active');isSlideAutoPlaying=false;clearSlideTimer();var v=document.getElementById('slideImage').querySelector('video');if(v)v.pause();}
 var btnTvSlide=document.getElementById('btnTvSlide');
 var slideshowWrapper=document.querySelector('.slideshow-wrapper');
-function updateTvSlideButton(){if(!btnTvSlide||!slideshowWrapper)return;var on=slideshowWrapper.classList.contains('tv-mode');btnTvSlide.textContent=on?'Exit':'TV';btnTvSlide.classList.toggle('active',on);}
+function updateTvSlideButton(){if(!btnTvSlide||!slideshowWrapper)return;var on=slideshowWrapper.classList.contains('tv-mode');btnTvSlide.textContent=on?'Thu nhỏ':'Phóng to';btnTvSlide.classList.toggle('active',on);}
 function enterTvSlideMode(){if(!slideshowWrapper)return;slideshowWrapper.classList.add('tv-mode');updateTvSlideButton();if(!document.fullscreenElement&&slideshowWrapper.requestFullscreen){slideshowWrapper.requestFullscreen().catch(function(){});}}
 function exitTvSlideMode(){if(!slideshowWrapper)return;if(document.fullscreenElement===slideshowWrapper&&document.exitFullscreen){document.exitFullscreen().catch(function(){});}slideshowWrapper.classList.remove('tv-mode');updateTvSlideButton();}
 if(btnTvSlide&&slideshowWrapper){
@@ -2408,7 +2408,7 @@ ${cdHTML ? `<section class="yb-section cd-section">
 <h2 class="section-title script-font" style="font-family:${ff}">🎬 Slideshow kỉ niệm</h2>
 <div class="slideshow-wrapper">
 <div class="slideshow-stage" id="slideshowStage"><div class="slide-image" id="slideImage"></div><div class="slide-info"><p class="slide-name" id="slideName"></p><p class="slide-msg" id="slideMsg"></p></div></div>
-<div class="slideshow-controls"><button class="slide-btn" id="btnPrevSlide">◀</button><button class="slide-btn slide-play" id="btnPlaySlide">▶ Auto</button><button class="slide-btn" id="btnNextSlide">▶</button><button class="slide-btn slide-tv" id="btnTvSlide">TV</button></div>
+<div class="slideshow-controls"><button class="slide-btn" id="btnPrevSlide">◀</button><button class="slide-btn slide-play" id="btnPlaySlide">▶ Auto</button><button class="slide-btn" id="btnNextSlide">▶</button><button class="slide-btn slide-tv" id="btnTvSlide">Phóng to</button></div>
 <div class="slideshow-dots" id="slideshowDots"></div>
 </div></section>
 
