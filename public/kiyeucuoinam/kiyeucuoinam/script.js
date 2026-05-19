@@ -2276,11 +2276,11 @@ function renderMemoryCdPage(page){
     if(!controls){
         controls=document.createElement('div');
         controls.className='cd-controls';
-        controls.innerHTML='<button type="button" class="cd-page-btn" data-cd-step="-1" aria-label="Nhom truoc">‹</button><span class="cd-page-label"></span><button type="button" class="cd-page-btn" data-cd-step="1" aria-label="Nhom sau">›</button>';
+        controls.innerHTML='<button type="button" class="cd-page-btn" data-cd-step="-1" aria-label="Nhóm trước">‹</button><span class="cd-page-label"></span><button type="button" class="cd-page-btn" data-cd-step="1" aria-label="Nhóm sau">›</button>';
         memoryCd.insertAdjacentElement('afterend',controls);
     }
     controls.style.display=data.totalPages>1?'flex':'none';
-    var label=controls.querySelector('.cd-page-label');if(label)label.textContent='Nhom '+(data.page+1)+'/'+data.totalPages;
+    var label=controls.querySelector('.cd-page-label');if(label)label.textContent='Nhóm '+(data.page+1)+'/'+data.totalPages;
     if(!controls.dataset.bound){
         controls.dataset.bound='1';
         controls.querySelectorAll('[data-cd-step]').forEach(function(btn){
@@ -2299,8 +2299,8 @@ if(memoryCd){
         var playing=!memoryCd.classList.contains('playing');
         memoryCd.classList.toggle('playing',playing);
         memoryCd.setAttribute('aria-pressed',playing?'true':'false');
-        var label=document.getElementById('cdCoreText');if(label)label.textContent=playing?'Äang quay':'Báº¥m Ä‘á»ƒ quay';
-        var icon=memoryCd.querySelector('.cd-core-icon');if(icon)icon.textContent=playing?'â…¡':'â–¶';
+        var label=document.getElementById('cdCoreText');if(label)label.textContent=playing?'\u0110ang quay':'B\u1ea5m \u0111\u1ec3 quay';
+        var icon=memoryCd.querySelector('.cd-core-icon');if(icon)icon.textContent=playing?'II':'▶';
         scheduleMemoryDiscAuto(memoryCd,getDiscPageData(memoryDiscPage).totalPages);
     });
 }
