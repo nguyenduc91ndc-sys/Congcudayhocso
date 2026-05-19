@@ -96,6 +96,32 @@ document.addEventListener('DOMContentLoaded', () => {
         return getMediaType(item) === 'embed';
     }
 
+    function getFileExtension(name = '') {
+        const match = String(name || '').toLowerCase().match(/\.([a-z0-9]+)$/);
+        return match ? match[1] : '';
+    }
+
+    function isHeicLikeMedia(item) {
+        const mime = String((item && item.mimeType) || (item && item.type) || getDataUrlMime(item && item.dataUrl) || '').toLowerCase();
+        const ext = getFileExtension((item && item.name) || '');
+        return ['image/heic', 'image/heif', 'image/heic-sequence', 'image/heif-sequence'].includes(mime)
+            || ext === 'heic'
+            || ext === 'heif';
+    }
+
+    function getHeicLikeMediaNames(items = STATE.photos) {
+        return items
+            .map((item, idx) => ({ item, idx }))
+            .filter(({ item }) => item && !isVideoLike(item) && isHeicLikeMedia(item))
+            .map(({ item, idx }) => item.name || `Anh ${idx + 1}`);
+    }
+
+    function heicAndroidWarning(names) {
+        const sample = names.slice(0, 5).join(', ');
+        const more = names.length > 5 ? `... và ${names.length - 5} ảnh khác` : '';
+        return `Có ${names.length} ảnh dạng HEIC/HEIF (${sample}${more}). Định dạng này thường xem được trên iPhone nhưng không hiển thị ổn định trên Android. Hãy đổi các ảnh này sang JPG/PNG rồi xuất lại web.`;
+    }
+
     function isVideoLike(item) {
         const type = getMediaType(item);
         return type === 'video' || type === 'embed';
@@ -799,7 +825,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function handleFiles(files) {
         const limits = getMediaLimits();
-        let validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/'));
+        let validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/') || isHeicLikeMedia(f));
+        const heicFiles = validFiles.filter(isHeicLikeMedia);
+        if (heicFiles.length) {
+            alert(heicAndroidWarning(heicFiles.map(file => file.name || 'Anh HEIC')));
+            validFiles = validFiles.filter(file => !isHeicLikeMedia(file));
+        }
         let remainingSlots = limits.maxMedia - STATE.photos.length;
         let videoSlots = limits.maxVideos - countVideoItems();
         let skippedLargeVideos = 0;
@@ -850,8 +881,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function replaceMediaFile(id, file) {
-        if (!file || (!file.type.startsWith('image/') && !file.type.startsWith('video/'))) {
+        if (!file || (!file.type.startsWith('image/') && !file.type.startsWith('video/') && !isHeicLikeMedia(file))) {
             alert('Vui lòng chọn file ảnh hoặc video.');
+            return;
+        }
+
+        if (isHeicLikeMedia(file)) {
+            alert(heicAndroidWarning([file.name || 'Anh HEIC']));
             return;
         }
 
@@ -1993,6 +2029,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             btnShareHTML.textContent = '⏳ Đang đóng gói web...';
+            const heicNames = getHeicLikeMediaNames();
+            if (heicNames.length) {
+                alert(heicAndroidWarning(heicNames));
+                btnShareHTML.textContent = '🌐 Bước 1: Xuất bản web (.zip)';
+                return;
+            }
             btnShareHTML.disabled = true;
             await new Promise(r => setTimeout(r, 50));
 
@@ -2309,8 +2351,14 @@ if(photos.length)updateSlide();
 
 function observeSections(){
     var secs=document.querySelectorAll('.yb-section');
+    if(!secs.length)return;
+    if(!('IntersectionObserver' in window)){
+        secs.forEach(function(s){s.classList.add('visible');});
+        return;
+    }
     var obs=new IntersectionObserver(function(entries){entries.forEach(function(e){if(e.isIntersecting)e.target.classList.add('visible');});},{threshold:0.1});
     secs.forEach(function(s){obs.observe(s);});
+    setTimeout(function(){secs.forEach(function(s){s.classList.add('visible');});},900);
 }
 
 (function renderParticles(){
@@ -2635,6 +2683,11 @@ ${cdHTML ? `<section class="yb-section cd-section">
     // Scroll Animations
     function observeSections() {
         const sections = document.querySelectorAll('.yb-section');
+        if (!sections.length) return;
+        if (!('IntersectionObserver' in window)) {
+            sections.forEach(s => s.classList.add('visible'));
+            return;
+        }
         const observer = new IntersectionObserver((entries) => {
             entries.forEach(e => {
                 if (e.isIntersecting) {
@@ -2644,6 +2697,9 @@ ${cdHTML ? `<section class="yb-section cd-section">
         }, { threshold: 0.1 });
         
         sections.forEach(s => observer.observe(s));
+        setTimeout(() => {
+            sections.forEach(s => s.classList.add('visible'));
+        }, 900);
     }
 
     window.addEventListener('beforeunload', () => {

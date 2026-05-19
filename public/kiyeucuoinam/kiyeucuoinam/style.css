@@ -321,6 +321,7 @@ input:checked+.theme-card,input:checked+.font-card,input:checked+.effect-card,in
 .yearbook-main{opacity:0;visibility:hidden;transition:opacity .8s;padding-bottom:40px;min-height:100vh}
 .yearbook-main.show{opacity:1;visibility:visible}
 .yb-section{padding:44px 20px;max-width:940px;margin:0 auto;opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.2,.8,.2,1),transform .8s cubic-bezier(.2,.8,.2,1)}
+.yearbook-main.show .yb-section{opacity:1;transform:translateY(0)}
 .yb-section.visible{opacity:1;transform:translateY(0)}
 
 /* Header */
