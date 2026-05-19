@@ -1,5 +1,5 @@
 import React from 'react';
-import { useTheme, themes } from '../contexts/ThemeContext';
+import { useTheme, featuredThemes } from '../contexts/ThemeContext';
 import { Palette } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -28,9 +28,9 @@ const ThemeSelector: React.FC = () => {
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
                         className="absolute right-0 top-12 bg-slate-800 rounded-xl shadow-2xl border border-slate-700 p-3 z-50 min-w-[220px] max-h-[400px] overflow-y-auto"
                     >
-                        <p className="text-xs text-slate-500 mb-2 px-2 font-medium">Chọn theme</p>
+                        <p className="text-xs text-slate-500 mb-2 px-2 font-medium">Giao diện chính</p>
                         <div className="space-y-1">
-                            {themes.map((theme) => (
+                            {featuredThemes.map((theme) => (
                                 <button
                                     key={theme.id}
                                     onClick={() => {

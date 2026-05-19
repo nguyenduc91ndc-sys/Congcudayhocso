@@ -165,6 +165,11 @@ export const themes: Theme[] = [
     },
 ];
 
+const featuredThemeIds = ['rainbow', 'ocean', 'sakura', 'dark'];
+export const featuredThemes: Theme[] = featuredThemeIds
+    .map(id => themes.find(theme => theme.id === id))
+    .filter((theme): theme is Theme => Boolean(theme));
+
 interface ThemeContextType {
     currentTheme: Theme;
     setTheme: (themeId: string) => void;
