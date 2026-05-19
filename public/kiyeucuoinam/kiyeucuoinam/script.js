@@ -1730,8 +1730,11 @@ document.addEventListener('DOMContentLoaded', () => {
             `;
             scheduleNextSlide();
         }
+        const slideMessage = (photo.msg || '').trim();
         document.getElementById('slideName').textContent = photo.name;
-        document.getElementById('slideMsg').textContent = photo.msg || '';
+        document.getElementById('slideMsg').textContent = slideMessage;
+        document.getElementById('slideFullMsg').textContent = slideMessage;
+        document.getElementById('slideCaptionCard').classList.toggle('is-empty', !slideMessage);
         
         // Update dots
         const dotsContainer = document.getElementById('slideshowDots');
@@ -2275,8 +2278,11 @@ function updateSlide(){
     if(isEmbed(p)){var src=isSlideAutoPlaying?getAutoplayEmbedUrl(p.embedUrl):p.embedUrl;si.innerHTML='<iframe src="'+src+'" title="'+p.name+'" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" referrerpolicy="strict-origin-when-cross-origin" allowfullscreen></iframe>';scheduleNextSlide(12000);}
     else if(isVideo(p)){si.innerHTML='<video class="slide-media" src="'+p.dataUrl+'" controls autoplay muted playsinline preload="metadata"></video>';var v=si.querySelector('video');if(v){v.addEventListener('loadedmetadata',function(){if(!isSlideAutoPlaying)return;var d=isFinite(v.duration)&&v.duration>0?Math.min(Math.max(v.duration*1000+700,5000),MAX_VIDEO_SLIDE_MS):9000;scheduleNextSlide(d);},{once:true});v.addEventListener('ended',function(){if(isSlideAutoPlaying)nextS();});playCurrentSlideMedia();if(isSlideAutoPlaying)scheduleNextSlide(9000);}}
     else{si.innerHTML='<div class="slide-backdrop" style="background-image:url(\\''+p.dataUrl+'\\')"></div><img class="slide-media" src="'+p.dataUrl+'" alt="'+p.name+'">';scheduleNextSlide();}
+    var slideMessage=(p.msg||'').trim();
     document.getElementById('slideName').textContent=p.name;
-    document.getElementById('slideMsg').textContent=p.msg||'';
+    document.getElementById('slideMsg').textContent=slideMessage;
+    document.getElementById('slideFullMsg').textContent=slideMessage;
+    document.getElementById('slideCaptionCard').classList.toggle('is-empty',!slideMessage);
     var dots=document.getElementById('slideshowDots');dots.innerHTML='';
     photos.forEach(function(_,i){var d=document.createElement('div');d.className='dot'+(i===currentSlide?' active':'');d.addEventListener('click',function(){currentSlide=i;updateSlide();pauseSS();});dots.appendChild(d);});
 }
@@ -2427,6 +2433,7 @@ ${cdHTML ? `<section class="yb-section cd-section">
 <h2 class="section-title script-font" style="font-family:${ff}">🎬 Slideshow kỉ niệm</h2>
 <div class="slideshow-wrapper">
 <div class="slideshow-stage" id="slideshowStage"><div class="slide-image" id="slideImage"></div><div class="slide-info"><p class="slide-name" id="slideName"></p><p class="slide-msg" id="slideMsg"></p></div></div>
+<div class="slide-caption-card" id="slideCaptionCard"><span class="slide-caption-label">Lời chúc</span><p class="slide-full-msg" id="slideFullMsg"></p></div>
 <div class="slideshow-controls"><button class="slide-btn" id="btnPrevSlide">◀</button><button class="slide-btn slide-play" id="btnPlaySlide">▶ Auto</button><button class="slide-btn" id="btnNextSlide">▶</button><button class="slide-btn slide-tv" id="btnTvSlide">Phóng to</button></div>
 <div class="slideshow-dots" id="slideshowDots"></div>
 </div></section>
