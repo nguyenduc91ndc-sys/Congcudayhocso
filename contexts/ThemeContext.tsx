@@ -104,6 +104,36 @@ export const themes: Theme[] = [
         ],
     },
     {
+        id: 'classroom',
+        name: 'Lớp học xanh',
+        emoji: '📚',
+        gradientFrom: '#064e3b',
+        gradientVia: '#0f766e',
+        gradientTo: '#1d4ed8',
+        bubbleColors: [
+            'rgba(16, 185, 129, 0.42)',
+            'rgba(20, 184, 166, 0.38)',
+            'rgba(59, 130, 246, 0.34)',
+            'rgba(255, 255, 255, 0.24)',
+            'rgba(250, 204, 21, 0.22)',
+        ],
+    },
+    {
+        id: 'digital',
+        name: 'Số hóa Pro',
+        emoji: '💻',
+        gradientFrom: '#0f172a',
+        gradientVia: '#0e7490',
+        gradientTo: '#4f46e5',
+        bubbleColors: [
+            'rgba(34, 211, 238, 0.34)',
+            'rgba(99, 102, 241, 0.32)',
+            'rgba(45, 212, 191, 0.28)',
+            'rgba(148, 163, 184, 0.18)',
+            'rgba(255, 255, 255, 0.16)',
+        ],
+    },
+    {
         id: 'midnight',
         name: 'Đêm khuya',
         emoji: '🌌',
@@ -165,7 +195,7 @@ export const themes: Theme[] = [
     },
 ];
 
-const featuredThemeIds = ['rainbow', 'ocean', 'sakura', 'dark'];
+const featuredThemeIds = ['rainbow', 'ocean', 'sakura', 'classroom', 'digital', 'dark'];
 export const featuredThemes: Theme[] = featuredThemeIds
     .map(id => themes.find(theme => theme.id === id))
     .filter((theme): theme is Theme => Boolean(theme));
