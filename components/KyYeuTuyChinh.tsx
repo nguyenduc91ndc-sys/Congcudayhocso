@@ -10,6 +10,17 @@ interface KyYeuTuyChinhProps {
 
 const GUIDE_VIDEO_ID = '4YfTPtmuavk';
 const GUIDE_VIDEO_URL = `https://youtu.be/${GUIDE_VIDEO_ID}`;
+const KYYEU_ACCESS_SESSION_KEY = 'kyyeu_access_session';
+const KYYEU_ACCESS_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+
+const grantKyYeuAccessSession = (email: string) => {
+    const now = Date.now();
+    sessionStorage.setItem(KYYEU_ACCESS_SESSION_KEY, JSON.stringify({
+        email: email.toLowerCase().trim(),
+        grantedAt: now,
+        expiresAt: now + KYYEU_ACCESS_SESSION_TTL_MS
+    }));
+};
 
 const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userName }) => {
     const [isChecking, setIsChecking] = useState(true);
@@ -28,6 +39,11 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
             }
             const hasAccess = await hasActiveKyYeuAccess(userEmail);
             if (!mounted) return;
+            if (hasAccess) {
+                grantKyYeuAccessSession(userEmail);
+            } else {
+                sessionStorage.removeItem(KYYEU_ACCESS_SESSION_KEY);
+            }
             setIsUnlocked(hasAccess);
             setIsChecking(false);
         };
@@ -37,6 +53,15 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
             mounted = false;
         };
     }, [userEmail]);
+
+    useEffect(() => {
+        if (!isUnlocked || !userEmail) {
+            sessionStorage.removeItem(KYYEU_ACCESS_SESSION_KEY);
+            return;
+        }
+
+        grantKyYeuAccessSession(userEmail);
+    }, [isUnlocked, userEmail]);
 
     const handleSubmit = async (event: React.FormEvent) => {
         event.preventDefault();
@@ -61,6 +86,7 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
             return;
         }
 
+        grantKyYeuAccessSession(userEmail);
         setIsUnlocked(true);
     };
 

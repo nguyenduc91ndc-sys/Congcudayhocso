@@ -31,6 +31,33 @@ const findKeyByShortIdShallow = async (shortId: string): Promise<string | null> 
     }
 };
 
+const buildRestUrl = (path: string, queryString = ''): string | null => {
+    if (!firebaseConfig.databaseURL) return null;
+    const cleanPath = path
+        .split('/')
+        .filter(Boolean)
+        .map((part) => encodeURIComponent(part))
+        .join('/');
+    return `${firebaseConfig.databaseURL}/${cleanPath}.json${queryString}`;
+};
+
+const fetchJsonWithTimeout = async <T,>(url: string, timeoutMs = 7000): Promise<T | null> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, { signal: controller.signal });
+        if (!response.ok) return null;
+        const data = await response.json();
+        if (data && typeof data === 'object' && 'error' in data) return null;
+        return data as T | null;
+    } catch (error) {
+        console.warn('[ShareLink] REST lookup failed:', error);
+        return null;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
 export const saveSharedThuMoi = async (config: any, userId?: string, userEmail?: string): Promise<string | null> => {
     try {
         const shortId = createPublicId();
@@ -72,6 +99,21 @@ export const updateSharedThuMoi = async (shortId: string, config: any, userId?: 
 
 export const getSharedThuMoi = async (shortId: string): Promise<any | null> => {
     try {
+        const directRestUrl = buildRestUrl(`${SHARED_THUMOI_REF}/${shortId}/config`);
+        if (directRestUrl) {
+            const directConfig = await fetchJsonWithTimeout<any>(directRestUrl);
+            if (directConfig) return directConfig;
+        }
+
+        const shallowKey = await findKeyByShortIdShallow(shortId);
+        if (shallowKey) {
+            const configRestUrl = buildRestUrl(`${SHARED_THUMOI_REF}/${shallowKey}/config`);
+            if (configRestUrl) {
+                const config = await fetchJsonWithTimeout<any>(configRestUrl);
+                if (config) return config;
+            }
+        }
+
         const directSnapshot = await get(ref(database, `${SHARED_THUMOI_REF}/${shortId}/config`));
         if (directSnapshot.exists()) return directSnapshot.val();
 
@@ -88,11 +130,17 @@ export const getSharedThuMoi = async (shortId: string): Promise<any | null> => {
 
 export const getFullKeyFromShortId = async (shortId: string): Promise<string | null> => {
     try {
-        const directSnapshot = await get(ref(database, `${SHARED_THUMOI_REF}/${shortId}`));
-        if (directSnapshot.exists()) return shortId;
+        const directRestUrl = buildRestUrl(`${SHARED_THUMOI_REF}/${shortId}`);
+        if (directRestUrl) {
+            const directData = await fetchJsonWithTimeout<any>(directRestUrl);
+            if (directData) return shortId;
+        }
 
         const shallowKey = await findKeyByShortIdShallow(shortId);
         if (shallowKey) return shallowKey;
+
+        const directSnapshot = await get(ref(database, `${SHARED_THUMOI_REF}/${shortId}`));
+        if (directSnapshot.exists()) return shortId;
 
         const thumoiRef = ref(database, SHARED_THUMOI_REF);
         const snapshot = await get(thumoiRef);

@@ -8,8 +8,26 @@
     <title>🎓 Kỉ Yếu Cuối Năm</title>
     <script>
         (function () {
-            if (window.top === window.self) {
-                window.location.replace('/?app=ky_yeu_cuoi_nam');
+            var redirectUrl = '/?app=ky_yeu_cuoi_nam';
+            var sessionKey = 'kyyeu_access_session';
+            var hasHostFrame = window.top !== window.self;
+            var hasActiveSession = false;
+
+            try {
+                var rawSession = window.sessionStorage.getItem(sessionKey);
+                var accessSession = rawSession ? JSON.parse(rawSession) : null;
+                hasActiveSession = Boolean(
+                    accessSession &&
+                    accessSession.email &&
+                    accessSession.expiresAt &&
+                    Number(accessSession.expiresAt) > Date.now()
+                );
+            } catch (error) {
+                hasActiveSession = false;
+            }
+
+            if (!hasHostFrame || !hasActiveSession) {
+                window.location.replace(redirectUrl);
             }
         })();
     </script>

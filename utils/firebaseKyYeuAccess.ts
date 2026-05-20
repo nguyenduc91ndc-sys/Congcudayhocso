@@ -1,4 +1,4 @@
-import { ref, get, set, remove, onValue } from 'firebase/database';
+import { ref, get, set, remove, onValue, runTransaction } from 'firebase/database';
 import { database } from './firebaseConfig';
 
 const KYYEU_CODES_REF = 'kyyeu_access_codes';
@@ -23,6 +23,8 @@ export interface KyYeuAccessUser {
 }
 
 const normalizeCode = (code: string): string => code.toUpperCase().replace(/\s+/g, '').trim();
+
+const normalizeEmail = (email: string): string => email.toLowerCase().trim();
 
 const emailToKey = (email: string): string =>
     email.toLowerCase().trim().replace(/\./g, '_').replace(/@/g, '_at_');
@@ -112,25 +114,51 @@ export const validateKyYeuAccessCode = async (code: string): Promise<{ valid: bo
 };
 
 export const activateKyYeuAccessForEmail = async (email: string, code: string): Promise<{ success: boolean; reason?: string }> => {
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = normalizeEmail(email);
     const normalizedCode = normalizeCode(code);
-    const validation = await validateKyYeuAccessCode(normalizedCode);
-    if (!validation.valid || !validation.code) {
-        return { success: false, reason: validation.reason };
+    if (!normalizedCode.startsWith('KYYEU-')) {
+        return { success: false, reason: 'Ma Ky Yeu thuong bat dau bang KYYEU-' };
     }
 
     try {
+        const now = new Date().toISOString();
+        let failureReason = '';
+
+        const transactionResult = await runTransaction(ref(database, `${KYYEU_CODES_REF}/${normalizedCode}`), (currentCode) => {
+            if (currentCode === null) {
+                failureReason = 'Ma khong ton tai hoac da nhap sai.';
+                return;
+            }
+
+            const codeData = currentCode as KyYeuAccessCode;
+            if (codeData.active === false) {
+                failureReason = 'Ma nay da bi thu hoi. Vui long lien he nhom ho tro.';
+                return;
+            }
+
+            const assignedEmail = codeData.usedBy ? normalizeEmail(codeData.usedBy) : '';
+            if (assignedEmail && assignedEmail !== normalizedEmail) {
+                failureReason = 'Ma nay da duoc kich hoat boi tai khoan khac. Vui long lien he admin de duoc cap ma rieng.';
+                return;
+            }
+
+            return {
+                ...codeData,
+                key: codeData.key || normalizedCode,
+                usedBy: normalizedEmail,
+                usedAt: codeData.usedAt || now,
+                usageCount: assignedEmail === normalizedEmail ? (codeData.usageCount || 1) : (codeData.usageCount || 0) + 1
+            };
+        }, { applyLocally: false });
+
+        if (!transactionResult.committed) {
+            return { success: false, reason: failureReason || 'Khong kich hoat duoc ma. Vui long thu lai.' };
+        }
+
         await set(ref(database, `${KYYEU_USERS_REF}/${emailToKey(normalizedEmail)}`), {
             email: normalizedEmail,
-            activatedAt: new Date().toISOString(),
+            activatedAt: now,
             activatedByKey: normalizedCode
-        });
-
-        await set(ref(database, `${KYYEU_CODES_REF}/${normalizedCode}`), {
-            ...validation.code,
-            usedBy: normalizedEmail,
-            usedAt: new Date().toISOString(),
-            usageCount: (validation.code.usageCount || 0) + 1
         });
 
         return { success: true };
@@ -141,7 +169,7 @@ export const activateKyYeuAccessForEmail = async (email: string, code: string): 
 };
 
 export const hasActiveKyYeuAccess = async (email: string): Promise<boolean> => {
-    const normalizedEmail = email.toLowerCase().trim();
+    const normalizedEmail = normalizeEmail(email);
     try {
         const userSnapshot = await get(ref(database, `${KYYEU_USERS_REF}/${emailToKey(normalizedEmail)}`));
         if (!userSnapshot.exists()) return false;
@@ -151,7 +179,8 @@ export const hasActiveKyYeuAccess = async (email: string): Promise<boolean> => {
         if (!codeSnapshot.exists()) return false;
 
         const codeData = codeSnapshot.val() as KyYeuAccessCode;
-        return codeData.active !== false;
+        const assignedEmail = codeData.usedBy ? normalizeEmail(codeData.usedBy) : '';
+        return codeData.active !== false && (!assignedEmail || assignedEmail === normalizedEmail);
     } catch (error) {
         console.error('Error checking KyYeu access:', error);
         return false;
