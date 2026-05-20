@@ -131,12 +131,14 @@ function App() {
 
   const isAdminUser = user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false;
   const currentAppId = VIEW_APP_IDS[view];
-  const isCheckingAppVisibility = !appVisibilityLoaded && Boolean(currentAppId) && !isAdminUser;
+  const isPublicSharedThuMoiView = view === 'THU_MOI_TUONG_TAC' && Boolean(sharedThuMoiId);
+  const isCheckingAppVisibility = !appVisibilityLoaded && Boolean(currentAppId) && !isAdminUser && !isPublicSharedThuMoiView;
   const isCurrentAppDisabled =
     appVisibilityLoaded &&
     Boolean(currentAppId) &&
     appVisibility.apps[currentAppId as AppId] === false &&
-    !isAdminUser;
+    !isAdminUser &&
+    !isPublicSharedThuMoiView;
 
   // Subscribe to app visibility
   useEffect(() => {
@@ -148,7 +150,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!appVisibilityLoaded || isAdminUser || !currentAppId) return;
+    if (!appVisibilityLoaded || isAdminUser || !currentAppId || isPublicSharedThuMoiView) return;
     if (appVisibility.apps[currentAppId] !== false) return;
 
     setCurrentLesson(null);
@@ -158,7 +160,7 @@ function App() {
     if (window.location.pathname !== '/' || window.location.search) {
       window.history.replaceState({}, document.title, '/');
     }
-  }, [appVisibility.apps, appVisibilityLoaded, currentAppId, isAdminUser]);
+  }, [appVisibility.apps, appVisibilityLoaded, currentAppId, isAdminUser, isPublicSharedThuMoiView]);
 
   // Load data from localStorage
   useEffect(() => {
