@@ -110,6 +110,13 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   THIEP_MOI_ONLINE: 'thiepMoiOnline',
 };
 
+const getInitialSharedAppId = (appName: string): string | null => {
+  if (typeof window === 'undefined') return null;
+
+  const params = new URLSearchParams(window.location.search);
+  return params.get('app')?.toLowerCase() === appName ? params.get('id') : null;
+};
+
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<ViewState>('DASHBOARD'); // Default to Dashboard
@@ -120,8 +127,8 @@ function App() {
   const [showNewYearWelcome, setShowNewYearWelcome] = useState(false); // New Year welcome modal
   const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
   const [appVisibilityLoaded, setAppVisibilityLoaded] = useState(false);
-  const [sharedThuMoiId, setSharedThuMoiId] = useState<string | null>(null);
-  const [sharedThiepMoiId, setSharedThiepMoiId] = useState<string | null>(null);
+  const [sharedThuMoiId, setSharedThuMoiId] = useState<string | null>(() => getInitialSharedAppId('thu_moi_tuong_tac'));
+  const [sharedThiepMoiId, setSharedThiepMoiId] = useState<string | null>(() => getInitialSharedAppId('thiep_moi_online'));
 
   // Lấy storage key theo email user
   const getLessonsStorageKey = (email?: string): string => {
