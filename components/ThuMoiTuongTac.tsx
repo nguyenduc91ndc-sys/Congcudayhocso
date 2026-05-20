@@ -98,10 +98,16 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
       if (event.data && event.data.type === 'THU_MOI_SHARE') {
         const config = event.data.config;
         if (config) {
+          try {
           const updated = editingShortId
-            ? await updateSharedThuMoi(editingShortId, config, user?.id, user?.email)
+            ? await withTimeout(updateSharedThuMoi(editingShortId, config, user?.id, user?.email), 12000)
             : true;
-          const shortId = editingShortId || await saveSharedThuMoi(config, user?.id, user?.email);
+          const shortId = editingShortId
+            ? editingShortId
+            : await withTimeout(saveSharedThuMoi(config, user?.id, user?.email), 12000);
+          if (!shortId || !updated) {
+            throw new Error(editingShortId ? 'UPDATE_FAILED' : 'SAVE_FAILED');
+          }
           if (shortId) {
             const shortUrl = `${window.location.origin}?app=thu_moi_tuong_tac&id=${shortId}`;
             iframeRef.current?.contentWindow?.postMessage({
@@ -120,6 +126,17 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
             iframeRef.current?.contentWindow?.postMessage({
               type: 'THU_MOI_SHORT_URL',
               url: fallbackUrl
+            }, '*');
+          }
+          } catch (error) {
+            console.error('[ThuMoiTuongTac] Cannot save shared invitation:', error);
+            const encoded = event.data.encoded;
+            const fallbackUrl = encoded
+              ? `${window.location.origin}/thumoiphtuongtac/thumoiphtuongtac/index.html#${encoded}`
+              : '';
+            iframeRef.current?.contentWindow?.postMessage({
+              type: 'THU_MOI_SAVE_ERROR',
+              fallbackUrl
             }, '*');
           }
         }

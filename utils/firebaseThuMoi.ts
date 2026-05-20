@@ -58,18 +58,50 @@ const fetchJsonWithTimeout = async <T,>(url: string, timeoutMs = 7000): Promise<
     }
 };
 
+const writeJsonWithTimeout = async (
+    url: string,
+    method: 'PUT' | 'PATCH',
+    payload: unknown,
+    timeoutMs = 8000
+): Promise<boolean> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
+    try {
+        const response = await fetch(url, {
+            method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+            signal: controller.signal
+        });
+        if (!response.ok) return false;
+        const data = await response.json();
+        return !(data && typeof data === 'object' && 'error' in data);
+    } catch (error) {
+        console.warn('[ShareLink] REST write failed:', error);
+        return false;
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
 export const saveSharedThuMoi = async (config: any, userId?: string, userEmail?: string): Promise<string | null> => {
     try {
         const shortId = createPublicId();
-        const newRef = ref(database, `${SHARED_THUMOI_REF}/${shortId}`);
-
-        await set(newRef, {
+        const payload = {
             config,
             shortId,
             userId: userId || null,
             userEmail: userEmail || config.email || null,
             createdAt: Date.now()
-        });
+        };
+
+        const restUrl = buildRestUrl(`${SHARED_THUMOI_REF}/${shortId}`);
+        if (restUrl && await writeJsonWithTimeout(restUrl, 'PUT', payload)) {
+            return shortId;
+        }
+
+        const newRef = ref(database, `${SHARED_THUMOI_REF}/${shortId}`);
+        await set(newRef, payload);
 
         return shortId;
     } catch (error) {
@@ -83,12 +115,19 @@ export const updateSharedThuMoi = async (shortId: string, config: any, userId?: 
         const fullKey = await getFullKeyFromShortId(shortId);
         if (!fullKey) return false;
 
-        await update(ref(database, `${SHARED_THUMOI_REF}/${fullKey}`), {
+        const payload = {
             config,
             userId: userId || null,
             userEmail: userEmail || config.email || null,
             updatedAt: Date.now()
-        });
+        };
+
+        const restUrl = buildRestUrl(`${SHARED_THUMOI_REF}/${fullKey}`);
+        if (restUrl && await writeJsonWithTimeout(restUrl, 'PATCH', payload)) {
+            return true;
+        }
+
+        await update(ref(database, `${SHARED_THUMOI_REF}/${fullKey}`), payload);
 
         return true;
     } catch (error) {

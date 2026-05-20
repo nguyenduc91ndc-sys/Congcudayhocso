@@ -104,6 +104,31 @@ document.addEventListener('DOMContentLoaded', () => {
     const isEditMode = new URLSearchParams(window.location.search).has('edit');
     const btnSubmitSettings = document.getElementById('btnSubmitSettings');
     const btnSaveAndClose = document.getElementById('btnSaveAndClose');
+    let shareRequestTimer = null;
+
+    function clearShareRequestTimer() {
+        if (shareRequestTimer) {
+            clearTimeout(shareRequestTimer);
+            shareRequestTimer = null;
+        }
+    }
+
+    function startShareRequestTimer() {
+        clearShareRequestTimer();
+        shareRequestTimer = setTimeout(() => {
+            const shareLink = document.getElementById('shareLink');
+            const copyStatus = document.getElementById('copyStatus');
+            if (shareLink && shareLink.value && shareLink.value.includes('Äang táº¡o')) {
+                shareLink.value = '';
+                copyStatus.textContent = 'LÆ°u hÆ¡i lÃ¢u hoáº·c máº¡ng cháº­p chá»n. Vui lÃ²ng báº¥m láº¡i nÃºt LÆ°u & Táº¡o link chia sáº».';
+                copyStatus.style.color = '#c0392b';
+            }
+            if (btnSaveAndClose) {
+                btnSaveAndClose.disabled = false;
+                btnSaveAndClose.textContent = 'âœ… LÆ°u chá»‰nh sá»­a & Ä‘Ã³ng';
+            }
+        }, 20000);
+    }
 
     if (isEditMode) {
         if (btnSubmitSettings) btnSubmitSettings.textContent = '✅ Lưu chỉnh sửa';
@@ -239,6 +264,7 @@ document.addEventListener('DOMContentLoaded', () => {
         shareLinkBox.style.display = 'block';
         document.getElementById('shareLink').value = 'Đang tạo link rút gọn (vui lòng chờ)...';
         document.getElementById('copyStatus').textContent = '';
+        startShareRequestTimer();
 
         // Gửi thông tin cấu hình lên window.parent (React App) để tạo link ngắn Firebase
         const encoded = btoa(encodeURIComponent(JSON.stringify(CONFIG)));
@@ -283,6 +309,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // Lắng nghe link rút gọn từ React App trả về
     window.addEventListener('message', (event) => {
         if (event.data && event.data.type === 'THU_MOI_SHORT_URL') {
+            clearShareRequestTimer();
             const shortUrl = event.data.url;
             document.getElementById('shareLink').value = shortUrl;
             document.getElementById('copyStatus').textContent = isEditMode ? '✅ Đã lưu chỉnh sửa thành công!' : '✅ Đã tạo link rút gọn thành công!';
@@ -301,6 +328,23 @@ document.addEventListener('DOMContentLoaded', () => {
                 document.getElementById('qrCodeContainer').innerHTML = '';
                 qrCode.update({ data: shortUrl });
                 qrCode.append(document.getElementById('qrCodeContainer'));
+            }
+        } else if (event.data && event.data.type === 'THU_MOI_SAVE_ERROR') {
+            clearShareRequestTimer();
+            const fallbackUrl = event.data.fallbackUrl || '';
+            const linkInput = document.getElementById('shareLink');
+            const copyStatus = document.getElementById('copyStatus');
+            if (fallbackUrl) {
+                linkInput.value = fallbackUrl;
+                copyStatus.textContent = 'ChÆ°a lÆ°u Ä‘Æ°á»£c lÃªn Firebase. ÄÃ£ táº¡o link táº¡m, vui lÃ²ng copy ngay hoáº·c báº¥m lÆ°u láº¡i khi máº¡ng á»•n hÆ¡n.';
+            } else {
+                linkInput.value = '';
+                copyStatus.textContent = 'ChÆ°a lÆ°u Ä‘Æ°á»£c thÆ° má»i. Vui lÃ²ng kiá»ƒm tra máº¡ng rá»“i báº¥m lÆ°u láº¡i.';
+            }
+            copyStatus.style.color = '#c0392b';
+            if (btnSaveAndClose) {
+                btnSaveAndClose.disabled = false;
+                btnSaveAndClose.textContent = 'âœ… LÆ°u chá»‰nh sá»­a & Ä‘Ã³ng';
             }
         }
     });
