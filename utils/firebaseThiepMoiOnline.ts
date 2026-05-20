@@ -1,12 +1,39 @@
-import { database } from './firebaseConfig';
-import { ref, push, set, get, update, remove } from 'firebase/database';
+import { database, firebaseConfig } from './firebaseConfig';
+import { ref, set, get, update, remove } from 'firebase/database';
 import { InvitationRsvp, OnlineInvitation } from '../types/invitationTypes';
 
 const INVITATIONS_REF = 'online-invitations';
 
 const createShortId = (pushKey: string): string => pushKey.slice(-8);
+const getShortIdFromKey = (key: string): string => key.length <= 16 ? key : createShortId(key);
+
+const createPublicId = (): string => {
+  const timePart = Date.now().toString(36).slice(-5);
+  const randomPart = Math.random().toString(36).slice(2, 8);
+  return `${timePart}${randomPart}`;
+};
+
+const findKeyByShortIdShallow = async (shortId: string): Promise<string | null> => {
+  if (!firebaseConfig.databaseURL) return null;
+  try {
+    const response = await fetch(`${firebaseConfig.databaseURL}/${INVITATIONS_REF}.json?shallow=true`);
+    if (!response.ok) return null;
+    const keys = await response.json();
+    if (!keys || typeof keys !== 'object') return null;
+    return Object.keys(keys).find((key) => key.endsWith(shortId)) || null;
+  } catch (error) {
+    console.warn('[OnlineInvitation] Shallow key lookup failed:', error);
+    return null;
+  }
+};
 
 const findFullKeyFromShortId = async (shortId: string): Promise<string | null> => {
+  const directSnapshot = await get(ref(database, `${INVITATIONS_REF}/${shortId}`));
+  if (directSnapshot.exists()) return shortId;
+
+  const shallowKey = await findKeyByShortIdShallow(shortId);
+  if (shallowKey) return shallowKey;
+
   const invitationsRef = ref(database, INVITATIONS_REF);
   const snapshot = await get(invitationsRef);
   if (!snapshot.exists()) return null;
@@ -21,15 +48,15 @@ export const saveOnlineInvitation = async (
   userEmail?: string
 ): Promise<string | null> => {
   try {
-    const invitationsRef = ref(database, INVITATIONS_REF);
-    const newRef = push(invitationsRef);
-    const pushKey = newRef.key;
-    if (!pushKey) return null;
+    const shortId = createPublicId();
+    const newRef = ref(database, `${INVITATIONS_REF}/${shortId}`);
 
     const now = Date.now();
     await set(newRef, {
+      shortId,
       invitation: {
         ...invitation,
+        id: shortId,
         userId: userId || invitation.userId || null,
         userEmail: userEmail || invitation.userEmail || null,
         createdAt: now,
@@ -41,7 +68,7 @@ export const saveOnlineInvitation = async (
       userEmail: userEmail || null
     });
 
-    return createShortId(pushKey);
+    return shortId;
   } catch (error) {
     console.error('[OnlineInvitation] Error saving invitation:', error);
     return null;
@@ -94,7 +121,7 @@ export const getUserOnlineInvitations = async (userEmail: string): Promise<Array
       .filter(({ item }) => (item.userEmail || item.invitation?.userEmail || '').toLowerCase() === userEmail.toLowerCase())
       .map(({ key, item }) => ({
         ...item.invitation,
-        shortId: createShortId(key),
+        shortId: item.shortId || item.invitation?.id || getShortIdFromKey(key),
         rsvpCount: item.rsvps ? Object.keys(item.rsvps).length : 0
       }))
       .sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));

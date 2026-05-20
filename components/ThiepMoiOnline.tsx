@@ -377,6 +377,18 @@ const createDefaultInvitation = (template = templates[0]): OnlineInvitation => (
 
 const getTemplate = (id: InvitationThemeId) => templates.find((template) => template.id === id) || templates[0];
 
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 10000): Promise<T> => {
+  let timeoutId: ReturnType<typeof setTimeout> | undefined;
+  const timeoutPromise = new Promise<never>((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error('LOAD_TIMEOUT')), timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    if (timeoutId) clearTimeout(timeoutId);
+  }
+};
+
 const formatDate = (date: string) => {
   if (!date) return 'Chưa chọn ngày';
   return new Date(`${date}T00:00:00`).toLocaleDateString('vi-VN', {
@@ -408,6 +420,7 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
   const [isLoading, setIsLoading] = useState(Boolean(sharedId));
   const [isSaving, setIsSaving] = useState(false);
   const [notice, setNotice] = useState('');
+  const [loadError, setLoadError] = useState('');
   const [savedInvitations, setSavedInvitations] = useState<Array<OnlineInvitation & { shortId: string; rsvpCount: number }>>([]);
   const [rsvps, setRsvps] = useState<InvitationRsvp[]>([]);
   const [rsvpForm, setRsvpForm] = useState({
@@ -423,14 +436,38 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
 
   useEffect(() => {
     if (!sharedId) return;
+    let isActive = true;
     setViewerMode(true);
     setActiveShortId(sharedId);
     setIsLoading(true);
-    getOnlineInvitation(sharedId).then((data) => {
-      if (data) setInvitation(data);
-      setIsLoading(false);
-    });
-    getOnlineInvitationRsvps(sharedId).then(setRsvps);
+    setLoadError('');
+
+    const loadSharedInvitation = async () => {
+      try {
+        const [data, loadedRsvps] = await Promise.all([
+          withTimeout(getOnlineInvitation(sharedId)),
+          withTimeout(getOnlineInvitationRsvps(sharedId)).catch(() => [])
+        ]);
+        if (!isActive) return;
+        if (data) {
+          setInvitation(data);
+          setRsvps(loadedRsvps);
+        } else {
+          setLoadError('Không tìm thấy thiệp mời. Link có thể đã bị xóa hoặc chưa được lưu thành công.');
+        }
+      } catch (error) {
+        if (!isActive) return;
+        console.error('[ThiepMoiOnline] Cannot load shared invitation:', error);
+        setLoadError('Mạng hoặc Firebase phản hồi quá lâu. Vui lòng tải lại trang hoặc gửi lại link mới.');
+      } finally {
+        if (isActive) setIsLoading(false);
+      }
+    };
+
+    loadSharedInvitation();
+    return () => {
+      isActive = false;
+    };
   }, [sharedId]);
 
   useEffect(() => {
@@ -440,7 +477,7 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
 
   useEffect(() => {
     if (activeShortId) {
-      setShareUrl(`${window.location.origin}${window.location.pathname}?app=thiep_moi_online&id=${activeShortId}`);
+      setShareUrl(`${window.location.origin}/?app=thiep_moi_online&id=${activeShortId}`);
     }
   }, [activeShortId]);
 
@@ -608,6 +645,24 @@ const ThiepMoiOnline: React.FC<ThiepMoiOnlineProps> = ({ onBack, user, onRequire
         <div className="flex items-center gap-3 rounded-2xl border border-white/10 bg-white/10 px-5 py-4">
           <Loader2 className="h-5 w-5 animate-spin text-pink-200" />
           <span className="text-sm font-bold">Đang mở thiệp...</span>
+        </div>
+      </div>
+    );
+  }
+
+  if (viewerMode && loadError) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-950 p-6 text-white">
+        <div className="max-w-md rounded-3xl border border-white/10 bg-white/10 p-6 text-center shadow-2xl">
+          <QrCode className="mx-auto mb-3 h-10 w-10 text-pink-200" />
+          <h2 className="text-xl font-black">Chưa mở được thiệp mời</h2>
+          <p className="mt-3 text-sm font-medium leading-6 text-white/70">{loadError}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-5 rounded-2xl bg-pink-500 px-5 py-3 text-sm font-black text-white"
+          >
+            Tải lại
+          </button>
         </div>
       </div>
     );

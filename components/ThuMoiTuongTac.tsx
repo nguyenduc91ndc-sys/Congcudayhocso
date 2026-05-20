@@ -12,17 +12,31 @@ interface Props {
 const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin }) => {
   const [view, setView] = useState<'DASHBOARD' | 'IFRAME'>(sharedId ? 'IFRAME' : 'DASHBOARD');
   const [iframeSrc, setIframeSrc] = useState<string | null>(null);
+  const [iframeLoadError, setIframeLoadError] = useState('');
   const [editingShortId, setEditingShortId] = useState<string | null>(null);
   const iframeRef = useRef<HTMLIFrameElement>(null);
 
   // Dashboard states
   const [thuMoiList, setThuMoiList] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(!sharedId);
+  const [dashboardError, setDashboardError] = useState('');
   
   // RSVP Modal states
   const [showRsvpModal, setShowRsvpModal] = useState<{shortId: string, className: string} | null>(null);
   const [rsvpData, setRsvpData] = useState<any[]>([]);
   const [loadingRsvp, setLoadingRsvp] = useState(false);
+
+  const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 10000): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+      timeoutId = setTimeout(() => reject(new Error('LOAD_TIMEOUT')), timeoutMs);
+    });
+    try {
+      return await Promise.race([promise, timeoutPromise]);
+    } finally {
+      if (timeoutId) clearTimeout(timeoutId);
+    }
+  };
 
   useEffect(() => {
     if (!sharedId && !user && onRequireLogin) {
@@ -37,28 +51,43 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
 
   const loadUserList = async () => {
     setIsLoading(true);
-    if (user?.email) {
-      const list = await getUserThuMoiList(user.email);
-      setThuMoiList(list);
+    setDashboardError('');
+    try {
+      if (user?.email) {
+        const list = await withTimeout(getUserThuMoiList(user.email), 10000);
+        setThuMoiList(list);
+      }
+    } catch (error) {
+      console.error('[ThuMoiTuongTac] Cannot load user invitations:', error);
+      setDashboardError('Chưa tải được danh sách thư mời. Bạn vẫn có thể tạo thư mới, hoặc bấm tải lại sau vài giây.');
+    } finally {
+      setIsLoading(false);
     }
-    setIsLoading(false);
   };
 
   useEffect(() => {
     const loadSharedData = async () => {
       if (sharedId) {
-        const config = await getSharedThuMoi(sharedId);
-        if (config) {
-          const encoded = btoa(encodeURIComponent(JSON.stringify(config)));
-          setIframeSrc(`/thumoiphtuongtac/thumoiphtuongtac/index.html?id=${sharedId}#${encoded}`);
-        } else {
-          setIframeSrc('/thumoiphtuongtac/thumoiphtuongtac/index.html');
+        setIframeSrc(null);
+        setIframeLoadError('');
+        try {
+          const config = await withTimeout(getSharedThuMoi(sharedId));
+          if (config) {
+            const encoded = btoa(encodeURIComponent(JSON.stringify(config)));
+            setIframeSrc(`/thumoiphtuongtac/thumoiphtuongtac/index.html?id=${sharedId}#${encoded}`);
+          } else {
+            setIframeLoadError('Không tìm thấy dữ liệu thư mời. Link có thể đã bị xóa hoặc chưa được lưu thành công.');
+          }
+        } catch (error) {
+          console.error('[ThuMoiTuongTac] Cannot load shared invitation:', error);
+          setIframeLoadError('Mạng hoặc Firebase phản hồi quá lâu. Vui lòng tải lại trang hoặc gửi lại link mới.');
         }
       }
     };
     if (view === 'IFRAME' && sharedId) {
       loadSharedData();
     } else if (view === 'IFRAME' && !sharedId && !editingShortId) {
+      setIframeLoadError('');
       setIframeSrc('/thumoiphtuongtac/thumoiphtuongtac/index.html');
     }
   }, [sharedId, view, editingShortId]);
@@ -131,6 +160,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
 
   const handleCreateNew = () => {
     setEditingShortId(null);
+    setIframeLoadError('');
     setIframeSrc('/thumoiphtuongtac/thumoiphtuongtac/index.html');
     setView('IFRAME');
   };
@@ -138,6 +168,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
   const handleEditInvitation = (item: any) => {
     const encoded = btoa(encodeURIComponent(JSON.stringify(item.config || {})));
     setEditingShortId(item.shortId);
+    setIframeLoadError('');
     setIframeSrc(`/thumoiphtuongtac/thumoiphtuongtac/index.html?edit=${item.shortId}#${encoded}`);
     setView('IFRAME');
   };
@@ -199,6 +230,28 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
             {isLoading ? (
               <div className="flex items-center justify-center py-20">
                 <div className="w-8 h-8 border-4 border-pink-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : dashboardError ? (
+              <div className="bg-slate-800/50 border border-amber-400/30 rounded-3xl p-12 text-center">
+                <div className="w-20 h-20 bg-amber-400/10 rounded-full flex items-center justify-center mx-auto mb-4">
+                  <Mail className="w-10 h-10 text-amber-200" />
+                </div>
+                <h3 className="text-xl font-bold text-white mb-2">Chưa tải được danh sách</h3>
+                <p className="text-white/60 mb-6">{dashboardError}</p>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={loadUserList}
+                    className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all border border-white/10"
+                  >
+                    Tải lại danh sách
+                  </button>
+                  <button
+                    onClick={handleCreateNew}
+                    className="px-6 py-3 bg-gradient-to-r from-pink-500 to-rose-500 text-white font-semibold rounded-xl transition-all shadow-lg shadow-pink-500/25"
+                  >
+                    Tạo thư mời mới
+                  </button>
+                </div>
               </div>
             ) : thuMoiList.length === 0 ? (
               <div className="bg-slate-800/50 border border-slate-700 rounded-3xl p-12 text-center">
@@ -286,6 +339,20 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
               className="w-full h-full border-none bg-white"
               allow="autoplay; clipboard-write"
             />
+          ) : iframeLoadError ? (
+            <div className="flex h-full items-center justify-center bg-slate-950 p-6 text-white">
+              <div className="max-w-md rounded-3xl border border-white/10 bg-white/10 p-6 text-center shadow-2xl">
+                <Mail className="mx-auto mb-3 h-10 w-10 text-pink-200" />
+                <h2 className="text-xl font-bold">Chưa mở được thư mời</h2>
+                <p className="mt-3 text-sm leading-6 text-white/70">{iframeLoadError}</p>
+                <button
+                  onClick={() => window.location.reload()}
+                  className="mt-5 rounded-2xl bg-pink-500 px-5 py-3 text-sm font-semibold text-white"
+                >
+                  Tải lại
+                </button>
+              </div>
+            </div>
           ) : (
             <div className="flex-1 flex items-center justify-center text-white h-full">
               <div className="text-center">

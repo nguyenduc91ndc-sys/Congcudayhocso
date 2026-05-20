@@ -1,5 +1,5 @@
-import { database } from './firebaseConfig';
-import { ref, push, set, get, update } from 'firebase/database';
+import { database, firebaseConfig } from './firebaseConfig';
+import { equalTo, get, orderByChild, query, ref, set, update } from 'firebase/database';
 
 const SHARED_THUMOI_REF = 'shared-thumoi';
 
@@ -7,22 +7,44 @@ const createShortId = (pushKey: string): string => {
     return pushKey.slice(-8);
 };
 
+const getShortIdFromKey = (key: string): string => {
+    return key.length <= 16 ? key : createShortId(key);
+};
+
+const createPublicId = (): string => {
+    const timePart = Date.now().toString(36).slice(-5);
+    const randomPart = Math.random().toString(36).slice(2, 8);
+    return `${timePart}${randomPart}`;
+};
+
+const findKeyByShortIdShallow = async (shortId: string): Promise<string | null> => {
+    if (!firebaseConfig.databaseURL) return null;
+    try {
+        const response = await fetch(`${firebaseConfig.databaseURL}/${SHARED_THUMOI_REF}.json?shallow=true`);
+        if (!response.ok) return null;
+        const keys = await response.json();
+        if (!keys || typeof keys !== 'object') return null;
+        return Object.keys(keys).find((key) => key.endsWith(shortId)) || null;
+    } catch (error) {
+        console.warn('[ShareLink] Shallow key lookup failed:', error);
+        return null;
+    }
+};
+
 export const saveSharedThuMoi = async (config: any, userId?: string, userEmail?: string): Promise<string | null> => {
     try {
-        const thumoiRef = ref(database, SHARED_THUMOI_REF);
-        const newRef = push(thumoiRef);
-        const pushKey = newRef.key;
-
-        if (!pushKey) return null;
+        const shortId = createPublicId();
+        const newRef = ref(database, `${SHARED_THUMOI_REF}/${shortId}`);
 
         await set(newRef, {
             config,
+            shortId,
             userId: userId || null,
             userEmail: userEmail || config.email || null,
             createdAt: Date.now()
         });
 
-        return createShortId(pushKey);
+        return shortId;
     } catch (error) {
         console.error('[ShareLink] Error saving shared Thu Moi:', error);
         return null;
@@ -50,18 +72,14 @@ export const updateSharedThuMoi = async (shortId: string, config: any, userId?: 
 
 export const getSharedThuMoi = async (shortId: string): Promise<any | null> => {
     try {
-        const thumoiRef = ref(database, SHARED_THUMOI_REF);
-        const snapshot = await get(thumoiRef);
+        const directSnapshot = await get(ref(database, `${SHARED_THUMOI_REF}/${shortId}/config`));
+        if (directSnapshot.exists()) return directSnapshot.val();
 
-        if (!snapshot.exists()) return null;
+        const fullKey = await getFullKeyFromShortId(shortId);
+        if (!fullKey) return null;
 
-        const data = snapshot.val();
-        for (const fullKey of Object.keys(data)) {
-            if (fullKey.endsWith(shortId)) {
-                return data[fullKey].config;
-            }
-        }
-        return null;
+        const configSnapshot = await get(ref(database, `${SHARED_THUMOI_REF}/${fullKey}/config`));
+        return configSnapshot.exists() ? configSnapshot.val() : null;
     } catch (error) {
         console.error('[ShareLink] Error getting shared Thu Moi:', error);
         return null;
@@ -70,6 +88,12 @@ export const getSharedThuMoi = async (shortId: string): Promise<any | null> => {
 
 export const getFullKeyFromShortId = async (shortId: string): Promise<string | null> => {
     try {
+        const directSnapshot = await get(ref(database, `${SHARED_THUMOI_REF}/${shortId}`));
+        if (directSnapshot.exists()) return shortId;
+
+        const shallowKey = await findKeyByShortIdShallow(shortId);
+        if (shallowKey) return shallowKey;
+
         const thumoiRef = ref(database, SHARED_THUMOI_REF);
         const snapshot = await get(thumoiRef);
         if (!snapshot.exists()) return null;
@@ -175,27 +199,36 @@ export const saveStudentRSVP = async (shortId: string, studentName: string, pare
 
 export const getUserThuMoiList = async (userEmail: string): Promise<any[]> => {
     try {
+        const normalizedEmail = userEmail.toLowerCase().trim();
         const thumoiRef = ref(database, SHARED_THUMOI_REF);
-        const snapshot = await get(thumoiRef);
-        if (!snapshot.exists()) return [];
+        const snapshots = await Promise.all([
+            get(query(thumoiRef, orderByChild('userEmail'), equalTo(userEmail))),
+            get(query(thumoiRef, orderByChild('userEmail'), equalTo(normalizedEmail))),
+            get(query(thumoiRef, orderByChild('config/email'), equalTo(userEmail))),
+            get(query(thumoiRef, orderByChild('config/email'), equalTo(normalizedEmail)))
+        ]);
 
-        const data = snapshot.val();
-        const list: any[] = [];
-        
-        for (const fullKey of Object.keys(data)) {
-            const item = data[fullKey];
-            const itemEmail = item.userEmail || (item.config && item.config.email);
-            if (itemEmail && itemEmail.toLowerCase() === userEmail.toLowerCase()) {
-                list.push({
-                    shortId: createShortId(fullKey),
-                    config: item.config,
-                    createdAt: item.createdAt || 0,
-                    rsvpCount: item.rsvps ? Object.keys(item.rsvps).length : 0
-                });
-            }
-        }
-        
-        return list.sort((a, b) => b.createdAt - a.createdAt);
+        const itemsByKey = new Map<string, any>();
+        snapshots.forEach((snapshot) => {
+            if (!snapshot.exists()) return;
+            const data = snapshot.val();
+            Object.keys(data).forEach((fullKey) => {
+                const item = data[fullKey];
+                const itemEmail = item.userEmail || item.config?.email || '';
+                if (itemEmail.toLowerCase().trim() === normalizedEmail) {
+                    itemsByKey.set(fullKey, item);
+                }
+            });
+        });
+
+        return Array.from(itemsByKey.entries())
+            .map(([fullKey, item]) => ({
+                shortId: item.shortId || getShortIdFromKey(fullKey),
+                config: item.config,
+                createdAt: item.createdAt || item.updatedAt || 0,
+                rsvpCount: item.rsvps ? Object.keys(item.rsvps).length : 0
+            }))
+            .sort((a, b) => b.createdAt - a.createdAt);
     } catch (error) {
         console.error('[ShareLink] Error getting user Thu Moi list:', error);
         return [];
