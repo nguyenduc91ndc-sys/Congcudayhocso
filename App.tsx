@@ -54,7 +54,7 @@ import TermsOfService from './components/TermsOfService';
 import ContactUs from './components/ContactUs';
 import PhongTranh3D from './components/PhongTranh3D';
 import NhayBaoBoApp from './nhay-bao-bo/NhayBaoBoApp';
-import { AppVisibilityState, subscribeToAppVisibility } from './utils/firebaseAppVisibility';
+import { AppVisibilityState, AppId, subscribeToAppVisibility } from './utils/firebaseAppVisibility';
 import SolarSystemSimulation from './components/SolarSystemSimulation';
 import KeoCoTriTueApp from './keo-co-tri-tue/App';
 import GameTuyChinh from './components/GameTuyChinh';
@@ -66,6 +66,50 @@ import ThiepMoiOnline from './components/ThiepMoiOnline';
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
 
+const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
+  CREATE_EDIT: 'interactiveVideo',
+  PLAYER: 'interactiveVideo',
+  GEOMETRY_3D: 'geometry3DTools',
+  BEE_GAME: 'beeGame',
+  BEE_GAME_EDITABLE: 'beeGameEditable',
+  BACTERIA_GAME: 'bacteriaGame',
+  VONG_QUAY: 'vongQuay',
+  LUCKY_WHEEL: 'luckyWheel',
+  KING_GAME: 'kingGame',
+  KING_GAME_LOP_HOC_COMPACT: 'kingGameLopHocCompact',
+  STAR_WHEEL: 'starWheel',
+  VIDEO_STORE: 'videoStore',
+  INTERACTIVE_VIDEO: 'interactiveVideo',
+  AI_COURSE_STORE: 'aiCourseStore',
+  CANVA_BASICS: 'canvaBasics',
+  COMMUNITY_RESOURCES: 'communityResources',
+  DEN_HUNG_3D: 'denHung3D',
+  HEART_SYSTEM_3D: 'heartSystem3D',
+  VIETNAM_MAP: 'vietnamMap',
+  CHUC_TET: 'chucTet',
+  PUZZLE_GAME: 'puzzleGame',
+  TREASURE_HUNT: 'treasureHunt',
+  VIRTUAL_EXPERIMENT: 'virtualExperiment',
+  CLOCK_EXPERIMENT: 'clockExperiment',
+  BANG_CUU_CHUONG: 'bangCuuChuong',
+  GAME_TUONG_TAC: 'gameTuongTac',
+  YOGURT_EXPERIMENT: 'yogurtExperiment',
+  KIEM_TRA_DAO_VAN: 'kiemTraDaoVan',
+  PHONG_TRANH_3D: 'phongTranh3D',
+  SANG_KIEN_KN: 'sangKienKinhNghiem',
+  EARTH_SEASONS: 'earthSeasons',
+  THAT_LUONG_3D: 'thatLuong3D',
+  NHAN_XET_TT27: 'nhanXetTT27',
+  NHAY_BAO_BO: 'nhayBaoBo',
+  SOLAR_SYSTEM: 'solarSystem',
+  KEO_CO_TRI_TUE: 'keoCoTriTue',
+  GAME_TUY_CHINH: 'gameTuyChinh',
+  DINH_DOC_LAP_3D: 'dinhDocLap3D',
+  THU_MOI_TUONG_TAC: 'thuMoiTuongTac',
+  KY_YEU_CUOI_NAM: 'kyYeuCuoiNam',
+  THIEP_MOI_ONLINE: 'thiepMoiOnline',
+};
+
 function App() {
   const [user, setUser] = useState<User | null>(null);
   const [view, setView] = useState<ViewState>('DASHBOARD'); // Default to Dashboard
@@ -75,6 +119,7 @@ function App() {
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null); // Action after login
   const [showNewYearWelcome, setShowNewYearWelcome] = useState(false); // New Year welcome modal
   const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
+  const [appVisibilityLoaded, setAppVisibilityLoaded] = useState(false);
   const [sharedThuMoiId, setSharedThuMoiId] = useState<string | null>(null);
   const [sharedThiepMoiId, setSharedThiepMoiId] = useState<string | null>(null);
 
@@ -84,11 +129,36 @@ function App() {
     return `ntd_lessons_${userEmail.toLowerCase().trim()}`;
   };
 
+  const isAdminUser = user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false;
+  const currentAppId = VIEW_APP_IDS[view];
+  const isCheckingAppVisibility = !appVisibilityLoaded && Boolean(currentAppId) && !isAdminUser;
+  const isCurrentAppDisabled =
+    appVisibilityLoaded &&
+    Boolean(currentAppId) &&
+    appVisibility.apps[currentAppId as AppId] === false &&
+    !isAdminUser;
+
   // Subscribe to app visibility
   useEffect(() => {
-    const unsubscribe = subscribeToAppVisibility(setAppVisibility);
+    const unsubscribe = subscribeToAppVisibility((state) => {
+      setAppVisibility(state);
+      setAppVisibilityLoaded(true);
+    });
     return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    if (!appVisibilityLoaded || isAdminUser || !currentAppId) return;
+    if (appVisibility.apps[currentAppId] !== false) return;
+
+    setCurrentLesson(null);
+    setSharedThuMoiId(null);
+    setSharedThiepMoiId(null);
+    setView('DASHBOARD');
+    if (window.location.pathname !== '/' || window.location.search) {
+      window.history.replaceState({}, document.title, '/');
+    }
+  }, [appVisibility.apps, appVisibilityLoaded, currentAppId, isAdminUser]);
 
   // Load data from localStorage
   useEffect(() => {
@@ -415,6 +485,74 @@ function App() {
     const storageKey = getLessonsStorageKey(user?.email);
     localStorage.setItem(storageKey, JSON.stringify(updatedLessons));
     // Không navigate về Dashboard - để VideoEditor hiển thị thẻ video đã lưu
+  }
+
+  const renderAccessGate = (title: string, message: string, allowAdminLogin = false) => (
+    <ThemeProvider>
+      <div className="w-full min-h-screen font-sans text-white overflow-hidden relative selection:bg-purple-200">
+        <SnowBackground />
+        <div className="relative z-10 min-h-screen flex items-center justify-center p-4">
+          <div className="w-full max-w-lg rounded-3xl border border-white/20 bg-slate-950/80 backdrop-blur-xl p-6 sm:p-8 text-center shadow-2xl">
+            <div className="mx-auto mb-5 flex h-14 w-14 items-center justify-center rounded-2xl border border-white/15 bg-white/10 text-2xl">
+              !
+            </div>
+            <h1 className="text-2xl sm:text-3xl font-bold mb-3">{title}</h1>
+            <p className="text-white/75 leading-relaxed">{message}</p>
+            {allowAdminLogin && (
+              <div className="mt-6 flex justify-center">
+                <button
+                  onClick={user ? handleLogout : () => setShowLoginModal(true)}
+                  className="px-5 py-3 rounded-xl bg-white text-slate-900 font-bold hover:bg-white/90 transition-colors"
+                >
+                  {user ? 'Đăng xuất' : 'Đăng nhập admin'}
+                </button>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <AnimatePresence>
+          {showLoginModal && (
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="fixed inset-0 bg-black/60 backdrop-blur-sm z-[200] flex items-center justify-center p-4"
+              onClick={() => {
+                setShowLoginModal(false);
+                setPendingAction(null);
+              }}
+            >
+              <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                exit={{ scale: 0.9, opacity: 0 }}
+                onClick={e => e.stopPropagation()}
+                className="w-full max-w-md"
+              >
+                <Login onLogin={handleLogin} />
+              </motion.div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </ThemeProvider>
+  );
+
+  if (appVisibilityLoaded && appVisibility.maintenanceMode && !isAdminUser) {
+    return renderAccessGate(
+      'Website đang bảo trì',
+      appVisibility.maintenanceMessage || 'Website đang bảo trì, vui lòng quay lại sau.',
+      true
+    );
+  }
+
+  if (isCheckingAppVisibility) {
+    return renderAccessGate('Đang kiểm tra quyền truy cập', 'Vui lòng chờ trong giây lát.');
+  }
+
+  if (isCurrentAppDisabled) {
+    return renderAccessGate('Ứng dụng đang tạm tắt', 'Admin đã tạm tắt ứng dụng này.');
   }
 
   return (

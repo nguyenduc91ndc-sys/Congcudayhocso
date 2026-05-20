@@ -4,13 +4,14 @@ import { database } from './firebaseConfig';
 // Danh sách tất cả app IDs
 export const ALL_APP_IDS = [
     'interactiveVideo', 'beeGame', 'beeGameEditable', 'bacteriaGame',
-    'vongQuay', 'kingGame', 'luckyWheel', 'starWheel',
+    'vongQuay', 'kingGame', 'kingGameLopHocCompact', 'luckyWheel', 'starWheel',
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
     'clockExperiment', 'yogurtExperiment', 'earthSeasons',
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D', 'thatLuong3D',
-    'dinhDocLap3D',
+    'dinhDocLap3D', 'solarSystem',
     'bangCuuChuong', 'gameTuongTac', 'gameTuyChinh', 'kyYeuCuoiNam', 'thiepMoiOnline',
+    'nhayBaoBo', 'keoCoTriTue',
     'phongTranh3D', // Phòng Tranh 3D Tùy Chỉnh
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
     'nhanXetTT27', // Nhận Xét TT27
@@ -21,6 +22,10 @@ export type AppId = typeof ALL_APP_IDS[number];
 
 // Thông tin hiển thị app
 export const APP_INFO: Record<AppId, { name: string; icon: string; section: string }> = {
+    kingGameLopHocCompact: { name: 'Đường tới Ngôi Vua - Lớp học số', icon: '👑🏫', section: 'Công cụ dạy học' },
+    nhayBaoBo: { name: 'Nhảy Bao Bố', icon: '🏁', section: 'Công cụ dạy học' },
+    keoCoTriTue: { name: 'Kéo Co Trí Tuệ', icon: '✊🖐️', section: 'Công cụ dạy học' },
+    solarSystem: { name: 'Hệ Mặt Trời', icon: '🪐', section: 'Ứng dụng 3D & VR' },
     // ── Công cụ dạy học ──
     interactiveVideo: { name: 'Video tương tác', icon: '🎥', section: 'Công cụ dạy học' },
     beeGame: { name: 'Ong về Tổ', icon: '🐝', section: 'Công cụ dạy học' },
