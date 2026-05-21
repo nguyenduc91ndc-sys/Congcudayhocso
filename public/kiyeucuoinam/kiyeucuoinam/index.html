@@ -521,7 +521,18 @@
                             </div>
                         </div>
                         <button class="btn-export" id="btnShareHTML" style="margin-bottom: 12px;">🌐 Bước 1: Xuất bản web (.zip)</button>
-                        
+                        <div class="guestbook-admin-export">
+                            <div>
+                                <strong>Mã duyệt lưu bút</strong>
+                                <span>Giáo viên dùng mã này trên trang Netlify để duyệt hoặc xóa lời nhắn PH/HS.</span>
+                            </div>
+                            <div class="guestbook-admin-fields">
+                                <input type="text" id="guestbookAdminCode" readonly aria-label="Mã duyệt lưu bút">
+                                <button type="button" class="btn-copy-payment" id="btnCopyGuestbookAdminCode">Copy mã</button>
+                            </div>
+                            <input type="hidden" id="guestbookYearbookId">
+                        </div>
+
                         <div style="background:var(--bg);border-radius:12px;padding:14px;margin:8px 0;text-align:left;font-size:.82rem;line-height:1.7;color:var(--text2);border:1px dashed var(--card-border);">
                             <strong style="color:var(--text);">📋 Hướng dẫn đưa lên mạng:</strong><br>
                             ① Bấm nút trên để tải file ZIP chứa trọn bộ web tương tác<br>

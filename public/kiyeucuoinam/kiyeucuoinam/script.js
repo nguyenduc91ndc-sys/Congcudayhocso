@@ -20,7 +20,9 @@ document.addEventListener('DOMContentLoaded', () => {
             maxVideos: 2,
             maxVideoMB: 10,
             timelineItems: [],
-            guestbookNotes: []
+            guestbookNotes: [],
+            yearbookId: '',
+            guestbookAdminCode: ''
         },
         photos: [] // Array of { id, dataUrl/embedUrl, type, mimeType, name, msg }
     };
@@ -79,6 +81,35 @@ document.addEventListener('DOMContentLoaded', () => {
         const note = getExportTransferNote();
         if (transferNoteInput) transferNoteInput.value = note;
         if (paymentQr) paymentQr.src = getExportPaymentQrUrl(note);
+    }
+
+    function createGuestbookToken(prefix = '') {
+        const bytes = new Uint8Array(6);
+        if (window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(bytes);
+        } else {
+            for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+        }
+        const token = Array.from(bytes, b => b.toString(36).padStart(2, '0')).join('').slice(0, 10).toUpperCase();
+        return `${prefix}${Date.now().toString(36).toUpperCase()}${token}`;
+    }
+
+    function ensureGuestbookAccessConfig(config = STATE.config) {
+        if (!config.yearbookId) {
+            config.yearbookId = `ky_${createGuestbookToken('').toLowerCase()}`;
+        }
+        if (!config.guestbookAdminCode) {
+            config.guestbookAdminCode = `KY-${createGuestbookToken('').slice(-6)}`;
+        }
+        return config;
+    }
+
+    function syncGuestbookAccessUi() {
+        ensureGuestbookAccessConfig();
+        const codeInput = document.getElementById('guestbookAdminCode');
+        const idInput = document.getElementById('guestbookYearbookId');
+        if (codeInput) codeInput.value = STATE.config.guestbookAdminCode || '';
+        if (idInput) idInput.value = STATE.config.yearbookId || '';
     }
     
     const AI_TRAITS = [
@@ -733,6 +764,7 @@ document.addEventListener('DOMContentLoaded', () => {
     // ===== MODAL LOGIC =====
     settingsFab.addEventListener('click', () => {
         populateFormFromState();
+        syncGuestbookAccessUi();
         settingsModal.classList.add('show');
     });
 
@@ -1047,6 +1079,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== DATA MANAGEMENT =====
     function saveFormToState() {
+        ensureGuestbookAccessConfig();
         STATE.config.className = document.getElementById('cfgClassName').value;
         STATE.config.school = document.getElementById('cfgSchool').value;
         STATE.config.year = document.getElementById('cfgYear').value;
@@ -1088,6 +1121,7 @@ document.addEventListener('DOMContentLoaded', () => {
             text: document.getElementById(`cfgGuestText${idx}`)?.value.trim() || '',
             sign: document.getElementById(`cfgGuestSign${idx}`)?.value.trim() || ''
         }));
+        syncGuestbookAccessUi();
     }
 
     const audioInput = document.getElementById('audioInput');
@@ -1191,6 +1225,7 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function populateFormFromState() {
+        ensureGuestbookAccessConfig();
         document.getElementById('cfgClassName').value = STATE.config.className || '';
         document.getElementById('cfgSchool').value = STATE.config.school || '';
         document.getElementById('cfgYear').value = STATE.config.year || '';
@@ -1241,6 +1276,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         renderPhotoList();
+        syncGuestbookAccessUi();
     }
 
     // ===== UI RENDERING =====
@@ -1943,6 +1979,8 @@ document.addEventListener('DOMContentLoaded', () => {
     
     btnExport.addEventListener('click', () => {
         saveFormToState();
+        ensureGuestbookAccessConfig();
+        syncGuestbookAccessUi();
         scheduleDraftSave(true);
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(STATE));
         const downloadAnchorNode = document.createElement('a');
@@ -1960,8 +1998,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnShareHTML = document.getElementById('btnShareHTML');
     const btnCopyTransferNote = document.getElementById('btnCopyTransferNote');
     const kyYeuTransferNote = document.getElementById('kyYeuTransferNote');
+    const btnCopyGuestbookAdminCode = document.getElementById('btnCopyGuestbookAdminCode');
+    const guestbookAdminCodeInput = document.getElementById('guestbookAdminCode');
 
     syncExportPaymentUi();
+    syncGuestbookAccessUi();
 
     if (btnCopyTransferNote && kyYeuTransferNote) {
         btnCopyTransferNote.addEventListener('click', async () => {
@@ -1974,6 +2015,19 @@ document.addEventListener('DOMContentLoaded', () => {
             } catch {
                 kyYeuTransferNote.select();
                 document.execCommand('copy');
+            }
+        });
+    }
+
+    if (btnCopyGuestbookAdminCode && guestbookAdminCodeInput) {
+        btnCopyGuestbookAdminCode.addEventListener('click', async () => {
+            syncGuestbookAccessUi();
+            try {
+                await navigator.clipboard.writeText(guestbookAdminCodeInput.value);
+                btnCopyGuestbookAdminCode.textContent = 'Đã copy';
+                setTimeout(() => { btnCopyGuestbookAdminCode.textContent = 'Copy mã'; }, 1400);
+            } catch (err) {
+                alert('Mã duyệt lưu bút: ' + guestbookAdminCodeInput.value);
             }
         });
     }
@@ -2084,8 +2138,10 @@ document.addEventListener('DOMContentLoaded', () => {
     if (btnShareHTML) {
         btnShareHTML.addEventListener('click', async () => {
             saveFormToState();
+            ensureGuestbookAccessConfig();
             normalizeStateText();
             syncExportPaymentUi();
+            syncGuestbookAccessUi();
             scheduleDraftSave(true);
             if (STATE.photos.length === 0) {
                 alert('Vui lòng thêm ít nhất 1 ảnh hoặc video trước!');
@@ -2193,6 +2249,25 @@ document.addEventListener('DOMContentLoaded', () => {
                     return `<article class="timeline-card"><div class="timeline-dot">${escapeHtml(item.icon)}</div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.text)}</p>${thumb}</article>`;
                 }).join('');
                 const guestbookHTML = buildGuestbookItems(c).map(note => `<article class="guest-note ${note.featured ? 'featured' : ''}"><h3>${escapeHtml(note.title)}</h3><p>${escapeHtml(note.text).replace(/\n/g,'<br>')}</p><span class="guest-sign">${escapeHtml(note.sign)}</span></article>`).join('');
+                const liveGuestbookHTML = `<div class="live-guestbook" id="liveGuestbook">
+<div class="live-guestbook-head">
+<div><h3>Góc lưu bút PH/HS</h3><p>Phụ huynh và học sinh có thể gửi lời nhắn. Lời nhắn sẽ hiện sau khi giáo viên duyệt.</p></div>
+<button type="button" class="live-guestbook-manage" id="liveGuestbookManage">Quản lý</button>
+</div>
+<form class="live-guestbook-form" id="liveGuestbookForm">
+<input type="text" id="liveGuestbookName" maxlength="60" placeholder="Tên phụ huynh / học sinh" required>
+<select id="liveGuestbookRole" aria-label="Vai trò"><option value="Học sinh">Học sinh</option><option value="Phụ huynh">Phụ huynh</option></select>
+<button type="submit" class="live-guestbook-submit">Gửi</button>
+<textarea id="liveGuestbookMessage" maxlength="600" placeholder="Viết vài dòng suy nghĩ..." required></textarea>
+</form>
+<p class="live-guestbook-status" id="liveGuestbookStatus"></p>
+<div class="live-note-list" id="liveApprovedNotes"></div>
+<div class="live-admin-panel" id="liveAdminPanel">
+<div class="live-admin-login"><input type="password" id="liveAdminCode" placeholder="Nhập mã duyệt lưu bút"><button type="button" id="liveAdminUnlock">Mở duyệt</button></div>
+<p class="live-admin-title">Lời nhắn chờ duyệt</p>
+<div class="live-note-list" id="livePendingNotes"></div>
+</div>
+</div>`;
 
                 let audioTag = '<audio id="bgMusic" loop preload="auto"></audio>';
                 if (c.customAudioData) {
@@ -2204,6 +2279,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
                 const viewerJS = `
 var photos = ${JSON.stringify(packagedPhotos)};
+var guestbookConfig = ${JSON.stringify({ yearbookId: c.yearbookId, adminCode: c.guestbookAdminCode })};
 var currentSlide = 0, slideInterval = null, isMusicPlaying = false, isSlideAutoPlaying = false;
 var IMAGE_SLIDE_MS = 4500, MAX_VIDEO_SLIDE_MS = 30000;
 var DISC_PAGE_SIZE = 12, DISC_AUTO_PAGE_MS = 7000, memoryDiscPage = 0, memoryDiscAutoTimer = null;
@@ -2274,6 +2350,188 @@ if(btnPM)btnPM.addEventListener('click',function(){btnMT.click();});
     document.querySelectorAll('.reaction-btn').forEach(function(btn){btn.addEventListener('click',function(){var type=btn.dataset.reaction;if(type!=='heart'&&type!=='like')return;state[type]+=1;render();save();floatReaction(type==='heart'?'❤️':'👍',btn);});});
     render();
 })();
+
+function setupLiveGuestbook(){
+    var root=document.getElementById('liveGuestbook');
+    if(!root||!guestbookConfig||!guestbookConfig.yearbookId)return;
+    var FIREBASE_DB='https://giaoviencongnghe-3c2a9-default-rtdb.asia-southeast1.firebasedatabase.app';
+    var form=document.getElementById('liveGuestbookForm');
+    var nameInput=document.getElementById('liveGuestbookName');
+    var roleInput=document.getElementById('liveGuestbookRole');
+    var messageInput=document.getElementById('liveGuestbookMessage');
+    var statusEl=document.getElementById('liveGuestbookStatus');
+    var approvedList=document.getElementById('liveApprovedNotes');
+    var pendingList=document.getElementById('livePendingNotes');
+    var manageBtn=document.getElementById('liveGuestbookManage');
+    var adminPanel=document.getElementById('liveAdminPanel');
+    var adminCodeInput=document.getElementById('liveAdminCode');
+    var adminUnlock=document.getElementById('liveAdminUnlock');
+    var adminUnlocked=false;
+    function notesUrl(id){
+        var base=FIREBASE_DB+'/kyyeu-guestbook/'+encodeURIComponent(guestbookConfig.yearbookId)+'/notes';
+        return base+(id?'/'+encodeURIComponent(id):'')+'.json';
+    }
+    function setStatus(text,type){
+        if(!statusEl)return;
+        statusEl.textContent=text||'';
+        statusEl.style.color=type==='error'?'#b42318':(type==='ok'?'var(--primary)':'var(--text2)');
+    }
+    function makeNoteId(){
+        var rand=Math.random().toString(36).slice(2,9);
+        if(window.crypto&&window.crypto.getRandomValues){
+            var bytes=new Uint8Array(4);
+            window.crypto.getRandomValues(bytes);
+            rand=Array.from(bytes,function(b){return b.toString(36).padStart(2,'0');}).join('').slice(0,9);
+        }
+        return 'note_'+Date.now().toString(36)+'_'+rand;
+    }
+    function normalizeNotes(raw){
+        return Object.keys(raw||{}).map(function(id){
+            var note=raw[id]||{};
+            note.id=note.id||id;
+            return note;
+        }).sort(function(a,b){return (Number(b.createdAt)||0)-(Number(a.createdAt)||0);});
+    }
+    async function fetchNotes(){
+        var res=await fetch(notesUrl(),{cache:'no-store'});
+        if(!res.ok)throw new Error('Không đọc được lưu bút.');
+        return normalizeNotes(await res.json());
+    }
+    function renderNotes(target,notes,emptyText,isPending){
+        if(!target)return;
+        target.innerHTML='';
+        if(!notes.length){
+            var empty=document.createElement('p');
+            empty.className='live-empty';
+            empty.textContent=emptyText;
+            target.appendChild(empty);
+            return;
+        }
+        notes.forEach(function(note){
+            var card=document.createElement('article');
+            card.className='live-note';
+            var text=document.createElement('p');
+            text.textContent=note.message||'';
+            var footer=document.createElement('footer');
+            var name=document.createElement('span');
+            name.textContent=(note.name||'Ẩn danh')+' - '+(note.role||'Lưu bút');
+            var date=document.createElement('span');
+            date.textContent=note.createdAt?new Date(note.createdAt).toLocaleDateString('vi-VN'):'';
+            footer.appendChild(name);
+            footer.appendChild(date);
+            card.appendChild(text);
+            card.appendChild(footer);
+            if(isPending){
+                var actions=document.createElement('div');
+                actions.className='live-note-actions';
+                var approve=document.createElement('button');
+                approve.type='button';
+                approve.className='live-note-approve';
+                approve.textContent='Duyệt';
+                approve.addEventListener('click',function(){approveNote(note.id);});
+                var del=document.createElement('button');
+                del.type='button';
+                del.className='live-note-delete';
+                del.textContent='Xóa';
+                del.addEventListener('click',function(){deleteNote(note.id);});
+                actions.appendChild(approve);
+                actions.appendChild(del);
+                card.appendChild(actions);
+            }
+            target.appendChild(card);
+        });
+        repairDocumentText(target);
+    }
+    async function loadApproved(){
+        try{
+            var notes=await fetchNotes();
+            renderNotes(approvedList,notes.filter(function(n){return n.status==='approved';}),'Chưa có lời nhắn đã duyệt.',false);
+        }catch(err){
+            console.error('Guestbook approved load failed',err);
+            renderNotes(approvedList,[],'Chưa tải được lưu bút. Vui lòng thử lại sau.',false);
+        }
+    }
+    async function loadPending(){
+        if(!adminUnlocked)return;
+        try{
+            var notes=await fetchNotes();
+            renderNotes(pendingList,notes.filter(function(n){return n.status!=='approved';}),'Không có lời nhắn chờ duyệt.',true);
+        }catch(err){
+            console.error('Guestbook pending load failed',err);
+            renderNotes(pendingList,[],'Chưa tải được danh sách chờ duyệt.',true);
+        }
+    }
+    async function approveNote(id){
+        if(!id)return;
+        setStatus('Đang duyệt lời nhắn...', '');
+        try{
+            var res=await fetch(notesUrl(id),{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify({status:'approved',approvedAt:Date.now()})});
+            if(!res.ok)throw new Error('Duyệt thất bại.');
+            setStatus('Đã duyệt lời nhắn.', 'ok');
+            await loadApproved();
+            await loadPending();
+        }catch(err){
+            console.error('Guestbook approve failed',err);
+            setStatus('Chưa duyệt được lời nhắn.', 'error');
+        }
+    }
+    async function deleteNote(id){
+        if(!id||!confirm('Xóa lời nhắn này?'))return;
+        setStatus('Đang xóa lời nhắn...', '');
+        try{
+            var res=await fetch(notesUrl(id),{method:'DELETE'});
+            if(!res.ok)throw new Error('Xóa thất bại.');
+            setStatus('Đã xóa lời nhắn.', 'ok');
+            await loadApproved();
+            await loadPending();
+        }catch(err){
+            console.error('Guestbook delete failed',err);
+            setStatus('Chưa xóa được lời nhắn.', 'error');
+        }
+    }
+    if(form){
+        form.addEventListener('submit',async function(e){
+            e.preventDefault();
+            var name=(nameInput&&nameInput.value||'').trim().slice(0,60);
+            var role=(roleInput&&roleInput.value||'Học sinh').trim().slice(0,30);
+            var message=(messageInput&&messageInput.value||'').trim().slice(0,600);
+            if(!name||!message){setStatus('Vui lòng nhập tên và lời nhắn.', 'error');return;}
+            var id=makeNoteId();
+            var note={id:id,name:name,role:role,message:message,status:'pending',createdAt:Date.now()};
+            setStatus('Đang gửi lời nhắn...', '');
+            try{
+                var res=await fetch(notesUrl(id),{method:'PUT',headers:{'Content-Type':'application/json'},body:JSON.stringify(note)});
+                if(!res.ok)throw new Error('Gửi thất bại.');
+                form.reset();
+                setStatus('Đã gửi. Lời nhắn sẽ hiện sau khi giáo viên duyệt.', 'ok');
+                await loadPending();
+            }catch(err){
+                console.error('Guestbook submit failed',err);
+                setStatus('Chưa gửi được lời nhắn. Vui lòng thử lại.', 'error');
+            }
+        });
+    }
+    if(manageBtn&&adminPanel){
+        manageBtn.addEventListener('click',function(){
+            adminPanel.classList.toggle('show');
+            if(adminPanel.classList.contains('show')&&adminUnlocked)loadPending();
+        });
+    }
+    if(adminUnlock){
+        adminUnlock.addEventListener('click',function(){
+            var input=(adminCodeInput&&adminCodeInput.value||'').trim();
+            if(input!==String(guestbookConfig.adminCode||'').trim()){
+                setStatus('Mã duyệt chưa đúng.', 'error');
+                return;
+            }
+            adminUnlocked=true;
+            setStatus('Đã mở quyền duyệt lưu bút.', 'ok');
+            loadPending();
+        });
+    }
+    loadApproved();
+}
+setupLiveGuestbook();
 
 document.querySelectorAll('[data-idx]').forEach(function(el){
     el.style.cursor='pointer';
@@ -2541,6 +2799,7 @@ ${cdHTML ? `<section class="yb-section cd-section">
 <div class="section-eyebrow">Sá»• lÆ°u bÃºt</div>
 <h2 class="section-title script-font" style="font-family:${ff}">ðŸ’Œ Nhá»¯ng lá»i gá»­i láº¡i</h2>
 <div class="guestbook-grid">${guestbookHTML}</div>
+${liveGuestbookHTML}
 </section>
 
 <section class="yb-section message-section">
@@ -2588,7 +2847,7 @@ ${cdHTML ? `<section class="yb-section cd-section">
                 zip.file('index.html', fullHTML);
                 zip.file('style.css', css);
                 zip.file('viewer.js', viewerJS);
-                zip.file('README.txt', 'Day la goi web ki yeu tuong tac. Keo tha ca file ZIP nay len Netlify Drop, hoac giai nen va mo index.html bang server/web hosting.');
+                zip.file('README.txt', 'Day la goi web ki yeu tuong tac. Keo tha ca file ZIP nay len Netlify Drop, hoac giai nen va mo index.html bang server/web hosting.\n\nMa duyet luu but PH/HS: ' + c.guestbookAdminCode);
                 const zipBlob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
                 
                 const url = URL.createObjectURL(zipBlob);
