@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { saveSharedThuMoi, updateSharedThuMoi, getSharedThuMoi, checkStudentRSVP, saveStudentRSVP, getUserThuMoiList, getRSVPs } from '../utils/firebaseThuMoi';
-import { Mail, Users, Plus, ArrowLeft, Calendar, MapPin, X, CheckCircle, XCircle, Pencil } from 'lucide-react';
+import { Mail, Users, Plus, ArrowLeft, Calendar, MapPin, X, CheckCircle, XCircle, Pencil, ExternalLink } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
@@ -8,6 +8,8 @@ interface Props {
   user?: { email: string; name: string; id?: string } | null;
   onRequireLogin?: () => void;
 }
+
+const FACEBOOK_PROFILE_URL = 'https://www.facebook.com/duc.the3?locale=vi_VN';
 
 const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin }) => {
   const [view, setView] = useState<'DASHBOARD' | 'IFRAME'>(sharedId ? 'IFRAME' : 'DASHBOARD');
@@ -208,7 +210,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
     <div className="flex flex-col bg-slate-900" style={{ height: '100vh', overflow: 'hidden' }}>
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 bg-slate-800/80 backdrop-blur-sm border-b border-white/10 flex-shrink-0 z-10">
-        <div className="flex items-center gap-3">
+        <div className="flex min-w-0 items-center gap-3">
           <button
             onClick={view === 'IFRAME' ? handleCloseIframe : onBack}
             className="flex items-center gap-2 px-4 py-2 bg-white/10 hover:bg-white/20 text-white rounded-xl border border-white/20 transition-all font-medium text-sm"
@@ -224,6 +226,18 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
             </div>
           </div>
         </div>
+        <a
+          href={FACEBOOK_PROFILE_URL}
+          target="_blank"
+          rel="noopener noreferrer"
+          className="ml-3 inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#1877f2] px-3 py-2 text-xs font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-[#0f66d8] sm:px-4 sm:text-sm"
+          title="Theo dõi Facebook"
+        >
+          <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-sm font-black text-[#1877f2]">f</span>
+          <span className="hidden sm:inline">Theo dõi Facebook</span>
+          <span className="sm:hidden">Facebook</span>
+          <ExternalLink className="h-3.5 w-3.5" />
+        </a>
       </div>
 
       {/* DASHBOARD VIEW */}

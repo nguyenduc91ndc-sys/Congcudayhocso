@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { ArrowLeft, CheckCircle, GraduationCap, KeyRound, Loader2, MessageCircle, PlayCircle, Users } from 'lucide-react';
+import { ArrowLeft, CheckCircle, ExternalLink, GraduationCap, KeyRound, Loader2, MessageCircle, PlayCircle, Users } from 'lucide-react';
 import { activateKyYeuAccessForEmail, hasActiveKyYeuAccess, KYYEU_ZALO_GROUP_URL } from '../utils/firebaseKyYeuAccess';
 
 interface KyYeuTuyChinhProps {
@@ -16,6 +16,7 @@ const FIREBASE_ACCESS_CHECK_TIMEOUT_MS = 10000;
 const FIREBASE_ACCESS_SUBMIT_TIMEOUT_MS = 15000;
 const KYYEU_GUEST_SESSION_EMAIL = 'guest@kyyeu.local';
 const KYYEU_ZALO_GROUP_QR_SRC = '/kyyeu-zalo-kyyeu-tuy-chinh-card-20260521.png?v=20260521b';
+const FACEBOOK_PROFILE_URL = 'https://www.facebook.com/duc.the3?locale=vi_VN';
 
 const grantKyYeuAccessSession = (email: string) => {
     const now = Date.now();
@@ -186,6 +187,18 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                         <p className="truncate text-xs text-white/50">{hasEnteredApp ? 'Tạo album kỷ niệm và chia sẻ cho lớp' : 'Xem hướng dẫn, vào nhóm hỗ trợ rồi bắt đầu tạo'}</p>
                     </div>
                 </div>
+                <a
+                    href={FACEBOOK_PROFILE_URL}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="ml-auto inline-flex shrink-0 items-center gap-2 rounded-xl bg-[#1877f2] px-3 py-2 text-xs font-bold text-white shadow-lg shadow-blue-950/30 transition hover:bg-[#0f66d8] sm:px-4 sm:text-sm"
+                    title="Theo dõi Facebook"
+                >
+                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-white text-sm font-black text-[#1877f2]">f</span>
+                    <span className="hidden sm:inline">Theo dõi Facebook</span>
+                    <span className="sm:hidden">Facebook</span>
+                    <ExternalLink className="h-3.5 w-3.5" />
+                </a>
             </div>
 
             {isChecking ? (
@@ -249,6 +262,20 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                                         </button>
                                     </div>
                                 </div>
+
+                                <a
+                                    href={FACEBOOK_PROFILE_URL}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="mt-3 flex items-center gap-3 rounded-2xl border border-blue-300/30 bg-[#1877f2] p-4 text-white shadow-xl shadow-blue-950/20 transition hover:-translate-y-0.5 hover:bg-[#0f66d8]"
+                                >
+                                    <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-white text-2xl font-black text-[#1877f2]">f</span>
+                                    <span className="min-w-0 flex-1">
+                                        <span className="block text-sm font-black leading-snug sm:text-base">Theo dõi Facebook để nhận mẫu mới</span>
+                                        <span className="mt-1 block text-xs font-medium leading-5 text-white/80 sm:text-sm">Cập nhật thêm mẫu kỷ yếu, thư mời và mẹo dùng app nhanh.</span>
+                                    </span>
+                                    <ExternalLink className="h-4 w-4 shrink-0" />
+                                </a>
 
                                 <form onSubmit={handleSubmit} className="hidden rounded-2xl border border-white/10 bg-slate-950/35 p-4">
                                     <label className="mb-2 flex items-center gap-2 text-sm font-bold text-white">
