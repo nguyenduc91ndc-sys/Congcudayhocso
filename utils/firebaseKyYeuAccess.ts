@@ -14,6 +14,9 @@ export interface KyYeuAccessCode {
     usedBy?: string;
     usedAt?: string;
     usageCount?: number;
+    exportCount?: number;
+    exportLimit?: number;
+    lastExportAt?: string;
 }
 
 export interface KyYeuAccessUser {
@@ -46,7 +49,9 @@ export const saveKyYeuAccessCode = async (key: string, note: string): Promise<bo
             createdAt: new Date().toISOString(),
             note: note || 'Mã Kỷ Yếu cộng đồng',
             active: true,
-            usageCount: 0
+            usageCount: 0,
+            exportCount: 0,
+            exportLimit: 1
         });
         return true;
     } catch (error) {

@@ -38,6 +38,15 @@ document.addEventListener('DOMContentLoaded', () => {
     const DRAFT_STORE_NAME = 'drafts';
     const DRAFT_KEY = 'active';
     const DRAFT_FALLBACK_KEY = 'kiyeu_yearbook_draft_v1';
+    const KYYEU_ACCESS_DB_URL = 'https://giaoviencongnghe-3c2a9-default-rtdb.asia-southeast1.firebasedatabase.app';
+    const KYYEU_CODES_REF = 'kyyeu_access_codes';
+    const KYYEU_EXPORT_CODE_KEY = 'kyyeu_export_access_code';
+    const KYYEU_EXPORT_EMAIL_KEY = 'kyyeu_export_access_email';
+    const KYYEU_ACCESS_SESSION_KEY = 'kyyeu_access_session';
+    const KYYEU_GUEST_SESSION_EMAIL = 'guest@kyyeu.local';
+    const KYYEU_LEGACY_EXPORT_CUTOFF = new Date('2026-05-21T00:00:00+07:00').getTime();
+    const KYYEU_LEGACY_FREE_EXPORTS = 3;
+    const KYYEU_NEW_CODE_EXPORTS = 1;
     const EXPORT_PAYMENT = {
         amount: 30000,
         bankCode: 'BIDV',
@@ -81,6 +90,235 @@ document.addEventListener('DOMContentLoaded', () => {
         const note = getExportTransferNote();
         if (transferNoteInput) transferNoteInput.value = note;
         if (paymentQr) paymentQr.src = getExportPaymentQrUrl(note);
+    }
+
+    function normalizeKyYeuExportCode(code) {
+        return String(code || '').toUpperCase().replace(/\s+/g, '').trim();
+    }
+
+    function normalizeKyYeuExportEmail(email) {
+        return String(email || '').toLowerCase().trim();
+    }
+
+    function isValidKyYeuExportEmail(email) {
+        return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeKyYeuExportEmail(email));
+    }
+
+    function getKyYeuSessionEmail() {
+        try {
+            const rawSession = sessionStorage.getItem(KYYEU_ACCESS_SESSION_KEY);
+            const accessSession = rawSession ? JSON.parse(rawSession) : null;
+            const email = normalizeKyYeuExportEmail(accessSession && accessSession.email);
+            if (!email || email === KYYEU_GUEST_SESSION_EMAIL) return '';
+            if (Number(accessSession.expiresAt) && Number(accessSession.expiresAt) <= Date.now()) return '';
+            return isValidKyYeuExportEmail(email) ? email : '';
+        } catch {
+            return '';
+        }
+    }
+
+    function getSavedKyYeuExportEmail() {
+        try {
+            return normalizeKyYeuExportEmail(localStorage.getItem(KYYEU_EXPORT_EMAIL_KEY) || '');
+        } catch {
+            return '';
+        }
+    }
+
+    function saveKyYeuExportEmail(email) {
+        try {
+            localStorage.setItem(KYYEU_EXPORT_EMAIL_KEY, normalizeKyYeuExportEmail(email));
+        } catch {}
+    }
+
+    function getSavedKyYeuExportCode() {
+        try {
+            return normalizeKyYeuExportCode(localStorage.getItem(KYYEU_EXPORT_CODE_KEY) || '');
+        } catch {
+            return '';
+        }
+    }
+
+    function saveKyYeuExportCode(code) {
+        try {
+            localStorage.setItem(KYYEU_EXPORT_CODE_KEY, normalizeKyYeuExportCode(code));
+        } catch {}
+    }
+
+    function kyYeuExportCodeUrl(code) {
+        return `${KYYEU_ACCESS_DB_URL}/${KYYEU_CODES_REF}/${encodeURIComponent(normalizeKyYeuExportCode(code))}.json`;
+    }
+
+    function isLegacyKyYeuCode(codeData) {
+        const createdTime = new Date(codeData && codeData.createdAt ? codeData.createdAt : '').getTime();
+        return Number.isFinite(createdTime) && createdTime < KYYEU_LEGACY_EXPORT_CUTOFF;
+    }
+
+    function getKyYeuExportLimit(codeData) {
+        const explicitLimit = Number(codeData && codeData.exportLimit);
+        if (Number.isFinite(explicitLimit) && explicitLimit >= 0) return explicitLimit;
+        return isLegacyKyYeuCode(codeData) ? KYYEU_LEGACY_FREE_EXPORTS : KYYEU_NEW_CODE_EXPORTS;
+    }
+
+    function makeKyYeuReservationId() {
+        const bytes = new Uint8Array(6);
+        if (window.crypto && window.crypto.getRandomValues) {
+            window.crypto.getRandomValues(bytes);
+        } else {
+            for (let i = 0; i < bytes.length; i += 1) bytes[i] = Math.floor(Math.random() * 256);
+        }
+        return `${Date.now().toString(36)}-${Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')}`;
+    }
+
+    async function reserveKyYeuExportTurn(code, email) {
+        const normalizedCode = normalizeKyYeuExportCode(code);
+        const normalizedEmail = normalizeKyYeuExportEmail(email);
+        if (!normalizedCode.startsWith('KYYEU-')) {
+            return { ok: false, reason: 'Mã Kỷ Yếu thường bắt đầu bằng KYYEU-.' };
+        }
+
+        if (!isValidKyYeuExportEmail(normalizedEmail)) {
+            return { ok: false, reason: 'Vui lòng nhập đúng Gmail dùng mã KYYEU.' };
+        }
+
+        const url = kyYeuExportCodeUrl(normalizedCode);
+        const reservationId = makeKyYeuReservationId();
+        for (let attempt = 0; attempt < 3; attempt += 1) {
+            const response = await fetch(url, { headers: { 'X-Firebase-ETag': 'true' } });
+            if (!response.ok) {
+                return { ok: false, reason: 'Không kiểm tra được mã xuất. Vui lòng thử lại hoặc liên hệ admin.' };
+            }
+
+            const etag = response.headers.get('ETag');
+            const codeData = await response.json();
+            if (!etag) return { ok: false, reason: 'Không khóa được lượt xuất để trừ an toàn. Vui lòng thử lại hoặc liên hệ admin.' };
+            if (!codeData) return { ok: false, reason: 'Mã không tồn tại hoặc đã nhập sai.' };
+            if (codeData.active === false) return { ok: false, reason: 'Mã này đã bị thu hồi. Vui lòng liên hệ admin.' };
+
+            const assignedEmail = normalizeKyYeuExportEmail(codeData.usedBy);
+            if (assignedEmail && assignedEmail !== normalizedEmail) {
+                return { ok: false, reason: `Mã ${normalizedCode} đã được gắn với Gmail khác. Mỗi mã chỉ dùng cho 1 Gmail, vui lòng liên hệ admin để được cấp mã riêng.` };
+            }
+
+            const exportLimit = getKyYeuExportLimit(codeData);
+            const exportCount = Number(codeData.exportCount) || 0;
+            const isFirstEmailBind = !assignedEmail;
+            if (exportCount >= exportLimit) {
+                return {
+                    ok: false,
+                    reason: `Mã ${normalizedCode} đã hết lượt xuất (${exportCount}/${exportLimit}).\n\nVui lòng chuyển khoản ${EXPORT_PAYMENT.amount.toLocaleString('vi-VN')}đ/lượt hoặc liên hệ Zalo admin ${EXPORT_PAYMENT.adminZalo} để được cộng lượt.`
+                };
+            }
+
+            const now = new Date().toISOString();
+            const nextData = {
+                ...codeData,
+                key: codeData.key || normalizedCode,
+                usedBy: assignedEmail || normalizedEmail,
+                usedAt: codeData.usedAt || now,
+                usageCount: isFirstEmailBind ? (Number(codeData.usageCount) || 0) + 1 : (Number(codeData.usageCount) || 1),
+                exportCount: exportCount + 1,
+                exportLimit,
+                lastExportAt: now,
+                lastExportReservationId: reservationId,
+                lastExportBy: normalizedEmail,
+                lastExportClass: STATE.config.className || '',
+                lastExportYear: STATE.config.year || ''
+            };
+
+            const saveResponse = await fetch(url, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'if-match': etag
+                },
+                body: JSON.stringify(nextData)
+            });
+
+            if (saveResponse.status === 412) continue;
+            if (!saveResponse.ok) {
+                return { ok: false, reason: 'Không trừ được lượt xuất. Vui lòng thử lại hoặc liên hệ admin.' };
+            }
+
+            return {
+                ok: true,
+                code: normalizedCode,
+                email: normalizedEmail,
+                reservationId,
+                exportCount: exportCount + 1,
+                exportLimit
+            };
+        }
+
+        return { ok: false, reason: 'Mã đang được dùng ở nơi khác. Vui lòng bấm xuất lại sau vài giây.' };
+    }
+
+    async function rollbackKyYeuExportTurn(reservation) {
+        if (!reservation || !reservation.code || !reservation.reservationId) return;
+        const url = kyYeuExportCodeUrl(reservation.code);
+        try {
+            for (let attempt = 0; attempt < 3; attempt += 1) {
+                const response = await fetch(url, { headers: { 'X-Firebase-ETag': 'true' } });
+                if (!response.ok) return;
+                const etag = response.headers.get('ETag');
+                const codeData = await response.json();
+                if (!etag) return;
+                if (!codeData || codeData.lastExportReservationId !== reservation.reservationId) return;
+                const nextData = {
+                    ...codeData,
+                    exportCount: Math.max((Number(codeData.exportCount) || 1) - 1, 0),
+                    lastExportReservationId: ''
+                };
+                const saveResponse = await fetch(url, {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'if-match': etag
+                    },
+                    body: JSON.stringify(nextData)
+                });
+                if (saveResponse.status === 412) continue;
+                return;
+            }
+        } catch {}
+    }
+
+    async function requestKyYeuExportTurn() {
+        const codeInput = document.getElementById('kyYeuExportCode');
+        const emailInput = document.getElementById('kyYeuExportEmail');
+        const initialCode = normalizeKyYeuExportCode((codeInput && codeInput.value) || getSavedKyYeuExportCode());
+        const initialEmail = normalizeKyYeuExportEmail((emailInput && emailInput.value) || getKyYeuSessionEmail() || getSavedKyYeuExportEmail());
+        let code = initialCode;
+        let email = initialEmail;
+        if (!code) {
+            code = normalizeKyYeuExportCode(prompt('Nhập mã KYYEU để xuất ZIP:') || '');
+        }
+        if (!code) return null;
+        if (!email) {
+            email = normalizeKyYeuExportEmail(prompt('Nhập Gmail sử dụng mã KYYEU:') || '');
+        }
+        if (!isValidKyYeuExportEmail(email)) {
+            alert('Vui lòng nhập đúng Gmail dùng mã KYYEU.');
+            return null;
+        }
+
+        if (codeInput) codeInput.value = code;
+        if (emailInput) emailInput.value = email;
+        let result;
+        try {
+            result = await reserveKyYeuExportTurn(code, email);
+        } catch (error) {
+            alert('Không kiểm tra được mã xuất. Vui lòng kiểm tra mạng hoặc liên hệ admin.');
+            return null;
+        }
+        if (!result.ok) {
+            alert(`${result.reason}\n\nSTK: ${EXPORT_PAYMENT.accountNo} - ${EXPORT_PAYMENT.accountName}\nNội dung CK: ${getExportTransferNote()}`);
+            return null;
+        }
+
+        saveKyYeuExportCode(code);
+        saveKyYeuExportEmail(email);
+        return result;
     }
 
     function createGuestbookToken(prefix = '') {
@@ -144,6 +382,7 @@ document.addEventListener('DOMContentLoaded', () => {
 .live-note-delete{background:#fff0f0;color:#b42318}
 .live-note-actions{display:flex;gap:8px;margin-top:11px;justify-content:flex-end}
 .live-admin-title{margin:0 0 10px;color:var(--text);font-size:.95rem;font-weight:900}
+.guestbook-section{display:none}
 @media(max-width:600px){.guestbook-admin-export{grid-template-columns:1fr}.guestbook-admin-fields{flex-direction:column;align-items:stretch}.guestbook-admin-fields input{width:100%}.live-guestbook{padding:15px;border-radius:18px}.live-guestbook-head{flex-direction:column}.live-guestbook-form{grid-template-columns:1fr}.live-guestbook-form textarea{grid-column:auto}.live-guestbook-submit{min-height:42px}.live-note-list{grid-template-columns:1fr}.live-admin-login{grid-template-columns:1fr}}
 `;
     }
@@ -2034,11 +2273,35 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnShareHTML = document.getElementById('btnShareHTML');
     const btnCopyTransferNote = document.getElementById('btnCopyTransferNote');
     const kyYeuTransferNote = document.getElementById('kyYeuTransferNote');
+    const kyYeuExportCodeInput = document.getElementById('kyYeuExportCode');
+    const kyYeuExportEmailInput = document.getElementById('kyYeuExportEmail');
     const btnCopyGuestbookAdminCode = document.getElementById('btnCopyGuestbookAdminCode');
     const guestbookAdminCodeInput = document.getElementById('guestbookAdminCode');
 
     syncExportPaymentUi();
     syncGuestbookAccessUi();
+    if (kyYeuExportCodeInput) {
+        kyYeuExportCodeInput.value = getSavedKyYeuExportCode();
+        kyYeuExportCodeInput.addEventListener('input', () => {
+            kyYeuExportCodeInput.value = normalizeKyYeuExportCode(kyYeuExportCodeInput.value);
+        });
+        kyYeuExportCodeInput.addEventListener('change', () => {
+            const code = normalizeKyYeuExportCode(kyYeuExportCodeInput.value);
+            kyYeuExportCodeInput.value = code;
+            if (code) saveKyYeuExportCode(code);
+        });
+    }
+    if (kyYeuExportEmailInput) {
+        kyYeuExportEmailInput.value = getKyYeuSessionEmail() || getSavedKyYeuExportEmail();
+        kyYeuExportEmailInput.addEventListener('input', () => {
+            kyYeuExportEmailInput.value = normalizeKyYeuExportEmail(kyYeuExportEmailInput.value);
+        });
+        kyYeuExportEmailInput.addEventListener('change', () => {
+            const email = normalizeKyYeuExportEmail(kyYeuExportEmailInput.value);
+            kyYeuExportEmailInput.value = email;
+            if (email) saveKyYeuExportEmail(email);
+        });
+    }
 
     if (btnCopyTransferNote && kyYeuTransferNote) {
         btnCopyTransferNote.addEventListener('click', async () => {
@@ -2193,10 +2456,18 @@ document.addEventListener('DOMContentLoaded', () => {
                 `Nếu thầy/cô đã có mã/còn lượt hoặc đã được admin xác nhận, bấm OK để tiếp tục xuất.`
             );
             if (!confirmedExport) return;
+            btnShareHTML.disabled = true;
+            const exportReservation = await requestKyYeuExportTurn();
+            if (!exportReservation) {
+                btnShareHTML.disabled = false;
+                return;
+            }
             btnShareHTML.textContent = '⏳ Đang đóng gói web...';
             const heicNames = getHeicLikeMediaNames();
             if (heicNames.length) {
                 alert(heicAndroidWarning(heicNames));
+                await rollbackKyYeuExportTurn(exportReservation);
+                btnShareHTML.disabled = false;
                 btnShareHTML.textContent = '🌐 Bước 1: Xuất bản web (.zip)';
                 return;
             }
@@ -2905,6 +3176,7 @@ ${liveGuestbookHTML}
                 alert('✅ Đã xuất gói web tương tác thành công!\n\nFile ZIP có index.html, style.css, viewer.js, assets, anhnen và media ảnh/video/nhạc. Phụ huynh mở link sẽ xem đúng giao diện kỉ yếu có lưu bút chờ duyệt.\n\n📋 Bước tiếp theo:\n1. Giáo viên vào app.netlify.com/drop để upload ZIP\n2. Copy link công khai dạng https://ten-trang.netlify.app\n3. Dán link đó vào ô bên dưới để tạo QR\n\nLưu ý: không gửi link app.netlify.com cho PH vì link đó sẽ đòi đăng nhập Netlify.');
             } catch(err) {
                 console.error('Export ZIP error:', err);
+                await rollbackKyYeuExportTurn(exportReservation);
                 alert('Lỗi khi xuất file: ' + err.message);
             } finally {
                 btnShareHTML.textContent = '🌐 Bước 1: Xuất bản web (.zip)';

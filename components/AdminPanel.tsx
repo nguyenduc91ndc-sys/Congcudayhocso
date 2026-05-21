@@ -40,7 +40,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [skknKeys, setSkknKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
-    const [kyYeuKeys, setKyYeuKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string; active: boolean; usageCount?: number }[]>([]);
+    const [kyYeuKeys, setKyYeuKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string; active: boolean; usageCount?: number; exportCount?: number; exportLimit?: number }[]>([]);
     const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn' | 'kyyeu'>('pro');
     const [newNote, setNewNote] = useState('');
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -138,7 +138,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 note: k.note,
                 usedBy: k.usedBy,
                 active: k.active !== false,
-                usageCount: k.usageCount || 0
+                usageCount: k.usageCount || 0,
+                exportCount: k.exportCount || 0,
+                exportLimit: k.exportLimit || 0
             }));
             setKyYeuKeys(formattedKeys);
         });
@@ -971,6 +973,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
                                                 </div>
                                                 <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
+                                                <div className="text-xs text-rose-600 mt-1 font-semibold">
+                                                    Lượt xuất ZIP: {item.exportCount || 0}/{item.exportLimit || 0}
+                                                </div>
                                                 {item.usedBy && (
                                                     <div className="text-xs text-green-600 flex items-center gap-2">
                                                         ✅ Đã dùng: {item.usedBy}
