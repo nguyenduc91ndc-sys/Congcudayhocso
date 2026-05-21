@@ -616,19 +616,15 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 if (!response.ok) {
                     console.warn("FormSubmit trả về lỗi HTTP:", response.status);
-                    // Bỏ qua lỗi không kích hoạt để phụ huynh không bị hoang mang
+                    // FormSubmit chỉ là kênh email phụ trợ; phản hồi chính vẫn lưu Firebase.
                 } else {
-                    // Đọc JSON trả về để kiểm tra kỹ
                     try {
                         const result = await response.json();
                         if (result.success === "false" || result.success === false) {
-                            throw new Error("FORMSUBMIT_REJECTED: " + (result.message || ""));
+                            console.warn("FormSubmit từ chối email, vẫn lưu phản hồi vào Firebase:", result.message || "");
                         }
                     } catch (jsonErr) {
-                        if (jsonErr.message && jsonErr.message.includes("FORMSUBMIT_REJECTED")) {
-                            throw jsonErr;
-                        }
-                        // Nếu không parse được JSON (trả về HTML kích hoạt), bỏ qua
+                        console.warn("Không đọc được phản hồi FormSubmit, vẫn tiếp tục lưu RSVP:", jsonErr);
                     }
                 }
             }
@@ -686,11 +682,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (modalEmoji) modalEmoji.innerHTML = '⚠️';
             document.getElementById('confetti').innerHTML = '';
             
-            if (err.message && err.message.includes('FORMSUBMIT_REJECTED')) {
-                modalMsg.innerHTML = `⚠️ Hệ thống từ chối gửi tin nhắn.<br>Giáo viên cần kiểm tra lại cấu hình FormSubmit.<br><br>Chi tiết: ${err.message.replace('FORMSUBMIT_REJECTED: ', '')}`;
-            } else {
-                modalMsg.innerHTML = `⚠️ Có lỗi xảy ra khi gửi.<br>Vui lòng thử lại hoặc liên hệ giáo viên chủ nhiệm.`;
-            }
+            modalMsg.innerHTML = `⚠️ Có lỗi xảy ra khi ghi nhận phản hồi.<br>Vui lòng thử lại hoặc liên hệ giáo viên chủ nhiệm.`;
             modal.classList.add('show');
         } finally {
             btnSubmit.disabled = false;
