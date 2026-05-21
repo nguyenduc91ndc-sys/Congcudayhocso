@@ -449,15 +449,15 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                 <>
                 <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
                   <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Tá»•ng pháº£n há»“i</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Tổng phản hồi</p>
                     <p className="mt-2 text-3xl font-black text-white">{rsvpSummary.total}</p>
                   </div>
                   <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200/80">Tham dá»±</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200/80">Tham dự</p>
                     <p className="mt-2 text-3xl font-black text-emerald-300">{rsvpSummary.attend}</p>
                   </div>
                   <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4">
-                    <p className="text-xs font-semibold uppercase tracking-wide text-rose-200/80">Váº¯ng máº·t</p>
+                    <p className="text-xs font-semibold uppercase tracking-wide text-rose-200/80">Vắng mặt</p>
                     <p className="mt-2 text-3xl font-black text-rose-300">{rsvpSummary.absent}</p>
                   </div>
                 </div>
