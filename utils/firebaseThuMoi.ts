@@ -37,7 +37,8 @@ const findKeyByShortIdShallow = async (shortId: string): Promise<string | null> 
         if (!response.ok) return null;
         const keys = await response.json();
         if (!keys || typeof keys !== 'object') return null;
-        return Object.keys(keys).find((key) => key.endsWith(shortId)) || null;
+        const allKeys = Object.keys(keys);
+        return allKeys.find((key) => key === shortId) || allKeys.find((key) => key.endsWith(shortId)) || null;
     } catch (error) {
         console.warn('[ShareLink] Shallow key lookup failed:', error);
         return null;
@@ -200,7 +201,7 @@ export const getFullKeyFromShortId = async (shortId: string): Promise<string | n
 
         const data = snapshot.val();
         for (const fullKey of Object.keys(data)) {
-            if (fullKey.endsWith(shortId)) {
+            if (fullKey === shortId || fullKey.endsWith(shortId) || data[fullKey]?.shortId === shortId) {
                 return fullKey;
             }
         }
@@ -301,7 +302,7 @@ export const getUserThuMoiList = async (userEmail: string): Promise<any[]> => {
     try {
         const normalizedEmail = userEmail.toLowerCase().trim();
         const thumoiRef = ref(database, SHARED_THUMOI_REF);
-        const snapshots = await Promise.all([
+        const snapshotResults = await Promise.allSettled([
             get(query(thumoiRef, orderByChild('userEmail'), equalTo(userEmail))),
             get(query(thumoiRef, orderByChild('userEmail'), equalTo(normalizedEmail))),
             get(query(thumoiRef, orderByChild('config/email'), equalTo(userEmail))),
@@ -309,7 +310,12 @@ export const getUserThuMoiList = async (userEmail: string): Promise<any[]> => {
         ]);
 
         const itemsByKey = new Map<string, any>();
-        snapshots.forEach((snapshot) => {
+        snapshotResults.forEach((result) => {
+            if (result.status !== 'fulfilled') {
+                console.warn('[ShareLink] Thu Moi query failed:', result.reason);
+                return;
+            }
+            const snapshot = result.value;
             if (!snapshot.exists()) return;
             const data = snapshot.val();
             Object.keys(data).forEach((fullKey) => {
