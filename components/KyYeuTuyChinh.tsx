@@ -15,6 +15,7 @@ const KYYEU_ACCESS_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const FIREBASE_ACCESS_CHECK_TIMEOUT_MS = 10000;
 const FIREBASE_ACCESS_SUBMIT_TIMEOUT_MS = 15000;
 const KYYEU_GUEST_SESSION_EMAIL = 'guest@kyyeu.local';
+const KYYEU_ZALO_GROUP_QR_SRC = '/kyyeu-zalo-group-qr.png';
 
 const grantKyYeuAccessSession = (email: string) => {
     const now = Date.now();
@@ -362,7 +363,7 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
 
                             <div className="mt-5 rounded-2xl bg-white p-4 text-center">
                                 <img
-                                    src="/zalo-group-qr.png"
+                                    src={KYYEU_ZALO_GROUP_QR_SRC}
                                     alt="QR nhóm Zalo hỗ trợ Kỷ Yếu"
                                     className="mx-auto h-44 w-44 rounded-xl"
                                 />
