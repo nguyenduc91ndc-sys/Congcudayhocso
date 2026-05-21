@@ -17,6 +17,19 @@ const createPublicId = (): string => {
     return `${timePart}${randomPart}`;
 };
 
+const encodeRsvpKey = (studentName: string): string => {
+    return btoa(encodeURIComponent(studentName.trim().toLowerCase()))
+        .replace(/\+/g, '-')
+        .replace(/\//g, '_')
+        .replace(/=+$/g, '');
+};
+
+const decodeRsvpKey = (key: string): string => {
+    const normalizedKey = key.replace(/-/g, '+').replace(/_/g, '/');
+    const padding = normalizedKey.length % 4 ? '='.repeat(4 - (normalizedKey.length % 4)) : '';
+    return decodeURIComponent(atob(normalizedKey + padding));
+};
+
 const findKeyByShortIdShallow = async (shortId: string): Promise<string | null> => {
     if (!firebaseConfig.databaseURL) return null;
     try {
@@ -248,7 +261,7 @@ export const checkStudentRSVP = async (shortId: string, studentName: string): Pr
         
         for (const encodedKey of Object.keys(rsvps)) {
             try {
-                const existingName = decodeURIComponent(atob(encodedKey));
+                const existingName = decodeRsvpKey(encodedKey);
                 if (isNameMatch(studentName, existingName)) {
                     return true;
                 }
@@ -269,7 +282,7 @@ export const saveStudentRSVP = async (shortId: string, studentName: string, pare
         const fullKey = await getFullKeyFromShortId(shortId);
         if (!fullKey) return false;
 
-        const encodedName = btoa(encodeURIComponent(studentName.trim().toLowerCase()));
+        const encodedName = encodeRsvpKey(studentName);
         const rsvpRef = ref(database, `${SHARED_THUMOI_REF}/${fullKey}/rsvps/${encodedName}`);
         await set(rsvpRef, {
             timestamp: Date.now(),
@@ -308,6 +321,20 @@ export const getUserThuMoiList = async (userEmail: string): Promise<any[]> => {
             });
         });
 
+        if (itemsByKey.size === 0) {
+            const allItemsUrl = buildRestUrl(SHARED_THUMOI_REF);
+            const allItems = allItemsUrl ? await fetchJsonWithTimeout<Record<string, any>>(allItemsUrl, 12000) : null;
+            if (allItems) {
+                Object.keys(allItems).forEach((fullKey) => {
+                    const item = allItems[fullKey];
+                    const itemEmail = item?.userEmail || item?.config?.email || '';
+                    if (itemEmail.toLowerCase().trim() === normalizedEmail) {
+                        itemsByKey.set(fullKey, item);
+                    }
+                });
+            }
+        }
+
         return Array.from(itemsByKey.entries())
             .map(([fullKey, item]) => ({
                 shortId: item.shortId || getShortIdFromKey(fullKey),
@@ -336,11 +363,17 @@ export const getRSVPs = async (shortId: string): Promise<any[]> => {
         const list: any[] = [];
         
         for (const key of Object.keys(rsvps)) {
+            let fallbackStudentName = '';
+            try {
+                fallbackStudentName = decodeRsvpKey(key);
+            } catch (error) {
+                fallbackStudentName = key;
+            }
             list.push({
                 ...rsvps[key],
                 id: key,
                 // Fallback decode if missing fields from old data
-                studentName: rsvps[key].studentName || decodeURIComponent(atob(key))
+                studentName: rsvps[key].studentName || fallbackStudentName
             });
         }
         

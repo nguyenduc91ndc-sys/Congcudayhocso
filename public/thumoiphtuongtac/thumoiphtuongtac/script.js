@@ -23,6 +23,59 @@ document.addEventListener('DOMContentLoaded', () => {
         ]
     };
 
+    const FIREBASE_DB_URL = 'https://giaoviencongnghe-3c2a9-default-rtdb.asia-southeast1.firebasedatabase.app';
+    const SHARED_THUMOI_REF = 'shared-thumoi';
+
+    function encodeFirebasePath(path) {
+        return path.split('/').filter(Boolean).map(encodeURIComponent).join('/');
+    }
+
+    function encodeRsvpKey(studentName) {
+        return btoa(encodeURIComponent(studentName.trim().toLowerCase()))
+            .replace(/\+/g, '-')
+            .replace(/\//g, '_')
+            .replace(/=+$/g, '');
+    }
+
+    async function findFullThuMoiKey(shortId) {
+        if (!shortId) return null;
+        try {
+            const directResponse = await fetch(`${FIREBASE_DB_URL}/${SHARED_THUMOI_REF}/${encodeURIComponent(shortId)}.json?shallow=true`);
+            if (directResponse.ok) {
+                const directData = await directResponse.json();
+                if (directData) return shortId;
+            }
+
+            const shallowResponse = await fetch(`${FIREBASE_DB_URL}/${SHARED_THUMOI_REF}.json?shallow=true`);
+            if (!shallowResponse.ok) return null;
+            const keys = await shallowResponse.json();
+            if (!keys || typeof keys !== 'object') return null;
+            return Object.keys(keys).find(key => key.endsWith(shortId)) || null;
+        } catch (error) {
+            console.warn('Khong tim duoc khoa thu moi tren Firebase:', error);
+            return null;
+        }
+    }
+
+    async function saveRsvpDirectToFirebase(shortId, studentName, parentName, attendance) {
+        const fullKey = await findFullThuMoiKey(shortId);
+        if (!fullKey) return false;
+
+        const rsvpKey = encodeRsvpKey(studentName);
+        const path = encodeFirebasePath(`${SHARED_THUMOI_REF}/${fullKey}/rsvps/${rsvpKey}`);
+        const response = await fetch(`${FIREBASE_DB_URL}/${path}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                timestamp: Date.now(),
+                studentName: studentName.trim(),
+                parentName: parentName.trim(),
+                attendance: attendance.trim()
+            })
+        });
+        return response.ok;
+    }
+
     // --- Đọc config từ URL hash ---
     function loadConfigFromURL() {
         try {
@@ -648,6 +701,12 @@ document.addEventListener('DOMContentLoaded', () => {
             }
             
             if (sharedId) {
+                try {
+                    await saveRsvpDirectToFirebase(sharedId, student, parent, attendanceText);
+                } catch (directSaveErr) {
+                    console.warn('Khong luu duoc RSVP truc tiep len Firebase:', directSaveErr);
+                }
+
                 try {
                     window.parent.postMessage({
                         type: 'SAVE_RSVP',
