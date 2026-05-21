@@ -461,10 +461,11 @@ input:checked+.theme-card,input:checked+.font-card,input:checked+.effect-card,in
 .live-guestbook-head p{margin:0;color:var(--text2);font-size:.88rem;line-height:1.55}
 .live-guestbook-manage{border:0;border-radius:999px;padding:9px 13px;background:var(--gradient);color:#fff;font-weight:900;cursor:pointer;box-shadow:0 10px 20px rgba(232,67,147,.18);white-space:nowrap}
 .live-guestbook-form{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:9px;align-items:center;margin:12px 0 16px}
-.live-guestbook-form input,.live-guestbook-form select,.live-guestbook-form textarea,.live-admin-login input{width:100%;border:2px solid rgba(232,67,147,.16);border-radius:12px;background:#fff;color:var(--text);font-family:inherit;font-size:.9rem;outline:none}
+.live-guestbook-form input,.live-guestbook-form select,.live-guestbook-form textarea,.live-admin-login input{width:100%;border:2px solid rgba(232,67,147,.16);border-radius:12px;background:#fff;color:var(--text);font-family:inherit;font-size:.9rem;outline:none;box-shadow:0 8px 18px rgba(74,14,40,.04)}
 .live-guestbook-form input,.live-guestbook-form select,.live-admin-login input{min-height:42px;padding:9px 12px}
 .live-guestbook-form textarea{grid-column:1 / -2;min-height:76px;padding:11px 12px;resize:vertical}
-.live-guestbook-submit{align-self:stretch;border:0;border-radius:12px;background:var(--primary);color:#fff;font-weight:900;cursor:pointer;padding:10px 15px}
+.live-guestbook-form input:focus,.live-guestbook-form select:focus,.live-guestbook-form textarea:focus,.live-admin-login input:focus{border-color:rgba(232,67,147,.42);box-shadow:0 0 0 4px rgba(232,67,147,.1)}
+.live-guestbook-submit{align-self:stretch;border:0;border-radius:12px;background:var(--primary);color:#fff;font-weight:900;cursor:pointer;padding:10px 15px;box-shadow:0 10px 20px rgba(232,67,147,.16)}
 .live-guestbook-status{min-height:18px;color:var(--text2);font-size:.84rem;margin:4px 0 12px}
 .live-note-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
 .live-note{padding:15px;border-radius:16px;background:#fff;border:1px solid rgba(232,67,147,.12);box-shadow:0 10px 22px rgba(74,14,40,.06)}

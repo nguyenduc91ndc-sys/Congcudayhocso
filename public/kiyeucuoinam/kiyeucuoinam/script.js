@@ -111,6 +111,42 @@ document.addEventListener('DOMContentLoaded', () => {
         if (codeInput) codeInput.value = STATE.config.guestbookAdminCode || '';
         if (idInput) idInput.value = STATE.config.yearbookId || '';
     }
+
+    function getLiveGuestbookExportCss() {
+        return `
+.guestbook-admin-export{display:grid;grid-template-columns:1fr auto;gap:12px;align-items:center;margin:0 0 12px;padding:12px 14px;border:1px solid var(--card-border);border-radius:14px;background:var(--bg);text-align:left}
+.guestbook-admin-export strong{display:block;color:var(--text);font-size:.9rem;margin-bottom:3px}
+.guestbook-admin-export span{display:block;color:var(--text2);font-size:.78rem;line-height:1.45}
+.guestbook-admin-fields{display:flex;gap:6px;align-items:center}
+.guestbook-admin-fields input{width:130px;padding:10px 12px;border:2px solid var(--card-border);border-radius:10px;background:var(--card);color:var(--primary);font-weight:900;text-align:center;letter-spacing:.04em}
+.live-guestbook{margin-top:22px;padding:20px;border-radius:22px;background:linear-gradient(180deg,rgba(255,255,255,.9),rgba(255,255,255,.68));border:1px solid rgba(255,255,255,.82);box-shadow:0 20px 44px rgba(74,14,40,.1);text-align:left}
+.live-guestbook-head{display:flex;align-items:flex-start;justify-content:space-between;gap:14px;margin-bottom:14px}
+.live-guestbook-head h3{margin:0 0 5px;color:var(--text);font-size:1.05rem;font-weight:900}
+.live-guestbook-head p{margin:0;color:var(--text2);font-size:.88rem;line-height:1.55}
+.live-guestbook-manage{border:0;border-radius:999px;padding:9px 13px;background:var(--gradient);color:#fff;font-weight:900;cursor:pointer;box-shadow:0 10px 20px rgba(232,67,147,.18);white-space:nowrap}
+.live-guestbook-form{display:grid;grid-template-columns:minmax(0,1fr) 150px auto;gap:9px;align-items:center;margin:12px 0 16px}
+.live-guestbook-form input,.live-guestbook-form select,.live-guestbook-form textarea,.live-admin-login input{width:100%;border:2px solid rgba(232,67,147,.16);border-radius:12px;background:#fff;color:var(--text);font-family:'Quicksand',sans-serif;font-size:.9rem;outline:none;box-shadow:0 8px 18px rgba(74,14,40,.04)}
+.live-guestbook-form input,.live-guestbook-form select,.live-admin-login input{min-height:42px;padding:9px 12px}
+.live-guestbook-form textarea{grid-column:1 / -2;min-height:76px;padding:11px 12px;resize:vertical}
+.live-guestbook-form input:focus,.live-guestbook-form select:focus,.live-guestbook-form textarea:focus,.live-admin-login input:focus{border-color:rgba(232,67,147,.42);box-shadow:0 0 0 4px rgba(232,67,147,.1)}
+.live-guestbook-submit{align-self:stretch;border:0;border-radius:12px;background:var(--primary);color:#fff;font-weight:900;cursor:pointer;padding:10px 15px;box-shadow:0 10px 20px rgba(232,67,147,.16)}
+.live-guestbook-status{min-height:18px;color:var(--text2);font-size:.84rem;margin:4px 0 12px}
+.live-note-list{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px}
+.live-note{padding:15px;border-radius:16px;background:#fff;border:1px solid rgba(232,67,147,.12);box-shadow:0 10px 22px rgba(74,14,40,.06)}
+.live-note p{margin:0 0 12px;color:var(--text);font-size:.92rem;line-height:1.6;white-space:pre-wrap}
+.live-note footer{display:flex;justify-content:space-between;gap:10px;color:var(--text2);font-size:.78rem;font-weight:800}
+.live-empty{grid-column:1 / -1;margin:0;color:var(--text2);font-size:.9rem;text-align:center;padding:14px;border:1px dashed rgba(232,67,147,.22);border-radius:14px;background:rgba(255,255,255,.55)}
+.live-admin-panel{display:none;margin-top:16px;padding:15px;border-radius:16px;background:rgba(255,255,255,.74);border:1px dashed rgba(232,67,147,.28)}
+.live-admin-panel.show{display:block}
+.live-admin-login{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px;margin-bottom:12px}
+.live-admin-login button,.live-note-actions button{border:0;border-radius:10px;padding:9px 12px;font-weight:900;cursor:pointer}
+.live-admin-login button,.live-note-approve{background:var(--primary);color:#fff}
+.live-note-delete{background:#fff0f0;color:#b42318}
+.live-note-actions{display:flex;gap:8px;margin-top:11px;justify-content:flex-end}
+.live-admin-title{margin:0 0 10px;color:var(--text);font-size:.95rem;font-weight:900}
+@media(max-width:600px){.guestbook-admin-export{grid-template-columns:1fr}.guestbook-admin-fields{flex-direction:column;align-items:stretch}.guestbook-admin-fields input{width:100%}.live-guestbook{padding:15px;border-radius:18px}.live-guestbook-head{flex-direction:column}.live-guestbook-form{grid-template-columns:1fr}.live-guestbook-form textarea{grid-column:auto}.live-guestbook-submit{min-height:42px}.live-note-list{grid-template-columns:1fr}.live-admin-login{grid-template-columns:1fr}}
+`;
+    }
     
     const AI_TRAITS = [
         "Học bá Toán học 🧮", "Cây hài của lớp 😂", "Giọng ca vàng 🎤", 
@@ -2173,6 +2209,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (!css) try { const r = await fetch('style.css'); css = await r.text(); } catch {
                     for (const s of document.styleSheets) { try { for (const ru of s.cssRules) css += ru.cssText + '\n'; } catch {} }
                 }
+                css += '\n/* Live guestbook export styles */\n' + getLiveGuestbookExportCss();
                 if (!css.trim()) {
                     throw new Error('Không đọc được CSS để đóng gói. Hãy mở file index.html trong thư mục app mới nhất, hoặc chạy bằng địa chỉ http://127.0.0.1:5173 rồi xuất lại.');
                 }
@@ -2847,7 +2884,7 @@ ${liveGuestbookHTML}
                 zip.file('index.html', fullHTML);
                 zip.file('style.css', css);
                 zip.file('viewer.js', viewerJS);
-                zip.file('README.txt', 'Day la goi web ki yeu tuong tac. Keo tha ca file ZIP nay len Netlify Drop, hoac giai nen va mo index.html bang server/web hosting.\n\nMa duyet luu but PH/HS: ' + c.guestbookAdminCode);
+                zip.file('README.txt', 'Day la goi web ki yeu tuong tac. Keo tha ca file ZIP nay len Netlify Drop, hoac giai nen va mo index.html bang server/web hosting.\n\nLuu y: chi gui cho PH link cong khai dang https://ten-trang.netlify.app. Khong gui link app.netlify.com vi do la trang quan tri/upload se doi dang nhap.\n\nMa duyet luu but PH/HS: ' + c.guestbookAdminCode);
                 const zipBlob = await zip.generateAsync({type:'blob', compression:'DEFLATE', compressionOptions:{level:6}});
                 
                 const url = URL.createObjectURL(zipBlob);
@@ -2858,7 +2895,7 @@ ${liveGuestbookHTML}
                 a.click();
                 a.remove();
                 URL.revokeObjectURL(url);
-                alert('✅ Đã xuất gói web tương tác thành công!\n\nFile ZIP có index.html, style.css, viewer.js, assets, anhnen và media ảnh/video/nhạc. Phụ huynh mở link sẽ xem đúng giao diện kỉ yếu có hiệu ứng, gallery, slideshow và nút thả tim/like.\n\n📋 Bước tiếp theo:\n1. Vào app.netlify.com/drop\n2. Kéo thả file ZIP vừa tải vào\n3. Copy link → dán vào ô bên dưới → Tạo QR!');
+                alert('✅ Đã xuất gói web tương tác thành công!\n\nFile ZIP có index.html, style.css, viewer.js, assets, anhnen và media ảnh/video/nhạc. Phụ huynh mở link sẽ xem đúng giao diện kỉ yếu có lưu bút chờ duyệt.\n\n📋 Bước tiếp theo:\n1. Giáo viên vào app.netlify.com/drop để upload ZIP\n2. Copy link công khai dạng https://ten-trang.netlify.app\n3. Dán link đó vào ô bên dưới để tạo QR\n\nLưu ý: không gửi link app.netlify.com cho PH vì link đó sẽ đòi đăng nhập Netlify.');
             } catch(err) {
                 console.error('Export ZIP error:', err);
                 alert('Lỗi khi xuất file: ' + err.message);
@@ -2889,24 +2926,46 @@ ${liveGuestbookHTML}
         });
     }
 
+    function getPublicShareUrl(rawUrl) {
+        const value = String(rawUrl || '').trim();
+        let parsed;
+        try {
+            parsed = new URL(value);
+        } catch (err) {
+            return { ok: false, message: 'Link không hợp lệ! Hãy dán link bắt đầu bằng https://' };
+        }
+        if (!/^https?:$/.test(parsed.protocol)) {
+            return { ok: false, message: 'Link không hợp lệ! Hãy dán link bắt đầu bằng https://' };
+        }
+        const host = parsed.hostname.toLowerCase();
+        if (host === 'app.netlify.com' || host === 'netlify.com' || host === 'www.netlify.com') {
+            return {
+                ok: false,
+                message: 'Bạn đang dán link quản trị/upload của Netlify nên điện thoại sẽ bị yêu cầu đăng nhập. Hãy mở trang đã deploy và copy link công khai dạng https://ten-trang.netlify.app rồi dán lại.'
+            };
+        }
+        return { ok: true, url: parsed.href };
+    }
+
     if (btnGenQR) {
         btnGenQR.addEventListener('click', () => {
             const url = document.getElementById('netlifyUrl').value.trim();
             if (!url) {
-                alert('Vui lòng dán link Netlify vào ô trước!');
+                alert('Vui lòng dán link công khai vào ô trước!');
                 return;
             }
-            if (!url.startsWith('http')) {
-                alert('Link không hợp lệ! Hãy dán link bắt đầu bằng https://');
+            const shareUrl = getPublicShareUrl(url);
+            if (!shareUrl.ok) {
+                alert(shareUrl.message);
                 return;
             }
 
-            document.getElementById('finalLink').value = url;
+            document.getElementById('finalLink').value = shareUrl.url;
             document.getElementById('qrResultBox').style.display = 'block';
 
             if (qrCode) {
                 document.getElementById('qrCodeContainer').innerHTML = '';
-                qrCode.update({ data: url });
+                qrCode.update({ data: shareUrl.url });
                 qrCode.append(document.getElementById('qrCodeContainer'));
             }
         });

@@ -536,15 +536,15 @@
                         <div style="background:var(--bg);border-radius:12px;padding:14px;margin:8px 0;text-align:left;font-size:.82rem;line-height:1.7;color:var(--text2);border:1px dashed var(--card-border);">
                             <strong style="color:var(--text);">📋 Hướng dẫn đưa lên mạng:</strong><br>
                             ① Bấm nút trên để tải file ZIP chứa trọn bộ web tương tác<br>
-                            ② Vào <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;">app.netlify.com/drop ↗</a> (miễn phí)<br>
-                            ③ Kéo thả file ZIP vào trang Netlify<br>
-                            ④ Copy link Netlify → dán vào ô bên dưới → Tạo QR!
+                            ② Vào <a href="https://app.netlify.com/drop" target="_blank" style="color:var(--primary);font-weight:700;text-decoration:underline;">app.netlify.com/drop ↗</a> để giáo viên upload ZIP<br>
+                            ③ Sau khi upload xong, copy link công khai dạng <b>https://ten-trang.netlify.app</b><br>
+                            ④ Không gửi link <b>app.netlify.com</b> cho PH vì đó là trang quản trị/upload sẽ đòi đăng nhập
                         </div>
 
                         <div style="margin-top:12px;">
-                            <label style="font-weight:600;font-size:.85rem;color:var(--text);display:block;margin-bottom:6px;">🔗 Bước 2: Dán link Netlify để tạo QR</label>
+                            <label style="font-weight:600;font-size:.85rem;color:var(--text);display:block;margin-bottom:6px;">🔗 Bước 2: Dán link công khai để tạo QR</label>
                             <div style="display:flex;gap:6px;">
-                                <input type="text" id="netlifyUrl" placeholder="Dán link Netlify vào đây..." style="flex:1;padding:10px 14px;border:2px solid var(--card-border);border-radius:10px;font-size:.9rem;background:var(--bg);color:var(--text);font-family:'Quicksand',sans-serif;">
+                                <input type="text" id="netlifyUrl" placeholder="Ví dụ: https://ten-trang.netlify.app" style="flex:1;padding:10px 14px;border:2px solid var(--card-border);border-radius:10px;font-size:.9rem;background:var(--bg);color:var(--text);font-family:'Quicksand',sans-serif;">
                                 <button class="btn-export" id="btnGenQR" style="padding:10px 16px;white-space:nowrap;">📱 Tạo QR</button>
                             </div>
                         </div>
