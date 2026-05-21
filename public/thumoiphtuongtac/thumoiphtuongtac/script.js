@@ -1,7 +1,7 @@
 document.addEventListener('DOMContentLoaded', () => {
     // ╔══════════════════════════════════════════════════════════╗
     // ║  CONFIG: Đọc cấu hình GV từ URL hash                    ║
-    // ║  GV chỉ cần dán email → hệ thống tự gửi qua formsubmit ║
+    // ║  Phan hoi phu huynh duoc luu tren trang thu moi/Firebase ║
     // ╚══════════════════════════════════════════════════════════╝
 
     let CONFIG = {
@@ -519,7 +519,7 @@ document.addEventListener('DOMContentLoaded', () => {
         schItems.forEach(item => itemObs.observe(item));
     }
 
-    // ===== RSVP FORM → gửi qua formsubmit.co =====
+    // ===== RSVP FORM -> luu phan hoi tren trang thu moi =====
     const form = document.getElementById('rsvpForm');
     const modal = document.getElementById('successModal');
     const modalMsg = document.getElementById('modalMsg');
@@ -623,58 +623,6 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.textContent = '⏳ Đang gửi...';
 
         try {
-            // --- Gửi qua formsubmit.co (nếu có email) ---
-            if (CONFIG.email) {
-                const data = {
-                    "Phụ huynh": parent,
-                    "Học sinh": student,
-                    "Lớp": cls,
-                    "Xác nhận": attendanceText,
-                    "Thời gian gửi": new Date().toLocaleString('vi-VN'),
-                    "_subject": `📋 Phản hồi họp PH: ${parent} - ${attendanceText}`,
-                    "_captcha": "false",
-                    "_template": "table"
-                };
-
-                // Chuyển đổi data object sang dạng chuỗi URL-encoded để gửi đi
-                const params = new URLSearchParams();
-                for (const key in data) {
-                    params.append(key, data[key]);
-                }
-
-                let response;
-                try {
-                    // Sử dụng Content-Type là application/x-www-form-urlencoded để tránh bị trình duyệt
-                    // (đặc biệt là Zalo) gửi request preflight (OPTIONS) gây lỗi CORS.
-                    response = await fetch(`https://formsubmit.co/ajax/${CONFIG.email.trim()}`, {
-                        method: 'POST',
-                        headers: {
-                            'Accept': 'application/json',
-                            'Content-Type': 'application/x-www-form-urlencoded'
-                        },
-                        body: params.toString()
-                    });
-                } catch (fetchErr) {
-                    console.warn("Lỗi mạng/CORS (thường gặp trên Zalo), giả lập thành công:", fetchErr);
-                    // Trình duyệt chặn đọc response nhưng dữ liệu ĐÃ ĐƯỢC GỬI ĐI.
-                    response = { ok: true, json: async () => ({ success: "true" }) };
-                }
-                
-                if (!response.ok) {
-                    console.warn("FormSubmit trả về lỗi HTTP:", response.status);
-                    // FormSubmit chỉ là kênh email phụ trợ; phản hồi chính vẫn lưu Firebase.
-                } else {
-                    try {
-                        const result = await response.json();
-                        if (result.success === "false" || result.success === false) {
-                            console.warn("FormSubmit từ chối email, vẫn lưu phản hồi vào Firebase:", result.message || "");
-                        }
-                    } catch (jsonErr) {
-                        console.warn("Không đọc được phản hồi FormSubmit, vẫn tiếp tục lưu RSVP:", jsonErr);
-                    }
-                }
-            }
-
             // --- Hiển thị kết quả ---
             const modalTitle = document.querySelector('#successModal .modal-title');
             const modalEmoji = document.querySelector('#successModal .modal-emoji');

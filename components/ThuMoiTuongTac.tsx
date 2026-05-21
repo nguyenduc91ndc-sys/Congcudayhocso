@@ -206,6 +206,27 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
     return null;
   }
 
+  const isAttendResponse = (attendance?: string) => {
+    const normalized = (attendance || 'Tham dự')
+      .toLowerCase()
+      .normalize('NFD')
+      .replace(/[\u0300-\u036f]/g, '');
+    return normalized.includes('tham') || !normalized.includes('vang');
+  };
+
+  const rsvpSummary = rsvpData.reduce(
+    (summary, item) => {
+      if (isAttendResponse(item.attendance)) {
+        summary.attend += 1;
+      } else {
+        summary.absent += 1;
+      }
+      summary.total += 1;
+      return summary;
+    },
+    { total: 0, attend: 0, absent: 0 }
+  );
+
   return (
     <div className="flex flex-col bg-slate-900" style={{ height: '100vh', overflow: 'hidden' }}>
       {/* Header */}
@@ -425,6 +446,21 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                   <p className="text-white/50">Chưa có phụ huynh nào gửi phản hồi.</p>
                 </div>
               ) : (
+                <>
+                <div className="mb-5 grid grid-cols-1 gap-3 sm:grid-cols-3">
+                  <div className="rounded-2xl border border-white/10 bg-white/10 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-white/50">Tá»•ng pháº£n há»“i</p>
+                    <p className="mt-2 text-3xl font-black text-white">{rsvpSummary.total}</p>
+                  </div>
+                  <div className="rounded-2xl border border-emerald-400/20 bg-emerald-500/10 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-emerald-200/80">Tham dá»±</p>
+                    <p className="mt-2 text-3xl font-black text-emerald-300">{rsvpSummary.attend}</p>
+                  </div>
+                  <div className="rounded-2xl border border-rose-400/20 bg-rose-500/10 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-rose-200/80">Váº¯ng máº·t</p>
+                    <p className="mt-2 text-3xl font-black text-rose-300">{rsvpSummary.absent}</p>
+                  </div>
+                </div>
                 <div className="overflow-x-auto rounded-2xl border border-slate-700">
                   <table className="w-full text-left text-sm text-white/80">
                     <thead className="bg-slate-800 text-xs uppercase font-semibold text-white/60">
@@ -437,7 +473,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                     </thead>
                     <tbody className="divide-y divide-slate-800">
                       {rsvpData.map((item, idx) => {
-                        const isAttend = item.attendance ? item.attendance.toLowerCase().includes('tham dự') : true;
+                        const isAttend = isAttendResponse(item.attendance);
                         return (
                           <tr key={item.id} className="hover:bg-slate-800/50 transition-colors">
                             <td className="px-6 py-4 whitespace-nowrap text-white/50">
@@ -466,6 +502,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                     </tbody>
                   </table>
                 </div>
+                </>
               )}
             </div>
           </div>
