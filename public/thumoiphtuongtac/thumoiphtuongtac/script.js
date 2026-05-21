@@ -78,17 +78,39 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const items = CONFIG.timeline && CONFIG.timeline.length > 0 ? CONFIG.timeline : [];
         items.forEach((item, index) => {
-            const timeStr = item.time.replace(' - ', ' -<br>');
+            const timeStr = escapeHTML(item.time || '').replace(' - ', ' -<br>');
             const icon = icons[index % icons.length];
+            const details = getTimelineDetails(item);
+            const detailHTML = details.length
+                ? details.map(detail => `<p>${escapeHTML(detail)}</p>`).join('')
+                : '';
             const div = document.createElement('div');
             div.className = 'sch-item';
             div.setAttribute('data-aos', '');
-            div.innerHTML = `<div class="sch-time">${timeStr}</div><div class="sch-icon"><span>${icon}</span></div><div class="sch-content"><h4>${item.title}</h4><p>${item.desc}</p></div>`;
+            div.innerHTML = `<div class="sch-time">${timeStr}</div><div class="sch-icon"><span>${icon}</span></div><div class="sch-content"><h4>${escapeHTML(item.title || '')}</h4>${detailHTML}</div>`;
             container.appendChild(div);
         });
     }
 
     // --- Tạo URL chia sẻ ---
+    function escapeHTML(value) {
+        return String(value ?? '').replace(/[&<>"']/g, (char) => ({
+            '&': '&amp;',
+            '<': '&lt;',
+            '>': '&gt;',
+            '"': '&quot;',
+            "'": '&#39;'
+        }[char]));
+    }
+
+    function getTimelineDetails(item) {
+        if (Array.isArray(item.details)) {
+            return item.details.map(detail => String(detail || '').trim()).filter(Boolean);
+        }
+        const desc = String(item.desc || '').trim();
+        return desc ? [desc] : [];
+    }
+
     function generateShareURL() {
         const encoded = btoa(encodeURIComponent(JSON.stringify(CONFIG)));
         return window.location.origin + window.location.pathname + '#' + encoded;
@@ -188,21 +210,41 @@ document.addEventListener('DOMContentLoaded', () => {
     function renderTimelineEditor() {
         timelineEditor.innerHTML = '';
         CONFIG.timeline.forEach((item, idx) => {
-            addTimelineEditRow(item.time, item.title, item.desc);
+            addTimelineEditRow(item.time, item.title, item.desc, item.details);
         });
     }
 
-    function addTimelineEditRow(time = '', title = '', desc = '') {
+    function addTimelineDetailBox(container, value = '') {
+        const row = document.createElement('div');
+        row.className = 'timeline-detail-row';
+        row.innerHTML = `
+            <textarea class="t-detail" placeholder="Nội dung/mục nhỏ..." rows="2">${escapeHTML(value)}</textarea>
+            <button type="button" class="btn-remove-detail" title="Xóa ô nội dung">-</button>
+        `;
+        row.querySelector('.btn-remove-detail').addEventListener('click', () => {
+            row.remove();
+        });
+        container.appendChild(row);
+    }
+
+    function addTimelineEditRow(time = '', title = '', desc = '', details = null) {
         const div = document.createElement('div');
         div.className = 'timeline-edit-item';
         div.innerHTML = `
             <button type="button" class="btn-remove-timeline" title="Xóa">✕</button>
-            <input type="text" class="t-time" placeholder="Thời gian (VD: 07:30 - 08:00)" value="${time}" required>
-            <input type="text" class="t-title" placeholder="Tiêu đề (VD: ĐÓN TIẾP)" value="${title}" required>
-            <textarea class="t-desc" placeholder="Mô tả..." rows="2" required>${desc}</textarea>
+            <input type="text" class="t-time" placeholder="Thời gian (VD: 07:30 - 08:00)" value="${escapeHTML(time)}" required>
+            <input type="text" class="t-title" placeholder="Tiêu đề (VD: ĐÓN TIẾP)" value="${escapeHTML(title)}" required>
+            <div class="timeline-detail-list"></div>
+            <button type="button" class="btn-add-detail">+ Thêm ô nội dung</button>
         `;
         div.querySelector('.btn-remove-timeline').addEventListener('click', () => {
             div.remove();
+        });
+        const detailList = div.querySelector('.timeline-detail-list');
+        const detailValues = Array.isArray(details) && details.length ? details : [desc || ''];
+        detailValues.forEach(detail => addTimelineDetailBox(detailList, detail));
+        div.querySelector('.btn-add-detail').addEventListener('click', () => {
+            addTimelineDetailBox(detailList);
         });
         timelineEditor.appendChild(div);
     }
@@ -222,10 +264,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         const tItems = [];
         document.querySelectorAll('.timeline-edit-item').forEach(el => {
+            const details = Array.from(el.querySelectorAll('.t-detail'))
+                .map(input => input.value.trim())
+                .filter(Boolean);
             tItems.push({
                 time: el.querySelector('.t-time').value.trim(),
                 title: el.querySelector('.t-title').value.trim(),
-                desc: el.querySelector('.t-desc').value.trim()
+                desc: details.join('\n'),
+                details
             });
         });
         CONFIG.timeline = tItems;
