@@ -139,13 +139,15 @@ function App() {
   const isAdminUser = user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false;
   const currentAppId = VIEW_APP_IDS[view];
   const isPublicSharedThuMoiView = view === 'THU_MOI_TUONG_TAC' && Boolean(sharedThuMoiId);
-  const isCheckingAppVisibility = !appVisibilityLoaded && Boolean(currentAppId) && !isAdminUser && !isPublicSharedThuMoiView;
+  const isFreeKyYeuView = view === 'KY_YEU_CUOI_NAM';
+  const isCheckingAppVisibility = !appVisibilityLoaded && Boolean(currentAppId) && !isAdminUser && !isPublicSharedThuMoiView && !isFreeKyYeuView;
   const isCurrentAppDisabled =
     appVisibilityLoaded &&
     Boolean(currentAppId) &&
     appVisibility.apps[currentAppId as AppId] === false &&
     !isAdminUser &&
-    !isPublicSharedThuMoiView;
+    !isPublicSharedThuMoiView &&
+    !isFreeKyYeuView;
 
   // Subscribe to app visibility
   useEffect(() => {
@@ -157,7 +159,7 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!appVisibilityLoaded || isAdminUser || !currentAppId || isPublicSharedThuMoiView) return;
+    if (!appVisibilityLoaded || isAdminUser || !currentAppId || isPublicSharedThuMoiView || isFreeKyYeuView) return;
     if (appVisibility.apps[currentAppId] !== false) return;
 
     setCurrentLesson(null);
@@ -167,7 +169,7 @@ function App() {
     if (window.location.pathname !== '/' || window.location.search) {
       window.history.replaceState({}, document.title, '/');
     }
-  }, [appVisibility.apps, appVisibilityLoaded, currentAppId, isAdminUser, isPublicSharedThuMoiView]);
+  }, [appVisibility.apps, appVisibilityLoaded, currentAppId, isAdminUser, isPublicSharedThuMoiView, isFreeKyYeuView]);
 
   // Load data from localStorage
   useEffect(() => {
@@ -310,7 +312,6 @@ function App() {
       const shouldRequireDirectLogin =
         !savedUser &&
         (
-          defaultView === 'KY_YEU_CUOI_NAM' ||
           isDirectThiepCreator
         );
 
@@ -629,7 +630,7 @@ function App() {
                   onThuMoiHopPH={() => setView('THU_MOI_TUONG_TAC')}
                   onThuMoiTuongTac={() => setView('THU_MOI_TUONG_TAC')}
                   onThiepMoiOnline={() => requireLogin(() => { setSharedThiepMoiId(null); setView('THIEP_MOI_ONLINE'); })}
-                  onKyYeuCuoiNam={() => requireLogin(() => setView('KY_YEU_CUOI_NAM'))}
+                  onKyYeuCuoiNam={() => setView('KY_YEU_CUOI_NAM')}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}

@@ -8,10 +8,13 @@ interface KyYeuTuyChinhProps {
     userName?: string;
 }
 
-const GUIDE_VIDEO_ID = '4YfTPtmuavk';
+const GUIDE_VIDEO_ID = 'NOAJFSkeJYE';
 const GUIDE_VIDEO_URL = `https://youtu.be/${GUIDE_VIDEO_ID}`;
 const KYYEU_ACCESS_SESSION_KEY = 'kyyeu_access_session';
 const KYYEU_ACCESS_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
+const FIREBASE_ACCESS_CHECK_TIMEOUT_MS = 10000;
+const FIREBASE_ACCESS_SUBMIT_TIMEOUT_MS = 15000;
+const KYYEU_GUEST_SESSION_EMAIL = 'guest@kyyeu.local';
 
 const grantKyYeuAccessSession = (email: string) => {
     const now = Date.now();
@@ -22,30 +25,95 @@ const grantKyYeuAccessSession = (email: string) => {
     }));
 };
 
+const hasValidKyYeuAccessSession = (email: string): boolean => {
+    try {
+        const rawSession = sessionStorage.getItem(KYYEU_ACCESS_SESSION_KEY);
+        const accessSession = rawSession ? JSON.parse(rawSession) : null;
+        return Boolean(
+            accessSession &&
+            accessSession.email === email.toLowerCase().trim() &&
+            Number(accessSession.expiresAt) > Date.now()
+        );
+    } catch (error) {
+        return false;
+    }
+};
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number): Promise<T | null> => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+
+    try {
+        return await Promise.race([
+            promise,
+            new Promise<null>((resolve) => {
+                timeoutId = setTimeout(() => resolve(null), timeoutMs);
+            })
+        ]);
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+    }
+};
+
 const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userName }) => {
     const [isChecking, setIsChecking] = useState(true);
     const [isUnlocked, setIsUnlocked] = useState(false);
     const [accessCode, setAccessCode] = useState('');
     const [error, setError] = useState('');
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [hasEnteredApp, setHasEnteredApp] = useState(false);
 
     useEffect(() => {
         let mounted = true;
 
         const checkAccess = async () => {
+            const sessionEmail = userEmail || KYYEU_GUEST_SESSION_EMAIL;
+            grantKyYeuAccessSession(sessionEmail);
+            setIsUnlocked(true);
+            setIsChecking(false);
+            return;
+
             if (!userEmail) {
                 setIsChecking(false);
                 return;
             }
-            const hasAccess = await hasActiveKyYeuAccess(userEmail);
-            if (!mounted) return;
-            if (hasAccess) {
-                grantKyYeuAccessSession(userEmail);
-            } else {
-                sessionStorage.removeItem(KYYEU_ACCESS_SESSION_KEY);
+
+            setError('');
+            const hasCachedSession = hasValidKyYeuAccessSession(userEmail);
+            if (hasCachedSession) {
+                setIsUnlocked(true);
+                setIsChecking(false);
             }
-            setIsUnlocked(hasAccess);
-            setIsChecking(false);
+
+            try {
+                const hasAccess = await withTimeout(hasActiveKyYeuAccess(userEmail), FIREBASE_ACCESS_CHECK_TIMEOUT_MS);
+                if (!mounted) return;
+
+                if (hasAccess === null) {
+                    if (!hasCachedSession) {
+                        sessionStorage.removeItem(KYYEU_ACCESS_SESSION_KEY);
+                        setIsUnlocked(false);
+                        setError('Mang cham hoac Firebase khong phan hoi. Vui long thu lai, doi mang, hoac nhap ma truy cap.');
+                        setIsChecking(false);
+                    }
+                    return;
+                }
+
+                if (hasAccess) {
+                    grantKyYeuAccessSession(userEmail);
+                } else {
+                    sessionStorage.removeItem(KYYEU_ACCESS_SESSION_KEY);
+                }
+                setIsUnlocked(hasAccess);
+                setIsChecking(false);
+            } catch (error) {
+                if (!mounted) return;
+                if (!hasCachedSession) {
+                    sessionStorage.removeItem(KYYEU_ACCESS_SESSION_KEY);
+                    setIsUnlocked(false);
+                    setError('Khong kiem tra duoc quyen truy cap. Vui long kiem tra ket noi mang va thu lai.');
+                    setIsChecking(false);
+                }
+            }
         };
 
         checkAccess();
@@ -55,12 +123,12 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
     }, [userEmail]);
 
     useEffect(() => {
-        if (!isUnlocked || !userEmail) {
+        if (!isUnlocked) {
             sessionStorage.removeItem(KYYEU_ACCESS_SESSION_KEY);
             return;
         }
 
-        grantKyYeuAccessSession(userEmail);
+        grantKyYeuAccessSession(userEmail || KYYEU_GUEST_SESSION_EMAIL);
     }, [isUnlocked, userEmail]);
 
     const handleSubmit = async (event: React.FormEvent) => {
@@ -78,8 +146,16 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
 
         setIsSubmitting(true);
         setError('');
-        const result = await activateKyYeuAccessForEmail(userEmail, code);
+        const result = await withTimeout(
+            activateKyYeuAccessForEmail(userEmail, code),
+            FIREBASE_ACCESS_SUBMIT_TIMEOUT_MS
+        );
         setIsSubmitting(false);
+
+        if (result === null) {
+            setError('Mang cham hoac Firebase khong phan hoi. Vui long thu lai sau it phut.');
+            return;
+        }
 
         if (!result.success) {
             setError(result.reason || 'Mã chưa đúng hoặc đã bị thu hồi.');
@@ -106,7 +182,7 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                     <GraduationCap className="h-5 w-5 flex-shrink-0 text-pink-200" />
                     <div className="min-w-0">
                         <h1 className="truncate text-sm font-bold leading-tight text-white sm:text-base">Kỷ Yếu Cuối Năm</h1>
-                        <p className="truncate text-xs text-white/50">{isUnlocked ? 'Tạo album kỷ niệm và chia sẻ cho lớp' : 'Vào nhóm Zalo để nhận mã và được hỗ trợ'}</p>
+                        <p className="truncate text-xs text-white/50">{hasEnteredApp ? 'Tạo album kỷ niệm và chia sẻ cho lớp' : 'Xem hướng dẫn, vào nhóm hỗ trợ rồi bắt đầu tạo'}</p>
                     </div>
                 </div>
             </div>
@@ -118,9 +194,9 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                         <span className="text-sm font-semibold">Đang kiểm tra quyền truy cập...</span>
                     </div>
                 </div>
-            ) : isUnlocked ? (
+            ) : isUnlocked && hasEnteredApp ? (
                 <iframe
-                    src="/kiyeucuoinam/kiyeucuoinam/index.html"
+                    src="/kiyeucuoinam/kiyeucuoinam/index.html?preview=1&v=20260521"
                     className="min-h-0 flex-1 border-0"
                     title="Kỷ yếu cuối năm"
                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; camera; microphone; fullscreen"
@@ -140,10 +216,10 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                                             Nhóm hỗ trợ cộng đồng
                                         </div>
                                         <h2 className="max-w-[13ch] text-3xl font-black leading-tight tracking-tight text-slate-900 sm:max-w-none sm:text-4xl">
-                                            Mở khóa công cụ Kỷ Yếu
+                                            Kỷ Yếu Cuối Năm
                                         </h2>
                                         <p className="mt-2 max-w-2xl text-sm font-medium leading-5 text-slate-600 sm:text-base sm:leading-6">
-                                            Chào {userName || 'thầy/cô'}, vui lòng nhập mã truy cập để sử dụng. Nếu chưa có mã, thầy/cô vào nhóm Zalo để nhận mã và được hỗ trợ khi dùng app.
+                                            Chào {userName || 'thầy/cô'}, thầy/cô có thể vào app để tạo kỷ yếu ngay. Khu vực này có video hướng dẫn, nhóm Zalo và QR cộng đồng để xem nhanh cách làm và hỏi hỗ trợ khi cần.
                                         </p>
                                     </div>
                                     <div className="hidden justify-self-end rounded-3xl bg-white/80 p-3 shadow-xl ring-1 ring-white/70 md:block">
@@ -153,7 +229,27 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                             </div>
 
                             <div className="p-4 sm:p-5 xl:p-7">
-                                <form onSubmit={handleSubmit} className="rounded-2xl border border-white/10 bg-slate-950/35 p-4">
+                                <div className="rounded-2xl border border-white/10 bg-slate-950/35 p-4 text-white">
+                                    <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                                        <div className="min-w-0">
+                                            <div className="mb-2 inline-flex items-center gap-2 rounded-full bg-white/10 px-3 py-1 text-xs font-bold uppercase tracking-wide text-pink-100">
+                                                <GraduationCap className="h-4 w-4" />
+                                                Vào app tự do
+                                            </div>
+                                            <h3 className="text-xl font-black leading-tight">Tạo kỷ yếu cuối năm cho lớp</h3>
+                                        </div>
+                                        <button
+                                            type="button"
+                                            onClick={() => setHasEnteredApp(true)}
+                                            className="inline-flex shrink-0 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-pink-500 to-rose-500 px-5 py-3 text-sm font-black text-white shadow-lg shadow-pink-500/25 transition hover:from-pink-400 hover:to-rose-400 active:scale-[0.98]"
+                                        >
+                                            <PlayCircle className="h-4 w-4" />
+                                            Bắt đầu tạo kỷ yếu
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <form onSubmit={handleSubmit} className="hidden rounded-2xl border border-white/10 bg-slate-950/35 p-4">
                                     <label className="mb-2 flex items-center gap-2 text-sm font-bold text-white">
                                         <KeyRound className="h-4 w-4 text-pink-200" />
                                         Nhập mã truy cập Kỷ Yếu
@@ -194,7 +290,7 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                                             </span>
                                             <div className="text-base font-black leading-snug xl:text-lg">VÀO NHÓM ZALO HỖ TRỢ</div>
                                             <p className="mt-2 text-sm font-medium leading-5 text-white/80">
-                                                Nhận mã sử dụng và hỏi nhanh khi cần hỗ trợ trong quá trình dùng app.
+                                                Hỏi nhanh khi cần hỗ trợ trong quá trình tạo, chỉnh và chia sẻ kỷ yếu.
                                             </p>
                                         </div>
                                         <div className="mt-3 inline-flex items-center justify-center gap-2 rounded-xl bg-white px-4 py-2.5 text-sm font-black text-[#0068ff] transition group-hover:bg-blue-50">
@@ -202,13 +298,15 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                                         </div>
                                     </a>
 
-                                    <a
-                                        href={GUIDE_VIDEO_URL}
-                                        target="_blank"
-                                        rel="noreferrer"
-                                        className="group flex min-h-[158px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/10 shadow-xl shadow-black/15 transition hover:-translate-y-0.5 hover:bg-white/15 hover:shadow-2xl"
-                                    >
-                                        <div className="relative h-24 w-full bg-slate-900 xl:h-28">
+                                    <div className="flex min-h-[158px] flex-col overflow-hidden rounded-2xl border border-white/15 bg-white/10 shadow-xl shadow-black/15">
+                                        <div className="relative aspect-video w-full bg-slate-900">
+                                            <iframe
+                                                src={`https://www.youtube.com/embed/${GUIDE_VIDEO_ID}`}
+                                                title="Video hướng dẫn tạo kỷ yếu cuối năm"
+                                                className="absolute inset-0 z-10 h-full w-full"
+                                                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                                allowFullScreen
+                                            />
                                             <img
                                                 src={`https://img.youtube.com/vi/${GUIDE_VIDEO_ID}/hqdefault.jpg`}
                                                 alt="Video demo giới thiệu app"
@@ -224,28 +322,36 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                                         <div className="flex flex-1 flex-col justify-center p-3">
                                             <div className="mb-2 inline-flex w-fit items-center gap-2 rounded-full bg-white/10 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-pink-100">
                                                 <PlayCircle className="h-3.5 w-3.5" />
-                                                Video demo
+                                                Video hướng dẫn
                                             </div>
                                             <div className="text-sm font-black leading-snug text-white xl:text-base">
-                                                VIDEO DEMO GIỚI THIỆU APP
+                                                VIDEO HƯỚNG DẪN TẠO KỶ YẾU
                                             </div>
                                             <p className="mt-1 text-xs leading-5 text-white/65 xl:text-sm">
-                                                Xem nhanh cách app hoạt động trước khi nhập mã sử dụng.
+                                                Xem thao tác tạo kỷ yếu, chỉnh nội dung và chia sẻ thành phẩm.
                                             </p>
+                                            <a
+                                                href={GUIDE_VIDEO_URL}
+                                                target="_blank"
+                                                rel="noreferrer"
+                                                className="mt-2 text-xs font-bold text-pink-100 underline-offset-4 hover:underline xl:text-sm"
+                                            >
+                                                Mở video trên YouTube
+                                            </a>
                                         </div>
-                                    </a>
+                                    </div>
                                 </div>
                             </div>
                         </section>
 
                         <aside className="rounded-3xl border border-white/15 bg-white/[0.08] p-5 shadow-2xl shadow-black/20 backdrop-blur-xl sm:p-6">
-                            <h3 className="text-xl font-black text-white">Nhận mã và hỗ trợ</h3>
+                            <h3 className="text-xl font-black text-white">Nhóm Zalo hỗ trợ</h3>
                             <div className="mt-4 space-y-3">
                                 {[
                                     'Tham gia nhóm Zalo cộng đồng Giáo viên yêu công nghệ.',
-                                    'Xem thông báo ghim trong nhóm để biết cách nhận mã sử dụng.',
-                                    'Admin sẽ cấp mã KYYEU riêng cho thầy/cô khi cần mở app.',
-                                    'Nếu có lỗi khi xuất file, tạo QR hoặc chia sẻ, thầy/cô hỏi trực tiếp trong nhóm để được hỗ trợ.'
+                                    'Xem video hướng dẫn và các thông báo ghim trong nhóm.',
+                                    'Hỏi trực tiếp khi cần hỗ trợ thao tác trong app.',
+                                    'Nếu có lỗi khi tạo kỷ yếu, tạo QR hoặc chia sẻ, thầy/cô hỏi trực tiếp trong nhóm để được hỗ trợ.'
                                 ].map((item, index) => (
                                     <div key={item} className="flex gap-3 rounded-2xl border border-white/10 bg-white/10 p-3 text-white">
                                         <span className="flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-full bg-white text-sm font-black text-slate-900">{index + 1}</span>
@@ -256,12 +362,12 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
 
                             <div className="mt-5 rounded-2xl bg-white p-4 text-center">
                                 <img
-                                    src={`https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=${encodeURIComponent(KYYEU_ZALO_GROUP_URL)}`}
-                                    alt="QR nhóm Zalo nhận mã Kỷ Yếu"
+                                    src="/zalo-group-qr.png"
+                                    alt="QR nhóm Zalo hỗ trợ Kỷ Yếu"
                                     className="mx-auto h-44 w-44 rounded-xl"
                                 />
                                 <p className="mt-3 text-sm font-bold text-slate-900">Quét QR bằng Zalo để vào nhóm</p>
-                                <p className="mt-1 text-xs text-slate-500">Nhóm dùng để nhận mã và hỏi nhanh khi cần hỗ trợ sử dụng.</p>
+                                <p className="mt-1 text-xs text-slate-500">Nhóm dùng để hỏi nhanh khi cần hỗ trợ sử dụng.</p>
                             </div>
                         </aside>
                     </div>

@@ -12,6 +12,8 @@
             var sessionKey = 'kyyeu_access_session';
             var hasHostFrame = window.top !== window.self;
             var hasActiveSession = false;
+            var params = new URLSearchParams(window.location.search);
+            var isLocalPreview = /^(localhost|127\.0\.0\.1)$/.test(window.location.hostname) && params.get('preview') === '1';
 
             try {
                 var rawSession = window.sessionStorage.getItem(sessionKey);
@@ -26,7 +28,7 @@
                 hasActiveSession = false;
             }
 
-            if (!hasHostFrame || !hasActiveSession) {
+            if (!isLocalPreview && (!hasHostFrame || !hasActiveSession)) {
                 window.location.replace(redirectUrl);
             }
         })();
@@ -456,7 +458,7 @@
                         </div>
                         <div class="export-video-frame">
                             <iframe
-                                src="https://www.youtube.com/embed/Wz15BtV1rsg"
+                                src="https://www.youtube.com/embed/Wz15BtV1rsg?rel=0"
                                 title="Video hướng dẫn xuất, nhập và chia sẻ kỷ yếu"
                                 loading="lazy"
                                 allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
@@ -495,6 +497,29 @@
                         <span class="export-icon">🌐</span>
                         <h3>Xuất web tương tác & chia sẻ online</h3>
                         <p>Đóng gói thành <strong>bản web tương tác</strong> gồm index, CSS, JS, ảnh/video/nhạc và asset nền để phụ huynh xem đúng giao diện đang làm.</p>
+                        <div class="export-payment-panel">
+                            <div class="export-payment-copy">
+                                <span class="payment-badge">30.000đ / lượt xuất</span>
+                                <h4>Xuất file HTML/ZIP dùng độc lập</h4>
+                                <p>Tạo và chỉnh sửa kỷ yếu vẫn dùng bình thường. Phí chỉ áp dụng khi xuất bản web độc lập để gửi phụ huynh hoặc đưa lên Netlify.</p>
+                                <div class="payment-account">
+                                    <strong>NGUYEN THE DUC</strong>
+                                    <span>BIDV - PGD Trảng Dài</span>
+                                    <span>STK: <b>6790470451</b></span>
+                                    <span>Zalo admin: <b>0975509490</b></span>
+                                </div>
+                                <div class="payment-transfer-row">
+                                    <input type="text" id="kyYeuTransferNote" readonly value="KYYEU XUAT FILE">
+                                    <button type="button" class="btn-copy-payment" id="btnCopyTransferNote">Copy nội dung CK</button>
+                                </div>
+                                <p class="payment-note">Sau khi chuyển khoản, nhắn Zalo admin 0975509490 để nhận mã hoặc cộng lượt xuất.</p>
+                            </div>
+                            <div class="export-payment-qr">
+                                <img id="kyYeuPaymentQr" alt="QR chuyển khoản xuất file Kỷ yếu">
+                                <a href="https://zalo.me/0975509490" target="_blank" rel="noreferrer">Liên hệ Zalo admin 0975509490</a>
+                                <a href="https://zalo.me/g/uafjqjcpskahgt6xa9gh" target="_blank" rel="noreferrer">Vào nhóm Zalo hỗ trợ</a>
+                            </div>
+                        </div>
                         <button class="btn-export" id="btnShareHTML" style="margin-bottom: 12px;">🌐 Bước 1: Xuất bản web (.zip)</button>
                         
                         <div style="background:var(--bg);border-radius:12px;padding:14px;margin:8px 0;text-align:left;font-size:.82rem;line-height:1.7;color:var(--text2);border:1px dashed var(--card-border);">

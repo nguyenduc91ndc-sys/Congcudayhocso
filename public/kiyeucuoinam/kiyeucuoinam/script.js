@@ -36,9 +36,50 @@ document.addEventListener('DOMContentLoaded', () => {
     const DRAFT_STORE_NAME = 'drafts';
     const DRAFT_KEY = 'active';
     const DRAFT_FALLBACK_KEY = 'kiyeu_yearbook_draft_v1';
+    const EXPORT_PAYMENT = {
+        amount: 30000,
+        bankCode: 'BIDV',
+        accountNo: '6790470451',
+        accountName: 'NGUYEN THE DUC',
+        branch: 'BIDV - PGD Trảng Dài',
+        adminZalo: '0975509490',
+        defaultNote: 'KYYEU XUAT FILE',
+        zaloGroupUrl: 'https://zalo.me/g/uafjqjcpskahgt6xa9gh'
+    };
     let draftDbPromise = null;
     let draftSaveTimer = null;
     let isRestoringDraft = false;
+
+    function getExportTransferNote() {
+        const className = cleanPaymentNotePart(STATE.config.className || '');
+        return className ? `${EXPORT_PAYMENT.defaultNote} ${className}` : EXPORT_PAYMENT.defaultNote;
+    }
+
+    function cleanPaymentNotePart(value) {
+        return String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/[^a-zA-Z0-9]+/g, ' ')
+            .trim()
+            .slice(0, 40);
+    }
+
+    function getExportPaymentQrUrl(note = EXPORT_PAYMENT.defaultNote) {
+        const params = new URLSearchParams({
+            amount: String(EXPORT_PAYMENT.amount),
+            addInfo: note,
+            accountName: EXPORT_PAYMENT.accountName
+        });
+        return `https://img.vietqr.io/image/${EXPORT_PAYMENT.bankCode}-${EXPORT_PAYMENT.accountNo}-compact2.png?${params.toString()}`;
+    }
+
+    function syncExportPaymentUi() {
+        const transferNoteInput = document.getElementById('kyYeuTransferNote');
+        const paymentQr = document.getElementById('kyYeuPaymentQr');
+        const note = getExportTransferNote();
+        if (transferNoteInput) transferNoteInput.value = note;
+        if (paymentQr) paymentQr.src = getExportPaymentQrUrl(note);
+    }
     
     const AI_TRAITS = [
         "Học bá Toán học 🧮", "Cây hài của lớp 😂", "Giọng ca vàng 🎤", 
@@ -716,6 +757,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = e.target;
         if (!target || target.type === 'file' || target.classList.contains('p-name') || target.classList.contains('p-msg')) return;
         saveFormToState();
+        syncExportPaymentUi();
         scheduleDraftSave();
     });
 
@@ -723,6 +765,7 @@ document.addEventListener('DOMContentLoaded', () => {
         const target = e.target;
         if (!target || target.type === 'file' || target.classList.contains('p-name') || target.classList.contains('p-msg')) return;
         saveFormToState();
+        syncExportPaymentUi();
         scheduleDraftSave();
     });
 
@@ -1915,6 +1958,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // ===== SHARE HTML =====
     const btnShareHTML = document.getElementById('btnShareHTML');
+    const btnCopyTransferNote = document.getElementById('btnCopyTransferNote');
+    const kyYeuTransferNote = document.getElementById('kyYeuTransferNote');
+
+    syncExportPaymentUi();
+
+    if (btnCopyTransferNote && kyYeuTransferNote) {
+        btnCopyTransferNote.addEventListener('click', async () => {
+            syncExportPaymentUi();
+            const note = kyYeuTransferNote.value;
+            try {
+                await navigator.clipboard.writeText(note);
+                btnCopyTransferNote.textContent = 'Đã copy';
+                setTimeout(() => btnCopyTransferNote.textContent = 'Copy nội dung CK', 1500);
+            } catch {
+                kyYeuTransferNote.select();
+                document.execCommand('copy');
+            }
+        });
+    }
 
     function escapeHtml(str) {
         return repairMojibakeText(str || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;').replace(/'/g,'&#39;');
@@ -2023,11 +2085,22 @@ document.addEventListener('DOMContentLoaded', () => {
         btnShareHTML.addEventListener('click', async () => {
             saveFormToState();
             normalizeStateText();
+            syncExportPaymentUi();
             scheduleDraftSave(true);
             if (STATE.photos.length === 0) {
                 alert('Vui lòng thêm ít nhất 1 ảnh hoặc video trước!');
                 return;
             }
+            const transferNote = getExportTransferNote();
+            const confirmedExport = confirm(
+                `Xuất file HTML/ZIP độc lập cần mã hoặc xác nhận lượt xuất từ admin.\n\n` +
+                `Phí: 30.000đ / lượt xuất\n` +
+                `STK: ${EXPORT_PAYMENT.accountNo} - ${EXPORT_PAYMENT.accountName}\n` +
+                `Zalo admin: ${EXPORT_PAYMENT.adminZalo}\n` +
+                `Nội dung CK: ${transferNote}\n\n` +
+                `Nếu thầy/cô đã có mã/còn lượt hoặc đã được admin xác nhận, bấm OK để tiếp tục xuất.`
+            );
+            if (!confirmedExport) return;
             btnShareHTML.textContent = '⏳ Đang đóng gói web...';
             const heicNames = getHeicLikeMediaNames();
             if (heicNames.length) {
