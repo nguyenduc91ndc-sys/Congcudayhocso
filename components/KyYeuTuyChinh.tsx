@@ -349,7 +349,7 @@ const KyYeuTuyChinh: React.FC<KyYeuTuyChinhProps> = ({ onBack, userEmail, userNa
                             <h3 className="text-xl font-black text-white">Nhóm Zalo hỗ trợ</h3>
                             <div className="mt-4 space-y-3">
                                 {[
-                                    'Tham gia nhóm Zalo cộng đồng Giáo viên yêu công nghệ.',
+                                    'Tham gia nhóm cộng đồng App tùy chỉnh.',
                                     'Xem video hướng dẫn và các thông báo ghim trong nhóm.',
                                     'Hỏi trực tiếp khi cần hỗ trợ thao tác trong app.',
                                     'Nếu có lỗi khi tạo kỷ yếu, tạo QR hoặc chia sẻ, thầy/cô hỏi trực tiếp trong nhóm để được hỗ trợ.'
