@@ -247,6 +247,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
             </div>
           </div>
         </div>
+        {!sharedId && (
         <a
           href={FACEBOOK_PROFILE_URL}
           target="_blank"
@@ -259,6 +260,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
           <span className="sm:hidden">Facebook</span>
           <ExternalLink className="h-3.5 w-3.5" />
         </a>
+        )}
       </div>
 
       {/* DASHBOARD VIEW */}
