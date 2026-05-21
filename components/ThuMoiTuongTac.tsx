@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useRef } from 'react';
-import { saveSharedThuMoi, updateSharedThuMoi, getSharedThuMoi, checkStudentRSVP, saveStudentRSVP, getUserThuMoiList, getRSVPs } from '../utils/firebaseThuMoi';
-import { Mail, Users, Plus, ArrowLeft, Calendar, MapPin, X, CheckCircle, XCircle, Pencil, ExternalLink } from 'lucide-react';
+import { saveSharedThuMoi, updateSharedThuMoi, getSharedThuMoi, checkStudentRSVP, saveStudentRSVP, getUserThuMoiList, getRSVPs, deleteStudentRSVP } from '../utils/firebaseThuMoi';
+import { Mail, Users, Plus, ArrowLeft, Calendar, MapPin, X, CheckCircle, XCircle, Pencil, ExternalLink, Trash2 } from 'lucide-react';
 
 interface Props {
   onBack: () => void;
@@ -27,6 +27,7 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
   const [showRsvpModal, setShowRsvpModal] = useState<{shortId: string, className: string} | null>(null);
   const [rsvpData, setRsvpData] = useState<any[]>([]);
   const [loadingRsvp, setLoadingRsvp] = useState(false);
+  const [deletingRsvpId, setDeletingRsvpId] = useState<string | null>(null);
 
   const withTimeout = async <T,>(promise: Promise<T>, timeoutMs = 10000): Promise<T> => {
     let timeoutId: ReturnType<typeof setTimeout> | undefined;
@@ -175,6 +176,25 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
     const data = await getRSVPs(shortId);
     setRsvpData(data);
     setLoadingRsvp(false);
+  };
+
+  const handleDeleteRsvp = async (item: any) => {
+    if (!showRsvpModal || !item?.id) return;
+    const studentName = item.studentName || 'phản hồi này';
+    const confirmed = window.confirm(`Xóa phản hồi của học sinh "${studentName}"? Thao tác này không thể hoàn tác.`);
+    if (!confirmed) return;
+
+    setDeletingRsvpId(item.id);
+    const success = await deleteStudentRSVP(showRsvpModal.shortId, item.id);
+    setDeletingRsvpId(null);
+
+    if (!success) {
+      alert('Chưa xóa được phản hồi. Vui lòng thử lại.');
+      return;
+    }
+
+    setRsvpData(prev => prev.filter(rsvp => rsvp.id !== item.id));
+    loadUserList();
   };
 
   const handleCreateNew = () => {
@@ -470,7 +490,8 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                         <th className="px-6 py-4 rounded-tl-2xl">Thời gian</th>
                         <th className="px-6 py-4">Phụ huynh</th>
                         <th className="px-6 py-4">Học sinh</th>
-                        <th className="px-6 py-4 rounded-tr-2xl">Trạng thái</th>
+                        <th className="px-6 py-4">Trạng thái</th>
+                        <th className="px-6 py-4 rounded-tr-2xl text-right">Xóa</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-800">
@@ -497,6 +518,18 @@ const ThuMoiTuongTac: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogi
                                   <XCircle className="w-3.5 h-3.5" /> Vắng mặt
                                 </span>
                               )}
+                            </td>
+                            <td className="px-6 py-4 text-right">
+                              <button
+                                type="button"
+                                onClick={() => handleDeleteRsvp(item)}
+                                disabled={deletingRsvpId === item.id}
+                                className="inline-flex items-center justify-center rounded-xl bg-rose-500/10 p-2 text-rose-300 transition hover:bg-rose-500/20 disabled:cursor-wait disabled:opacity-50"
+                                title="Xóa phản hồi"
+                                aria-label="Xóa phản hồi"
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </button>
                             </td>
                           </tr>
                         );

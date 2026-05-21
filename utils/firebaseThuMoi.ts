@@ -1,5 +1,5 @@
 import { database, firebaseConfig } from './firebaseConfig';
-import { equalTo, get, orderByChild, query, ref, set, update } from 'firebase/database';
+import { equalTo, get, orderByChild, query, ref, remove, set, update } from 'firebase/database';
 
 const SHARED_THUMOI_REF = 'shared-thumoi';
 
@@ -387,5 +387,19 @@ export const getRSVPs = async (shortId: string): Promise<any[]> => {
     } catch (error) {
         console.error('[ShareLink] Error getting RSVPs:', error);
         return [];
+    }
+};
+
+export const deleteStudentRSVP = async (shortId: string, rsvpId: string): Promise<boolean> => {
+    try {
+        const fullKey = await getFullKeyFromShortId(shortId);
+        if (!fullKey || !rsvpId) return false;
+
+        const rsvpRef = ref(database, `${SHARED_THUMOI_REF}/${fullKey}/rsvps/${rsvpId}`);
+        await remove(rsvpRef);
+        return true;
+    } catch (error) {
+        console.error('[ShareLink] Error deleting RSVP:', error);
+        return false;
     }
 };
