@@ -15,7 +15,7 @@ const KYYEU_ACCESS_SESSION_TTL_MS = 12 * 60 * 60 * 1000;
 const FIREBASE_ACCESS_CHECK_TIMEOUT_MS = 10000;
 const FIREBASE_ACCESS_SUBMIT_TIMEOUT_MS = 15000;
 const KYYEU_GUEST_SESSION_EMAIL = 'guest@kyyeu.local';
-const KYYEU_ZALO_GROUP_QR_SRC = '/kyyeu-zalo-group-card.png?v=20260521';
+const KYYEU_ZALO_GROUP_QR_SRC = '/kyyeu-zalo-kyyeu-tuy-chinh-card-20260521.png?v=20260521b';
 
 const grantKyYeuAccessSession = (email: string) => {
     const now = Date.now();
