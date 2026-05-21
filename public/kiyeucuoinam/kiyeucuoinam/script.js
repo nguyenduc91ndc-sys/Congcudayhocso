@@ -2286,7 +2286,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     return `<article class="timeline-card"><div class="timeline-dot">${escapeHtml(item.icon)}</div><h3>${escapeHtml(item.title)}</h3><p>${escapeHtml(item.text)}</p>${thumb}</article>`;
                 }).join('');
                 const guestbookHTML = buildGuestbookItems(c).map(note => `<article class="guest-note ${note.featured ? 'featured' : ''}"><h3>${escapeHtml(note.title)}</h3><p>${escapeHtml(note.text).replace(/\n/g,'<br>')}</p><span class="guest-sign">${escapeHtml(note.sign)}</span></article>`).join('');
-                const liveGuestbookHTML = `<div class="live-guestbook" id="liveGuestbook">
+                const liveGuestbookHTML = `<section class="yb-section live-guestbook-section" id="liveGuestbookSection">
+<div class="section-eyebrow">L&#432;u b&#250;t t&#432;&#417;ng t&#225;c</div>
+<h2 class="section-title script-font" style="font-family:${ff}">PH/HS g&#7917;i l&#7901;i nh&#7855;n</h2>
+<div class="live-guestbook" id="liveGuestbook">
 <div class="live-guestbook-head">
 <div><h3>Góc lưu bút PH/HS</h3><p>Phụ huynh và học sinh có thể gửi lời nhắn. Lời nhắn sẽ hiện sau khi giáo viên duyệt.</p></div>
 <button type="button" class="live-guestbook-manage" id="liveGuestbookManage">Quản lý</button>
@@ -2304,7 +2307,8 @@ document.addEventListener('DOMContentLoaded', () => {
 <p class="live-admin-title">Lời nhắn chờ duyệt</p>
 <div class="live-note-list" id="livePendingNotes"></div>
 </div>
-</div>`;
+</div>
+</section>`;
 
                 let audioTag = '<audio id="bgMusic" loop preload="auto"></audio>';
                 if (c.customAudioData) {
@@ -2391,7 +2395,7 @@ if(btnPM)btnPM.addEventListener('click',function(){btnMT.click();});
 function setupLiveGuestbook(){
     var root=document.getElementById('liveGuestbook');
     if(!root||!guestbookConfig||!guestbookConfig.yearbookId)return;
-    var FIREBASE_DB='https://giaoviencongnghe-3c2a9-default-rtdb.asia-southeast1.firebasedatabase.app';
+    var FIREBASE_DB='https://kyyeu-guestbook-default-rtdb.asia-southeast1.firebasedatabase.app';
     var form=document.getElementById('liveGuestbookForm');
     var nameInput=document.getElementById('liveGuestbookName');
     var roleInput=document.getElementById('liveGuestbookRole');
@@ -2832,13 +2836,6 @@ ${cdHTML ? `<section class="yb-section cd-section">
 <div class="timeline-board">${timelineHTML}</div>
 </section>
 
-<section class="yb-section guestbook-section">
-<div class="section-eyebrow">Sá»• lÆ°u bÃºt</div>
-<h2 class="section-title script-font" style="font-family:${ff}">ðŸ’Œ Nhá»¯ng lá»i gá»­i láº¡i</h2>
-<div class="guestbook-grid">${guestbookHTML}</div>
-${liveGuestbookHTML}
-</section>
-
 <section class="yb-section message-section">
 <div class="message-card">
 <h2 class="section-title script-font" style="font-family:${ff}">💌 Lời nhắn của GVCN</h2>
@@ -2854,6 +2851,16 @@ ${liveGuestbookHTML}
 <div class="slideshow-controls"><button class="slide-btn" id="btnPrevSlide">◀</button><button class="slide-btn slide-play" id="btnPlaySlide">▶ Auto</button><button class="slide-btn" id="btnNextSlide">▶</button><button class="slide-btn slide-tv" id="btnTvSlide">Phóng to</button></div>
 <div class="slideshow-dots" id="slideshowDots"></div>
 </div></section>
+
+<section class="yb-section guestbook-section">
+<div class="section-eyebrow">Sá»• lÆ°u bÃºt</div>
+<h2 class="section-title script-font" style="font-family:${ff}">ðŸ’Œ Nhá»¯ng lá»i gá»­i láº¡i</h2>
+<div class="guestbook-grid">${guestbookHTML}</div>
+</section>
+
+
+
+${liveGuestbookHTML}
 
 <footer class="yb-footer">
 <p class="footer-text">Được tạo với ❤️ bởi ${escapeHtml(c.teacher||'GVCN')}</p>
