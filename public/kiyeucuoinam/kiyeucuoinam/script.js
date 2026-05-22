@@ -382,7 +382,6 @@ document.addEventListener('DOMContentLoaded', () => {
 .live-note-delete{background:#fff0f0;color:#b42318}
 .live-note-actions{display:flex;gap:8px;margin-top:11px;justify-content:flex-end}
 .live-admin-title{margin:0 0 10px;color:var(--text);font-size:.95rem;font-weight:900}
-.guestbook-section{display:none}
 @media(max-width:600px){.guestbook-admin-export{grid-template-columns:1fr}.guestbook-admin-fields{flex-direction:column;align-items:stretch}.guestbook-admin-fields input{width:100%}.live-guestbook{padding:15px;border-radius:18px}.live-guestbook-head{flex-direction:column}.live-guestbook-form{grid-template-columns:1fr}.live-guestbook-form textarea{grid-column:auto}.live-guestbook-submit{min-height:42px}.live-note-list{grid-template-columns:1fr}.live-admin-login{grid-template-columns:1fr}}
 `;
     }
@@ -1022,6 +1021,262 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    const LIVE_GUESTBOOK_DB_URL = 'https://kyyeu-guestbook-default-rtdb.asia-southeast1.firebasedatabase.app';
+    let liveGuestbookBound = false;
+    let liveGuestbookAdminUnlocked = false;
+    let liveGuestbookCurrentYearbookId = '';
+
+    function getLiveGuestbookConfig() {
+        const hadYearbookId = Boolean(STATE.config.yearbookId);
+        const hadAdminCode = Boolean(STATE.config.guestbookAdminCode);
+        ensureGuestbookAccessConfig();
+        if ((!hadYearbookId || !hadAdminCode) && !isRestoringDraft) {
+            syncGuestbookAccessUi();
+            scheduleDraftSave(true);
+        }
+        return {
+            yearbookId: STATE.config.yearbookId || '',
+            adminCode: STATE.config.guestbookAdminCode || ''
+        };
+    }
+
+    function liveGuestbookNotesUrl(noteId = '') {
+        const config = getLiveGuestbookConfig();
+        const base = `${LIVE_GUESTBOOK_DB_URL}/kyyeu-guestbook/${encodeURIComponent(config.yearbookId)}/notes`;
+        return `${base}${noteId ? `/${encodeURIComponent(noteId)}` : ''}.json`;
+    }
+
+    function setLiveGuestbookStatus(text = '', type = '') {
+        const statusEl = document.getElementById('liveGuestbookStatus');
+        if (!statusEl) return;
+        statusEl.textContent = text;
+        statusEl.style.color = type === 'error' ? '#b42318' : (type === 'ok' ? 'var(--primary)' : 'var(--text2)');
+    }
+
+    function makeLiveGuestbookNoteId() {
+        let rand = Math.random().toString(36).slice(2, 9);
+        if (window.crypto && window.crypto.getRandomValues) {
+            const bytes = new Uint8Array(4);
+            window.crypto.getRandomValues(bytes);
+            rand = Array.from(bytes, byte => byte.toString(36).padStart(2, '0')).join('').slice(0, 9);
+        }
+        return `note_${Date.now().toString(36)}_${rand}`;
+    }
+
+    function normalizeLiveGuestbookNotes(raw) {
+        return Object.keys(raw || {})
+            .map(id => ({ ...(raw[id] || {}), id: (raw[id] && raw[id].id) || id }))
+            .sort((a, b) => (Number(b.createdAt) || 0) - (Number(a.createdAt) || 0));
+    }
+
+    async function fetchLiveGuestbookNotes() {
+        const response = await fetch(liveGuestbookNotesUrl(), { cache: 'no-store' });
+        if (!response.ok) throw new Error('Không đọc được lưu bút.');
+        return normalizeLiveGuestbookNotes(await response.json());
+    }
+
+    function renderLiveGuestbookNotes(target, notes, emptyText, isPending) {
+        if (!target) return;
+        target.innerHTML = '';
+        if (!notes.length) {
+            const empty = document.createElement('p');
+            empty.className = 'live-empty';
+            empty.textContent = emptyText;
+            target.appendChild(empty);
+            return;
+        }
+
+        notes.forEach(note => {
+            const card = document.createElement('article');
+            card.className = 'live-note';
+
+            const text = document.createElement('p');
+            text.textContent = note.message || '';
+
+            const footer = document.createElement('footer');
+            const name = document.createElement('span');
+            name.textContent = `${note.name || 'Ẩn danh'} - ${note.role || 'Lưu bút'}`;
+            const date = document.createElement('span');
+            date.textContent = note.createdAt ? new Date(note.createdAt).toLocaleDateString('vi-VN') : '';
+            footer.appendChild(name);
+            footer.appendChild(date);
+
+            card.appendChild(text);
+            card.appendChild(footer);
+
+            if (isPending) {
+                const actions = document.createElement('div');
+                actions.className = 'live-note-actions';
+
+                const approve = document.createElement('button');
+                approve.type = 'button';
+                approve.className = 'live-note-approve';
+                approve.textContent = 'Duyệt';
+                approve.addEventListener('click', () => approveLiveGuestbookNote(note.id));
+
+                const del = document.createElement('button');
+                del.type = 'button';
+                del.className = 'live-note-delete';
+                del.textContent = 'Xóa';
+                del.addEventListener('click', () => deleteLiveGuestbookNote(note.id));
+
+                actions.appendChild(approve);
+                actions.appendChild(del);
+                card.appendChild(actions);
+            }
+
+            target.appendChild(card);
+        });
+
+        repairDocumentText(target);
+    }
+
+    async function loadLiveGuestbookApproved() {
+        const approvedList = document.getElementById('liveApprovedNotes');
+        try {
+            const notes = await fetchLiveGuestbookNotes();
+            renderLiveGuestbookNotes(
+                approvedList,
+                notes.filter(note => note.status === 'approved'),
+                'Chưa có lời nhắn đã duyệt.',
+                false
+            );
+        } catch (error) {
+            console.error('Guestbook approved load failed', error);
+            renderLiveGuestbookNotes(approvedList, [], 'Chưa tải được lưu bút. Vui lòng thử lại sau.', false);
+        }
+    }
+
+    async function loadLiveGuestbookPending() {
+        if (!liveGuestbookAdminUnlocked) return;
+        const pendingList = document.getElementById('livePendingNotes');
+        try {
+            const notes = await fetchLiveGuestbookNotes();
+            renderLiveGuestbookNotes(
+                pendingList,
+                notes.filter(note => note.status !== 'approved'),
+                'Không có lời nhắn chờ duyệt.',
+                true
+            );
+        } catch (error) {
+            console.error('Guestbook pending load failed', error);
+            renderLiveGuestbookNotes(pendingList, [], 'Chưa tải được danh sách chờ duyệt.', true);
+        }
+    }
+
+    async function approveLiveGuestbookNote(noteId) {
+        if (!noteId) return;
+        setLiveGuestbookStatus('Đang duyệt lời nhắn...');
+        try {
+            const response = await fetch(liveGuestbookNotesUrl(noteId), {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ status: 'approved', approvedAt: Date.now() })
+            });
+            if (!response.ok) throw new Error('Duyệt thất bại.');
+            setLiveGuestbookStatus('Đã duyệt lời nhắn.', 'ok');
+            await loadLiveGuestbookApproved();
+            await loadLiveGuestbookPending();
+        } catch (error) {
+            console.error('Guestbook approve failed', error);
+            setLiveGuestbookStatus('Chưa duyệt được lời nhắn.', 'error');
+        }
+    }
+
+    async function deleteLiveGuestbookNote(noteId) {
+        if (!noteId || !confirm('Xóa lời nhắn này?')) return;
+        setLiveGuestbookStatus('Đang xóa lời nhắn...');
+        try {
+            const response = await fetch(liveGuestbookNotesUrl(noteId), { method: 'DELETE' });
+            if (!response.ok) throw new Error('Xóa thất bại.');
+            setLiveGuestbookStatus('Đã xóa lời nhắn.', 'ok');
+            await loadLiveGuestbookApproved();
+            await loadLiveGuestbookPending();
+        } catch (error) {
+            console.error('Guestbook delete failed', error);
+            setLiveGuestbookStatus('Chưa xóa được lời nhắn.', 'error');
+        }
+    }
+
+    function setupPreviewLiveGuestbook() {
+        const root = document.getElementById('liveGuestbook');
+        if (!root) return;
+
+        const config = getLiveGuestbookConfig();
+        if (config.yearbookId && config.yearbookId !== liveGuestbookCurrentYearbookId) {
+            liveGuestbookCurrentYearbookId = config.yearbookId;
+            liveGuestbookAdminUnlocked = false;
+            const adminPanel = document.getElementById('liveAdminPanel');
+            if (adminPanel) adminPanel.classList.remove('show');
+            loadLiveGuestbookApproved();
+        }
+
+        if (liveGuestbookBound) return;
+        liveGuestbookBound = true;
+
+        const form = document.getElementById('liveGuestbookForm');
+        const nameInput = document.getElementById('liveGuestbookName');
+        const roleInput = document.getElementById('liveGuestbookRole');
+        const messageInput = document.getElementById('liveGuestbookMessage');
+        const manageBtn = document.getElementById('liveGuestbookManage');
+        const adminPanel = document.getElementById('liveAdminPanel');
+        const adminCodeInput = document.getElementById('liveAdminCode');
+        const adminUnlock = document.getElementById('liveAdminUnlock');
+
+        if (form) {
+            form.addEventListener('submit', async event => {
+                event.preventDefault();
+                const name = (nameInput?.value || '').trim().slice(0, 60);
+                const role = (roleInput?.value || 'Học sinh').trim().slice(0, 30);
+                const message = (messageInput?.value || '').trim().slice(0, 600);
+                if (!name || !message) {
+                    setLiveGuestbookStatus('Vui lòng nhập tên và lời nhắn.', 'error');
+                    return;
+                }
+
+                const id = makeLiveGuestbookNoteId();
+                const note = { id, name, role, message, status: 'pending', createdAt: Date.now() };
+                setLiveGuestbookStatus('Đang gửi lời nhắn...');
+
+                try {
+                    const response = await fetch(liveGuestbookNotesUrl(id), {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(note)
+                    });
+                    if (!response.ok) throw new Error('Gửi thất bại.');
+                    form.reset();
+                    setLiveGuestbookStatus('Đã gửi. Lời nhắn sẽ hiện sau khi giáo viên duyệt.', 'ok');
+                    await loadLiveGuestbookPending();
+                } catch (error) {
+                    console.error('Guestbook submit failed', error);
+                    setLiveGuestbookStatus('Chưa gửi được lời nhắn. Vui lòng thử lại.', 'error');
+                }
+            });
+        }
+
+        if (manageBtn && adminPanel) {
+            manageBtn.addEventListener('click', () => {
+                adminPanel.classList.toggle('show');
+                if (adminPanel.classList.contains('show') && liveGuestbookAdminUnlocked) loadLiveGuestbookPending();
+            });
+        }
+
+        if (adminUnlock) {
+            adminUnlock.addEventListener('click', () => {
+                const input = (adminCodeInput?.value || '').trim();
+                const configNow = getLiveGuestbookConfig();
+                if (input !== String(configNow.adminCode || '').trim()) {
+                    setLiveGuestbookStatus('Mã duyệt chưa đúng.', 'error');
+                    return;
+                }
+                liveGuestbookAdminUnlocked = true;
+                setLiveGuestbookStatus('Đã mở quyền duyệt lưu bút.', 'ok');
+                loadLiveGuestbookPending();
+            });
+        }
+    }
+
     // Tabs
     const tabBtns = document.querySelectorAll('.tab-btn');
     const tabContents = document.querySelectorAll('.tab-content');
@@ -1619,6 +1874,7 @@ document.addEventListener('DOMContentLoaded', () => {
         renderGallery();
         renderMemoryDisc();
         renderCreativeSections();
+        setupPreviewLiveGuestbook();
         
         // Render Slideshow
         initSlideshow();

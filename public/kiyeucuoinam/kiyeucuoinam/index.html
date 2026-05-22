@@ -729,6 +729,40 @@
             <div class="guestbook-grid" id="guestbookGrid"></div>
         </section>
 
+        <!-- LIVE GUESTBOOK SECTION -->
+        <section class="yb-section live-guestbook-section" id="liveGuestbookSection">
+            <div class="section-eyebrow">Lưu bút tương tác</div>
+            <h2 class="section-title script-font">PH/HS gửi lời nhắn</h2>
+            <div class="live-guestbook" id="liveGuestbook">
+                <div class="live-guestbook-head">
+                    <div>
+                        <h3>Góc lưu bút PH/HS</h3>
+                        <p>Phụ huynh và học sinh có thể gửi lời nhắn. Lời nhắn sẽ hiện sau khi giáo viên duyệt.</p>
+                    </div>
+                    <button type="button" class="live-guestbook-manage" id="liveGuestbookManage">Quản lý</button>
+                </div>
+                <form class="live-guestbook-form" id="liveGuestbookForm">
+                    <input type="text" id="liveGuestbookName" maxlength="60" placeholder="Tên phụ huynh / học sinh" required>
+                    <select id="liveGuestbookRole" aria-label="Vai trò">
+                        <option value="Học sinh">Học sinh</option>
+                        <option value="Phụ huynh">Phụ huynh</option>
+                    </select>
+                    <button type="submit" class="live-guestbook-submit">Gửi</button>
+                    <textarea id="liveGuestbookMessage" maxlength="600" placeholder="Viết vài dòng suy nghĩ..." required></textarea>
+                </form>
+                <p class="live-guestbook-status" id="liveGuestbookStatus"></p>
+                <div class="live-note-list" id="liveApprovedNotes"></div>
+                <div class="live-admin-panel" id="liveAdminPanel">
+                    <div class="live-admin-login">
+                        <input type="password" id="liveAdminCode" placeholder="Nhập mã duyệt lưu bút">
+                        <button type="button" id="liveAdminUnlock">Mở duyệt</button>
+                    </div>
+                    <p class="live-admin-title">Lời nhắn chờ duyệt</p>
+                    <div class="live-note-list" id="livePendingNotes"></div>
+                </div>
+            </div>
+        </section>
+
         <!-- FOOTER -->
         <footer class="yb-footer">
             <p class="footer-text">Được tạo với ❤️ bởi <span id="footerTeacher">GVCN</span></p>
