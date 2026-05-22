@@ -32,6 +32,28 @@ const saveKeysToLocal = (keys: { key: string; createdAt: string; note: string }[
     localStorage.setItem('ntd_admin_keys', JSON.stringify(keys));
 };
 
+type KyYeuAdminKey = {
+    key: string;
+    createdAt: string;
+    note: string;
+    usedBy?: string;
+    active: boolean;
+    usageCount?: number;
+    exportCount?: number;
+    exportLimit?: number;
+    lastExportAt?: string;
+    lastExportBy?: string;
+    lastExportClass?: string;
+    lastExportYear?: string;
+};
+
+const formatKyYeuDateTime = (value?: string): string => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('vi-VN');
+};
+
 const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders' | 'apps'>('analytics');
     const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
@@ -40,7 +62,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [skknKeys, setSkknKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
-    const [kyYeuKeys, setKyYeuKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string; active: boolean; usageCount?: number; exportCount?: number; exportLimit?: number }[]>([]);
+    const [kyYeuKeys, setKyYeuKeys] = useState<KyYeuAdminKey[]>([]);
     const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn' | 'kyyeu'>('pro');
     const [newNote, setNewNote] = useState('');
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -140,7 +162,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 active: k.active !== false,
                 usageCount: k.usageCount || 0,
                 exportCount: k.exportCount || 0,
-                exportLimit: k.exportLimit || 0
+                exportLimit: k.exportLimit || 0,
+                lastExportAt: k.lastExportAt,
+                lastExportBy: k.lastExportBy,
+                lastExportClass: k.lastExportClass,
+                lastExportYear: k.lastExportYear
             }));
             setKyYeuKeys(formattedKeys);
         });
@@ -1095,6 +1121,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                 <div className="text-xs text-gray-500 mt-1">
                                                     Lượt kích hoạt: {item.usageCount || 0}{item.usedBy ? ` • Gần nhất: ${item.usedBy}` : ''}
                                                 </div>
+                                                <div className={`mt-2 inline-flex items-center gap-2 rounded-lg px-2.5 py-1 text-xs font-bold ${(item.exportCount || 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                    <Package size={14} />
+                                                    <span>Xuất ZIP: {item.exportCount || 0}/{item.exportLimit || 0}</span>
+                                                </div>
+                                                {(item.lastExportBy || item.lastExportAt || item.lastExportClass || item.lastExportYear) && (
+                                                    <div className="mt-1 space-y-0.5 text-xs text-gray-600">
+                                                        {item.lastExportBy && <div>Gmail xuất gần nhất: <span className="font-semibold text-gray-800">{item.lastExportBy}</span></div>}
+                                                        {(item.lastExportClass || item.lastExportYear) && <div>Lớp/năm học: <span className="font-semibold text-gray-800">{[item.lastExportClass, item.lastExportYear].filter(Boolean).join(' - ')}</span></div>}
+                                                        {item.lastExportAt && <div>Thời điểm xuất: <span className="font-semibold text-gray-800">{formatKyYeuDateTime(item.lastExportAt)}</span></div>}
+                                                    </div>
+                                                )}
                                             </div>
                                             <div className="flex gap-2">
                                                 <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200" title="Copy mã">
