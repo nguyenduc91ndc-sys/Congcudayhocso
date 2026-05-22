@@ -1350,6 +1350,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadZone = document.getElementById('uploadZone');
     const photoList = document.getElementById('photoList');
     const photoCountEl = document.getElementById('photoCount');
+    const IMAGE_COMPRESS_MAX_EDGE = 1600;
+    const IMAGE_COMPRESS_TARGET_BYTES = 1.2 * 1024 * 1024;
+    const IMAGE_COMPRESS_QUALITY = 0.78;
+    let isProcessingMediaUploads = false;
 
     uploadZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -1428,7 +1432,84 @@ document.addEventListener('DOMContentLoaded', () => {
         scheduleDraftSave(true);
     }
 
-    function handleFiles(files) {
+    function setUploadStatus(message) {
+        if (photoCountEl) photoCountEl.textContent = message;
+    }
+
+    function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target.result);
+            reader.onerror = () => reject(reader.error || new Error('Cannot read file.'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function canvasToBlob(canvas, type, quality) {
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error('Cannot compress image.'));
+            }, type, quality);
+        });
+    }
+
+    function loadImageFromUrl(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Cannot load image.'));
+            img.src = url;
+        });
+    }
+
+    async function compressImageFile(file) {
+        const objectUrl = URL.createObjectURL(file);
+        try {
+            const img = await loadImageFromUrl(objectUrl);
+
+            const ratio = Math.min(1, IMAGE_COMPRESS_MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
+            const width = Math.max(1, Math.round(img.naturalWidth * ratio));
+            const height = Math.max(1, Math.round(img.naturalHeight * ratio));
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d', { alpha: false });
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            let quality = IMAGE_COMPRESS_QUALITY;
+            let blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+            while (blob.size > IMAGE_COMPRESS_TARGET_BYTES && quality > 0.58) {
+                quality -= 0.08;
+                blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+            }
+
+            const shouldUseCompressed = blob.size < file.size || ratio < 1;
+            const outputFile = shouldUseCompressed
+                ? new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'photo'}.jpg`, { type: 'image/jpeg' })
+                : file;
+
+            return {
+                dataUrl: await readFileAsDataUrl(outputFile),
+                mimeType: outputFile.type || 'image/jpeg',
+                sizeBefore: file.size,
+                sizeAfter: outputFile.size,
+                compressed: outputFile !== file
+            };
+        } finally {
+            URL.revokeObjectURL(objectUrl);
+        }
+    }
+
+    async function handleFiles(files) {
+        if (isProcessingMediaUploads) {
+            alert('Dang xu ly anh/video. Vui long cho hoan tat roi chon tiep.');
+            return;
+        }
+
         const limits = getMediaLimits();
         let validFiles = Array.from(files).filter(f => f.type.startsWith('image/') || f.type.startsWith('video/') || isHeicLikeMedia(f));
         const heicFiles = validFiles.filter(isHeicLikeMedia);
@@ -1465,27 +1546,71 @@ document.addEventListener('DOMContentLoaded', () => {
         if (skippedVideoLimit) notes.push(`Giới hạn hiện tại là ${limits.maxVideos} video/link video.`);
         if (notes.length) alert(notes.join('\n'));
 
-        validFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                // Video data can make exported JSON/HTML large; keep clips short.
+        if (!validFiles.length) {
+            renderPhotoList();
+            return;
+        }
+
+        isProcessingMediaUploads = true;
+        photoInput.disabled = true;
+        let compressedCount = 0;
+        let savedBytes = 0;
+
+        try {
+            for (let index = 0; index < validFiles.length; index += 1) {
+                const file = validFiles[index];
                 const id = Date.now() + Math.random().toString(36).substring(7);
-                STATE.photos.push({
-                    id: id,
-                    dataUrl: e.target.result,
-                    type: file.type.startsWith('video/') ? 'video' : 'image',
-                    mimeType: file.type,
-                    name: file.name.split('.')[0],
-                    msg: ''
-                });
+                setUploadStatus(`Dang toi uu ${index + 1} / ${validFiles.length} file...`);
+
+                if (file.type.startsWith('image/')) {
+                    const result = await compressImageFile(file);
+                    if (result.compressed) {
+                        compressedCount += 1;
+                        savedBytes += Math.max(0, result.sizeBefore - result.sizeAfter);
+                    }
+                    STATE.photos.push({
+                        id: id,
+                        dataUrl: result.dataUrl,
+                        type: 'image',
+                        mimeType: result.mimeType,
+                        originalSize: result.sizeBefore,
+                        compressedSize: result.sizeAfter,
+                        name: file.name.split('.')[0],
+                        msg: ''
+                    });
+                } else {
+                    // Video data can make exported JSON/HTML large; keep clips short.
+                    STATE.photos.push({
+                        id: id,
+                        dataUrl: await readFileAsDataUrl(file),
+                        type: 'video',
+                        mimeType: file.type,
+                        name: file.name.split('.')[0],
+                        msg: ''
+                    });
+                }
+
                 renderPhotoList();
-                scheduleDraftSave(true);
-            };
-            reader.readAsDataURL(file);
-        });
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            if (compressedCount) {
+                const savedMB = (savedBytes / (1024 * 1024)).toFixed(1);
+                setUploadStatus(`Da nen ${compressedCount} anh, giam khoang ${savedMB} MB.`);
+                setTimeout(renderPhotoList, 1500);
+            }
+            scheduleDraftSave(true);
+        } catch (error) {
+            console.error('Image compression error:', error);
+            alert('Co anh chua xu ly duoc. Hay thu chon it anh hon hoac doi anh sang JPG/PNG roi tai lai.');
+            renderPhotoList();
+        } finally {
+            isProcessingMediaUploads = false;
+            photoInput.disabled = false;
+        }
     }
 
-    function replaceMediaFile(id, file) {
+    async function replaceMediaFile(id, file) {
         if (!file || (!file.type.startsWith('image/') && !file.type.startsWith('video/') && !isHeicLikeMedia(file))) {
             alert('Vui lòng chọn file ảnh hoặc video.');
             return;
@@ -1513,19 +1638,28 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
 
-        const reader = new FileReader();
-        reader.onload = (event) => {
-            photo.dataUrl = event.target.result;
+        try {
+            if (nextIsVideo) {
+                photo.dataUrl = await readFileAsDataUrl(file);
+            } else {
+                const result = await compressImageFile(file);
+                photo.dataUrl = result.dataUrl;
+                photo.originalSize = result.sizeBefore;
+                photo.compressedSize = result.sizeAfter;
+                photo.mimeType = result.mimeType;
+            }
             photo.type = nextIsVideo ? 'video' : 'image';
-            photo.mimeType = file.type;
+            if (nextIsVideo) photo.mimeType = file.type;
             photo.embedUrl = '';
             photo.sourceUrl = '';
             if (!photo.name) photo.name = file.name.split('.')[0];
             renderPhotoList();
             applyStateToUI();
             scheduleDraftSave(true);
-        };
-        reader.readAsDataURL(file);
+        } catch (error) {
+            console.error('Replace media error:', error);
+            alert('Khong thay duoc file nay. Hay thu anh JPG/PNG khac hoac video nhe hon.');
+        }
     }
 
     function renderPhotoList() {

@@ -95,6 +95,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const uploadZone = document.getElementById('uploadZone');
     const photoList = document.getElementById('photoList');
     const photoCountEl = document.getElementById('photoCount');
+    const IMAGE_COMPRESS_MAX_EDGE = 1600;
+    const IMAGE_COMPRESS_TARGET_BYTES = 1.2 * 1024 * 1024;
+    const IMAGE_COMPRESS_QUALITY = 0.78;
+    let isProcessingPhotoUploads = false;
 
     uploadZone.addEventListener('dragover', (e) => {
         e.preventDefault();
@@ -116,7 +120,79 @@ document.addEventListener('DOMContentLoaded', () => {
         photoInput.value = '';
     });
 
-    function handleFiles(files) {
+    function readFileAsDataUrl(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = (event) => resolve(event.target.result);
+            reader.onerror = () => reject(reader.error || new Error('Cannot read file.'));
+            reader.readAsDataURL(file);
+        });
+    }
+
+    function canvasToBlob(canvas, type, quality) {
+        return new Promise((resolve, reject) => {
+            canvas.toBlob((blob) => {
+                if (blob) resolve(blob);
+                else reject(new Error('Cannot compress image.'));
+            }, type, quality);
+        });
+    }
+
+    function loadImageFromUrl(url) {
+        return new Promise((resolve, reject) => {
+            const img = new Image();
+            img.onload = () => resolve(img);
+            img.onerror = () => reject(new Error('Cannot load image.'));
+            img.src = url;
+        });
+    }
+
+    async function compressImageFile(file) {
+        const objectUrl = URL.createObjectURL(file);
+        try {
+            const img = await loadImageFromUrl(objectUrl);
+
+            const ratio = Math.min(1, IMAGE_COMPRESS_MAX_EDGE / Math.max(img.naturalWidth, img.naturalHeight));
+            const width = Math.max(1, Math.round(img.naturalWidth * ratio));
+            const height = Math.max(1, Math.round(img.naturalHeight * ratio));
+            const canvas = document.createElement('canvas');
+            canvas.width = width;
+            canvas.height = height;
+
+            const ctx = canvas.getContext('2d', { alpha: false });
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, width, height);
+            ctx.drawImage(img, 0, 0, width, height);
+
+            let quality = IMAGE_COMPRESS_QUALITY;
+            let blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+            while (blob.size > IMAGE_COMPRESS_TARGET_BYTES && quality > 0.58) {
+                quality -= 0.08;
+                blob = await canvasToBlob(canvas, 'image/jpeg', quality);
+            }
+
+            const shouldUseCompressed = blob.size < file.size || ratio < 1;
+            const outputFile = shouldUseCompressed
+                ? new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'photo'}.jpg`, { type: 'image/jpeg' })
+                : file;
+
+            return {
+                dataUrl: await readFileAsDataUrl(outputFile),
+                sizeBefore: file.size,
+                sizeAfter: outputFile.size,
+                compressed: outputFile !== file
+            };
+        } finally {
+            URL.revokeObjectURL(objectUrl);
+        }
+    }
+
+    async function handleFiles(files) {
+        if (isProcessingPhotoUploads) {
+            alert('Dang xu ly anh. Vui long cho hoan tat roi chon tiep.');
+            return;
+        }
+
         let validFiles = Array.from(files).filter(f => f.type.startsWith('image/'));
         let remainingSlots = MAX_PHOTOS - STATE.photos.length;
         
@@ -125,21 +201,46 @@ document.addEventListener('DOMContentLoaded', () => {
             validFiles = validFiles.slice(0, remainingSlots);
         }
 
-        validFiles.forEach(file => {
-            const reader = new FileReader();
-            reader.onload = (e) => {
-                // In a real app, you might want to compress the image here before saving
+        isProcessingPhotoUploads = true;
+        photoInput.disabled = true;
+        let compressedCount = 0;
+        let savedBytes = 0;
+
+        try {
+            for (let index = 0; index < validFiles.length; index += 1) {
+                const file = validFiles[index];
+                photoCountEl.textContent = `Dang toi uu ${index + 1} / ${validFiles.length} anh...`;
+                const result = await compressImageFile(file);
+                if (result.compressed) {
+                    compressedCount += 1;
+                    savedBytes += Math.max(0, result.sizeBefore - result.sizeAfter);
+                }
                 const id = Date.now() + Math.random().toString(36).substring(7);
                 STATE.photos.push({
                     id: id,
-                    dataUrl: e.target.result,
+                    dataUrl: result.dataUrl,
+                    originalSize: result.sizeBefore,
+                    compressedSize: result.sizeAfter,
                     name: file.name.split('.')[0],
                     msg: ''
                 });
                 renderPhotoList();
-            };
-            reader.readAsDataURL(file);
-        });
+                await new Promise(resolve => setTimeout(resolve, 0));
+            }
+
+            if (compressedCount) {
+                const savedMB = (savedBytes / (1024 * 1024)).toFixed(1);
+                photoCountEl.textContent = `Da nen ${compressedCount} anh, giam khoang ${savedMB} MB.`;
+                setTimeout(renderPhotoList, 1500);
+            }
+        } catch (error) {
+            console.error('Image compression error:', error);
+            alert('Co anh chua xu ly duoc. Hay thu chon it anh hon hoac doi anh sang JPG/PNG roi tai lai.');
+            renderPhotoList();
+        } finally {
+            isProcessingPhotoUploads = false;
+            photoInput.disabled = false;
+        }
     }
 
     function renderPhotoList() {
