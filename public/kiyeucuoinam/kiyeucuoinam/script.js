@@ -743,7 +743,8 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getPhotoTrait(photo, idx = 0) {
-        return photo?.trait || AI_TRAITS[getStableIndex(`${photo?.name || ''}-${idx}`, AI_TRAITS.length)];
+        const teacherText = String(photo?.trait || photo?.msg || '').trim();
+        return teacherText || AI_TRAITS[getStableIndex(`${photo?.name || ''}-${idx}`, AI_TRAITS.length)];
     }
 
     function getDiscPhotos(photos = STATE.photos) {
@@ -1718,7 +1719,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const id = e.target.dataset.id;
                 const field = e.target.classList.contains('p-name') ? 'name' : 'msg';
                 const photo = STATE.photos.find(p => p.id === id);
-                if (photo) photo[field] = e.target.value;
+                if (photo) {
+                    photo[field] = e.target.value;
+                    if (field === 'msg') photo.trait = e.target.value.trim();
+                }
                 scheduleDraftSave();
             };
             input.addEventListener('input', syncPhotoText);
@@ -1733,6 +1737,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (photo) {
                     const randomTrait = AI_TRAITS[Math.floor(Math.random() * AI_TRAITS.length)];
                     photo.msg = randomTrait;
+                    photo.trait = randomTrait;
                     const input = e.target.parentElement.querySelector('.p-msg');
                     if (input) input.value = randomTrait;
                     scheduleDraftSave();
