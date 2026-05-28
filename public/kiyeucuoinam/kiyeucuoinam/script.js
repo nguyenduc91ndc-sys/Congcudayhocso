@@ -1679,15 +1679,97 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function movePhotoItem(draggedId, targetId, placeAfter = false) {
+        if (!draggedId || !targetId || draggedId === targetId) return false;
+        const fromIndex = STATE.photos.findIndex(photo => photo.id === draggedId);
+        const targetIndex = STATE.photos.findIndex(photo => photo.id === targetId);
+        if (fromIndex < 0 || targetIndex < 0) return false;
+        const [item] = STATE.photos.splice(fromIndex, 1);
+        let insertIndex = STATE.photos.findIndex(photo => photo.id === targetId);
+        if (insertIndex < 0) insertIndex = STATE.photos.length;
+        if (placeAfter) insertIndex += 1;
+        STATE.photos.splice(insertIndex, 0, item);
+        return true;
+    }
+
+    function bindPhotoReorderEvents() {
+        let draggedId = '';
+        let dropTargetId = '';
+        let dropAfter = false;
+
+        const clearDropTargets = () => {
+            photoList.querySelectorAll('.photo-item').forEach(item => {
+                item.classList.remove('drag-over-before', 'drag-over-after');
+            });
+        };
+
+        const clearDropState = () => {
+            photoList.querySelectorAll('.photo-item').forEach(item => {
+                item.classList.remove('is-dragging', 'drag-over-before', 'drag-over-after');
+            });
+        };
+
+        photoList.querySelectorAll('.photo-drag-handle').forEach(handle => {
+            handle.addEventListener('dragstart', event => {
+                draggedId = handle.dataset.id || '';
+                dropTargetId = '';
+                dropAfter = false;
+                const item = handle.closest('.photo-item');
+                if (item) item.classList.add('is-dragging');
+                event.dataTransfer.effectAllowed = 'move';
+                event.dataTransfer.setData('text/plain', draggedId);
+            });
+            handle.addEventListener('dragend', clearDropState);
+        });
+
+        photoList.ondragover = event => {
+            if (!draggedId) return;
+            const item = event.target.closest('.photo-item');
+            if (!item || item.dataset.id === draggedId) {
+                clearDropTargets();
+                dropTargetId = '';
+                return;
+            }
+            event.preventDefault();
+            const rect = item.getBoundingClientRect();
+            const centerX = rect.left + rect.width / 2;
+            const centerY = rect.top + rect.height / 2;
+            const pointerAfter = Math.abs(event.clientY - centerY) > Math.abs(event.clientX - centerX)
+                ? event.clientY > centerY
+                : event.clientX > centerX;
+            clearDropTargets();
+            item.classList.add(pointerAfter ? 'drag-over-after' : 'drag-over-before');
+            dropTargetId = item.dataset.id || '';
+            dropAfter = pointerAfter;
+            event.dataTransfer.dropEffect = 'move';
+        };
+
+        photoList.ondrop = event => {
+            if (!draggedId || !dropTargetId) return;
+            event.preventDefault();
+            const changed = movePhotoItem(draggedId, dropTargetId, dropAfter);
+            clearDropState();
+            draggedId = '';
+            dropTargetId = '';
+            if (changed) {
+                renderPhotoList();
+                applyStateToUI();
+                scheduleDraftSave(true);
+            }
+        };
+    }
+
     function renderPhotoList() {
         photoList.innerHTML = '';
         STATE.photos.forEach((photo, index) => {
             const div = document.createElement('div');
             div.className = 'photo-item';
+            div.dataset.id = photo.id;
             const safeName = escapeHtml(photo.name);
             const safeMsg = escapeHtml(photo.msg);
             const mediaKind = isEmbed(photo) ? 'Link' : (isVideo(photo) ? 'Video' : 'Ảnh');
             div.innerHTML = `
+                <button type="button" class="photo-drag-handle" draggable="true" data-id="${photo.id}" title="Kéo để đổi vị trí" aria-label="Kéo để đổi vị trí ảnh/video này">⋮⋮</button>
                 <button class="photo-item-remove" data-id="${photo.id}" title="Xóa ảnh/video này" aria-label="Xóa ảnh/video này">X</button>
                 <div class="media-preview">
                     ${mediaPreviewHtml(photo, safeName)}
@@ -1760,6 +1842,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             });
         });
+
+        bindPhotoReorderEvents();
     }
 
     // ===== DATA MANAGEMENT =====
