@@ -747,7 +747,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function getPhotoTrait(photo, idx = 0) {
         const teacherText = String(photo?.trait || '').trim();
         if (teacherText && teacherText.length <= MAX_VIEWER_BADGE_CHARS) return teacherText;
-        return 'Kỷ niệm đáng yêu ♡';
+        return 'Khoảnh khắc đáng nhớ ♡';
     }
 
     function setViewerMessage(el, message, badgeText = '') {
@@ -3019,7 +3019,7 @@ var btnMT = document.getElementById('btnMusicToggle');
 function isEmbed(p){return p&&p.type==='embed';}
 function isVideo(p){return p&&(p.type==='video'||(p.mimeType&&p.mimeType.indexOf('video/')===0)||(p.dataUrl&&p.dataUrl.indexOf('data:video/')===0));}
 function escapeHtmlValue(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
-function getViewerBadge(p){var trait=String((p&&p.trait)||'').trim();return trait&&trait.length<=MAX_VIEWER_BADGE_CHARS?trait:'Kỷ niệm đáng yêu ♡';}
+function getViewerBadge(p){var trait=String((p&&p.trait)||'').trim();return trait&&trait.length<=MAX_VIEWER_BADGE_CHARS?trait:'Khoảnh khắc đáng nhớ ♡';}
 function setViewerMessage(el,message,badgeText){if(!el)return;var text=String(message||'').trim();var badge=String(badgeText||'').trim();if(!text||text===badge){el.textContent='';el.style.display='none';return;}el.textContent=text;el.style.display='';}
 function getDiscItems(){return photos.map(function(photo,idx){return {photo:photo,idx:idx};}).filter(function(item){return item.photo&&!isEmbed(item.photo);});}
 function getDiscPageData(page){var items=getDiscItems();var totalPages=Math.max(1,Math.ceil(items.length/DISC_PAGE_SIZE));var safePage=(((Number(page)||0)%totalPages)+totalPages)%totalPages;return {items:items.slice(safePage*DISC_PAGE_SIZE,(safePage+1)*DISC_PAGE_SIZE),page:safePage,totalPages:totalPages,totalItems:items.length};}
