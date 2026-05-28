@@ -396,6 +396,8 @@ document.addEventListener('DOMContentLoaded', () => {
         "Nhà ngoại giao tài ba 🤝", "Nghệ sĩ múa bút ✍️", "Gương mặt thương hiệu 📸"
     ];
 
+    const MAX_VIEWER_BADGE_CHARS = 42;
+
     // ===== DOM ELEMENTS =====
     // Modals & Buttons
     const settingsFab = document.getElementById('settingsFab');
@@ -743,8 +745,22 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     function getPhotoTrait(photo, idx = 0) {
-        const teacherText = String(photo?.trait || photo?.msg || '').trim();
-        return teacherText || AI_TRAITS[getStableIndex(`${photo?.name || ''}-${idx}`, AI_TRAITS.length)];
+        const teacherText = String(photo?.trait || '').trim();
+        if (teacherText && teacherText.length <= MAX_VIEWER_BADGE_CHARS) return teacherText;
+        return AI_TRAITS[getStableIndex(`${photo?.name || ''}-${idx}`, AI_TRAITS.length)];
+    }
+
+    function setViewerMessage(el, message, badgeText = '') {
+        if (!el) return;
+        const text = String(message || '').trim();
+        const badge = String(badgeText || '').trim();
+        if (!text || text === badge) {
+            el.textContent = '';
+            el.style.display = 'none';
+            return;
+        }
+        el.textContent = text;
+        el.style.display = '';
     }
 
     function getDiscPhotos(photos = STATE.photos) {
@@ -2155,6 +2171,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderGallery() {
         const container = document.getElementById('galleryContainer');
+        const openCueHtml = '<span class="gallery-open-cue">Xem lời nhắn</span>';
         container.innerHTML = '';
         container.className = 'gallery-container layout-' + STATE.config.layout;
         container.style.overflowX = '';
@@ -2176,6 +2193,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.innerHTML = `
                     ${mediaPreviewHtml(photo, safeName)}
                     <div class="carousel-name">${safeName}</div>
+                    ${openCueHtml}
                 `;
                 item.addEventListener('click', () => openPhotoViewer(photo, idx));
                 track.appendChild(item);
@@ -2195,6 +2213,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 item.innerHTML = `
                     ${mediaPreviewHtml(photo, safeName)}
                     <div class="spotlight-name">${safeName}</div>
+                    ${openCueHtml}
                 `;
                 item.addEventListener('click', () => openPhotoViewer(photo, idx));
                 container.appendChild(item);
@@ -2208,12 +2227,14 @@ document.addEventListener('DOMContentLoaded', () => {
                     item.innerHTML = `
                         ${mediaPreviewHtml(photo, safeName)}
                         <div class="bubble-name">${safeName}</div>
+                        ${openCueHtml}
                     `;
                 } else if (STATE.config.layout === 'grid') {
                     item.className = 'gallery-grid-item';
                     item.innerHTML = `
                         ${mediaPreviewHtml(photo, safeName)}
                         <div class="grid-name">${safeName}</div>
+                        ${openCueHtml}
                     `;
                 }
                 item.addEventListener('click', () => openPhotoViewer(photo, idx));
@@ -2389,9 +2410,10 @@ document.addEventListener('DOMContentLoaded', () => {
             viewerImage.style.display = 'block';
             viewerImage.src = photo.dataUrl;
         }
+        const badgeText = getPhotoTrait(photo, idx);
         viewerName.textContent = photo.name;
-        viewerMsg.textContent = photo.msg || '';
-        if (viewerBadge) viewerBadge.textContent = getPhotoTrait(photo, idx);
+        setViewerMessage(viewerMsg, photo.msg, badgeText);
+        if (viewerBadge) viewerBadge.textContent = badgeText;
         if (viewerQuote) viewerQuote.textContent = photo.msg ? 'Một mảnh ký ức nhỏ trong album của lớp mình.' : 'Mỗi nụ cười trong khung hình này đều là một dấu ấn rất riêng.';
         photoViewerModal.classList.add('show');
         repairDocumentText(photoViewerModal);
@@ -2926,16 +2948,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 let gHTML = '';
+                const openCueHTML = '<span class="gallery-open-cue">Xem lời nhắn</span>';
                 packagedPhotos.forEach((p,i) => {
                     const mediaHtml = packagedMediaPreviewHtml(p, escapeHtml(p.name));
                     if (c.layout === 'carousel') {
-                        gHTML += `<div class="carousel-item" data-idx="${i}">${mediaHtml}<div class="carousel-name">${escapeHtml(p.name)}</div></div>`;
+                        gHTML += `<div class="carousel-item" data-idx="${i}">${mediaHtml}<div class="carousel-name">${escapeHtml(p.name)}</div>${openCueHTML}</div>`;
                     } else if (c.layout === 'spotlight') {
-                        gHTML += `<div class="spotlight-item" data-idx="${i}">${mediaHtml}<div class="spotlight-name">${escapeHtml(p.name)}</div></div>`;
+                        gHTML += `<div class="spotlight-item" data-idx="${i}">${mediaHtml}<div class="spotlight-name">${escapeHtml(p.name)}</div>${openCueHTML}</div>`;
                     } else if (c.layout === 'grid') {
-                        gHTML += `<div class="gallery-grid-item" data-idx="${i}">${mediaHtml}<div class="grid-name">${escapeHtml(p.name)}</div></div>`;
+                        gHTML += `<div class="gallery-grid-item" data-idx="${i}">${mediaHtml}<div class="grid-name">${escapeHtml(p.name)}</div>${openCueHTML}</div>`;
                     } else {
-                        gHTML += `<div class="gallery-bubble" data-idx="${i}">${mediaHtml}<div class="bubble-name">${escapeHtml(p.name)}</div></div>`;
+                        gHTML += `<div class="gallery-bubble" data-idx="${i}">${mediaHtml}<div class="bubble-name">${escapeHtml(p.name)}</div>${openCueHTML}</div>`;
                     }
                 });
                 if (c.layout === 'carousel') gHTML = `<div class="carousel-track">${gHTML}</div>`;
@@ -2990,11 +3013,14 @@ var guestbookConfig = ${JSON.stringify({ yearbookId: c.yearbookId, adminCode: c.
 var currentSlide = 0, slideInterval = null, isMusicPlaying = false, isSlideAutoPlaying = false;
 var IMAGE_SLIDE_MS = 4500, MAX_VIDEO_SLIDE_MS = 30000;
 var DISC_PAGE_SIZE = 12, DISC_AUTO_PAGE_MS = 7000, memoryDiscPage = 0, memoryDiscAutoTimer = null;
+var MAX_VIEWER_BADGE_CHARS = 42;
 var bgMusic = document.getElementById('bgMusic');
 var btnMT = document.getElementById('btnMusicToggle');
 function isEmbed(p){return p&&p.type==='embed';}
 function isVideo(p){return p&&(p.type==='video'||(p.mimeType&&p.mimeType.indexOf('video/')===0)||(p.dataUrl&&p.dataUrl.indexOf('data:video/')===0));}
 function escapeHtmlValue(value){return String(value==null?'':value).replace(/[&<>"']/g,function(ch){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch];});}
+function getViewerBadge(p){var trait=String((p&&p.trait)||'').trim();return trait&&trait.length<=MAX_VIEWER_BADGE_CHARS?trait:'Gương mặt kỷ yếu';}
+function setViewerMessage(el,message,badgeText){if(!el)return;var text=String(message||'').trim();var badge=String(badgeText||'').trim();if(!text||text===badge){el.textContent='';el.style.display='none';return;}el.textContent=text;el.style.display='';}
 function getDiscItems(){return photos.map(function(photo,idx){return {photo:photo,idx:idx};}).filter(function(item){return item.photo&&!isEmbed(item.photo);});}
 function getDiscPageData(page){var items=getDiscItems();var totalPages=Math.max(1,Math.ceil(items.length/DISC_PAGE_SIZE));var safePage=(((Number(page)||0)%totalPages)+totalPages)%totalPages;return {items:items.slice(safePage*DISC_PAGE_SIZE,(safePage+1)*DISC_PAGE_SIZE),page:safePage,totalPages:totalPages,totalItems:items.length};}
 function cdThumbHtml(p,alt){if(!p)return '';if(isVideo(p))return '<video src="'+escapeHtmlValue(p.dataUrl)+'" muted preload="metadata" playsinline></video>';return '<img src="'+escapeHtmlValue(p.dataUrl)+'" alt="'+escapeHtmlValue(alt)+'">';}
@@ -3261,9 +3287,10 @@ document.querySelectorAll('[data-idx]').forEach(function(el){
         if(isEmbed(p)){vid.pause();vid.removeAttribute('src');var thumbUrl=getEmbedThumbnailUrl(p);if(thumbUrl&&thumb&&thumbImg&&thumbPlay){var playInline=function(){thumb.style.display='none';emb.style.display='block';emb.src=getAutoplayEmbedUrl(p.embedUrl);};thumb.style.display='flex';thumb.title='Phát video trong khung';thumbImg.src=thumbUrl;if(thumbLink)thumbLink.href=p.sourceUrl||p.embedUrl;thumb.onclick=function(event){if(event.target===thumbLink)return;playInline();};thumbPlay.onclick=playInline;}else{emb.style.display='block';emb.src=getAutoplayEmbedUrl(p.embedUrl);}}
         else if(isVideo(p)){vid.style.display='block';vid.src=p.dataUrl;vid.currentTime=0;vid.play().catch(function(){});}
         else{vid.pause();vid.removeAttribute('src');img.style.display='block';img.src=p.dataUrl;}
+        var badgeText=getViewerBadge(p);
         document.getElementById('viewerName').textContent=p.name;
-        document.getElementById('viewerMsg').textContent=p.msg||'';
-        var badge=document.getElementById('viewerBadge');if(badge)badge.textContent=p.trait||'Gương mặt kỷ yếu';
+        setViewerMessage(document.getElementById('viewerMsg'),p.msg||'',badgeText);
+        var badge=document.getElementById('viewerBadge');if(badge)badge.textContent=badgeText;
         var quote=document.getElementById('viewerQuote');if(quote)quote.textContent=p.msg?'Một mảnh ký ức nhỏ trong album của lớp mình.':'Mỗi nụ cười trong khung hình này đều là một dấu ấn rất riêng.';
         modal.classList.add('show');repairDocumentText(modal);
     });
