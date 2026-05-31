@@ -136,6 +136,7 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
 
 const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, onChange }) => {
   const [showPreview, setShowPreview] = useState(false);
+  const [activePanel, setActivePanel] = useState<'publish' | 'colors' | 'layout'>('publish');
   const updateTheme = (patch: Partial<VideoPlayerTheme>) => onChange({ ...theme, ...patch });
 
   return (
@@ -148,6 +149,25 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
         <Eye size={18} /> Xem trước giao diện
       </button>
 
+      <div className="grid grid-cols-3 gap-1 rounded-xl bg-gray-100 p-1">
+        {[
+          { id: 'publish', label: 'Thông tin' },
+          { id: 'colors', label: 'Màu sắc' },
+          { id: 'layout', label: 'Bố cục' },
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            type="button"
+            onClick={() => setActivePanel(tab.id as 'publish' | 'colors' | 'layout')}
+            className={`rounded-lg px-2 py-2 text-xs font-black transition ${activePanel === tab.id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {activePanel === 'publish' && (
+      <>
       <div>
         <div className="flex items-center gap-2 mb-3">
           <UserRound size={18} className="text-purple-600" />
@@ -246,7 +266,11 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
           </label>
         </div>
       </div>
+      </>
+      )}
 
+      {activePanel === 'colors' && (
+      <>
       <div>
         <div className="flex items-center gap-2 mb-3">
           <Palette size={18} className="text-purple-600" />
@@ -285,7 +309,11 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
           </label>
         ))}
       </div>
+      </>
+      )}
 
+      {activePanel === 'layout' && (
+      <>
       <div>
         <div className="flex items-center gap-2 mb-3">
           <LayoutTemplate size={18} className="text-purple-600" />
@@ -349,6 +377,8 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
           {fonts.map((font) => <option key={font} value={font}>{font}</option>)}
         </select>
       </div>
+      </>
+      )}
 
       {showPreview && <ThemePreviewModal theme={theme} onClose={() => setShowPreview(false)} />}
     </div>

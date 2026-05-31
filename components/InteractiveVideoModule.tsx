@@ -3,14 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Video, Plus, Save, Play, Trash2, Home, HelpCircle, BookOpen,
     Clock, ChevronUp, ChevronDown, CheckCircle2, AlertCircle, ExternalLink,
-    Share2, Edit3, X, Copy, ArrowLeft, Minus, Upload, Link2, Palette
+    Share2, Edit3, X, Copy, ArrowLeft, Minus, Upload, Link2, Palette, Download
 } from 'lucide-react';
 import { VideoLesson, Question, VideoPlayerTheme, VideoSourceType, DEFAULT_VIDEO_PLAYER_THEME, normalizeVideoPlayerTheme } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import ReactPlayer from 'react-player';
+import JSZip from 'jszip';
 import { cleanYouTubeUrl, isValidYouTubeUrl, extractStartTime } from '../utils/youtubeUtils';
 import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareUtils';
-import { saveLocalVideoFile } from '../utils/localVideoStore';
+import { getLocalVideoFile, saveLocalVideoFile } from '../utils/localVideoStore';
 import PlayerThemeCustomizer from './PlayerThemeCustomizer';
 
 interface InteractiveVideoModuleProps {
@@ -240,6 +241,89 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             createdAt: Date.now(),
         };
         onPlay(previewLesson);
+    };
+
+    const safeFileName = (name: string) => {
+        return (name || 'video-tuong-tac')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/đ/g, 'd')
+            .replace(/Đ/g, 'D')
+            .replace(/[^a-zA-Z0-9-_]+/g, '-')
+            .replace(/^-+|-+$/g, '')
+            .toLowerCase() || 'video-tuong-tac';
+    };
+
+    const createExportHtml = (videoFileName: string) => {
+        const exportData = {
+            title,
+            videoFileName,
+            startTime,
+            allowSeeking,
+            questions: [...questions].sort((a, b) => a.time - b.time),
+            theme: playerTheme,
+        };
+
+        return `<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>${title.replace(/</g, '&lt;')}</title>
+<style>
+*{box-sizing:border-box}body{margin:0;font-family:${playerTheme.fontFamily},Arial,sans-serif;background:${playerTheme.backgroundColor};color:#fff;min-height:100vh;display:grid;place-items:center;padding:24px}.shell{width:min(1100px,100%);border:6px solid rgba(255,255,255,.28);border-radius:${playerTheme.radius}px;overflow:hidden;box-shadow:0 28px 80px rgba(0,0,0,.45);background:#000}.stage{position:relative;aspect-ratio:16/9;background:#000}video{width:100%;height:100%;object-fit:contain;background:#000}.top{position:absolute;left:18px;right:18px;top:18px;display:flex;justify-content:space-between;gap:12px;pointer-events:none}.brand,.badge{background:rgba(0,0,0,.48);backdrop-filter:blur(8px);border-radius:999px;padding:9px 14px;font-weight:800}.logo{display:inline-grid;place-items:center;min-width:28px;height:28px;border-radius:999px;margin-right:8px;background:${playerTheme.primaryColor}}.bottom{position:absolute;left:0;right:0;bottom:0;display:flex;justify-content:space-between;gap:16px;padding:22px;background:linear-gradient(to top,rgba(0,0,0,.72),transparent);font-weight:800}.overlay{position:absolute;inset:0;display:none;align-items:center;justify-content:center;padding:20px;background:linear-gradient(135deg,${playerTheme.backgroundColor}dd,${playerTheme.primaryColor}cc,${playerTheme.secondaryColor}aa)}.overlay.show{display:flex}.card{width:min(560px,96%);border-radius:${Math.max(16, playerTheme.radius)}px;padding:24px;background:${playerTheme.questionStyle === 'card' ? playerTheme.surfaceColor : 'rgba(15,23,42,.84)'};color:${playerTheme.questionStyle === 'card' ? playerTheme.textColor : '#fff'};box-shadow:0 22px 70px rgba(0,0,0,.36)}.qtitle{text-align:center;font-size:24px;font-weight:900;margin:0 0 18px}.option{width:100%;border:0;border-radius:999px;background:#fff;color:#1f2937;padding:13px 16px;margin:8px 0;text-align:left;font-weight:800;cursor:pointer}.option.selected{outline:3px solid ${playerTheme.accentColor}}.actions{display:flex;gap:10px;margin-top:16px}.actions button{flex:1;border:0;border-radius:999px;padding:13px 16px;color:#fff;font-weight:900;cursor:pointer}.primary{background:linear-gradient(90deg,${playerTheme.primaryColor},${playerTheme.secondaryColor})}.secondary{background:#0ea5e9}.result{min-height:24px;text-align:center;font-weight:900;margin-top:12px}.author{padding:16px 20px;background:rgba(255,255,255,.08);border-top:1px solid rgba(255,255,255,.12);font-size:14px}.author strong{color:${playerTheme.accentColor}}@media(max-width:700px){body{padding:0}.shell{border-radius:0;border:0}.badge{display:none}.qtitle{font-size:19px}}
+</style>
+</head>
+<body>
+<main class="shell">
+<section class="stage">
+<video id="video" src="${videoFileName}" controls ${allowSeeking ? '' : 'controlsList="nodownload"'}></video>
+<div class="top"><div class="brand"><span class="logo">${playerTheme.logoText || 'GV'}</span>${playerTheme.publishTitle || title}</div><div class="badge">${playerTheme.publishSubtitle || ''}</div></div>
+<div class="bottom"><span>${playerTheme.footerLeftText || playerTheme.guideText || ''}</span><span>${playerTheme.footerRightText || ''}</span></div>
+<div id="overlay" class="overlay"><div class="card"><h2 id="qtext" class="qtitle"></h2><div id="opts"></div><div class="actions"><button class="primary" id="answer">Trả lời ngay</button><button class="secondary" id="rewatch">Xem lại</button></div><div id="result" class="result"></div></div></div>
+</section>
+${playerTheme.showAuthorPanel ? `<aside class="author"><strong>Tác giả:</strong> ${playerTheme.authorName || 'Chưa nhập'}<br>${(playerTheme.authorInfo || '').replace(/\n/g, '<br>')}</aside>` : ''}
+</main>
+<script>
+const data=${JSON.stringify(exportData)};
+const video=document.getElementById('video'),overlay=document.getElementById('overlay'),qtext=document.getElementById('qtext'),opts=document.getElementById('opts'),result=document.getElementById('result');
+let current=null,selected=null,answered=[];
+video.currentTime=data.startTime||0;
+video.addEventListener('timeupdate',()=>{const q=data.questions.find(x=>Math.abs(x.time-video.currentTime)<.7&&!answered.includes(x.id));if(q){current=q;selected=null;video.pause();qtext.textContent=q.text;result.textContent='';opts.innerHTML='';q.options.forEach((o,i)=>{const b=document.createElement('button');b.className='option';b.textContent=String.fromCharCode(65+i)+'. '+o;b.onclick=()=>{selected=i;document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'));b.classList.add('selected')};opts.appendChild(b)});overlay.classList.add('show')}});
+document.getElementById('answer').onclick=()=>{if(!current||selected===null)return;if(selected===current.correctOption){result.textContent='Chính xác!';answered.push(current.id);setTimeout(()=>{overlay.classList.remove('show');video.play()},900)}else{result.textContent='Chưa đúng, em hãy xem lại đoạn video nhé.'}};
+document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.classList.remove('show');video.currentTime=Math.max(0,current.time-10);video.play()};
+</script>
+</body>
+</html>`;
+    };
+
+    const handleExportHtml5 = async () => {
+        if (!title.trim()) return alert('Vui lòng nhập tên video trước khi xuất file.');
+        if (videoSource !== 'local') {
+            alert('Xuất HTML5 hiện hỗ trợ tốt nhất với video tải từ máy. Với YouTube, thầy cô dùng chia sẻ link trong app trước nhé.');
+            return;
+        }
+
+        const videoFile = localVideoFile || (editingLesson?.id ? await getLocalVideoFile(editingLesson.id) : null);
+        if (!videoFile) {
+            alert('Chưa tìm thấy file video cục bộ. Vui lòng chọn lại video từ máy rồi xuất.');
+            return;
+        }
+
+        const originalName = localVideoName || editingLesson?.localVideoName || 'video.mp4';
+        const extension = originalName.includes('.') ? originalName.split('.').pop() || 'mp4' : 'mp4';
+        const videoName = `media/${safeFileName(title)}.${extension}`;
+        const zip = new JSZip();
+        zip.file('index.html', createExportHtml(videoName));
+        zip.file(videoName, videoFile);
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${safeFileName(title)}-html5.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(link.href);
     };
 
     const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -754,6 +838,28 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
 
                         {/* Action Buttons */}
                         <div className="space-y-3 flex-1">
+                            <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
+                                <div className="mb-2 flex items-center gap-2 text-sm font-black text-indigo-900">
+                                    <Download size={18} />
+                                    Xuất file
+                                </div>
+                                <button
+                                    onClick={handleExportHtml5}
+                                    className="mb-2 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
+                                >
+                                    <Download size={18} />
+                                    Tải HTML5 (.zip)
+                                </button>
+                                <div className="grid grid-cols-2 gap-2">
+                                    <button disabled className="rounded-xl bg-white/70 px-3 py-2 text-xs font-bold text-slate-400 ring-1 ring-indigo-100">
+                                        SCORM 1.2 sắp có
+                                    </button>
+                                    <button disabled className="rounded-xl bg-white/70 px-3 py-2 text-xs font-bold text-slate-400 ring-1 ring-indigo-100">
+                                        SCORM 2004 sắp có
+                                    </button>
+                                </div>
+                            </div>
+
                             <button
                                 onClick={addQuestion}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-orange-400 to-orange-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"

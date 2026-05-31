@@ -20,6 +20,7 @@
     "canvas-confetti": "^1.9.2",
     "firebase": "^12.7.0",
     "framer-motion": "^10.16.4",
+    "jszip": "^3.10.1",
     "jwt-decode": "^4.0.0",
     "katex": "^0.16.27",
     "lucide-react": "^0.294.0",
