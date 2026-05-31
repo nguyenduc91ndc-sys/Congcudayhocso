@@ -166,6 +166,26 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
       setFeedback('correct');
       playCorrectSound();
       setShowCongrats(false);
+      confetti({
+        particleCount: 90,
+        spread: 80,
+        origin: { y: 0.58 },
+        colors: [theme.primaryColor, theme.secondaryColor, theme.accentColor, '#22c55e', '#fbbf24']
+      });
+      setTimeout(() => {
+        confetti({
+          particleCount: 40,
+          spread: 55,
+          origin: { x: 0.32, y: 0.62 },
+          colors: [theme.primaryColor, theme.secondaryColor, '#ffffff']
+        });
+        confetti({
+          particleCount: 40,
+          spread: 55,
+          origin: { x: 0.68, y: 0.62 },
+          colors: [theme.accentColor, '#22c55e', '#ffffff']
+        });
+      }, 180);
 
       setTimeout(() => {
         const nextAnswered = [...answeredQuestions, currentQuestion.id];
