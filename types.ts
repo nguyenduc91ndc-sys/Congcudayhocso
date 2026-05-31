@@ -18,6 +18,7 @@ export interface VideoPlayerTheme {
   surfaceColor: string;
   textColor: string;
   logoText: string;
+  logoImage?: string;
   publishTitle: string;
   publishSubtitle: string;
   authorName: string;
@@ -42,6 +43,7 @@ export const DEFAULT_VIDEO_PLAYER_THEME: VideoPlayerTheme = {
   surfaceColor: '#ffffff',
   textColor: '#1f2937',
   logoText: 'GV',
+  logoImage: '',
   publishTitle: 'Bài giảng tương tác',
   publishSubtitle: 'Thiết kế bởi Giáo viên CN',
   authorName: '',

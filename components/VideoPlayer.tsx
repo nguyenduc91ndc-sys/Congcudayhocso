@@ -324,8 +324,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
         {!videoError && (
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-4">
             <div className="flex max-w-[70%] items-center gap-2 rounded-full bg-black/45 px-3 py-2 text-white backdrop-blur">
-              <span className="flex h-7 min-w-7 items-center justify-center rounded-full text-xs font-black" style={{ backgroundColor: theme.primaryColor }}>
-                {theme.logoText || 'GV'}
+              <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full text-xs font-black" style={{ backgroundColor: theme.primaryColor }}>
+                {theme.logoImage ? <img src={theme.logoImage} alt="Logo" className="h-full w-full rounded-full object-contain" /> : (theme.logoText || 'GV')}
               </span>
               <div className="min-w-0">
                 <p className="truncate text-sm font-black">{theme.publishTitle || lesson.title}</p>

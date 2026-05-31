@@ -67,7 +67,9 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
           <div className={`mx-auto overflow-hidden border-4 border-white/30 bg-black shadow-2xl ${isSidebar ? 'grid max-w-4xl grid-cols-[1fr_230px]' : 'max-w-4xl'}`} style={{ borderRadius: theme.radius }}>
             <div className="relative aspect-video bg-gradient-to-br from-slate-950 via-slate-900 to-black">
               <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold text-white" style={{ backgroundColor: theme.primaryColor }}>
-                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">{theme.logoText || 'GV'}</span>
+                <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-white/20">
+                  {theme.logoImage ? <img src={theme.logoImage} alt="Logo" className="h-full w-full object-contain" /> : (theme.logoText || 'GV')}
+                </span>
                 {theme.publishTitle || 'Bài giảng tương tác'}
               </div>
               <div className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white backdrop-blur">
@@ -102,6 +104,9 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
 
             {isSidebar && (
               <aside className="hidden bg-white/95 p-4 text-slate-800 md:block">
+                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-white p-1 text-sm font-black" style={{ color: theme.primaryColor }}>
+                  {theme.logoImage ? <img src={theme.logoImage} alt="Logo" className="h-full w-full object-contain" /> : (theme.logoText || 'GV')}
+                </div>
                 <h4 className="mb-1 text-base font-black" style={{ color: theme.primaryColor }}>Mục lục bài học</h4>
                 <p className="mb-4 text-xs text-slate-500">3 câu hỏi tương tác</p>
                 {theme.showAuthorPanel && (
@@ -138,6 +143,21 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
   const [showPreview, setShowPreview] = useState(false);
   const [activePanel, setActivePanel] = useState<'publish' | 'colors' | 'layout' | null>(null);
   const updateTheme = (patch: Partial<VideoPlayerTheme>) => onChange({ ...theme, ...patch });
+  const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh logo.');
+      return;
+    }
+    if (file.size > 1024 * 1024) {
+      alert('Logo nên nhỏ hơn 1MB để file xuất nhẹ hơn.');
+      return;
+    }
+    const reader = new FileReader();
+    reader.onload = () => updateTheme({ logoImage: String(reader.result || '') });
+    reader.readAsDataURL(file);
+  };
   const panelButtonClass = (id: 'publish' | 'colors' | 'layout') =>
     `flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${activePanel === id ? 'border-purple-300 bg-purple-50 text-purple-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`;
 
@@ -164,6 +184,23 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
           <h4 className="font-bold text-gray-800">Thông tin xuất bản</h4>
         </div>
         <div className="space-y-2">
+          <div className="flex items-center gap-3 rounded-xl border border-purple-100 bg-purple-50 p-3">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-xl bg-white text-sm font-black text-purple-700 ring-1 ring-purple-100">
+              {theme.logoImage ? <img src={theme.logoImage} alt="Logo" className="h-full w-full object-contain" /> : (theme.logoText || 'GV')}
+            </div>
+            <div className="min-w-0 flex-1">
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-purple-600 px-3 py-2 text-xs font-black text-white hover:bg-purple-700">
+                Tải logo lên
+                <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+              </label>
+              {theme.logoImage && (
+                <button type="button" onClick={() => updateTheme({ logoImage: '' })} className="ml-2 rounded-lg bg-white px-3 py-2 text-xs font-black text-slate-500 ring-1 ring-purple-100 hover:text-red-600">
+                  Xóa
+                </button>
+              )}
+              <p className="mt-1 truncate text-[11px] font-semibold text-purple-500">PNG/JPG/WebP, nên dùng ảnh vuông.</p>
+            </div>
+          </div>
           <input
             type="text"
             value={theme.logoText}
