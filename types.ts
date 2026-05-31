@@ -22,6 +22,7 @@ export interface VideoPlayerTheme {
   publishTitle: string;
   publishSubtitle: string;
   authorName: string;
+  authorAvatarImage?: string;
   authorInfo: string;
   footerLeftText: string;
   footerRightText: string;
@@ -47,6 +48,7 @@ export const DEFAULT_VIDEO_PLAYER_THEME: VideoPlayerTheme = {
   publishTitle: 'Bài giảng tương tác',
   publishSubtitle: 'Thiết kế bởi Giáo viên CN',
   authorName: '',
+  authorAvatarImage: '',
   authorInfo: '',
   footerLeftText: '',
   footerRightText: '',

@@ -240,9 +240,16 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
                 <p className="mb-4 text-xs text-slate-500">3 câu hỏi tương tác</p>
                 {theme.showAuthorPanel && (
                   <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
-                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tác giả</p>
-                    <p className="font-black text-slate-800">{theme.authorName || 'Tên giáo viên'}</p>
-                    <p className="mt-1 text-xs text-slate-500">{theme.authorInfo || 'Đơn vị, chức danh, số điện thoại...'}</p>
+                    <div className="flex items-center gap-3">
+                      <div className="grid h-12 w-12 shrink-0 place-items-center overflow-hidden rounded-2xl bg-slate-50 text-sm font-black" style={{ color: theme.primaryColor }}>
+                        {theme.authorAvatarImage ? <img src={theme.authorAvatarImage} alt="Ảnh tác giả" className="h-full w-full object-cover" /> : (theme.authorName || 'GV').slice(0, 2).toUpperCase()}
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tác giả</p>
+                        <p className="truncate font-black text-slate-800">{theme.authorName || 'Tên giáo viên'}</p>
+                        <p className="mt-1 line-clamp-2 text-xs text-slate-500">{theme.authorInfo || 'Đơn vị, chức danh, số điện thoại...'}</p>
+                      </div>
+                    </div>
                   </div>
                 )}
                 {[1, 2, 3].map((item) => (
@@ -272,6 +279,7 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
   const [showPreview, setShowPreview] = useState(false);
   const [activePanel, setActivePanel] = useState<'publish' | 'colors' | 'layout' | null>(null);
   const [logoStatus, setLogoStatus] = useState('');
+  const [authorAvatarStatus, setAuthorAvatarStatus] = useState('');
   const updateTheme = (patch: Partial<VideoPlayerTheme>) => onChange({ ...theme, ...patch });
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -308,6 +316,28 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
     } catch {
       setLogoStatus('');
       alert('Không nén được logo này. Vui lòng thử ảnh PNG/JPG/WebP khác.');
+    }
+  };
+  const handleCompressedAuthorAvatarUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh đại diện.');
+      return;
+    }
+    setAuthorAvatarStatus('Đang nén ảnh...');
+    try {
+      const result = await compressLogoImage(file);
+      updateTheme({ authorAvatarImage: result.dataUrl });
+      const saved = result.originalSize - result.compressedSize;
+      setAuthorAvatarStatus(saved > 1024
+        ? `Đã nén: ${formatBytes(result.originalSize)} -> ${formatBytes(result.compressedSize)}`
+        : `Ảnh đã tối ưu: ${formatBytes(result.compressedSize)}`);
+    } catch {
+      setAuthorAvatarStatus('');
+      alert('Không nén được ảnh này. Vui lòng thử ảnh PNG/JPG/WebP khác.');
     }
   };
 
@@ -385,6 +415,24 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
             className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
             placeholder="Tên tác giả"
           />
+          <div className="flex items-center gap-3 rounded-xl border border-gray-100 bg-gray-50 p-3">
+            <div className="flex h-14 w-14 shrink-0 items-center justify-center overflow-hidden rounded-2xl bg-white text-sm font-black text-purple-700 ring-1 ring-gray-200">
+              {theme.authorAvatarImage ? <img src={theme.authorAvatarImage} alt="Ảnh tác giả" className="h-full w-full object-cover" /> : (theme.authorName || 'GV').slice(0, 2).toUpperCase()}
+            </div>
+            <div className="min-w-0 flex-1">
+              <label className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-slate-800 px-3 py-2 text-xs font-black text-white hover:bg-slate-700">
+                Tải ảnh tác giả
+                <input type="file" accept="image/*" onChange={handleCompressedAuthorAvatarUpload} className="hidden" />
+              </label>
+              {theme.authorAvatarImage && (
+                <button type="button" onClick={() => updateTheme({ authorAvatarImage: '' })} className="ml-2 rounded-lg bg-white px-3 py-2 text-xs font-black text-slate-500 ring-1 ring-gray-200 hover:text-red-600">
+                  Xóa
+                </button>
+              )}
+              <p className="mt-1 truncate text-[11px] font-semibold text-slate-500">Nếu không tải ảnh, hệ thống dùng chữ viết tắt.</p>
+              {authorAvatarStatus && <p className="mt-1 truncate text-[11px] font-black text-emerald-600">{authorAvatarStatus}</p>}
+            </div>
+          </div>
           <textarea
             value={theme.authorInfo}
             onChange={(e) => updateTheme({ authorInfo: e.target.value })}

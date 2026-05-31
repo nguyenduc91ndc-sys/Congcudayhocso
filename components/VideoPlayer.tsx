@@ -820,9 +820,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
             </p>
             {theme.showAuthorPanel && (
               <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tác giả</p>
-                <p className="font-black text-slate-800">{theme.authorName || 'Chưa nhập tên tác giả'}</p>
-                {theme.authorInfo && <p className="mt-1 text-xs leading-relaxed text-slate-500">{theme.authorInfo}</p>}
+                <div className="flex items-center gap-3">
+                  <div className="grid h-14 w-14 shrink-0 place-items-center overflow-hidden rounded-2xl bg-slate-50 text-sm font-black" style={{ color: theme.primaryColor }}>
+                    {theme.authorAvatarImage ? <img src={theme.authorAvatarImage} alt="Ảnh tác giả" className="h-full w-full object-cover" /> : (theme.authorName || 'GV').slice(0, 2).toUpperCase()}
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tác giả</p>
+                    <p className="truncate font-black text-slate-800">{theme.authorName || 'Chưa nhập tên tác giả'}</p>
+                    {theme.authorInfo && <p className="mt-1 text-xs leading-relaxed text-slate-500">{theme.authorInfo}</p>}
+                  </div>
+                </div>
               </div>
             )}
             {theme.guideText && (
