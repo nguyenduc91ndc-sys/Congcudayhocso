@@ -260,6 +260,28 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
       <div className={`w-full ${theme.layout === 'full' ? 'max-w-6xl' : theme.layout === 'sidebar' ? 'max-w-6xl' : 'max-w-5xl'} ${theme.layout === 'sidebar' ? 'grid grid-cols-1 lg:grid-cols-[1fr_260px]' : ''} bg-black shadow-2xl overflow-hidden relative border-4 sm:border-8 border-white/40 backdrop-blur-sm`}
         style={{ borderRadius: theme.radius }}>
 
+        <div className="bg-slate-950">
+        {!videoError && (
+          <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950 px-4 py-3 text-white">
+            <div className="flex min-w-0 items-center gap-2">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-black" style={{ backgroundColor: theme.primaryColor }}>
+                {theme.logoImage ? <img src={theme.logoImage} alt="Logo" className="h-full w-full rounded-full object-contain" /> : (theme.logoText || 'GV')}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black">{theme.publishTitle || lesson.title}</p>
+                {(theme.publishSubtitle || theme.authorName) && (
+                  <p className="truncate text-[11px] text-white/60">{theme.publishSubtitle || theme.authorName}</p>
+                )}
+              </div>
+            </div>
+            {theme.showScoreReport && (
+              <div className="shrink-0 rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white">
+                {answeredQuestions.length}/{migratedLesson.questions.length} câu hỏi
+              </div>
+            )}
+          </div>
+        )}
+
         <div className="relative aspect-video bg-black">
         {!videoError && playbackUrl ? (
           <ReactPlayer
@@ -321,7 +343,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
           </div>
         )}
 
-        {!videoError && (
+        {false && !videoError && (
           <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-4">
             <div className="flex max-w-[70%] items-center gap-2 rounded-full bg-black/45 px-3 py-2 text-white backdrop-blur">
               <span className="flex h-7 w-7 items-center justify-center overflow-hidden rounded-full text-xs font-black" style={{ backgroundColor: theme.primaryColor }}>
@@ -342,7 +364,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
           </div>
         )}
 
-        {!videoError && (theme.footerLeftText || theme.footerRightText || theme.guideText) && (
+        {false && !videoError && (theme.footerLeftText || theme.footerRightText || theme.guideText) && (
           <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-3 bg-gradient-to-t from-black/60 to-transparent p-4 text-xs font-bold text-white">
             <span className="max-w-[70%] truncate">{theme.footerLeftText || theme.guideText}</span>
             <span className="shrink-0">{theme.footerRightText}</span>
@@ -576,6 +598,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
             >
               <Play fill="currentColor" size={48} className="ml-2" />
             </motion.button>
+          </div>
+        )}
+        </div>
+
+        {!videoError && (theme.footerLeftText || theme.footerRightText || theme.guideText) && (
+          <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-slate-950 px-4 py-3 text-xs font-bold text-white">
+            <span className="min-w-0 truncate">{theme.footerLeftText || theme.guideText}</span>
+            <span className="shrink-0">{theme.footerRightText}</span>
           </div>
         )}
       </div>
