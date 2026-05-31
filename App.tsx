@@ -52,7 +52,7 @@ import AboutUs from './components/AboutUs';
 import PrivacyPolicy from './components/PrivacyPolicy';
 import TermsOfService from './components/TermsOfService';
 import ContactUs from './components/ContactUs';
-import PhongTranh3D from './components/PhongTranh3D';
+
 import NhayBaoBoApp from './nhay-bao-bo/NhayBaoBoApp';
 import { AppVisibilityState, AppId, subscribeToAppVisibility } from './utils/firebaseAppVisibility';
 import SolarSystemSimulation from './components/SolarSystemSimulation';
@@ -95,7 +95,6 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   GAME_TUONG_TAC: 'gameTuongTac',
   YOGURT_EXPERIMENT: 'yogurtExperiment',
   KIEM_TRA_DAO_VAN: 'kiemTraDaoVan',
-  PHONG_TRANH_3D: 'phongTranh3D',
   SANG_KIEN_KN: 'sangKienKinhNghiem',
   EARTH_SEASONS: 'earthSeasons',
   THAT_LUONG_3D: 'thatLuong3D',
@@ -235,9 +234,6 @@ function App() {
           case 'bang_cuu_chuong':
             defaultView = 'BANG_CUU_CHUONG';
             break;
-          case 'phong_tranh_3d':
-            defaultView = 'PHONG_TRANH_3D';
-            break;
           case 'he_mat_troi':
             defaultView = 'SOLAR_SYSTEM';
             break;
@@ -278,13 +274,11 @@ function App() {
         window.history.replaceState({}, document.title, cleanUrl);
       }
 
-      // Bổ sung: Parse Path cho các link thân thiện kiểu mới (VD: /share/phong-tranh-3d/XYZ)
+      // Bổ sung: Parse Path cho các link thân thiện kiểu mới (VD: /share/he-mat-troi)
       const pathSegments = window.location.pathname.split('/').filter(Boolean);
       if (pathSegments.length >= 2 && pathSegments[0] === 'share') {
         const appSection = pathSegments[1];
-        if (appSection === 'phong-tranh-3d') {
-          defaultView = 'PHONG_TRANH_3D';
-        } else if (appSection === 'he-mat-troi') {
+        if (appSection === 'he-mat-troi') {
           defaultView = 'SOLAR_SYSTEM';
         }
         // Dọn dẹp các query như fbclid nhưng giữ nguyên đường dẫn tĩnh gốc
@@ -617,7 +611,6 @@ function App() {
                   onGameTuongTac={() => requireLogin(() => setView('GAME_TUONG_TAC'))}
                   onYogurtExperiment={() => requireLogin(() => setView('YOGURT_EXPERIMENT'))}
                   onKiemTraDaoVan={() => requireLogin(() => setView('KIEM_TRA_DAO_VAN'))}
-                  onPhongTranh3D={() => setView('PHONG_TRANH_3D')}
                   onSangKienKN={() => requireLogin(() => setView('SANG_KIEN_KN'))}
                   onNhanXetTT27={() => requireLogin(() => setView('NHAN_XET_TT27'))}
                   onEarthSeasons={() => requireLogin(() => setView('EARTH_SEASONS'))}
@@ -843,14 +836,6 @@ function App() {
               <AboutUs />
               <Footer onViewChange={(v) => { window.scrollTo(0, 0); setView(v as ViewState); }} />
             </div>
-          )}
-
-          {view === 'PHONG_TRANH_3D' && (
-            <PhongTranh3D
-              user={user ? { email: user.email || '', name: user.name || '' } : null}
-              onRequireLogin={() => setShowLoginModal(true)}
-              onBack={() => setView('DASHBOARD')}
-            />
           )}
 
           {view === 'SOLAR_SYSTEM' && (

@@ -58,7 +58,6 @@ interface DashboardProps {
     onThiepMoiOnline: () => void;
     onYogurtExperiment: () => void;
     onKiemTraDaoVan: () => void;
-    onPhongTranh3D: () => void;
     onSangKienKN: () => void;
     onNhanXetTT27: () => void;
     onEarthSeasons: () => void;
@@ -286,7 +285,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onYogurtExperiment, onKiemTraDaoVan, onPhongTranh3D, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -809,7 +808,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {!hiddenApps.includes('phongTranh3D') && <ToolCard title="Phòng tranh 3D" description="Phân tích tác phẩm nghệ thuật 3D" icon={<span className="text-2xl">🖼️</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onPhongTranh3D} />}
                                         {!hiddenApps.includes('solarSystem') && <ToolCard title="Hệ Mặt Trời" description="Khám phá và thực hành mô phỏng 2D ấn tượng" icon={<span className="text-2xl">🪐</span>} accentColor="bg-gradient-to-br from-cyan-600 to-blue-800" onClick={onSolarSystem} badge="Mới" />}
                                         {!hiddenApps.includes('earthSeasons') && <ToolCard title="Trái đất & Bốn mùa" description="Mô phỏng ngày đêm và 4 mùa 3D" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-blue-500 to-cyan-500" onClick={onEarthSeasons} />}
                                         {!hiddenApps.includes('heartSystem3D') && <ToolCard title="Hệ tuần hoàn 3D" description="Mô hình tim và hệ tuần hoàn 3D sống động" icon={<Heart size={24} className="text-white" />} accentColor="bg-red-600" onClick={onHeartSystem3D} badge="Mới" />}
@@ -817,7 +815,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('vietnamMap') && <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" />}
                                         {!hiddenApps.includes('denHung3D') && <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" />}
                                         {!hiddenApps.includes('thatLuong3D') && <ToolCard title="Mô hình 3D - Thạt Luổng" description="Khám phá kiến trúc Thạt Luổng với mô hình 3D tương tác" icon={<span className="text-2xl">🕍</span>} accentColor="bg-gradient-to-br from-yellow-600 to-amber-700" onClick={onThatLuong3D} badge="Mới" />}
-                                        {!hiddenApps.includes('phongTranh3D') && <ToolCard title="Phòng Tranh 3D Tùy Chỉnh" description="Phòng triển lãm nghệ thuật 3D ảo sống động, tương tác thực tế" icon={<span className="text-2xl">🖼️</span>} accentColor="bg-gradient-to-br from-purple-600 to-pink-600" onClick={onPhongTranh3D} badge="3D" />}
                                         {!hiddenApps.includes('dinhDocLap3D') && <ToolCard title="Khám phá Dinh Độc Lập 3D" description="Tham quan Dinh Độc Lập lịch sử qua mô hình 3D tương tác · 30/4" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-yellow-700 to-red-800" onClick={onDinhDocLap3D} badge="30/4" />}
                                     </div>
                                 </section>
