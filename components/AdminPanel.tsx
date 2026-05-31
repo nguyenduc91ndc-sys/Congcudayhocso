@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Clock, Monitor, MessageCircle, Star, XCircle, Check, X, Edit2, Save, Eye, ShoppingBag, Film, Package, Flame, Link, ExternalLink, Upload, ImageIcon, Loader2, Search, History, Mail } from 'lucide-react';
+import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Clock, Monitor, MessageCircle, Star, XCircle, Check, X, Edit2, Save, Eye, ShoppingBag, Film, Package, Flame, Link, ExternalLink, Upload, ImageIcon, Loader2, Search, History, Mail, ChevronDown } from 'lucide-react';
 import { getAnalytics, Analytics, VisitorLog } from '../utils/analyticsUtils';
 import { getAllFeedbacks, getPendingFeedbacks, getApprovedFeedbacks, approveFeedback, rejectFeedback, deleteFeedback, updateFeedback, Feedback } from '../utils/feedbackUtils';
 import { getVisitStats, setVisitCount } from '../utils/visitCounter';
@@ -70,6 +70,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [analytics, setAnalytics] = useState<Analytics>({ totalVisits: 0, uniqueVisitors: 0, todayVisits: 0, recentVisitors: [] });
     const [appUsageStats, setAppUsageStats] = useState<AppUsageSummary[]>([]);
+    const [showAppUsageStats, setShowAppUsageStats] = useState(false);
 
     // Feedback states
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -663,11 +664,18 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                     <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
                                         Từ bản cập nhật này
                                     </span>
+                                    <button
+                                        onClick={() => setShowAppUsageStats(!showAppUsageStats)}
+                                        className="flex items-center gap-1 text-xs font-bold text-purple-700 bg-purple-50 hover:bg-purple-100 px-2 py-1 rounded-full transition-colors"
+                                    >
+                                        {showAppUsageStats ? 'Thu gọn' : 'Mở ra'}
+                                        <ChevronDown size={14} className={`transition-transform ${showAppUsageStats ? 'rotate-180' : ''}`} />
+                                    </button>
                                 </div>
-                                <p className="text-xs text-gray-500 mb-3">
+                                <p className={`text-xs text-gray-500 mb-3 ${showAppUsageStats ? 'block' : 'hidden'}`}>
                                     Dữ liệu cũ trước đây chỉ có lượt truy cập/đăng nhập. Lượt mở từng công cụ bắt đầu ghi nhận từ lúc bật tracking này.
                                 </p>
-                                <div className="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                                <div className={`space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar ${showAppUsageStats ? 'block' : 'hidden'}`}>
                                     {appUsageStats.length === 0 ? (
                                         <div className="text-center text-gray-500 py-4 text-sm">Chưa có dữ liệu mở công cụ.</div>
                                     ) : (
