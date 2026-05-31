@@ -1,12 +1,13 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
-import ReactPlayer from 'react-player/youtube';
-import { VideoLesson, Question, migrateVideoLesson } from '../types';
+import ReactPlayer from 'react-player';
+import { VideoLesson, Question, migrateVideoLesson, normalizeVideoPlayerTheme } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, RotateCcw, ArrowLeft, CheckCircle, XCircle, AlertTriangle, ExternalLink, RefreshCw, Star, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { cleanYouTubeUrl } from '../utils/youtubeUtils';
 import { playCorrectSound, playIncorrectSound, playNotificationSound, playMustRewatchSound, playVictorySound } from '../utils/soundUtils';
 import RotateScreenHint from './RotateScreenHint';
+import { getLocalVideoFile } from '../utils/localVideoStore';
 
 interface VideoPlayerProps {
   lesson: VideoLesson;
@@ -25,21 +26,80 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const [wrongAttempts, setWrongAttempts] = useState(0);
   const [mustRewatch, setMustRewatch] = useState(false);
   const [showCongrats, setShowCongrats] = useState(false);
+  const [playbackUrl, setPlaybackUrl] = useState('');
+  const [localVideoMissing, setLocalVideoMissing] = useState(false);
 
   const playerRef = useRef<ReactPlayer>(null);
+  const objectUrlRef = useRef<string | null>(null);
 
   // Sử dụng hàm utility để làm sạch URL YouTube
   const getCleanVideoUrl = (url: string): string => {
     return cleanYouTubeUrl(url) || url;
   };
 
+  const theme = normalizeVideoPlayerTheme(lesson.playerTheme);
   const cleanUrl = getCleanVideoUrl(lesson.youtubeUrl);
+  const isLocalVideo = lesson.videoSource === 'local';
 
   // Migration: chuyển đổi lesson cũ sang format mới
   const migratedLesson = useMemo(() => migrateVideoLesson(lesson), [lesson]);
 
   // Nhãn đáp án (A, B, C, D)
   const optionLabels = ['A', 'B', 'C', 'D'];
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const releaseObjectUrl = () => {
+      if (objectUrlRef.current) {
+        URL.revokeObjectURL(objectUrlRef.current);
+        objectUrlRef.current = null;
+      }
+    };
+
+    const loadPlaybackUrl = async () => {
+      setLocalVideoMissing(false);
+      releaseObjectUrl();
+
+      if (!isLocalVideo) {
+        setPlaybackUrl(cleanUrl);
+        return;
+      }
+
+      if (lesson.localVideoObjectUrl) {
+        setPlaybackUrl(lesson.localVideoObjectUrl);
+        return;
+      }
+
+      try {
+        const file = await getLocalVideoFile(lesson.id);
+        if (cancelled) return;
+
+        if (!file) {
+          setLocalVideoMissing(true);
+          setVideoError(true);
+          return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        objectUrlRef.current = objectUrl;
+        setPlaybackUrl(objectUrl);
+      } catch (error) {
+        if (!cancelled) {
+          console.error('Cannot load local video:', error);
+          setLocalVideoMissing(true);
+          setVideoError(true);
+        }
+      }
+    };
+
+    loadPlaybackUrl();
+
+    return () => {
+      cancelled = true;
+      releaseObjectUrl();
+    };
+  }, [cleanUrl, isLocalVideo, lesson.id, lesson.localVideoObjectUrl]);
 
   // Khởi tạo thời gian bắt đầu
   useEffect(() => {
@@ -158,8 +218,24 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     setPlaying(false);
   };
 
+  const questionOverlayStyle = theme.questionStyle === 'card'
+    ? { background: 'rgba(15, 23, 42, 0.55)' }
+    : theme.questionStyle === 'playful'
+      ? { background: `linear-gradient(135deg, ${theme.secondaryColor}dd 0%, ${theme.primaryColor}cc 55%, ${theme.accentColor}aa 100%)` }
+      : { background: `linear-gradient(135deg, ${theme.backgroundColor}dd 0%, ${theme.primaryColor}c9 50%, ${theme.secondaryColor}b3 100%)` };
+
+  const questionCardClass = theme.questionStyle === 'card'
+    ? 'bg-white text-slate-800'
+    : 'bg-slate-800/80 text-white backdrop-blur-xl border border-white/20';
+
   return (
-    <div className="h-full flex flex-col items-center justify-center p-4 relative font-nunito">
+    <div
+      className="h-full flex flex-col items-center justify-center p-4 relative"
+      style={{
+        fontFamily: `${theme.fontFamily}, Nunito, Arial, sans-serif`,
+        background: `radial-gradient(circle at 20% 0%, ${theme.primaryColor}44, transparent 32%), radial-gradient(circle at 80% 10%, ${theme.secondaryColor}33, transparent 30%), ${theme.backgroundColor}`,
+      }}
+    >
       {/* Nút Quay lại */}
       <button
         onClick={onBack}
@@ -168,12 +244,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
         <ArrowLeft size={24} />
       </button>
 
-      <div className="w-full max-w-5xl aspect-video bg-black rounded-[20px] sm:rounded-[32px] shadow-2xl overflow-hidden relative border-4 sm:border-8 border-white/40 backdrop-blur-sm">
+      <div className={`w-full ${theme.layout === 'full' ? 'max-w-6xl' : theme.layout === 'sidebar' ? 'max-w-6xl' : 'max-w-5xl'} ${theme.layout === 'sidebar' ? 'grid grid-cols-1 lg:grid-cols-[1fr_260px]' : ''} bg-black shadow-2xl overflow-hidden relative border-4 sm:border-8 border-white/40 backdrop-blur-sm`}
+        style={{ borderRadius: theme.radius }}>
 
-        {!videoError ? (
+        <div className="relative aspect-video bg-black">
+        {!videoError && playbackUrl ? (
           <ReactPlayer
             ref={playerRef}
-            url={cleanUrl}
+            url={playbackUrl}
             width="100%"
             height="100%"
             playing={playing}
@@ -204,8 +282,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
               <AlertTriangle size={64} className="text-yellow-400 mb-4 mx-auto" />
               <h3 className="text-2xl font-bold mb-4">Thầy cô ơi!</h3>
               <p className="text-gray-100 text-lg mb-8 leading-relaxed">
-                Video này bị chủ sở hữu chặn nhúng hoặc gặp lỗi cấu hình.<br />
-                Hãy thử video khác hoặc bấm vào nút bên dưới để xem trên YouTube nhé!
+                {localVideoMissing
+                  ? 'Không tìm thấy file video cục bộ trên máy này. Thầy cô hãy mở lại đúng thiết bị đã lưu hoặc chọn lại file video.'
+                  : 'Video này bị chủ sở hữu chặn nhúng hoặc gặp lỗi cấu hình.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
@@ -214,14 +293,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                 >
                   Chọn video khác
                 </button>
-                <a
-                  href={cleanUrl}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105"
-                >
-                  <ExternalLink size={20} /> Mở trên YouTube
-                </a>
+                {!isLocalVideo && (
+                  <a
+                    href={cleanUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105"
+                  >
+                    <ExternalLink size={20} /> Mở trên YouTube
+                  </a>
+                )}
               </div>
             </motion.div>
           </div>
@@ -235,22 +316,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               className="absolute inset-0 z-40 flex items-center justify-center p-2 sm:p-4"
-              style={{
-                background: 'linear-gradient(135deg, rgba(88, 28, 135, 0.85) 0%, rgba(124, 58, 237, 0.75) 50%, rgba(139, 92, 246, 0.7) 100%)'
-              }}
+              style={questionOverlayStyle}
             >
               <motion.div
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className="bg-slate-800/80 backdrop-blur-xl rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 w-full max-w-[95vw] sm:max-w-md md:max-w-lg shadow-2xl border border-white/20 max-h-[85vh] overflow-y-auto"
+                className={`${questionCardClass} rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 w-full max-w-[95vw] sm:max-w-md md:max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto`}
                 style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
               >
                 {/* Tiêu đề câu hỏi - màu vàng với icon ? */}
                 <div className="text-center mb-4 sm:mb-5">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold leading-snug flex items-center justify-center gap-2">
                     <span className="text-red-400 text-2xl sm:text-3xl">❓</span>
-                    <span className="text-yellow-300 drop-shadow-md" style={{ fontFamily: "'Nunito', 'Be Vietnam Pro', sans-serif" }}>
+                    <span className="drop-shadow-md" style={{ color: theme.questionStyle === 'card' ? theme.textColor : '#fde68a' }}>
                       {currentQuestion.text}
                     </span>
                   </h3>
@@ -457,6 +536,27 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
               <Play fill="currentColor" size={48} className="ml-2" />
             </motion.button>
           </div>
+        )}
+      </div>
+
+        {theme.layout === 'sidebar' && (
+          <aside className="hidden bg-white/95 p-5 text-slate-800 lg:block">
+            <h3 className="mb-2 text-lg font-black" style={{ color: theme.primaryColor }}>{lesson.title}</h3>
+            <p className="mb-4 text-sm text-slate-500">
+              {migratedLesson.questions.length} câu hỏi tương tác
+            </p>
+            <div className="space-y-2">
+              {migratedLesson.questions.map((q, index) => (
+                <div
+                  key={q.id}
+                  className={`rounded-xl border px-3 py-2 text-sm ${answeredQuestions.includes(q.id) ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}
+                >
+                  <span className="font-bold">Câu {index + 1}</span>
+                  <span className="ml-2 text-xs">{Math.floor(q.time / 60)}:{String(q.time % 60).padStart(2, '0')}</span>
+                </div>
+              ))}
+            </div>
+          </aside>
         )}
       </div>
 

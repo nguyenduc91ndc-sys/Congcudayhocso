@@ -66,6 +66,7 @@ import ThiepMoiOnline from './components/ThiepMoiOnline';
 import SoanGiaoAnNangLucSo from './components/SoanGiaoAnNangLucSo';
 import QrGenerator from './components/QrGenerator';
 import { getQrLinkById, incrementQrScan } from './utils/firebaseQrLinks';
+import { deleteLocalVideoFile } from './utils/localVideoStore';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -462,10 +463,14 @@ function App() {
 
   const handleDeleteLesson = (lessonId: string) => {
     if (window.confirm('Bạn có chắc muốn xóa bài giảng này không?')) {
+      const lessonToDelete = lessons.find(l => l.id === lessonId);
       const updatedLessons = lessons.filter(l => l.id !== lessonId);
       setLessons(updatedLessons);
       const storageKey = getLessonsStorageKey(user?.email);
       localStorage.setItem(storageKey, JSON.stringify(updatedLessons));
+      if (lessonToDelete?.videoSource === 'local') {
+        deleteLocalVideoFile(lessonId).catch(error => console.error('Cannot delete local video:', error));
+      }
     }
   };
 

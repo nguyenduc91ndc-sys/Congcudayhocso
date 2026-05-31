@@ -3,13 +3,15 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Video, Plus, Save, Play, Trash2, Home, HelpCircle, BookOpen,
     Clock, ChevronUp, ChevronDown, CheckCircle2, AlertCircle, ExternalLink,
-    Share2, Edit3, X, Copy, ArrowLeft, Minus
+    Share2, Edit3, X, Copy, ArrowLeft, Minus, Upload, Link2, Palette
 } from 'lucide-react';
-import { VideoLesson, Question } from '../types';
+import { VideoLesson, Question, VideoPlayerTheme, VideoSourceType, DEFAULT_VIDEO_PLAYER_THEME, normalizeVideoPlayerTheme } from '../types';
 import { v4 as uuidv4 } from 'uuid';
-import ReactPlayer from 'react-player/youtube';
+import ReactPlayer from 'react-player';
 import { cleanYouTubeUrl, isValidYouTubeUrl, extractStartTime } from '../utils/youtubeUtils';
 import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareUtils';
+import { saveLocalVideoFile } from '../utils/localVideoStore';
+import PlayerThemeCustomizer from './PlayerThemeCustomizer';
 
 interface InteractiveVideoModuleProps {
     lessons: VideoLesson[];
@@ -39,12 +41,23 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const [questions, setQuestions] = useState<Question[]>([]);
     const [urlError, setUrlError] = useState<boolean>(false);
     const [urlValid, setUrlValid] = useState<boolean | null>(null);
+    const [videoSource, setVideoSource] = useState<VideoSourceType>('youtube');
+    const [localVideoFile, setLocalVideoFile] = useState<File | null>(null);
+    const [localVideoPreviewUrl, setLocalVideoPreviewUrl] = useState('');
+    const [localVideoName, setLocalVideoName] = useState('');
+    const [playerTheme, setPlayerTheme] = useState<VideoPlayerTheme>(DEFAULT_VIDEO_PLAYER_THEME);
 
     // UI state
     const [isCopyingLink, setIsCopyingLink] = useState<string | null>(null);
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [showSavedCard, setShowSavedCard] = useState(false);
     const [savedLesson, setSavedLesson] = useState<VideoLesson | null>(null);
+
+    useEffect(() => {
+        return () => {
+            if (localVideoPreviewUrl) URL.revokeObjectURL(localVideoPreviewUrl);
+        };
+    }, [localVideoPreviewUrl]);
 
     // Reset form when switching to create new
     const resetForm = () => {
@@ -56,6 +69,11 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         setUrlValid(null);
         setUrlError(false);
         setEditingLesson(null);
+        setVideoSource('youtube');
+        setLocalVideoFile(null);
+        setLocalVideoPreviewUrl('');
+        setLocalVideoName('');
+        setPlayerTheme(DEFAULT_VIDEO_PLAYER_THEME);
     };
 
     // Load lesson data when editing
@@ -65,7 +83,12 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         setStartTime(lesson.startTime);
         setAllowSeeking(lesson.allowSeeking);
         setQuestions(lesson.questions);
-        setUrlValid(true);
+        setVideoSource(lesson.videoSource || 'youtube');
+        setLocalVideoFile(null);
+        setLocalVideoPreviewUrl(lesson.localVideoObjectUrl || '');
+        setLocalVideoName(lesson.localVideoName || '');
+        setPlayerTheme(normalizeVideoPlayerTheme(lesson.playerTheme));
+        setUrlValid((lesson.videoSource || 'youtube') === 'youtube');
         setEditingLesson(lesson);
         setCurrentView('EDIT');
     };
@@ -77,6 +100,35 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
 
     const getCleanVideoUrl = (rawUrl: string): string => {
         return cleanYouTubeUrl(rawUrl) || rawUrl;
+    };
+
+    const getPreviewVideoUrl = () => videoSource === 'local' ? localVideoPreviewUrl : getCleanVideoUrl(url);
+
+    const handleVideoSourceChange = (source: VideoSourceType) => {
+        setVideoSource(source);
+        setUrlError(false);
+        setUrlValid(source === 'youtube' && url ? isValidYouTubeUrl(url) : null);
+    };
+
+    const handleLocalVideoChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+        const file = event.target.files?.[0];
+        if (!file) return;
+
+        if (!file.type.startsWith('video/')) {
+            alert('Vui lòng chọn file video hợp lệ.');
+            return;
+        }
+
+        const objectUrl = URL.createObjectURL(file);
+        setLocalVideoFile(file);
+        setLocalVideoPreviewUrl(objectUrl);
+        setLocalVideoName(file.name);
+        setUrl(objectUrl);
+        setUrlValid(true);
+        setUrlError(false);
+        if (!title.trim()) {
+            setTitle(file.name.replace(/\.[^/.]+$/, ''));
+        }
     };
 
     // Nhãn cho đáp án (A, B, C, D)
@@ -140,14 +192,26 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         setQuestions(questions.filter(q => q.id !== id));
     };
 
-    const handleSave = () => {
-        if (!title || !url) return alert('Vui lòng nhập tên bài và link YouTube');
+    const handleSave = async () => {
+        if (!title) return alert('Vui lòng nhập tên bài.');
+        if (videoSource === 'youtube' && !url) return alert('Vui lòng nhập link YouTube.');
+        if (videoSource === 'local' && !localVideoFile && !editingLesson?.localVideoName) return alert('Vui lòng tải video từ máy lên.');
         if (urlError) return alert('Video này bị chặn nhúng, vui lòng đổi video khác.');
 
+        const lessonId = editingLesson?.id || uuidv4();
+
+        if (videoSource === 'local' && localVideoFile) {
+            await saveLocalVideoFile(lessonId, localVideoFile);
+        }
+
         const lessonToSave: VideoLesson = {
-            id: editingLesson?.id || uuidv4(),
+            id: lessonId,
             title,
-            youtubeUrl: getCleanVideoUrl(url),
+            youtubeUrl: videoSource === 'local' ? '' : getCleanVideoUrl(url),
+            videoSource,
+            localVideoName: videoSource === 'local' ? (localVideoFile?.name || localVideoName || editingLesson?.localVideoName) : undefined,
+            localVideoObjectUrl: videoSource === 'local' ? localVideoPreviewUrl : undefined,
+            playerTheme,
             startTime,
             allowSeeking,
             questions: questions.sort((a, b) => a.time - b.time),
@@ -160,13 +224,19 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     };
 
     const handlePreview = () => {
-        if (!title || !url) return alert('Vui lòng nhập tên bài và link YouTube để xem thử');
+        if (!title) return alert('Vui lòng nhập tên bài để xem thử');
+        if (videoSource === 'youtube' && !url) return alert('Vui lòng nhập link YouTube để xem thử');
+        if (videoSource === 'local' && !localVideoPreviewUrl) return alert('Vui lòng tải video từ máy để xem thử');
         if (urlError) return alert('Video này bị chặn nhúng, vui lòng đổi video khác.');
 
         const previewLesson: VideoLesson = {
             id: 'preview',
             title,
-            youtubeUrl: getCleanVideoUrl(url),
+            youtubeUrl: videoSource === 'local' ? '' : getCleanVideoUrl(url),
+            videoSource,
+            localVideoName,
+            localVideoObjectUrl: videoSource === 'local' ? localVideoPreviewUrl : undefined,
+            playerTheme,
             startTime,
             allowSeeking,
             questions: questions.sort((a, b) => a.time - b.time),
@@ -195,6 +265,10 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     };
 
     const handleShare = async (lesson: VideoLesson) => {
+        if (lesson.videoSource === 'local') {
+            alert('Video từ máy đang lưu cục bộ trên thiết bị, không thể tạo link chia sẻ online. Hãy dùng xuất HTML5/SCORM ở bước tiếp theo.');
+            return;
+        }
         if (isCopyingLink) return;
         setIsCopyingLink(lesson.id);
 
@@ -331,14 +405,20 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                                     {new Date(lesson.createdAt).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}
                                                 </p>
 
-                                                <a
-                                                    href={lesson.youtubeUrl}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium mb-4 hover:underline"
-                                                >
-                                                    <ExternalLink size={14} className="mr-1" /> Xem video gốc
-                                                </a>
+                                                {lesson.videoSource === 'local' ? (
+                                                    <div className="inline-flex items-center text-emerald-700 text-sm font-medium mb-4">
+                                                        <Upload size={14} className="mr-1" /> Video cục bộ: {lesson.localVideoName || 'đã lưu trên máy'}
+                                                    </div>
+                                                ) : (
+                                                    <a
+                                                        href={lesson.youtubeUrl}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium mb-4 hover:underline"
+                                                    >
+                                                        <ExternalLink size={14} className="mr-1" /> Xem video gốc
+                                                    </a>
+                                                )}
 
                                                 <div className="grid grid-cols-2 gap-2">
                                                     <button
@@ -413,20 +493,46 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                                 </div>
                                             </div>
 
-                                            {/* YouTube Link */}
+                                            {/* Video Source */}
                                             <div>
-                                                <label className="block text-gray-700 font-bold mb-2">Link YouTube</label>
-                                                <input
-                                                    type="text"
-                                                    value={url}
-                                                    onChange={handleUrlChange}
-                                                    className={`w-full p-3 rounded-xl border-2 focus:outline-none bg-gray-50 transition-colors ${urlError ? 'border-red-400' :
-                                                        urlValid === true ? 'border-green-400' :
-                                                            urlValid === false ? 'border-orange-400' :
-                                                                'border-gray-200 focus:border-purple-400'
-                                                        }`}
-                                                    placeholder="https://youtu.be/..."
-                                                />
+                                                <label className="block text-gray-700 font-bold mb-2">Nguồn video</label>
+                                                <div className="mb-3 grid grid-cols-2 gap-2 rounded-xl bg-gray-100 p-1">
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleVideoSourceChange('youtube')}
+                                                        className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-all ${videoSource === 'youtube' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                                    >
+                                                        <Link2 size={15} /> YouTube
+                                                    </button>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => handleVideoSourceChange('local')}
+                                                        className={`flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm font-bold transition-all ${videoSource === 'local' ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                                                    >
+                                                        <Upload size={15} /> Từ máy
+                                                    </button>
+                                                </div>
+
+                                                {videoSource === 'youtube' ? (
+                                                    <input
+                                                        type="text"
+                                                        value={url}
+                                                        onChange={handleUrlChange}
+                                                        className={`w-full p-3 rounded-xl border-2 focus:outline-none bg-gray-50 transition-colors ${urlError ? 'border-red-400' :
+                                                            urlValid === true ? 'border-green-400' :
+                                                                urlValid === false ? 'border-orange-400' :
+                                                                    'border-gray-200 focus:border-purple-400'
+                                                            }`}
+                                                        placeholder="https://youtu.be/..."
+                                                    />
+                                                ) : (
+                                                    <label className="flex cursor-pointer flex-col items-center justify-center rounded-xl border-2 border-dashed border-purple-200 bg-purple-50 px-3 py-4 text-center transition hover:border-purple-400 hover:bg-purple-100">
+                                                        <Upload size={22} className="mb-1 text-purple-600" />
+                                                        <span className="text-sm font-bold text-purple-800">{localVideoName || 'Chọn video MP4/WebM/OGG'}</span>
+                                                        <span className="mt-1 text-xs text-purple-500">Lưu cục bộ trên máy, không upload lên server</span>
+                                                        <input type="file" accept="video/mp4,video/webm,video/ogg,video/*" onChange={handleLocalVideoChange} className="hidden" />
+                                                    </label>
+                                                )}
                                             </div>
 
                                             {/* Start Time */}
@@ -464,20 +570,25 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                     </div>
 
                                     {/* Video Preview */}
-                                    {url && (
-                                        <div className="rounded-2xl overflow-hidden shadow-lg border-4 border-white aspect-video max-w-2xl mx-auto bg-black">
+                                    {getPreviewVideoUrl() && (
+                                        <div
+                                            className="overflow-hidden shadow-lg border-4 border-white aspect-video max-w-2xl mx-auto bg-black"
+                                            style={{ borderRadius: playerTheme.radius }}
+                                        >
                                             {!urlError ? (
                                                 <ReactPlayer
-                                                    url={getCleanVideoUrl(url)}
+                                                    url={getPreviewVideoUrl()}
                                                     width="100%"
                                                     height="100%"
                                                     controls={true}
-                                                    light={true}
+                                                    light={videoSource === 'youtube'}
                                                     onError={() => setUrlError(true)}
                                                     config={{
-                                                        playerVars: {
-                                                            origin: window.location.origin,
-                                                            modestbranding: 1
+                                                        youtube: {
+                                                            playerVars: {
+                                                                origin: window.location.origin,
+                                                                modestbranding: 1
+                                                            }
                                                         }
                                                     }}
                                                 />
@@ -485,14 +596,16 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                                 <div className="flex flex-col items-center justify-center h-full text-white bg-gray-900 text-center p-4">
                                                     <AlertCircle size={32} className="text-red-400 mb-2" />
                                                     <span className="text-sm font-medium mb-2">Video này bị chủ sở hữu chặn nhúng.</span>
-                                                    <a
-                                                        href={getCleanVideoUrl(url)}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg flex items-center gap-1"
-                                                    >
-                                                        <ExternalLink size={12} /> Kiểm tra trên YouTube
-                                                    </a>
+                                                    {videoSource === 'youtube' && (
+                                                        <a
+                                                            href={getCleanVideoUrl(url)}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="text-xs bg-white/20 hover:bg-white/30 px-3 py-1 rounded-lg flex items-center gap-1"
+                                                        >
+                                                            <ExternalLink size={12} /> Kiểm tra trên YouTube
+                                                        </a>
+                                                    )}
                                                 </div>
                                             )}
                                         </div>
@@ -616,7 +729,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
 
                 {/* Right Control Panel - Only show when editing */}
                 {isEditing && (
-                    <div className="w-72 bg-white border-l border-gray-200 p-6 flex flex-col">
+                    <div className="w-80 bg-white border-l border-gray-200 p-6 flex flex-col overflow-y-auto">
                         <h3 className="text-lg font-bold text-gray-800 mb-6">Bảng điều khiển</h3>
 
                         {/* Allow Seeking Toggle */}
@@ -632,6 +745,14 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                 <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${allowSeeking ? 'right-1' : 'left-1'
                                     }`} />
                             </button>
+                        </div>
+
+                        <div className="mb-6 rounded-2xl border border-purple-100 bg-white p-4 shadow-sm">
+                            <div className="mb-4 flex items-center gap-2">
+                                <Palette size={20} className="text-purple-600" />
+                                <h3 className="font-bold text-gray-800">Tùy chỉnh giao diện</h3>
+                            </div>
+                            <PlayerThemeCustomizer theme={playerTheme} onChange={setPlayerTheme} />
                         </div>
 
                         {/* Action Buttons */}
@@ -710,14 +831,20 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                 <p className="text-slate-500 text-sm mb-2">
                                     Cập nhật: {new Date(savedLesson.createdAt).toLocaleDateString('vi-VN', { day: 'numeric', month: 'long', year: 'numeric' })}
                                 </p>
-                                <a
-                                    href={savedLesson.youtubeUrl}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
-                                    className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline"
-                                >
-                                    Xem video gốc
-                                </a>
+                                {savedLesson.videoSource === 'local' ? (
+                                    <div className="inline-flex items-center text-emerald-700 text-sm font-medium">
+                                        <Upload size={14} className="mr-1" /> Video cục bộ: {savedLesson.localVideoName || 'đã lưu trên máy'}
+                                    </div>
+                                ) : (
+                                    <a
+                                        href={savedLesson.youtubeUrl}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="inline-flex items-center text-blue-600 hover:text-blue-800 text-sm font-medium hover:underline"
+                                    >
+                                        Xem video gốc
+                                    </a>
+                                )}
                             </div>
 
                             <div className="grid grid-cols-2 gap-3">
@@ -738,6 +865,10 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                                 </button>
                                 <button
                                     onClick={async () => {
+                                        if (savedLesson.videoSource === 'local') {
+                                            alert('Video từ máy đang lưu cục bộ trên thiết bị, không thể tạo link chia sẻ online.');
+                                            return;
+                                        }
                                         if (isCopyingLink) return;
                                         setIsCopyingLink(savedLesson.id);
                                         try {

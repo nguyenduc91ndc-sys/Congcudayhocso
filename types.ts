@@ -6,6 +6,43 @@ export interface Question {
   correctOption: number; // Index của đáp án đúng (0, 1, 2, 3)
 }
 
+export type VideoSourceType = 'youtube' | 'local';
+export type VideoPlayerLayout = 'full' | 'cinema' | 'sidebar';
+export type VideoQuestionStyle = 'glass' | 'card' | 'playful';
+
+export interface VideoPlayerTheme {
+  primaryColor: string;
+  secondaryColor: string;
+  accentColor: string;
+  backgroundColor: string;
+  surfaceColor: string;
+  textColor: string;
+  radius: number;
+  fontFamily: string;
+  layout: VideoPlayerLayout;
+  questionStyle: VideoQuestionStyle;
+}
+
+export const DEFAULT_VIDEO_PLAYER_THEME: VideoPlayerTheme = {
+  primaryColor: '#7c3aed',
+  secondaryColor: '#ec4899',
+  accentColor: '#f59e0b',
+  backgroundColor: '#111827',
+  surfaceColor: '#ffffff',
+  textColor: '#1f2937',
+  radius: 24,
+  fontFamily: 'Nunito',
+  layout: 'cinema',
+  questionStyle: 'glass',
+};
+
+export function normalizeVideoPlayerTheme(theme?: Partial<VideoPlayerTheme>): VideoPlayerTheme {
+  return {
+    ...DEFAULT_VIDEO_PLAYER_THEME,
+    ...(theme || {}),
+  };
+}
+
 // Hàm migration: chuyển đổi Question format cũ sang format mới
 export function migrateQuestion(q: any): Question {
   // Nếu đã là format mới (options là mảng), giữ nguyên
@@ -33,6 +70,10 @@ export interface VideoLesson {
   id: string;
   title: string;
   youtubeUrl: string;
+  videoSource?: VideoSourceType;
+  localVideoName?: string;
+  localVideoObjectUrl?: string;
+  playerTheme?: VideoPlayerTheme;
   startTime: number; // in seconds
   allowSeeking: boolean;
   questions: Question[];
