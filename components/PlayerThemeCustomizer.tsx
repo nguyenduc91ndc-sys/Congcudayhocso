@@ -304,13 +304,15 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
               {logoStatus && <p className="mt-1 truncate text-[11px] font-black text-emerald-600">{logoStatus}</p>}
             </div>
           </div>
-          <input
-            type="text"
-            value={theme.logoText}
-            onChange={(e) => updateTheme({ logoText: e.target.value.slice(0, 8) })}
-            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
-            placeholder="Logo/chữ góc: GV"
-          />
+          {!theme.logoImage && (
+            <input
+              type="text"
+              value={theme.logoText}
+              onChange={(e) => updateTheme({ logoText: e.target.value.slice(0, 8) })}
+              className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+              placeholder="Chữ thay logo khi chưa tải ảnh: GV"
+            />
+          )}
           <input
             type="text"
             value={theme.publishTitle}
