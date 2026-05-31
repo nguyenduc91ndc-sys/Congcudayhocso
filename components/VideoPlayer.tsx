@@ -446,11 +446,36 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                 initial={{ scale: 0.9, y: 20 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
-                className={`${questionCardClass} rounded-2xl sm:rounded-3xl p-4 sm:p-5 md:p-6 w-full max-w-[95vw] sm:max-w-md md:max-w-lg shadow-2xl max-h-[85vh] overflow-y-auto`}
-                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+                className={`${questionCardClass} relative w-full max-w-[95vw] overflow-hidden rounded-[24px] border p-4 shadow-2xl sm:max-w-xl sm:p-5 md:max-w-2xl md:p-6`}
+                style={{
+                  scrollbarWidth: 'none',
+                  msOverflowStyle: 'none',
+                  borderColor: theme.questionStyle === 'card' ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.24)',
+                  boxShadow: `0 28px 90px rgba(15,23,42,.35), 0 0 0 1px ${theme.primaryColor}22`,
+                }}
               >
+                <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
+                <div className="mb-5">
+                  <div className="mb-3 flex items-center justify-between gap-3">
+                    <span className="rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wide text-white shadow-sm" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
+                      Câu hỏi tương tác
+                    </span>
+                    <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-slate-500">
+                      +10 điểm
+                    </span>
+                  </div>
+                  <h3
+                    className="text-left text-xl font-black leading-tight tracking-tight sm:text-2xl md:text-3xl"
+                    style={{ color: theme.questionStyle === 'card' ? theme.textColor : '#ffffff' }}
+                  >
+                    {currentQuestion.text}
+                  </h3>
+                  <p className={`mt-2 text-sm font-semibold ${theme.questionStyle === 'card' ? 'text-slate-500' : 'text-white/70'}`}>
+                    Chọn một đáp án đúng rồi bấm Trả lời ngay.
+                  </p>
+                </div>
                 {/* Tiêu đề câu hỏi - màu vàng với icon ? */}
-                <div className="text-center mb-4 sm:mb-5">
+                <div className="hidden">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold leading-snug flex items-center justify-center gap-2">
                     <span className="text-red-400 text-2xl sm:text-3xl">❓</span>
                     <span className="drop-shadow-md" style={{ color: theme.questionStyle === 'card' ? theme.textColor : '#fde68a' }}>
@@ -460,33 +485,46 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                 </div>
 
                 {/* Các lựa chọn - kiểu A. B. C. D. - Dynamic */}
-                <div className="flex flex-col gap-2 sm:gap-2.5 mb-4 sm:mb-5">
-                  {currentQuestion.options.map((optText, optIndex) => (
+                <div className="mb-5 flex flex-col gap-3">
+                  {currentQuestion.options
+                    .map((optText, optIndex) => ({ optText, optIndex }))
+                    .filter(({ optText }) => String(optText || '').trim())
+                    .map(({ optText, optIndex }) => (
                     <button
                       key={optIndex}
                       onClick={() => setSelectedOption(optIndex)}
-                      className={`py-2.5 sm:py-3 px-4 sm:px-5 rounded-full text-left transition-all relative overflow-hidden w-full
+                      className={`group relative flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all sm:px-4 sm:py-3.5
                         ${selectedOption === optIndex
-                          ? 'bg-white shadow-lg ring-2 ring-purple-400'
-                          : 'bg-white/90 hover:bg-white hover:shadow-md'
+                          ? 'border-transparent bg-white shadow-lg ring-2 ring-purple-400'
+                          : 'border-slate-200 bg-white/95 hover:-translate-y-0.5 hover:border-purple-200 hover:bg-white hover:shadow-md'
                         }
                         ${feedback === 'correct' && selectedOption === optIndex ? 'bg-green-100 ring-2 ring-green-500' : ''}
                         ${feedback === 'incorrect' && selectedOption === optIndex ? 'bg-red-100 ring-2 ring-red-500' : ''}
                       `}
                     >
-                      <span className={`text-sm sm:text-base font-semibold
+                      <span
+                        className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-xl text-sm font-black transition
+                          ${selectedOption === optIndex ? 'text-white' : 'bg-slate-100 text-slate-600 group-hover:bg-purple-50 group-hover:text-purple-700'}
+                          ${feedback === 'correct' && selectedOption === optIndex ? '!bg-green-500 !text-white' : ''}
+                          ${feedback === 'incorrect' && selectedOption === optIndex ? '!bg-red-500 !text-white' : ''}
+                        `}
+                        style={selectedOption === optIndex && !feedback ? { background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor})` } : undefined}
+                      >
+                        {optionLabels[optIndex]}
+                      </span>
+                      <span className={`min-w-0 flex-1 text-sm font-extrabold leading-snug sm:text-base
                         ${selectedOption === optIndex ? 'text-purple-800' : 'text-gray-700'}
                         ${feedback === 'correct' && selectedOption === optIndex ? '!text-green-800' : ''}
                         ${feedback === 'incorrect' && selectedOption === optIndex ? '!text-red-800' : ''}
                       `}>
-                        {optionLabels[optIndex]}. {optText}
+                        {optText}
                       </span>
 
                       {feedback === 'correct' && selectedOption === optIndex && (
-                        <CheckCircle className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 text-green-500 w-5 h-5" />
+                        <CheckCircle className="h-5 w-5 shrink-0 text-green-500" />
                       )}
                       {feedback === 'incorrect' && selectedOption === optIndex && (
-                        <XCircle className="absolute top-1/2 right-3 sm:right-4 transform -translate-y-1/2 text-red-500 w-5 h-5" />
+                        <XCircle className="h-5 w-5 shrink-0 text-red-500" />
                       )}
                     </button>
                   ))}
