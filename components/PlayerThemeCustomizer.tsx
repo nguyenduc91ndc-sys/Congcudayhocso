@@ -136,7 +136,7 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
 
 const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, onChange }) => {
   const [showPreview, setShowPreview] = useState(false);
-  const [activePanel, setActivePanel] = useState<'publish' | 'colors' | 'layout'>('publish');
+  const [activePanel, setActivePanel] = useState<'publish' | 'colors' | 'layout' | null>(null);
   const updateTheme = (patch: Partial<VideoPlayerTheme>) => onChange({ ...theme, ...patch });
   const panelButtonClass = (id: 'publish' | 'colors' | 'layout') =>
     `flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${activePanel === id ? 'border-purple-300 bg-purple-50 text-purple-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`;
@@ -151,7 +151,7 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
         <Eye size={18} /> Xem trước giao diện
       </button>
 
-      <button type="button" onClick={() => setActivePanel('publish')} className={panelButtonClass('publish')}>
+      <button type="button" onClick={() => setActivePanel(activePanel === 'publish' ? null : 'publish')} className={panelButtonClass('publish')}>
         <span className="flex items-center gap-2 text-sm font-black"><UserRound size={17} /> Thông tin xuất bản</span>
         <ChevronDown size={18} className={`transition ${activePanel === 'publish' ? 'rotate-180' : ''}`} />
       </button>
@@ -259,7 +259,7 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
       </>
       )}
 
-      <button type="button" onClick={() => setActivePanel('colors')} className={panelButtonClass('colors')}>
+      <button type="button" onClick={() => setActivePanel(activePanel === 'colors' ? null : 'colors')} className={panelButtonClass('colors')}>
         <span className="flex items-center gap-2 text-sm font-black"><Palette size={17} /> Màu sắc player</span>
         <ChevronDown size={18} className={`transition ${activePanel === 'colors' ? 'rotate-180' : ''}`} />
       </button>
@@ -307,7 +307,7 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
       </>
       )}
 
-      <button type="button" onClick={() => setActivePanel('layout')} className={panelButtonClass('layout')}>
+      <button type="button" onClick={() => setActivePanel(activePanel === 'layout' ? null : 'layout')} className={panelButtonClass('layout')}>
         <span className="flex items-center gap-2 text-sm font-black"><LayoutTemplate size={17} /> Bố cục và font</span>
         <ChevronDown size={18} className={`transition ${activePanel === 'layout' ? 'rotate-180' : ''}`} />
       </button>

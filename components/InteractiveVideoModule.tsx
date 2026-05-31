@@ -53,6 +53,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [showSavedCard, setShowSavedCard] = useState(false);
     const [savedLesson, setSavedLesson] = useState<VideoLesson | null>(null);
+    const [controlPanel, setControlPanel] = useState<'export' | 'design' | 'actions'>('export');
 
     // Reset form when switching to create new
     const resetForm = () => {
@@ -285,13 +286,14 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
 </style>
 </head>
 <body>
-<div class="app"><main class="shell"><div class="topbar"><span>Video bài giảng tương tác</span><div class="stats"><span>★ <b id="score">0</b></span><span>${escapeHtml(playerTheme.logoText || 'GV')}</span></div></div><div class="layout"><section class="main"><div class="player"><div class="stage"><video id="video" src="${videoFileName}" ${allowSeeking ? 'controls' : ''}></video><div class="brand"><span class="logo">${escapeHtml(playerTheme.logoText || 'GV')}</span><span>${escapeHtml(playerTheme.publishTitle || title)}</span></div><div class="badge">${escapeHtml(playerTheme.publishSubtitle || '')}</div><div class="foot"><span>${escapeHtml(playerTheme.footerLeftText || 'Giáo viên yêu công nghệ')}</span><span>${escapeHtml(playerTheme.footerRightText || '')}</span></div><div id="overlay" class="overlay"><div class="card"><h2 id="qtext" class="qtitle"></h2><div id="opts"></div><div class="actions"><button class="primary" id="answer">Trả lời ngay</button><button class="secondary" id="rewatch">Xem lại</button></div><div id="result" class="result"></div></div></div></div><div class="controls"><button class="ctrl" id="back">≪</button><button class="ctrl" id="play">▶</button><button class="ctrl" id="next">≫</button><button class="ctrl" id="restart">↻</button><span class="page">1 / 1</span><input class="progress" id="progress" type="range" min="0" value="0" step="0.1"><span class="time"><b id="now">00:00</b> / <b id="dur">00:00</b></span><button class="ctrl" id="full">⛶</button></div></div></section><aside class="side" id="side"><div class="school-logo">${escapeHtml(playerTheme.logoText || 'GV')}</div>${playerTheme.showAuthorPanel ? `<div class="profile"><div class="avatar">${escapeHtml((playerTheme.authorName || 'GV').slice(0, 2).toUpperCase())}</div><div><div class="name">${authorName}</div><div class="role">${authorInfo}</div></div></div><button class="info">Hiện thông tin</button>` : ''}<div class="tabs"><button class="tab active" id="menuTab">Mục lục</button><button class="tab" id="guideTab">Hướng dẫn</button></div><input class="search" placeholder="Tìm kiếm"><h3 class="section-title">Trang 1</h3><div class="qlist" id="qlist"></div><div class="guide">${guideText}</div></aside></div></main></div>
+<div class="app"><main class="shell"><div class="topbar"><span>Video bài giảng tương tác</span><div class="stats"><span>★ <b id="score">0</b></span><span>${escapeHtml(playerTheme.logoText || 'GV')}</span></div></div><div class="layout"><section class="main"><div class="player"><div class="stage"><video id="video" src="${videoFileName}" playsinline></video><div class="brand"><span class="logo">${escapeHtml(playerTheme.logoText || 'GV')}</span><span>${escapeHtml(playerTheme.publishTitle || title)}</span></div><div class="badge">${escapeHtml(playerTheme.publishSubtitle || '')}</div><div class="foot"><span>${escapeHtml(playerTheme.footerLeftText || 'Giáo viên yêu công nghệ')}</span><span>${escapeHtml(playerTheme.footerRightText || '')}</span></div><div id="overlay" class="overlay"><div class="card"><h2 id="qtext" class="qtitle"></h2><div id="opts"></div><div class="actions"><button class="primary" id="answer">Trả lời ngay</button><button class="secondary" id="rewatch">Xem lại</button></div><div id="result" class="result"></div></div></div></div><div class="controls"><button class="ctrl" id="back">≪</button><button class="ctrl" id="play">▶</button><button class="ctrl" id="next">≫</button><button class="ctrl" id="restart">↻</button><span class="page">1 / 1</span><input class="progress" id="progress" type="range" min="0" value="0" step="0.1"><span class="time"><b id="now">00:00</b> / <b id="dur">00:00</b></span><button class="ctrl" id="full">⛶</button></div></div></section><aside class="side" id="side"><div class="school-logo">${escapeHtml(playerTheme.logoText || 'GV')}</div>${playerTheme.showAuthorPanel ? `<div class="profile"><div class="avatar">${escapeHtml((playerTheme.authorName || 'GV').slice(0, 2).toUpperCase())}</div><div><div class="name">${authorName}</div><div class="role">${authorInfo}</div></div></div><button class="info" id="authorInfo">Hiện thông tin</button>` : ''}<div class="tabs"><button class="tab active" id="menuTab">Mục lục</button><button class="tab" id="guideTab">Hướng dẫn</button></div><input class="search" id="searchBox" placeholder="Tìm kiếm"><h3 class="section-title">Trang 1</h3><div class="qlist" id="qlist"></div><div class="guide">${guideText}</div></aside></div></main></div>
 <script>
 const data=${JSON.stringify(exportData)};
-const video=document.getElementById('video'),overlay=document.getElementById('overlay'),qtext=document.getElementById('qtext'),opts=document.getElementById('opts'),result=document.getElementById('result'),progress=document.getElementById('progress'),now=document.getElementById('now'),dur=document.getElementById('dur'),play=document.getElementById('play'),score=document.getElementById('score');
+const video=document.getElementById('video'),overlay=document.getElementById('overlay'),qtext=document.getElementById('qtext'),opts=document.getElementById('opts'),result=document.getElementById('result'),progress=document.getElementById('progress'),now=document.getElementById('now'),dur=document.getElementById('dur'),play=document.getElementById('play'),score=document.getElementById('score'),menuTab=document.getElementById('menuTab'),guideTab=document.getElementById('guideTab'),side=document.getElementById('side'),qlist=document.getElementById('qlist'),searchBox=document.getElementById('searchBox');
 let current=null,selected=null,answered=[];
 const fmt=s=>{s=Math.max(0,Math.floor(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
-document.getElementById('qlist').innerHTML=data.questions.map((q,i)=>'<div class="qitem"><span><span class="qnum">'+(i+1)+'</span>Câu '+(i+1)+'</span><small>'+fmt(q.time)+'</small></div>').join('');
+const renderList=(filter='')=>{qlist.innerHTML=data.questions.map((q,i)=>({q,i})).filter(({q,i})=>('câu '+(i+1)+' '+q.text).toLowerCase().includes(filter.toLowerCase())).map(({q,i})=>'<div class="qitem" data-time="'+q.time+'"><span><span class="qnum">'+(i+1)+'</span>Câu '+(i+1)+'</span><small>'+fmt(q.time)+'</small></div>').join('')};
+renderList();
 video.currentTime=data.startTime||0;
 video.addEventListener('loadedmetadata',()=>{progress.max=video.duration||0;dur.textContent=fmt(video.duration)});
 video.addEventListener('play',()=>play.textContent='❚❚');
@@ -300,12 +302,15 @@ video.addEventListener('timeupdate',()=>{progress.value=video.currentTime;now.te
 const q=data.questions.find(x=>Math.abs(x.time-video.currentTime)<.7&&!answered.includes(x.id));if(q){current=q;selected=null;video.pause();qtext.textContent=q.text;result.textContent='';opts.innerHTML='';q.options.forEach((o,i)=>{const b=document.createElement('button');b.className='option';b.textContent=String.fromCharCode(65+i)+'. '+o;b.onclick=()=>{selected=i;document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'));b.classList.add('selected')};opts.appendChild(b)});overlay.classList.add('show')}});
 play.onclick=()=>video.paused?video.play():video.pause();
 progress.oninput=()=>{if(data.allowSeeking)video.currentTime=Number(progress.value)};
+searchBox.oninput=()=>renderList(searchBox.value);
+qlist.onclick=e=>{const item=e.target.closest('.qitem');if(item&&data.allowSeeking){video.currentTime=Number(item.dataset.time)||0;video.play()}};
 document.getElementById('restart').onclick=()=>{video.currentTime=data.startTime||0;answered=[];score.textContent='0';video.play()};
 document.getElementById('back').onclick=()=>{video.currentTime=Math.max(0,video.currentTime-10)};
 document.getElementById('next').onclick=()=>{if(data.allowSeeking)video.currentTime=Math.min(video.duration||0,video.currentTime+10)};
 document.getElementById('full').onclick=()=>document.querySelector('.shell').requestFullscreen&&document.querySelector('.shell').requestFullscreen();
-document.getElementById('menuTab').onclick=()=>{document.getElementById('side').classList.remove('show-guide');menuTab.classList.add('active');guideTab.classList.remove('active')};
-document.getElementById('guideTab').onclick=()=>{document.getElementById('side').classList.add('show-guide');guideTab.classList.add('active');menuTab.classList.remove('active')};
+menuTab.onclick=()=>{side.classList.remove('show-guide');menuTab.classList.add('active');guideTab.classList.remove('active')};
+guideTab.onclick=()=>{side.classList.add('show-guide');guideTab.classList.add('active');menuTab.classList.remove('active')};
+const authorInfo=document.getElementById('authorInfo');if(authorInfo){authorInfo.onclick=()=>alert('${authorName.replace(/'/g, "\\'")}\\n${escapeHtml(playerTheme.authorInfo || '').replace(/\n/g, '\\n').replace(/'/g, "\\'")}')};
 document.getElementById('answer').onclick=()=>{if(!current||selected===null)return;if(selected===current.correctOption){result.textContent='Chính xác!';answered.push(current.id);score.textContent=answered.length;setTimeout(()=>{overlay.classList.remove('show');video.play()},900)}else{result.textContent='Chưa đúng, em hãy xem lại đoạn video nhé.'}};
 document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.classList.remove('show');video.currentTime=Math.max(0,current.time-10);video.play()};
 </script>
@@ -829,36 +834,17 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                     <div className="w-80 bg-white border-l border-gray-200 p-6 flex flex-col overflow-y-auto">
                         <h3 className="text-lg font-bold text-gray-800 mb-6">Bảng điều khiển</h3>
 
-                        {/* Allow Seeking Toggle */}
-                        <div className="flex items-center justify-between mb-6 p-4 bg-gray-50 rounded-xl">
-                            <span className="text-gray-700 font-medium">Cho phép tua video</span>
-                            <button
-                                onClick={() => setAllowSeeking(!allowSeeking)}
-                                className={`w-14 h-7 rounded-full transition-all duration-300 relative ${allowSeeking
-                                    ? 'bg-gradient-to-r from-green-400 to-emerald-500'
-                                    : 'bg-gray-300'
-                                    }`}
-                            >
-                                <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${allowSeeking ? 'right-1' : 'left-1'
-                                    }`} />
-                            </button>
-                        </div>
-
-                        <div className="mb-6 rounded-2xl border border-purple-100 bg-white p-4 shadow-sm">
-                            <div className="mb-4 flex items-center gap-2">
-                                <Palette size={20} className="text-purple-600" />
-                                <h3 className="font-bold text-gray-800">Tùy chỉnh giao diện</h3>
-                            </div>
-                            <PlayerThemeCustomizer theme={playerTheme} onChange={setPlayerTheme} />
-                        </div>
-
-                        {/* Action Buttons */}
                         <div className="space-y-3 flex-1">
-                            <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
-                                <div className="mb-2 flex items-center gap-2 text-sm font-black text-indigo-900">
-                                    <Download size={18} />
-                                    Xuất file
-                                </div>
+                            <button
+                                type="button"
+                                onClick={() => setControlPanel(controlPanel === 'export' ? 'actions' : 'export')}
+                                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'export' ? 'border-indigo-200 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
+                            >
+                                <span className="flex items-center gap-2 text-sm font-black"><Download size={18} /> Xuất file</span>
+                                <ChevronDown size={18} className={`transition ${controlPanel === 'export' ? 'rotate-180' : ''}`} />
+                            </button>
+                            {controlPanel === 'export' && (
+                                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
                                 <button
                                     onClick={handleExportHtml5}
                                     className="mb-2 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
@@ -875,6 +861,45 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                                     </button>
                                 </div>
                             </div>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => setControlPanel(controlPanel === 'design' ? 'actions' : 'design')}
+                                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'design' ? 'border-purple-200 bg-purple-50 text-purple-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
+                            >
+                                <span className="flex items-center gap-2 text-sm font-black"><Palette size={18} /> Tùy chỉnh giao diện</span>
+                                <ChevronDown size={18} className={`transition ${controlPanel === 'design' ? 'rotate-180' : ''}`} />
+                            </button>
+                            {controlPanel === 'design' && (
+                                <div className="rounded-2xl border border-purple-100 bg-white p-4 shadow-sm">
+                                    <PlayerThemeCustomizer theme={playerTheme} onChange={setPlayerTheme} />
+                                </div>
+                            )}
+
+                            <button
+                                type="button"
+                                onClick={() => setControlPanel('actions')}
+                                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'actions' ? 'border-orange-200 bg-orange-50 text-orange-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
+                            >
+                                <span className="flex items-center gap-2 text-sm font-black"><Play size={18} /> Thao tác nhanh</span>
+                                <ChevronDown size={18} className={`transition ${controlPanel === 'actions' ? 'rotate-180' : ''}`} />
+                            </button>
+                            {controlPanel === 'actions' && (
+                                <div className="space-y-3 rounded-2xl border border-orange-100 bg-orange-50 p-3">
+                                    <div className="flex items-center justify-between p-3 bg-white rounded-xl">
+                                        <span className="text-gray-700 font-medium">Cho phép tua video</span>
+                                        <button
+                                            onClick={() => setAllowSeeking(!allowSeeking)}
+                                            className={`w-14 h-7 rounded-full transition-all duration-300 relative ${allowSeeking
+                                                ? 'bg-gradient-to-r from-green-400 to-emerald-500'
+                                                : 'bg-gray-300'
+                                                }`}
+                                        >
+                                            <div className={`absolute top-1 w-5 h-5 bg-white rounded-full shadow-md transition-all duration-300 ${allowSeeking ? 'right-1' : 'left-1'
+                                                }`} />
+                                        </button>
+                                    </div>
 
                             <button
                                 onClick={addQuestion}
@@ -899,6 +924,8 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                                 <Play size={20} />
                                 Xem thử
                             </button>
+                                </div>
+                            )}
                         </div>
 
                         {/* Back Button */}
