@@ -59,6 +59,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
 
     const loadPlaybackUrl = async () => {
       setLocalVideoMissing(false);
+      setVideoError(false);
       releaseObjectUrl();
 
       if (!isLocalVideo) {
@@ -66,7 +67,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
         return;
       }
 
-      if (lesson.localVideoObjectUrl) {
+      if (lesson.id === 'preview' && lesson.localVideoObjectUrl) {
         setPlaybackUrl(lesson.localVideoObjectUrl);
         return;
       }
@@ -75,18 +76,30 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
         const file = await getLocalVideoFile(lesson.id);
         if (cancelled) return;
 
+        if (file) {
+          const objectUrl = URL.createObjectURL(file);
+          objectUrlRef.current = objectUrl;
+          setPlaybackUrl(objectUrl);
+          return;
+        }
+
+        if (lesson.localVideoObjectUrl) {
+          setPlaybackUrl(lesson.localVideoObjectUrl);
+          return;
+        }
+
         if (!file) {
           setLocalVideoMissing(true);
           setVideoError(true);
           return;
         }
-
-        const objectUrl = URL.createObjectURL(file);
-        objectUrlRef.current = objectUrl;
-        setPlaybackUrl(objectUrl);
       } catch (error) {
         if (!cancelled) {
           console.error('Cannot load local video:', error);
+          if (lesson.localVideoObjectUrl) {
+            setPlaybackUrl(lesson.localVideoObjectUrl);
+            return;
+          }
           setLocalVideoMissing(true);
           setVideoError(true);
         }

@@ -53,12 +53,6 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const [showSavedCard, setShowSavedCard] = useState(false);
     const [savedLesson, setSavedLesson] = useState<VideoLesson | null>(null);
 
-    useEffect(() => {
-        return () => {
-            if (localVideoPreviewUrl) URL.revokeObjectURL(localVideoPreviewUrl);
-        };
-    }, [localVideoPreviewUrl]);
-
     // Reset form when switching to create new
     const resetForm = () => {
         setTitle('');
@@ -119,6 +113,9 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             return;
         }
 
+        if (localVideoPreviewUrl.startsWith('blob:')) {
+            URL.revokeObjectURL(localVideoPreviewUrl);
+        }
         const objectUrl = URL.createObjectURL(file);
         setLocalVideoFile(file);
         setLocalVideoPreviewUrl(objectUrl);
