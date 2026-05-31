@@ -321,6 +321,34 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
           </div>
         )}
 
+        {!videoError && (
+          <div className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-start justify-between gap-3 p-4">
+            <div className="flex max-w-[70%] items-center gap-2 rounded-full bg-black/45 px-3 py-2 text-white backdrop-blur">
+              <span className="flex h-7 min-w-7 items-center justify-center rounded-full text-xs font-black" style={{ backgroundColor: theme.primaryColor }}>
+                {theme.logoText || 'GV'}
+              </span>
+              <div className="min-w-0">
+                <p className="truncate text-sm font-black">{theme.publishTitle || lesson.title}</p>
+                {(theme.publishSubtitle || theme.authorName) && (
+                  <p className="truncate text-[11px] text-white/70">{theme.publishSubtitle || theme.authorName}</p>
+                )}
+              </div>
+            </div>
+            {theme.showScoreReport && (
+              <div className="rounded-full bg-white/90 px-3 py-2 text-xs font-black text-slate-800 shadow">
+                {answeredQuestions.length}/{migratedLesson.questions.length} câu hỏi
+              </div>
+            )}
+          </div>
+        )}
+
+        {!videoError && (theme.footerLeftText || theme.footerRightText || theme.guideText) && (
+          <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex items-end justify-between gap-3 bg-gradient-to-t from-black/60 to-transparent p-4 text-xs font-bold text-white">
+            <span className="max-w-[70%] truncate">{theme.footerLeftText || theme.guideText}</span>
+            <span className="shrink-0">{theme.footerRightText}</span>
+          </div>
+        )}
+
         {/* Overlay câu hỏi tương tác - thiết kế mới */}
         <AnimatePresence>
           {currentQuestion && !videoError && (
@@ -558,6 +586,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
             <p className="mb-4 text-sm text-slate-500">
               {migratedLesson.questions.length} câu hỏi tương tác
             </p>
+            {theme.showAuthorPanel && (
+              <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tác giả</p>
+                <p className="font-black text-slate-800">{theme.authorName || 'Chưa nhập tên tác giả'}</p>
+                {theme.authorInfo && <p className="mt-1 text-xs leading-relaxed text-slate-500">{theme.authorInfo}</p>}
+              </div>
+            )}
+            {theme.guideText && (
+              <div className="mb-4 rounded-2xl border border-indigo-100 bg-indigo-50 p-4 text-sm font-semibold text-indigo-900">
+                {theme.guideText}
+              </div>
+            )}
             <div className="space-y-2">
               {migratedLesson.questions.map((q, index) => (
                 <div

@@ -17,6 +17,17 @@ export interface VideoPlayerTheme {
   backgroundColor: string;
   surfaceColor: string;
   textColor: string;
+  logoText: string;
+  publishTitle: string;
+  publishSubtitle: string;
+  authorName: string;
+  authorInfo: string;
+  footerLeftText: string;
+  footerRightText: string;
+  guideText: string;
+  showAuthorPanel: boolean;
+  autoAdvance: boolean;
+  showScoreReport: boolean;
   radius: number;
   fontFamily: string;
   layout: VideoPlayerLayout;
@@ -30,6 +41,17 @@ export const DEFAULT_VIDEO_PLAYER_THEME: VideoPlayerTheme = {
   backgroundColor: '#111827',
   surfaceColor: '#ffffff',
   textColor: '#1f2937',
+  logoText: 'GV',
+  publishTitle: 'Bài giảng tương tác',
+  publishSubtitle: 'Thiết kế bởi Giáo viên CN',
+  authorName: '',
+  authorInfo: '',
+  footerLeftText: '',
+  footerRightText: '',
+  guideText: '',
+  showAuthorPanel: true,
+  autoAdvance: true,
+  showScoreReport: true,
   radius: 24,
   fontFamily: 'Nunito',
   layout: 'cinema',

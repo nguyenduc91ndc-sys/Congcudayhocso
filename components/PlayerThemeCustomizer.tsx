@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Eye, LayoutTemplate, Palette, Play, SlidersHorizontal, Type, X } from 'lucide-react';
+import { CheckCircle2, Eye, LayoutTemplate, Palette, Play, Settings2, SlidersHorizontal, Type, UserRound, X } from 'lucide-react';
 import { VideoPlayerTheme, VideoPlayerLayout, VideoQuestionStyle } from '../types';
 
 interface PlayerThemeCustomizerProps {
@@ -66,8 +66,12 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
         >
           <div className={`mx-auto overflow-hidden border-4 border-white/30 bg-black shadow-2xl ${isSidebar ? 'grid max-w-4xl grid-cols-[1fr_230px]' : 'max-w-4xl'}`} style={{ borderRadius: theme.radius }}>
             <div className="relative aspect-video bg-gradient-to-br from-slate-950 via-slate-900 to-black">
-              <div className="absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-bold text-white" style={{ backgroundColor: theme.primaryColor }}>
-                Bài giảng tương tác
+              <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold text-white" style={{ backgroundColor: theme.primaryColor }}>
+                <span className="flex h-6 w-6 items-center justify-center rounded-full bg-white/20">{theme.logoText || 'GV'}</span>
+                {theme.publishTitle || 'Bài giảng tương tác'}
+              </div>
+              <div className="absolute right-4 top-4 rounded-full bg-white/10 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                {theme.publishSubtitle || 'Thiết kế bởi Giáo viên CN'}
               </div>
               <div className="absolute inset-0 flex items-center justify-center">
                 <button type="button" className="flex h-20 w-20 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-2xl">
@@ -78,7 +82,7 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
                 <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/20">
                   <div className="h-full w-2/5 rounded-full" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
                 </div>
-                <span className="text-xs font-bold text-white">01:24</span>
+                <span className="text-xs font-bold text-white">{theme.footerRightText || '01:24'}</span>
               </div>
               <div className="absolute inset-0 flex items-center justify-center bg-black/25 p-6">
                 <div className="w-full max-w-md border p-5 shadow-2xl" style={{ ...questionSurface, borderRadius: Math.max(14, theme.radius) }}>
@@ -100,6 +104,13 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
               <aside className="hidden bg-white/95 p-4 text-slate-800 md:block">
                 <h4 className="mb-1 text-base font-black" style={{ color: theme.primaryColor }}>Mục lục bài học</h4>
                 <p className="mb-4 text-xs text-slate-500">3 câu hỏi tương tác</p>
+                {theme.showAuthorPanel && (
+                  <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-3 shadow-sm">
+                    <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tác giả</p>
+                    <p className="font-black text-slate-800">{theme.authorName || 'Tên giáo viên'}</p>
+                    <p className="mt-1 text-xs text-slate-500">{theme.authorInfo || 'Đơn vị, chức danh, số điện thoại...'}</p>
+                  </div>
+                )}
                 {[1, 2, 3].map((item) => (
                   <div key={item} className="mb-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold">
                     Câu hỏi {item}
@@ -111,6 +122,9 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
         </div>
 
         <div className="flex justify-end gap-3 border-t border-white/10 px-5 py-4">
+          <div className="mr-auto text-sm font-semibold text-slate-400">
+            {theme.footerLeftText || theme.guideText || 'Học sinh xem video và trả lời câu hỏi để tiếp tục.'}
+          </div>
           <button type="button" onClick={onClose} className="rounded-xl bg-white px-5 py-2 text-sm font-black text-slate-800 hover:bg-slate-100">
             Đóng xem trước
           </button>
@@ -133,6 +147,105 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
       >
         <Eye size={18} /> Xem trước giao diện
       </button>
+
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <UserRound size={18} className="text-purple-600" />
+          <h4 className="font-bold text-gray-800">Thông tin xuất bản</h4>
+        </div>
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={theme.logoText}
+            onChange={(e) => updateTheme({ logoText: e.target.value.slice(0, 8) })}
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+            placeholder="Logo/chữ góc: GV"
+          />
+          <input
+            type="text"
+            value={theme.publishTitle}
+            onChange={(e) => updateTheme({ publishTitle: e.target.value })}
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+            placeholder="Tiêu đề xuất bản"
+          />
+          <input
+            type="text"
+            value={theme.publishSubtitle}
+            onChange={(e) => updateTheme({ publishSubtitle: e.target.value })}
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+            placeholder="Dòng phụ/đơn vị"
+          />
+          <input
+            type="text"
+            value={theme.authorName}
+            onChange={(e) => updateTheme({ authorName: e.target.value })}
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+            placeholder="Tên tác giả"
+          />
+          <textarea
+            value={theme.authorInfo}
+            onChange={(e) => updateTheme({ authorInfo: e.target.value })}
+            className="min-h-[72px] w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+            placeholder="Thông tin thêm: trường, chức danh, số điện thoại..."
+          />
+        </div>
+      </div>
+
+      <div>
+        <div className="flex items-center gap-2 mb-3">
+          <Settings2 size={18} className="text-purple-600" />
+          <h4 className="font-bold text-gray-800">Điều khiển và chân trang</h4>
+        </div>
+        <div className="space-y-2">
+          <input
+            type="text"
+            value={theme.footerLeftText}
+            onChange={(e) => updateTheme({ footerLeftText: e.target.value })}
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+            placeholder="Text góc trái dưới"
+          />
+          <input
+            type="text"
+            value={theme.footerRightText}
+            onChange={(e) => updateTheme({ footerRightText: e.target.value })}
+            className="w-full rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+            placeholder="Text góc phải dưới"
+          />
+          <textarea
+            value={theme.guideText}
+            onChange={(e) => updateTheme({ guideText: e.target.value })}
+            className="min-h-[70px] w-full resize-none rounded-xl border border-gray-200 bg-white px-3 py-2 text-sm font-semibold text-gray-700 focus:border-purple-400 focus:outline-none"
+            placeholder="Nội dung hướng dẫn học sinh..."
+          />
+          <label className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-sm font-bold text-gray-700">
+            Hiện thông tin tác giả
+            <input
+              type="checkbox"
+              checked={theme.showAuthorPanel}
+              onChange={(e) => updateTheme({ showAuthorPanel: e.target.checked })}
+              className="h-4 w-4 accent-purple-600"
+            />
+          </label>
+          <label className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-sm font-bold text-gray-700">
+            Tự động chuyển video
+            <input
+              type="checkbox"
+              checked={theme.autoAdvance}
+              onChange={(e) => updateTheme({ autoAdvance: e.target.checked })}
+              className="h-4 w-4 accent-purple-600"
+            />
+          </label>
+          <label className="flex items-center justify-between rounded-xl bg-gray-50 px-3 py-2 text-sm font-bold text-gray-700">
+            Bật báo cáo điểm
+            <input
+              type="checkbox"
+              checked={theme.showScoreReport}
+              onChange={(e) => updateTheme({ showScoreReport: e.target.checked })}
+              className="h-4 w-4 accent-purple-600"
+            />
+          </label>
+        </div>
+      </div>
 
       <div>
         <div className="flex items-center gap-2 mb-3">
