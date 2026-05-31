@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { CheckCircle2, Eye, LayoutTemplate, Palette, Play, Settings2, SlidersHorizontal, Type, UserRound, X } from 'lucide-react';
+import { CheckCircle2, ChevronDown, Eye, LayoutTemplate, Palette, Play, Settings2, SlidersHorizontal, Type, UserRound, X } from 'lucide-react';
 import { VideoPlayerTheme, VideoPlayerLayout, VideoQuestionStyle } from '../types';
 
 interface PlayerThemeCustomizerProps {
@@ -138,6 +138,8 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
   const [showPreview, setShowPreview] = useState(false);
   const [activePanel, setActivePanel] = useState<'publish' | 'colors' | 'layout'>('publish');
   const updateTheme = (patch: Partial<VideoPlayerTheme>) => onChange({ ...theme, ...patch });
+  const panelButtonClass = (id: 'publish' | 'colors' | 'layout') =>
+    `flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${activePanel === id ? 'border-purple-300 bg-purple-50 text-purple-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`;
 
   return (
     <div className="space-y-5">
@@ -149,22 +151,10 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
         <Eye size={18} /> Xem trước giao diện
       </button>
 
-      <div className="grid grid-cols-3 gap-1 rounded-xl bg-gray-100 p-1">
-        {[
-          { id: 'publish', label: 'Thông tin' },
-          { id: 'colors', label: 'Màu sắc' },
-          { id: 'layout', label: 'Bố cục' },
-        ].map((tab) => (
-          <button
-            key={tab.id}
-            type="button"
-            onClick={() => setActivePanel(tab.id as 'publish' | 'colors' | 'layout')}
-            className={`rounded-lg px-2 py-2 text-xs font-black transition ${activePanel === tab.id ? 'bg-white text-purple-700 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
-          >
-            {tab.label}
-          </button>
-        ))}
-      </div>
+      <button type="button" onClick={() => setActivePanel('publish')} className={panelButtonClass('publish')}>
+        <span className="flex items-center gap-2 text-sm font-black"><UserRound size={17} /> Thông tin xuất bản</span>
+        <ChevronDown size={18} className={`transition ${activePanel === 'publish' ? 'rotate-180' : ''}`} />
+      </button>
 
       {activePanel === 'publish' && (
       <>
@@ -269,6 +259,11 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
       </>
       )}
 
+      <button type="button" onClick={() => setActivePanel('colors')} className={panelButtonClass('colors')}>
+        <span className="flex items-center gap-2 text-sm font-black"><Palette size={17} /> Màu sắc player</span>
+        <ChevronDown size={18} className={`transition ${activePanel === 'colors' ? 'rotate-180' : ''}`} />
+      </button>
+
       {activePanel === 'colors' && (
       <>
       <div>
@@ -311,6 +306,11 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
       </div>
       </>
       )}
+
+      <button type="button" onClick={() => setActivePanel('layout')} className={panelButtonClass('layout')}>
+        <span className="flex items-center gap-2 text-sm font-black"><LayoutTemplate size={17} /> Bố cục và font</span>
+        <ChevronDown size={18} className={`transition ${activePanel === 'layout' ? 'rotate-180' : ''}`} />
+      </button>
 
       {activePanel === 'layout' && (
       <>
