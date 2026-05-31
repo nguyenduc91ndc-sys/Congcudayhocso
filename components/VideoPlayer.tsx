@@ -28,6 +28,9 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const [showCongrats, setShowCongrats] = useState(false);
   const [playbackUrl, setPlaybackUrl] = useState('');
   const [localVideoMissing, setLocalVideoMissing] = useState(false);
+  const [showStartGate, setShowStartGate] = useState(true);
+  const [learnerName, setLearnerName] = useState('');
+  const [learnerAvatar, setLearnerAvatar] = useState('🙂');
 
   const playerRef = useRef<ReactPlayer>(null);
   const objectUrlRef = useRef<string | null>(null);
@@ -46,6 +49,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
 
   // Nhãn đáp án (A, B, C, D)
   const optionLabels = ['A', 'B', 'C', 'D'];
+  const avatarOptions = ['🙂', '🤖', '🎓', '🌟', '🚀', '🎨'];
 
   useEffect(() => {
     let cancelled = false;
@@ -231,6 +235,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     setPlaying(false);
   };
 
+  const handleStartLesson = () => {
+    if (!learnerName.trim()) return;
+    setShowStartGate(false);
+    setPlaying(true);
+  };
+
   const questionOverlayStyle = theme.questionStyle === 'card'
     ? { background: 'rgba(15, 23, 42, 0.55)' }
     : theme.questionStyle === 'playful'
@@ -250,6 +260,50 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
       }}
     >
       {/* Nút Quay lại */}
+      {showStartGate && !videoError && (
+        <div className="absolute inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.94, y: 16 }}
+            animate={{ opacity: 1, scale: 1, y: 0 }}
+            className="w-full max-w-lg rounded-[28px] border border-white/20 bg-white p-6 text-center shadow-2xl"
+          >
+            <h2 className="mb-2 text-3xl font-black" style={{ color: theme.primaryColor }}>Vào bài học</h2>
+            <p className="mb-5 text-sm font-bold text-slate-500">Nhập họ tên và chọn nhân vật đại diện của em.</p>
+            <input
+              value={learnerName}
+              onChange={(event) => setLearnerName(event.target.value)}
+              onKeyDown={(event) => {
+                if (event.key === 'Enter') handleStartLesson();
+              }}
+              placeholder="Họ và tên học sinh"
+              className="mb-4 w-full rounded-2xl border-2 border-slate-200 px-4 py-3 text-base font-bold text-slate-800 outline-none focus:border-purple-400"
+              autoFocus
+            />
+            <div className="mb-5 grid grid-cols-6 gap-2">
+              {avatarOptions.map((avatar) => (
+                <button
+                  key={avatar}
+                  type="button"
+                  onClick={() => setLearnerAvatar(avatar)}
+                  className={`h-14 rounded-2xl border-2 bg-white text-3xl transition ${learnerAvatar === avatar ? 'scale-105 border-purple-500 shadow-lg' : 'border-slate-200 hover:border-purple-200'}`}
+                >
+                  {avatar}
+                </button>
+              ))}
+            </div>
+            <button
+              type="button"
+              onClick={handleStartLesson}
+              className="w-full rounded-2xl px-5 py-3 text-base font-black text-white shadow-lg transition hover:brightness-105 disabled:cursor-not-allowed disabled:opacity-50"
+              style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+              disabled={!learnerName.trim()}
+            >
+              Bắt đầu học
+            </button>
+          </motion.div>
+        </div>
+      )}
+
       <button
         onClick={onBack}
         className="absolute top-4 left-4 z-50 bg-white/80 p-3 rounded-full shadow-lg hover:bg-white transition-all text-purple-700"
@@ -274,11 +328,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                 )}
               </div>
             </div>
-            {theme.showScoreReport && (
-              <div className="shrink-0 rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white">
-                {answeredQuestions.length}/{migratedLesson.questions.length} câu hỏi
-              </div>
-            )}
+            <div className="flex shrink-0 items-center gap-2">
+              {learnerName && (
+                <div className="rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white">
+                  {learnerAvatar} {learnerName}
+                </div>
+              )}
+              {theme.showScoreReport && (
+                <div className="rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white">
+                  {answeredQuestions.length}/{migratedLesson.questions.length} câu hỏi
+                </div>
+              )}
+            </div>
           </div>
         )}
 
