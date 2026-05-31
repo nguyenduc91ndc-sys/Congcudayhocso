@@ -295,6 +295,11 @@ const data=${JSON.stringify(exportData)};
 const video=document.getElementById('video'),overlay=document.getElementById('overlay'),qtext=document.getElementById('qtext'),opts=document.getElementById('opts'),result=document.getElementById('result'),progress=document.getElementById('progress'),now=document.getElementById('now'),dur=document.getElementById('dur'),play=document.getElementById('play'),score=document.getElementById('score'),menuTab=document.getElementById('menuTab'),guideTab=document.getElementById('guideTab'),side=document.getElementById('side'),qlist=document.getElementById('qlist'),searchBox=document.getElementById('searchBox');
 let current=null,selected=null,answered=[];
 const fmt=s=>{s=Math.max(0,Math.floor(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
+let audioCtx=null;
+const getAudioCtx=()=>{audioCtx=audioCtx||new (window.AudioContext||window.webkitAudioContext)();if(audioCtx.state==='suspended')audioCtx.resume();return audioCtx};
+const playTone=(freq,start,duration,type='sine',volume=.25)=>{try{const ctx=getAudioCtx(),osc=ctx.createOscillator(),gain=ctx.createGain();osc.connect(gain);gain.connect(ctx.destination);osc.type=type;osc.frequency.value=freq;gain.gain.setValueAtTime(0,ctx.currentTime+start);gain.gain.linearRampToValueAtTime(volume,ctx.currentTime+start+.03);gain.gain.exponentialRampToValueAtTime(.001,ctx.currentTime+start+duration);osc.start(ctx.currentTime+start);osc.stop(ctx.currentTime+start+duration+.05)}catch(e){}};
+const playCorrectSound=()=>{[523.25,659.25,783.99,1046.5].forEach((f,i)=>playTone(f,i*.1,.45,'sine',i===3 ? .22 : .28))};
+const playIncorrectSound=()=>{[392,311.13,233.08].forEach((f,i)=>playTone(f,i*.13,.32,'sawtooth',.24));playTone(150,.45,.45,'square',.14)};
 const renderList=(filter='')=>{qlist.innerHTML=data.questions.map((q,i)=>({q,i})).filter(({q,i})=>('câu '+(i+1)+' '+q.text).toLowerCase().includes(filter.toLowerCase())).map(({q,i})=>'<div class="qitem" data-time="'+q.time+'"><span><span class="qnum">'+(i+1)+'</span>Câu '+(i+1)+'</span><small>'+fmt(q.time)+'</small></div>').join('')};
 renderList();
 video.currentTime=data.startTime||0;
@@ -314,7 +319,7 @@ document.getElementById('full').onclick=()=>document.querySelector('.shell').req
 menuTab.onclick=()=>{side.classList.remove('show-guide');menuTab.classList.add('active');guideTab.classList.remove('active')};
 guideTab.onclick=()=>{side.classList.add('show-guide');guideTab.classList.add('active');menuTab.classList.remove('active')};
 const authorInfo=document.getElementById('authorInfo');if(authorInfo){authorInfo.onclick=()=>alert('${authorName.replace(/'/g, "\\'")}\\n${escapeHtml(playerTheme.authorInfo || '').replace(/\n/g, '\\n').replace(/'/g, "\\'")}')};
-document.getElementById('answer').onclick=()=>{if(!current||selected===null)return;if(selected===current.correctOption){result.textContent='Chính xác!';answered.push(current.id);score.textContent=answered.length;setTimeout(()=>{overlay.classList.remove('show');video.play()},900)}else{result.textContent='Chưa đúng, em hãy xem lại đoạn video nhé.'}};
+document.getElementById('answer').onclick=()=>{if(!current||selected===null)return;if(selected===current.correctOption){playCorrectSound();result.textContent='Ch\\u00ednh x\\u00e1c!';answered.push(current.id);score.textContent=answered.length;setTimeout(()=>{overlay.classList.remove('show');video.play()},900)}else{playIncorrectSound();result.textContent='Ch\\u01b0a \\u0111\\u00fang, em h\\u00e3y xem l\\u1ea1i \\u0111o\\u1ea1n video nh\\u00e9.'}};
 document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.classList.remove('show');video.currentTime=Math.max(0,current.time-10);video.play()};
 </script>
 </body>
