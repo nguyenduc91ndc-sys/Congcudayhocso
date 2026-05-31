@@ -31,12 +31,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const [localVideoMissing, setLocalVideoMissing] = useState(false);
   const [showStartGate, setShowStartGate] = useState(true);
   const [learnerName, setLearnerName] = useState('');
-  const [learnerAvatar, setLearnerAvatar] = useState('ðŸ™‚');
+  const [learnerAvatar, setLearnerAvatar] = useState('🙂');
 
   const playerRef = useRef<ReactPlayer>(null);
   const objectUrlRef = useRef<string | null>(null);
 
-  // Sá»­ dá»¥ng hÃ m utility Ä‘á»ƒ lÃ m sáº¡ch URL YouTube
+  // Sử dụng hàm utility để làm sạch URL YouTube
   const getCleanVideoUrl = (url: string): string => {
     return cleanYouTubeUrl(url) || url;
   };
@@ -45,12 +45,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const cleanUrl = getCleanVideoUrl(lesson.youtubeUrl);
   const isLocalVideo = lesson.videoSource === 'local';
 
-  // Migration: chuyá»ƒn Ä‘á»•i lesson cÅ© sang format má»›i
+  // Migration: chuyển đổi lesson cũ sang format mới
   const migratedLesson = useMemo(() => migrateVideoLesson(lesson), [lesson]);
 
-  // NhÃ£n Ä‘Ã¡p Ã¡n (A, B, C, D)
+  // Nhãn đáp án (A, B, C, D)
   const optionLabels = ['A', 'B', 'C', 'D'];
-  const avatarOptions = ['ðŸ™‚', 'ðŸ¤–', 'ðŸŽ“', 'ðŸŒŸ', 'ðŸš€', 'ðŸŽ¨'];
+  const avatarOptions = ['🙂', '🤖', '🎓', '🌟', '🚀', '🎨'];
 
   useEffect(() => {
     let cancelled = false;
@@ -119,7 +119,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     };
   }, [cleanUrl, isLocalVideo, lesson.id, lesson.localVideoObjectUrl]);
 
-  // Khá»Ÿi táº¡o thá»i gian báº¯t Ä‘áº§u
+  // Khởi tạo thời gian bắt đầu
   useEffect(() => {
     if (lesson.startTime > 0 && playerRef.current && !videoError) {
       playerRef.current.seekTo(lesson.startTime);
@@ -130,7 +130,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const handleProgress = (state: { playedSeconds: number }) => {
     setPlayedSeconds(state.playedSeconds);
 
-    // Cháº·n tua video náº¿u khÃ´ng cho phÃ©p
+    // Chặn tua video nếu không cho phép
     if (!lesson.allowSeeking && state.playedSeconds > maxPlayed + 2) {
       playerRef.current?.seekTo(maxPlayed);
     } else {
@@ -139,7 +139,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
       }
     }
 
-    // Kiá»ƒm tra cÃ¢u há»i Ä‘áº¿n giá» xuáº¥t hiá»‡n
+    // Kiểm tra câu hỏi đến giờ xuất hiện
     const question = migratedLesson.questions.find(
       (q) =>
         Math.abs(q.time - state.playedSeconds) < 1 &&
@@ -190,7 +190,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
         setTimeout(() => {
           setFeedback(null);
           setMustRewatch(true);
-          playMustRewatchSound(); // PhÃ¡t Ã¢m thanh "pháº£i xem láº¡i"
+          playMustRewatchSound(); // Phát âm thanh "phải xem lại"
         }, 1500);
       } else {
         setTimeout(() => setFeedback(null), 1500);
@@ -225,14 +225,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     setMaxPlayed(lesson.startTime);
   }
 
+  const escapeCertificateText = (value: string) => String(value || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+
   const handleCertificate = () => {
     const total = migratedLesson.questions.length * 10;
     const score = answeredQuestions.length * 10;
-    const learner = learnerName.trim() || 'Há»c sinh';
+    const learner = learnerName.trim() || 'Học sinh';
     const date = new Date().toLocaleDateString('vi-VN');
     const certificateWindow = window.open('', '_blank');
     if (!certificateWindow) return;
-    certificateWindow.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>ThÆ° khen</title><style>body{margin:0;background:#f8fafc;font-family:Arial,sans-serif;color:#1f2937}.paper{width:900px;max-width:94%;margin:32px auto;padding:54px;border:12px solid #f59e0b;border-radius:28px;background:radial-gradient(circle at top,#fff7ed,#fff 42%);text-align:center;box-shadow:0 24px 80px rgba(15,23,42,.18)}h1{margin:0;color:#b45309;font-size:52px;text-transform:uppercase}.sub{font-size:20px;font-weight:700;color:#64748b}.avatar{font-size:54px;margin:24px 0 0}.name{margin:12px 0 18px;font-size:42px;font-weight:950;color:#7c3aed}.score{display:inline-block;margin:16px 0 26px;padding:12px 28px;border-radius:999px;background:#ecfdf5;color:#047857;font-size:24px;font-weight:950}.text{font-size:22px;line-height:1.55}.sign{display:flex;justify-content:space-between;margin-top:54px;font-weight:800}@media print{button{display:none}.paper{box-shadow:none;margin:0 auto}}</style></head><body><div class="paper"><h1>ThÆ° khen</h1><p class="sub">HoÃ n thÃ nh bÃ i há»c tÆ°Æ¡ng tÃ¡c</p><div class="avatar">${learnerAvatar}</div><div class="name">${learner}</div><p class="text">ÄÃ£ hoÃ n thÃ nh bÃ i há»c: <b>${migratedLesson.title}</b><br>vá»›i tinh tháº§n há»c táº­p tÃ­ch cá»±c.</p><div class="score">${score} / ${total} Ä‘iá»ƒm</div><div class="sign"><span>NgÃ y ${date}</span><span>GiÃ¡o viÃªn: ${theme.authorName || 'GiÃ¡o viÃªn'}</span></div><button onclick="window.print()" style="margin-top:32px;padding:12px 22px;border:0;border-radius:12px;background:#7c3aed;color:white;font-weight:900">In hoáº·c lÆ°u PDF</button></div></body></html>`);
+
+    certificateWindow.document.write(`<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Thư khen</title><style>body{margin:0;background:#f8fafc;font-family:Arial,sans-serif;color:#1f2937}.paper{width:900px;max-width:94%;margin:32px auto;padding:54px;border:12px solid #f59e0b;border-radius:28px;background:radial-gradient(circle at top,#fff7ed,#fff 42%);text-align:center;box-shadow:0 24px 80px rgba(15,23,42,.18)}h1{margin:0;color:#b45309;font-size:52px;text-transform:uppercase}.sub{font-size:20px;font-weight:700;color:#64748b}.avatar{font-size:54px;margin:24px 0 0}.name{margin:12px 0 18px;font-size:42px;font-weight:950;color:#7c3aed}.score{display:inline-block;margin:16px 0 26px;padding:12px 28px;border-radius:999px;background:#ecfdf5;color:#047857;font-size:24px;font-weight:950}.text{font-size:22px;line-height:1.55}.sign{display:flex;justify-content:space-between;margin-top:54px;font-weight:800}@media print{button{display:none}.paper{box-shadow:none;margin:0 auto}}</style></head><body><div class="paper"><h1>Thư khen</h1><p class="sub">Hoàn thành bài học tương tác</p><div class="avatar">${escapeCertificateText(learnerAvatar)}</div><div class="name">${escapeCertificateText(learner)}</div><p class="text">Đã hoàn thành bài học: <b>${escapeCertificateText(migratedLesson.title)}</b><br>với tinh thần học tập tích cực.</p><div class="score">${score} / ${total} điểm</div><div class="sign"><span>Ngày ${escapeCertificateText(date)}</span><span>Giáo viên: ${escapeCertificateText(theme.authorName || 'Giáo viên')}</span></div><button onclick="window.print()" style="margin-top:32px;padding:12px 22px;border:0;border-radius:12px;background:#7c3aed;color:white;font-weight:900">In hoặc lưu PDF</button></div></body></html>`);
     certificateWindow.document.close();
     certificateWindow.focus();
     setTimeout(() => certificateWindow.print(), 400);
@@ -268,7 +276,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
         background: `radial-gradient(circle at 20% 0%, ${theme.primaryColor}44, transparent 32%), radial-gradient(circle at 80% 10%, ${theme.secondaryColor}33, transparent 30%), ${theme.backgroundColor}`,
       }}
     >
-      {/* NÃºt Quay láº¡i */}
+      {/* Nút Quay lại */}
       {showStartGate && !videoError && (
         <div className="absolute inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md">
           <motion.div
@@ -276,15 +284,15 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
             animate={{ opacity: 1, scale: 1, y: 0 }}
             className="w-full max-w-lg rounded-[28px] border border-white/20 bg-white p-6 text-center shadow-2xl"
           >
-            <h2 className="mb-2 text-3xl font-black" style={{ color: theme.primaryColor }}>VÃ o bÃ i há»c</h2>
-            <p className="mb-5 text-sm font-bold text-slate-500">Nháº­p há» tÃªn vÃ  chá»n nhÃ¢n váº­t Ä‘áº¡i diá»‡n cá»§a em.</p>
+            <h2 className="mb-2 text-3xl font-black" style={{ color: theme.primaryColor }}>Vào bài học</h2>
+            <p className="mb-5 text-sm font-bold text-slate-500">Nhập họ tên và chọn nhân vật đại diện của em.</p>
             <input
               value={learnerName}
               onChange={(event) => setLearnerName(event.target.value)}
               onKeyDown={(event) => {
                 if (event.key === 'Enter') handleStartLesson();
               }}
-              placeholder="Há» vÃ  tÃªn há»c sinh"
+              placeholder="Họ và tên học sinh"
               className="mb-4 w-full rounded-2xl border-2 border-slate-200 px-4 py-3 text-base font-bold text-slate-800 outline-none focus:border-purple-400"
               autoFocus
             />
@@ -307,7 +315,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
               style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
               disabled={!learnerName.trim()}
             >
-              Báº¯t Ä‘áº§u há»c
+              Bắt đầu học
             </button>
           </motion.div>
         </div>
@@ -345,7 +353,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
               )}
               {theme.showScoreReport && (
                 <div className="rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white">
-                  {answeredQuestions.length}/{migratedLesson.questions.length} cÃ¢u há»i
+                  {answeredQuestions.length}/{migratedLesson.questions.length} câu hỏi
                 </div>
               )}
             </div>
@@ -377,7 +385,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
             }}
           />
         ) : (
-          // Giao diá»‡n thÃ´ng bÃ¡o lá»—i thÃ¢n thiá»‡n (Fallback UI)
+          // Giao diện thông báo lỗi thân thiện (Fallback UI)
           <div className="absolute inset-0 flex flex-col items-center justify-center bg-gradient-to-br from-purple-900/90 to-black/90 backdrop-blur-md text-white p-8 text-center z-50">
             <motion.div
               initial={{ scale: 0.8, opacity: 0 }}
@@ -385,18 +393,18 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
               className="bg-white/10 p-8 rounded-[32px] border border-white/20 shadow-2xl max-w-lg"
             >
               <AlertTriangle size={64} className="text-yellow-400 mb-4 mx-auto" />
-              <h3 className="text-2xl font-bold mb-4">Tháº§y cÃ´ Æ¡i!</h3>
+              <h3 className="text-2xl font-bold mb-4">Thầy cô ơi!</h3>
               <p className="text-gray-100 text-lg mb-8 leading-relaxed">
                 {localVideoMissing
-                  ? 'KhÃ´ng tÃ¬m tháº¥y file video cá»¥c bá»™ trÃªn mÃ¡y nÃ y. Tháº§y cÃ´ hÃ£y má»Ÿ láº¡i Ä‘Ãºng thiáº¿t bá»‹ Ä‘Ã£ lÆ°u hoáº·c chá»n láº¡i file video.'
-                  : 'Video nÃ y bá»‹ chá»§ sá»Ÿ há»¯u cháº·n nhÃºng hoáº·c gáº·p lá»—i cáº¥u hÃ¬nh.'}
+                  ? 'Không tìm thấy file video cục bộ trên máy này. Thầy cô hãy mở lại đúng thiết bị đã lưu hoặc chọn lại file video.'
+                  : 'Video này bị chủ sở hữu chặn nhúng hoặc gặp lỗi cấu hình.'}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
                 <button
                   onClick={onBack}
                   className="bg-white/20 hover:bg-white/30 text-white font-bold py-3 px-6 rounded-2xl transition-all"
                 >
-                  Chá»n video khÃ¡c
+                  Chọn video khác
                 </button>
                 {!isLocalVideo && (
                   <a
@@ -405,7 +413,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                     rel="noopener noreferrer"
                     className="bg-gradient-to-r from-red-500 to-pink-600 hover:from-red-600 hover:to-pink-700 text-white font-bold py-3 px-6 rounded-2xl shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105"
                   >
-                    <ExternalLink size={20} /> Má»Ÿ trÃªn YouTube
+                    <ExternalLink size={20} /> Mở trên YouTube
                   </a>
                 )}
               </div>
@@ -428,7 +436,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
             </div>
             {theme.showScoreReport && (
               <div className="rounded-full bg-white/90 px-3 py-2 text-xs font-black text-slate-800 shadow">
-                {answeredQuestions.length}/{migratedLesson.questions.length} cÃ¢u há»i
+                {answeredQuestions.length}/{migratedLesson.questions.length} câu hỏi
               </div>
             )}
           </div>
@@ -441,7 +449,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
           </div>
         )}
 
-        {/* Overlay cÃ¢u há»i tÆ°Æ¡ng tÃ¡c - thiáº¿t káº¿ má»›i */}
+        {/* Overlay câu hỏi tương tác - thiết kế mới */}
         <AnimatePresence>
           {currentQuestion && !videoError && (
             <motion.div
@@ -467,10 +475,10 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                 <div className="mb-5">
                   <div className="mb-3 flex items-center justify-between gap-3">
                     <span className="rounded-full px-3 py-1 text-[11px] font-black uppercase tracking-wide text-white shadow-sm" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
-                      CÃ¢u há»i tÆ°Æ¡ng tÃ¡c
+                      Câu hỏi tương tác
                     </span>
                     <span className="rounded-full bg-slate-100 px-3 py-1 text-[11px] font-black text-slate-500">
-                      +10 Ä‘iá»ƒm
+                      +10 điểm
                     </span>
                   </div>
                   <h3
@@ -480,20 +488,20 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                     {currentQuestion.text}
                   </h3>
                   <p className={`mt-2 text-sm font-semibold ${theme.questionStyle === 'card' ? 'text-slate-500' : 'text-white/70'}`}>
-                    Chá»n má»™t Ä‘Ã¡p Ã¡n Ä‘Ãºng rá»“i báº¥m Tráº£ lá»i ngay.
+                    Chọn một đáp án đúng rồi bấm Trả lời ngay.
                   </p>
                 </div>
-                {/* TiÃªu Ä‘á» cÃ¢u há»i - mÃ u vÃ ng vá»›i icon ? */}
+                {/* Tiêu đề câu hỏi - màu vàng với icon ? */}
                 <div className="hidden">
                   <h3 className="text-lg sm:text-xl md:text-2xl font-bold leading-snug flex items-center justify-center gap-2">
-                    <span className="text-red-400 text-2xl sm:text-3xl">â“</span>
+                    <span className="text-red-400 text-2xl sm:text-3xl">❓</span>
                     <span className="drop-shadow-md" style={{ color: theme.questionStyle === 'card' ? theme.textColor : '#fde68a' }}>
                       {currentQuestion.text}
                     </span>
                   </h3>
                 </div>
 
-                {/* CÃ¡c lá»±a chá»n - kiá»ƒu A. B. C. D. - Dynamic */}
+                {/* Các lựa chọn - kiểu A. B. C. D. - Dynamic */}
                 <div className="mb-5 flex flex-col gap-3">
                   {currentQuestion.options
                     .map((optText, optIndex) => ({ optText, optIndex }))
@@ -539,22 +547,22 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                   ))}
                 </div>
 
-                {/* 2 nÃºt xáº¿p ngang */}
+                {/* 2 nút xếp ngang */}
                 <div className="flex flex-row gap-2 sm:gap-3 justify-center">
                   <button
                     onClick={handleAnswer}
-                    disabled={selectedOption === null}
+                    disabled={selectedOption === null || feedback !== null}
                     className={`flex-1 py-2.5 sm:py-3 px-4 rounded-full font-bold text-sm sm:text-base text-white shadow-lg transition-all
-                            ${selectedOption === null
+                            ${selectedOption === null || feedback !== null
                         ? 'bg-gray-400/50 cursor-not-allowed'
                         : 'bg-gradient-to-r from-pink-500 to-rose-500 hover:from-pink-600 hover:to-rose-600 active:scale-95'
                       }
                         `}
                   >
-                    Tráº£ lá»i ngay
+                    Trả lời ngay
                   </button>
 
-                  {/* NÃºt xem láº¡i video */}
+                  {/* Nút xem lại video */}
                   <button
                     onClick={() => {
                       const rewatchTime = Math.max(0, currentQuestion.time - 10);
@@ -569,7 +577,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                       <polygon points="11 19 2 12 11 5 11 19"></polygon>
                       <polygon points="22 19 13 12 22 5 22 19"></polygon>
                     </svg>
-                    Xem láº¡i video
+                    Xem lại video
                   </button>
                 </div>
               </motion.div>
@@ -606,7 +614,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                     <span className="text-xl font-black">{answeredQuestions.length * 10} / {migratedLesson.questions.length * 10} điểm</span>
                   </div>
                   <div className="grid gap-3 sm:grid-cols-3">
-                    <button type="button" onClick={handleCertificate} className="rounded-2xl px-4 py-3 text-sm font-black text-white shadow-lg transition hover:brightness-105" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
+                    <button
+                      type="button"
+                      onClick={handleCertificate}
+                      className="rounded-2xl px-4 py-3 text-sm font-black text-white shadow-lg transition hover:brightness-105"
+                      style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}
+                    >
                       Xuất thư khen
                     </button>
                     <button type="button" onClick={handleReplay} className="rounded-2xl bg-slate-100 px-4 py-3 text-sm font-black text-slate-700 transition hover:bg-slate-200">
@@ -622,7 +635,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
           )}
         </AnimatePresence>
 
-        {/* Popup chÃºc má»«ng khi tráº£ lá»i Ä‘Ãºng */}
+        {/* Popup chúc mừng khi trả lời đúng */}
         <AnimatePresence>
           {showCongrats && (
             <motion.div
@@ -648,16 +661,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                   <Trophy size={64} className="mx-auto text-yellow-200 drop-shadow-lg" fill="currentColor" />
                 </motion.div>
 
-                {/* Text chÃºc má»«ng */}
+                {/* Text chúc mừng */}
                 <motion.h2
                   animate={{ scale: [1, 1.05, 1] }}
                   transition={{ duration: 0.5, repeat: Infinity }}
                   className="text-2xl sm:text-3xl font-black text-white drop-shadow-md mb-2"
                 >
-                  ðŸŽ‰ XUáº¤T Sáº®C! ðŸŽ‰
+                  🎉 XUẤT SẮC! 🎉
                 </motion.h2>
                 <p className="text-white/90 text-base sm:text-lg font-bold">
-                  Báº¡n Ä‘Ã£ tráº£ lá»i Ä‘Ãºng!
+                  Bạn đã trả lời đúng!
                 </p>
 
                 {/* Stars decoration */}
@@ -684,7 +697,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
           )}
         </AnimatePresence>
 
-        {/* Modal báº¯t buá»™c xem láº¡i video */}
+        {/* Modal bắt buộc xem lại video */}
         <AnimatePresence>
           {mustRewatch && currentQuestion && (
             <motion.div
@@ -714,12 +727,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                 </motion.div>
 
                 <h3 className="text-3xl font-bold text-red-600 mb-4">
-                  Ã”i khÃ´ng! Sai rá»“i ðŸ˜¢
+                  Ôi không! Sai rồi 😢
                 </h3>
 
                 <p className="text-gray-600 text-lg mb-6">
-                  Em hÃ£y xem láº¡i video Ä‘á»ƒ hiá»ƒu bÃ i nhÃ©!<br />
-                  <span className="text-sm text-gray-400">Video sáº½ Ä‘Æ°á»£c tua láº¡i Ä‘oáº¡n trÆ°á»›c cÃ¢u há»i</span>
+                  Em hãy xem lại video để hiểu bài nhé!<br />
+                  <span className="text-sm text-gray-400">Video sẽ được tua lại đoạn trước câu hỏi</span>
                 </p>
 
                 <motion.button
@@ -729,11 +742,11 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                   className="py-4 px-8 rounded-2xl font-bold text-xl text-white shadow-xl bg-gradient-to-r from-orange-500 to-red-500 hover:from-orange-600 hover:to-red-600 flex items-center justify-center gap-3 mx-auto"
                 >
                   <RefreshCw size={24} />
-                  Xem láº¡i video
+                  Xem lại video
                 </motion.button>
 
                 <p className="text-xs text-gray-400 mt-4">
-                  ÄÃ£ tráº£ lá»i sai {wrongAttempts} láº§n
+                  Đã trả lời sai {wrongAttempts} lần
                 </p>
               </motion.div>
             </motion.div>
@@ -767,12 +780,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
           <aside className="hidden bg-white/95 p-5 text-slate-800 lg:block">
             <h3 className="mb-2 text-lg font-black" style={{ color: theme.primaryColor }}>{lesson.title}</h3>
             <p className="mb-4 text-sm text-slate-500">
-              {migratedLesson.questions.length} cÃ¢u há»i tÆ°Æ¡ng tÃ¡c
+              {migratedLesson.questions.length} câu hỏi tương tác
             </p>
             {theme.showAuthorPanel && (
               <div className="mb-4 rounded-2xl border border-slate-200 bg-white p-4 shadow-sm">
-                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">TÃ¡c giáº£</p>
-                <p className="font-black text-slate-800">{theme.authorName || 'ChÆ°a nháº­p tÃªn tÃ¡c giáº£'}</p>
+                <p className="text-xs font-bold uppercase tracking-wide text-slate-400">Tác giả</p>
+                <p className="font-black text-slate-800">{theme.authorName || 'Chưa nhập tên tác giả'}</p>
                 {theme.authorInfo && <p className="mt-1 text-xs leading-relaxed text-slate-500">{theme.authorInfo}</p>}
               </div>
             )}
@@ -787,7 +800,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                   key={q.id}
                   className={`rounded-xl border px-3 py-2 text-sm ${answeredQuestions.includes(q.id) ? 'border-emerald-200 bg-emerald-50 text-emerald-700' : 'border-slate-200 bg-slate-50 text-slate-600'}`}
                 >
-                  <span className="font-bold">CÃ¢u {index + 1}</span>
+                  <span className="font-bold">Câu {index + 1}</span>
                   <span className="ml-2 text-xs">{Math.floor(q.time / 60)}:{String(q.time % 60).padStart(2, '0')}</span>
                 </div>
               ))}
@@ -800,12 +813,12 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
       {!videoError && (
         <div className="mt-8 flex gap-4">
           <button onClick={handleReplay} className="bg-white/80 backdrop-blur-md hover:bg-white text-purple-900 px-8 py-3 rounded-2xl font-bold shadow-lg flex items-center gap-2 transition-transform hover:scale-105 border border-white/50">
-            <RotateCcw size={20} /> Xem láº¡i tá»« Ä‘áº§u
+            <RotateCcw size={20} /> Xem lại từ đầu
           </button>
         </div>
       )}
 
-      {/* Gá»£i Ã½ xoay ngang mÃ n hÃ¬nh trÃªn mobile */}
+      {/* Gợi ý xoay ngang màn hình trên mobile */}
       <RotateScreenHint />
     </div>
   );
