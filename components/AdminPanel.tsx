@@ -14,6 +14,7 @@ import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, gener
 import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, generateSKKNProCode, revokeSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
 import { saveKyYeuAccessCode, deleteKyYeuAccessCode, subscribeToKyYeuAccessCodes, generateKyYeuAccessCode, setKyYeuAccessCodeActive, KyYeuAccessCode } from '../utils/firebaseKyYeuAccess';
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
+import { getAppUsageSummaries, AppUsageSummary } from '../utils/firebaseAppUsage';
 
 interface AdminPanelProps {
     onBack: () => void;
@@ -68,6 +69,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [analytics, setAnalytics] = useState<Analytics>({ totalVisits: 0, uniqueVisitors: 0, todayVisits: 0, recentVisitors: [] });
+    const [appUsageStats, setAppUsageStats] = useState<AppUsageSummary[]>([]);
 
     // Feedback states
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -224,10 +226,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     // Load statistics from Firebase Realtime Database
     const loadStatistics = async () => {
         try {
-            const [totalVisits, uniqueCount, todayCount] = await Promise.all([
+            const [totalVisits, uniqueCount, todayCount, usageStats] = await Promise.all([
                 getLoginHistoryCount(),
                 getUniqueUserCount(),
-                getTodayLoginCount()
+                getTodayLoginCount(),
+                getAppUsageSummaries()
             ]);
 
             setAnalytics(prev => ({
@@ -236,6 +239,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                 uniqueVisitors: uniqueCount,
                 todayVisits: todayCount
             }));
+            setAppUsageStats(usageStats);
         } catch (error) {
             console.error('Error loading statistics:', error);
         }
@@ -648,6 +652,55 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                     </button>
                                 </div>
                                 <p className="text-white/70 text-xs mt-2">Hiện tại: {globalVisitCount.toLocaleString('vi-VN')} lượt (hiển thị ở Footer)</p>
+                            </div>
+
+                            {/* App Usage Statistics */}
+                            <div className="bg-white rounded-xl border border-purple-100 p-4 mb-4 shadow-sm">
+                                <div className="flex items-center justify-between gap-3 mb-3">
+                                    <h3 className="font-bold text-purple-800 flex items-center gap-2">
+                                        <BarChart3 size={18} /> Thống kê sử dụng công cụ
+                                    </h3>
+                                    <span className="text-xs text-purple-600 bg-purple-100 px-2 py-1 rounded-full">
+                                        Từ bản cập nhật này
+                                    </span>
+                                </div>
+                                <p className="text-xs text-gray-500 mb-3">
+                                    Dữ liệu cũ trước đây chỉ có lượt truy cập/đăng nhập. Lượt mở từng công cụ bắt đầu ghi nhận từ lúc bật tracking này.
+                                </p>
+                                <div className="space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar">
+                                    {appUsageStats.length === 0 ? (
+                                        <div className="text-center text-gray-500 py-4 text-sm">Chưa có dữ liệu mở công cụ.</div>
+                                    ) : (
+                                        appUsageStats.map((item, index) => {
+                                            const maxTotal = Math.max(...appUsageStats.map(s => s.total), 1);
+                                            const width = Math.max((item.total / maxTotal) * 100, item.total > 0 ? 8 : 0);
+                                            const isEnabled = appVisibility.apps[item.appId] !== false;
+                                            return (
+                                                <div key={item.appId} className="rounded-lg border border-gray-100 bg-gray-50 p-2">
+                                                    <div className="flex items-center gap-2">
+                                                        <span className="w-6 text-xs font-black text-purple-500">#{index + 1}</span>
+                                                        <span className="text-base">{APP_INFO[item.appId]?.icon || '▦'}</span>
+                                                        <div className="min-w-0 flex-1">
+                                                            <div className="truncate text-sm font-bold text-gray-800">{item.appName}</div>
+                                                            <div className="text-[11px] text-gray-500">
+                                                                {item.today} hôm nay • {item.last7Days} trong 7 ngày • {item.uniqueUsers} người dùng
+                                                            </div>
+                                                        </div>
+                                                        <div className="text-right">
+                                                            <div className="text-sm font-black text-purple-700">{item.total}</div>
+                                                            <div className={`text-[10px] font-bold ${isEnabled ? 'text-green-600' : 'text-red-500'}`}>
+                                                                {isEnabled ? 'Đang bật' : 'Đã tắt'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    <div className="mt-2 h-2 rounded-full bg-white overflow-hidden">
+                                                        <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" style={{ width: `${width}%` }} />
+                                                    </div>
+                                                </div>
+                                            );
+                                        })
+                                    )}
+                                </div>
                             </div>
 
                             {/* Login History Section - Moved up to replace legacy visitors */}

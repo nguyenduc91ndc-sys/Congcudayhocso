@@ -11,6 +11,7 @@ export const ALL_APP_IDS = [
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D', 'thatLuong3D',
     'dinhDocLap3D', 'solarSystem',
     'bangCuuChuong', 'gameTuongTac', 'gameTuyChinh', 'kyYeuCuoiNam', 'thiepMoiOnline',
+    'qrGenerator',
     'nhayBaoBo', 'keoCoTriTue',
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
     'nhanXetTT27', // Nhận Xét TT27
@@ -21,6 +22,7 @@ export type AppId = typeof ALL_APP_IDS[number];
 
 // Thông tin hiển thị app
 export const APP_INFO: Record<AppId, { name: string; icon: string; section: string }> = {
+    qrGenerator: { name: 'Tạo mã QR', icon: '▦', section: 'Học liệu tương tác' },
     kingGameLopHocCompact: { name: 'Đường tới Ngôi Vua - Lớp học số', icon: '👑🏫', section: 'Công cụ dạy học' },
     nhayBaoBo: { name: 'Nhảy Bao Bố', icon: '🏁', section: 'Công cụ dạy học' },
     keoCoTriTue: { name: 'Kéo Co Trí Tuệ', icon: '✊🖐️', section: 'Công cụ dạy học' },

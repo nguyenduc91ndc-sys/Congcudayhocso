@@ -1,4 +1,4 @@
-import React, { useState, useEffect, Suspense, lazy } from 'react';
+import React, { useState, useEffect, useRef, Suspense, lazy } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import SnowBackground from './components/SnowBackground';
 import Login from './components/Login';
@@ -55,6 +55,7 @@ import ContactUs from './components/ContactUs';
 
 import NhayBaoBoApp from './nhay-bao-bo/NhayBaoBoApp';
 import { AppVisibilityState, AppId, subscribeToAppVisibility } from './utils/firebaseAppVisibility';
+import { logAppUsage } from './utils/firebaseAppUsage';
 import SolarSystemSimulation from './components/SolarSystemSimulation';
 import KeoCoTriTueApp from './keo-co-tri-tue/App';
 import GameTuyChinh from './components/GameTuyChinh';
@@ -62,6 +63,9 @@ import DinhDocLap3D from './components/DinhDocLap3D';
 import ThuMoiTuongTac from './components/ThuMoiTuongTac';
 import KyYeuTuyChinh from './components/KyYeuTuyChinh';
 import ThiepMoiOnline from './components/ThiepMoiOnline';
+import SoanGiaoAnNangLucSo from './components/SoanGiaoAnNangLucSo';
+import QrGenerator from './components/QrGenerator';
+import { getQrLinkById, incrementQrScan } from './utils/firebaseQrLinks';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -81,6 +85,7 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   VIDEO_STORE: 'videoStore',
   INTERACTIVE_VIDEO: 'interactiveVideo',
   AI_COURSE_STORE: 'aiCourseStore',
+  QR_GENERATOR: 'qrGenerator',
   CANVA_BASICS: 'canvaBasics',
   COMMUNITY_RESOURCES: 'communityResources',
   DEN_HUNG_3D: 'denHung3D',
@@ -128,6 +133,21 @@ function App() {
   const [appVisibilityLoaded, setAppVisibilityLoaded] = useState(false);
   const [sharedThuMoiId, setSharedThuMoiId] = useState<string | null>(() => getInitialSharedAppId('thu_moi_tuong_tac'));
   const [sharedThiepMoiId, setSharedThiepMoiId] = useState<string | null>(() => getInitialSharedAppId('thiep_moi_online'));
+  const lastAppUsageLogRef = useRef<{ key: string; time: number } | null>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const qrId = params.get('qr');
+    if (!qrId) return;
+
+    getQrLinkById(qrId).then(async (qrLink) => {
+      if (!qrLink?.targetUrl) return;
+      await incrementQrScan(qrId, qrLink.scans || 0).catch(() => undefined);
+      window.location.replace(qrLink.targetUrl);
+    }).catch((error) => {
+      console.error('QR redirect error:', error);
+    });
+  }, []);
 
   // Lấy storage key theo email user
   const getLessonsStorageKey = (email?: string): string => {
@@ -169,6 +189,16 @@ function App() {
       window.history.replaceState({}, document.title, '/');
     }
   }, [appVisibility.apps, appVisibilityLoaded, currentAppId, isAdminUser, isPublicSharedThuMoiView, isFreeKyYeuView]);
+
+  useEffect(() => {
+    if (!currentAppId || view === 'DASHBOARD' || view === 'ADMIN') return;
+    if (isCheckingAppVisibility || isCurrentAppDisabled) return;
+    const logKey = `${currentAppId}:${user?.id || user?.email || 'guest'}`;
+    const now = Date.now();
+    if (lastAppUsageLogRef.current?.key === logKey && now - lastAppUsageLogRef.current.time < 5000) return;
+    lastAppUsageLogRef.current = { key: logKey, time: now };
+    logAppUsage(currentAppId, user);
+  }, [currentAppId, view, user?.id, user?.email, isCheckingAppVisibility, isCurrentAppDisabled]);
 
   // Load data from localStorage
   useEffect(() => {
@@ -595,6 +625,7 @@ function App() {
                   onVideoStore={() => requireLogin(() => setView('VIDEO_STORE'))}
                   onInteractiveVideo={() => requireLogin(() => setView('INTERACTIVE_VIDEO'))}
                   onAICourseStore={() => requireLogin(() => setView('AI_COURSE_STORE'))}
+                  onSoanGiaoAnNangLucSo={() => setView('SOAN_GIAO_AN_NANG_LUC_SO')}
                   onCanvaBasics={() => requireLogin(() => setView('CANVA_BASICS'))}
                   onCommunityResources={() => requireLogin(() => setView('COMMUNITY_RESOURCES'))}
                   onNewYear={() => setShowNewYearWelcome(true)}
@@ -623,6 +654,7 @@ function App() {
                   onThuMoiHopPH={() => setView('THU_MOI_TUONG_TAC')}
                   onThuMoiTuongTac={() => setView('THU_MOI_TUONG_TAC')}
                   onThiepMoiOnline={() => requireLogin(() => { setSharedThiepMoiId(null); setView('THIEP_MOI_ONLINE'); })}
+                  onQrGenerator={() => requireLogin(() => setView('QR_GENERATOR'))}
                   onKyYeuCuoiNam={() => setView('KY_YEU_CUOI_NAM')}
                   isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
                   isGuest={!user}
@@ -725,6 +757,10 @@ function App() {
               isLoggedIn={!!user}
               onRequireLogin={() => setShowLoginModal(true)}
             />
+          )}
+
+          {view === 'SOAN_GIAO_AN_NANG_LUC_SO' && (
+            <SoanGiaoAnNangLucSo onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'AI_COURSE_ADMIN' && (
@@ -869,6 +905,13 @@ function App() {
               onRequireLogin={() => setShowLoginModal(true)}
               onBack={() => setView('DASHBOARD')}
               sharedId={sharedThiepMoiId}
+            />
+          )}
+
+          {view === 'QR_GENERATOR' && user && (
+            <QrGenerator
+              user={user}
+              onBack={() => setView('DASHBOARD')}
             />
           )}
 

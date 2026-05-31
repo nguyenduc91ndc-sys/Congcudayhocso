@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Video, LogOut, Crown, Sparkles, Key, X, CheckCircle, Settings,
     Play, Trash2, Edit3, Share2, Box, Brain, RotateCcw, HelpCircle,
-    Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield, Coffee, ExternalLink, Heart, MessageCircle
+    Plus, ChevronRight, Zap, Users, Clock, Star, Lock, Shield, Coffee, ExternalLink, Heart, MessageCircle, QrCode
 } from 'lucide-react';
 import ThemeSelector from './ThemeSelector';
 import WelcomeModal from './WelcomeModal';
@@ -39,6 +39,7 @@ interface DashboardProps {
     onVideoStore: () => void;
     onInteractiveVideo: () => void;
     onAICourseStore: () => void;
+    onSoanGiaoAnNangLucSo: () => void;
     onCanvaBasics: () => void;
     onCommunityResources: () => void;
     onNewYear: () => void;
@@ -56,6 +57,7 @@ interface DashboardProps {
     onThuMoiHopPH: () => void;
     onThuMoiTuongTac: () => void;
     onThiepMoiOnline: () => void;
+    onQrGenerator: () => void;
     onYogurtExperiment: () => void;
     onKiemTraDaoVan: () => void;
     onSangKienKN: () => void;
@@ -285,7 +287,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -781,6 +783,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        <ToolCard title="Soạn giáo án tích hợp Năng lực số - AI vào kế hoạch bài dạy" description="Mở công cụ soạn giáo án tích hợp năng lực số và AI" icon={<Sparkles size={24} className="text-white" />} accentColor="bg-gradient-to-br from-fuchsia-500 to-indigo-600" onClick={onSoanGiaoAnNangLucSo} badge="AI" />
                                         {!hiddenApps.includes('aiCourseStore') && <ToolCard title="Kho Khóa học AI" description="Xem demo các khóa học AI cho giáo viên" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-cyan-500 to-blue-600" onClick={onAICourseStore} badge="Mới" />}
                                         {!hiddenApps.includes('ngheNghiep') && <ToolCard title="Nghề Nghiệp Tương Lai" description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI" icon={<span className="text-2xl">👨‍🚀</span>} accentColor="bg-gradient-to-br from-orange-400 to-amber-500" onClick={onNgheNghiep} badge="AI Studio" />}
                                         {!hiddenApps.includes('canvaBasics') && <ToolCard title="Canva cơ bản" description="Video hướng dẫn sử dụng Canva từ cộng đồng" icon={<span className="text-2xl">🎨</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onCanvaBasics} badge="Mới" />}
@@ -858,6 +861,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                                        {!hiddenApps.includes('qrGenerator') && <ToolCard title="Tạo mã QR" description="Tạo QR tĩnh, QR động và tải mẫu QR dễ thương" icon={<QrCode size={24} className="text-white" />} accentColor="bg-gradient-to-br from-sky-500 to-indigo-600" onClick={onQrGenerator} badge="Mới" />}
                                         {!hiddenApps.includes('bangCuuChuong') && <ToolCard title="Bảng Cửu Chương Số" description="Học liệu tương tác bảng cửu chương" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onBangCuuChuong} badge="Mới" />}
                                         {!hiddenApps.includes('gameTuongTac') && <ToolCard title="Game Tương Tác" description="Học liệu tương tác dạng game vui nhộn" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={onGameTuongTac} badge="Mới" />}
                                         {!hiddenApps.includes('thuMoiTuongTac') && <ToolCard title="Thư Mời Họp Phụ Huynh" description="Tạo thư mời tương tác đẹp, nhận xác nhận phụ huynh qua email" icon={<span className="text-2xl">✉️</span>} accentColor="bg-gradient-to-br from-rose-500 to-pink-600" onClick={onThuMoiTuongTac} badge="Mới" />}
