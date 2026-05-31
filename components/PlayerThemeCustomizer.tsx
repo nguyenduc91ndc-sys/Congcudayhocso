@@ -14,6 +14,54 @@ const colorSchemes = [
   { name: 'Cam sáng', primaryColor: '#f97316', secondaryColor: '#ef4444', accentColor: '#8b5cf6', backgroundColor: '#1f1308' },
   { name: 'Hồng pastel', primaryColor: '#db2777', secondaryColor: '#f472b6', accentColor: '#22c55e', backgroundColor: '#312033' },
   { name: 'Đen neon', primaryColor: '#22d3ee', secondaryColor: '#a855f7', accentColor: '#facc15', backgroundColor: '#030712' },
+  { name: 'Gradient kẹo', primaryColor: '#22c55e', secondaryColor: '#ec4899', accentColor: '#f9a8d4', backgroundColor: '#07111f' },
+  { name: 'Gradient biển', primaryColor: '#06b6d4', secondaryColor: '#2563eb', accentColor: '#a78bfa', backgroundColor: '#061526' },
+  { name: 'Gradient hoàng hôn', primaryColor: '#f97316', secondaryColor: '#db2777', accentColor: '#facc15', backgroundColor: '#201020' },
+];
+
+const gradientPresets: Array<{ name: string; description: string; theme: Partial<VideoPlayerTheme> }> = [
+  {
+    name: 'Gradient kẹo',
+    description: 'Tươi, hợp bài tiểu học.',
+    theme: {
+      primaryColor: '#22c55e',
+      secondaryColor: '#ec4899',
+      accentColor: '#f9a8d4',
+      backgroundColor: '#07111f',
+      layout: 'cinema',
+      questionStyle: 'gradient',
+      radius: 28,
+      fontFamily: 'Nunito',
+    },
+  },
+  {
+    name: 'Gradient biển',
+    description: 'Mát, rõ chữ, chuyên nghiệp.',
+    theme: {
+      primaryColor: '#06b6d4',
+      secondaryColor: '#2563eb',
+      accentColor: '#a78bfa',
+      backgroundColor: '#061526',
+      layout: 'cinema',
+      questionStyle: 'gradient',
+      radius: 26,
+      fontFamily: 'Be Vietnam Pro',
+    },
+  },
+  {
+    name: 'Gradient hoàng hôn',
+    description: 'Ấm, nổi bật khi trình chiếu.',
+    theme: {
+      primaryColor: '#f97316',
+      secondaryColor: '#db2777',
+      accentColor: '#facc15',
+      backgroundColor: '#201020',
+      layout: 'sidebar',
+      questionStyle: 'gradient',
+      radius: 28,
+      fontFamily: 'Nunito',
+    },
+  },
 ];
 
 const fonts = ['Nunito', 'Arial', 'Be Vietnam Pro', 'Inter', 'Tahoma'];
@@ -28,6 +76,7 @@ const questionStyles: Array<{ value: VideoQuestionStyle; label: string }> = [
   { value: 'glass', label: 'Trong suốt' },
   { value: 'card', label: 'Thẻ sáng' },
   { value: 'playful', label: 'Vui nhộn' },
+  { value: 'gradient', label: 'Gradient' },
 ];
 
 const formatBytes = (bytes: number) => {
@@ -112,6 +161,8 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
   const isSidebar = theme.layout === 'sidebar';
   const questionSurface = theme.questionStyle === 'card'
     ? { backgroundColor: theme.surfaceColor, color: theme.textColor, borderColor: '#e5e7eb' }
+    : theme.questionStyle === 'gradient'
+      ? { background: `linear-gradient(135deg, ${theme.primaryColor}, ${theme.secondaryColor} 58%, ${theme.accentColor})`, color: '#ffffff', borderColor: 'rgba(255,255,255,0.38)' }
     : theme.questionStyle === 'playful'
       ? { background: `linear-gradient(135deg, ${theme.accentColor}, ${theme.secondaryColor})`, color: '#ffffff', borderColor: 'rgba(255,255,255,0.35)' }
       : { backgroundColor: 'rgba(15,23,42,0.78)', color: '#ffffff', borderColor: 'rgba(255,255,255,0.2)' };
@@ -409,6 +460,30 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
       {activePanel === 'colors' && (
       <>
       <div>
+        <div className="mb-3 flex items-center gap-2">
+          <Palette size={18} className="text-purple-600" />
+          <h4 className="font-bold text-gray-800">Giao diện Gradient nhanh</h4>
+        </div>
+        <div className="grid gap-2">
+          {gradientPresets.map((preset) => (
+            <button
+              key={preset.name}
+              type="button"
+              onClick={() => updateTheme(preset.theme)}
+              className={`rounded-2xl border p-3 text-left transition-all ${theme.questionStyle === 'gradient' && theme.primaryColor === preset.theme.primaryColor ? 'border-purple-500 bg-purple-50 shadow-md' : 'border-gray-200 bg-white hover:border-purple-200 hover:bg-purple-50/40'}`}
+            >
+              <div
+                className="mb-2 h-10 rounded-xl"
+                style={{ background: `linear-gradient(90deg, ${preset.theme.primaryColor}, ${preset.theme.secondaryColor}, ${preset.theme.accentColor})` }}
+              />
+              <span className="block text-sm font-black text-gray-800">{preset.name}</span>
+              <span className="block text-xs font-semibold text-gray-500">{preset.description}</span>
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div>
         <div className="flex items-center gap-2 mb-3">
           <Palette size={18} className="text-purple-600" />
           <h4 className="font-bold text-gray-800">Bảng màu player</h4>
@@ -492,7 +567,7 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
             className="mt-2 w-full accent-purple-600"
           />
         </label>
-        <div className="mt-3 grid grid-cols-3 gap-2">
+        <div className="mt-3 grid grid-cols-2 gap-2">
           {questionStyles.map((style) => (
             <button
               key={style.value}

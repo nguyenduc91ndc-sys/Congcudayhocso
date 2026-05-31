@@ -267,6 +267,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
 
   const questionOverlayStyle = theme.questionStyle === 'card'
     ? { background: 'rgba(15, 23, 42, 0.55)' }
+    : theme.questionStyle === 'gradient'
+      ? { background: `radial-gradient(circle at 18% 12%, ${theme.primaryColor}44, transparent 35%), radial-gradient(circle at 82% 16%, ${theme.secondaryColor}55, transparent 36%), rgba(2, 6, 23, 0.24)` }
     : theme.questionStyle === 'playful'
       ? { background: `linear-gradient(135deg, ${theme.secondaryColor}dd 0%, ${theme.primaryColor}cc 55%, ${theme.accentColor}aa 100%)` }
       : { background: `linear-gradient(135deg, ${theme.backgroundColor}dd 0%, ${theme.primaryColor}c9 50%, ${theme.secondaryColor}b3 100%)` };
@@ -274,6 +276,16 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const questionCardClass = theme.questionStyle === 'card'
     ? 'bg-white text-slate-800'
     : 'bg-slate-800/80 text-white backdrop-blur-xl border border-white/20';
+
+  const questionCardStyle = {
+    scrollbarWidth: 'none' as const,
+    msOverflowStyle: 'none' as const,
+    borderColor: theme.questionStyle === 'card' ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.24)',
+    boxShadow: `0 28px 90px rgba(15,23,42,.35), 0 0 0 1px ${theme.primaryColor}22`,
+    ...(theme.questionStyle === 'gradient'
+      ? { background: `linear-gradient(135deg, ${theme.primaryColor} 0%, ${theme.secondaryColor} 58%, ${theme.accentColor} 100%)` }
+      : {}),
+  };
 
   return (
     <div
@@ -473,12 +485,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 className={`${questionCardClass} relative w-full max-w-[95vw] overflow-hidden rounded-[24px] border p-4 shadow-2xl sm:max-w-xl sm:p-5 md:max-w-2xl md:p-6`}
-                style={{
-                  scrollbarWidth: 'none',
-                  msOverflowStyle: 'none',
-                  borderColor: theme.questionStyle === 'card' ? 'rgba(15,23,42,0.08)' : 'rgba(255,255,255,0.24)',
-                  boxShadow: `0 28px 90px rgba(15,23,42,.35), 0 0 0 1px ${theme.primaryColor}22`,
-                }}
+                style={questionCardStyle}
               >
                 <div className="pointer-events-none absolute inset-x-0 top-0 h-1.5" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
                 <div className="mb-5">

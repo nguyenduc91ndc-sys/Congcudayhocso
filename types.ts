@@ -8,7 +8,7 @@ export interface Question {
 
 export type VideoSourceType = 'youtube' | 'local';
 export type VideoPlayerLayout = 'full' | 'cinema' | 'sidebar';
-export type VideoQuestionStyle = 'glass' | 'card' | 'playful';
+export type VideoQuestionStyle = 'glass' | 'card' | 'playful' | 'gradient';
 
 export interface VideoPlayerTheme {
   primaryColor: string;
