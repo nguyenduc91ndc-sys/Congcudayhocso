@@ -31,7 +31,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const [localVideoMissing, setLocalVideoMissing] = useState(false);
   const [showStartGate, setShowStartGate] = useState(true);
   const [learnerName, setLearnerName] = useState('');
-  const [learnerAvatar, setLearnerAvatar] = useState('🙂');
+  const [learnerAvatar, setLearnerAvatar] = useState('👦');
 
   const playerRef = useRef<ReactPlayer>(null);
   const objectUrlRef = useRef<string | null>(null);
@@ -50,7 +50,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
 
   // Nhãn đáp án (A, B, C, D)
   const optionLabels = ['A', 'B', 'C', 'D'];
-  const avatarOptions = ['🙂', '🤖', '🎓', '🌟', '🚀', '🎨'];
+  const avatarOptions = [
+    { icon: '👦', label: 'Bé trai' },
+    { icon: '👧', label: 'Bé gái' },
+    { icon: '🤖', label: 'Rô bốt' },
+    { icon: '🦸‍♂️', label: 'Siêu nhân nam' },
+    { icon: '🦸‍♀️', label: 'Siêu nhân nữ' },
+    { icon: '👨‍🚀', label: 'Phi hành gia' },
+  ];
 
   useEffect(() => {
     let cancelled = false;
@@ -299,12 +306,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
             <div className="mb-5 grid grid-cols-6 gap-2">
               {avatarOptions.map((avatar) => (
                 <button
-                  key={avatar}
+                  key={avatar.label}
                   type="button"
-                  onClick={() => setLearnerAvatar(avatar)}
-                  className={`h-14 rounded-2xl border-2 bg-white text-3xl transition ${learnerAvatar === avatar ? 'scale-105 border-purple-500 shadow-lg' : 'border-slate-200 hover:border-purple-200'}`}
+                  onClick={() => setLearnerAvatar(avatar.icon)}
+                  aria-label={avatar.label}
+                  title={avatar.label}
+                  className={`h-14 rounded-2xl border-2 bg-white text-3xl transition ${learnerAvatar === avatar.icon ? 'scale-105 border-purple-500 shadow-lg' : 'border-slate-200 hover:border-purple-200'}`}
                 >
-                  {avatar}
+                  {avatar.icon}
                 </button>
               ))}
             </div>
