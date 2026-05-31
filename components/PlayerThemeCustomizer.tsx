@@ -1,5 +1,5 @@
-import React from 'react';
-import { LayoutTemplate, Palette, SlidersHorizontal, Type } from 'lucide-react';
+import React, { useState } from 'react';
+import { CheckCircle2, Eye, LayoutTemplate, Palette, Play, SlidersHorizontal, Type, X } from 'lucide-react';
 import { VideoPlayerTheme, VideoPlayerLayout, VideoQuestionStyle } from '../types';
 
 interface PlayerThemeCustomizerProps {
@@ -30,11 +30,110 @@ const questionStyles: Array<{ value: VideoQuestionStyle; label: string }> = [
   { value: 'playful', label: 'Vui nhộn' },
 ];
 
+const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void }> = ({ theme, onClose }) => {
+  const isSidebar = theme.layout === 'sidebar';
+  const questionSurface = theme.questionStyle === 'card'
+    ? { backgroundColor: theme.surfaceColor, color: theme.textColor, borderColor: '#e5e7eb' }
+    : theme.questionStyle === 'playful'
+      ? { background: `linear-gradient(135deg, ${theme.accentColor}, ${theme.secondaryColor})`, color: '#ffffff', borderColor: 'rgba(255,255,255,0.35)' }
+      : { backgroundColor: 'rgba(15,23,42,0.78)', color: '#ffffff', borderColor: 'rgba(255,255,255,0.2)' };
+
+  return (
+    <div className="fixed inset-0 z-[120] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md" onClick={onClose}>
+      <div
+        className="w-full max-w-5xl overflow-hidden border border-white/15 bg-slate-900 shadow-2xl"
+        style={{
+          borderRadius: theme.radius + 10,
+          fontFamily: `${theme.fontFamily}, Nunito, Arial, sans-serif`,
+        }}
+        onClick={(event) => event.stopPropagation()}
+      >
+        <div className="flex items-center justify-between border-b border-white/10 px-5 py-4">
+          <div>
+            <h3 className="text-lg font-black text-white">Xem trước giao diện xuất bản</h3>
+            <p className="text-sm text-slate-400">Mẫu này mô phỏng player sau khi xuất HTML5/SCORM.</p>
+          </div>
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-300 hover:bg-white/10 hover:text-white">
+            <X size={20} />
+          </button>
+        </div>
+
+        <div
+          className="p-5"
+          style={{
+            background: `radial-gradient(circle at 15% 0%, ${theme.primaryColor}66, transparent 34%), radial-gradient(circle at 85% 10%, ${theme.secondaryColor}55, transparent 34%), ${theme.backgroundColor}`,
+          }}
+        >
+          <div className={`mx-auto overflow-hidden border-4 border-white/30 bg-black shadow-2xl ${isSidebar ? 'grid max-w-4xl grid-cols-[1fr_230px]' : 'max-w-4xl'}`} style={{ borderRadius: theme.radius }}>
+            <div className="relative aspect-video bg-gradient-to-br from-slate-950 via-slate-900 to-black">
+              <div className="absolute left-4 top-4 rounded-full px-3 py-1 text-xs font-bold text-white" style={{ backgroundColor: theme.primaryColor }}>
+                Bài giảng tương tác
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center">
+                <button type="button" className="flex h-20 w-20 items-center justify-center rounded-full bg-white/90 text-slate-900 shadow-2xl">
+                  <Play size={38} fill="currentColor" className="ml-1" />
+                </button>
+              </div>
+              <div className="absolute bottom-0 left-0 right-0 flex items-center gap-3 bg-black/45 px-5 py-4">
+                <div className="h-2 flex-1 overflow-hidden rounded-full bg-white/20">
+                  <div className="h-full w-2/5 rounded-full" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }} />
+                </div>
+                <span className="text-xs font-bold text-white">01:24</span>
+              </div>
+              <div className="absolute inset-0 flex items-center justify-center bg-black/25 p-6">
+                <div className="w-full max-w-md border p-5 shadow-2xl" style={{ ...questionSurface, borderRadius: Math.max(14, theme.radius) }}>
+                  <h4 className="mb-4 text-center text-xl font-black">Câu hỏi hiện ra trong video?</h4>
+                  {['A. Đáp án thứ nhất', 'B. Đáp án thứ hai', 'C. Đáp án thứ ba'].map((item, index) => (
+                    <div key={item} className="mb-2 flex items-center justify-between rounded-full bg-white px-4 py-3 text-sm font-bold text-slate-700">
+                      <span>{item}</span>
+                      {index === 1 && <CheckCircle2 size={18} className="text-emerald-500" />}
+                    </div>
+                  ))}
+                  <button type="button" className="mt-2 w-full rounded-full py-3 text-sm font-black text-white" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
+                    Trả lời ngay
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {isSidebar && (
+              <aside className="hidden bg-white/95 p-4 text-slate-800 md:block">
+                <h4 className="mb-1 text-base font-black" style={{ color: theme.primaryColor }}>Mục lục bài học</h4>
+                <p className="mb-4 text-xs text-slate-500">3 câu hỏi tương tác</p>
+                {[1, 2, 3].map((item) => (
+                  <div key={item} className="mb-2 rounded-xl border border-slate-200 bg-slate-50 px-3 py-2 text-sm font-bold">
+                    Câu hỏi {item}
+                  </div>
+                ))}
+              </aside>
+            )}
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3 border-t border-white/10 px-5 py-4">
+          <button type="button" onClick={onClose} className="rounded-xl bg-white px-5 py-2 text-sm font-black text-slate-800 hover:bg-slate-100">
+            Đóng xem trước
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, onChange }) => {
+  const [showPreview, setShowPreview] = useState(false);
   const updateTheme = (patch: Partial<VideoPlayerTheme>) => onChange({ ...theme, ...patch });
 
   return (
     <div className="space-y-5">
+      <button
+        type="button"
+        onClick={() => setShowPreview(true)}
+        className="flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-indigo-600 to-violet-600 px-4 py-3 text-sm font-black text-white shadow-lg transition hover:shadow-xl"
+      >
+        <Eye size={18} /> Xem trước giao diện
+      </button>
+
       <div>
         <div className="flex items-center gap-2 mb-3">
           <Palette size={18} className="text-purple-600" />
@@ -137,6 +236,8 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
           {fonts.map((font) => <option key={font} value={font}>{font}</option>)}
         </select>
       </div>
+
+      {showPreview && <ThemePreviewModal theme={theme} onClose={() => setShowPreview(false)} />}
     </div>
   );
 };
