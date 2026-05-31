@@ -23,6 +23,7 @@ interface InteractiveVideoModuleProps {
 }
 
 type ModuleView = 'MY_VIDEOS' | 'CREATE_NEW' | 'EDIT';
+type ScormVersion = '1.2' | '2004';
 
 const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     lessons,
@@ -255,7 +256,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             .toLowerCase() || 'video-tuong-tac';
     };
 
-    const createExportHtml = (videoFileName: string) => {
+    const createExportHtml = (videoFileName: string, scormVersion?: ScormVersion) => {
         const escapeHtml = (value: string) => String(value || '')
             .replace(/&/g, '&amp;')
             .replace(/</g, '&lt;')
@@ -281,6 +282,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             allowSeeking,
             questions: [...questions].sort((a, b) => a.time - b.time),
             theme: playerTheme,
+            scormVersion: scormVersion || null,
         };
 
         return `<!doctype html>
@@ -301,6 +303,15 @@ body{background:radial-gradient(circle at 10% 0%,${playerTheme.primaryColor}33,t
 <div id="startGate" class="gate"><div class="gate-card"><h1>Vào bài học</h1><p>Nhập họ tên và chọn nhân vật đại diện của em.</p><input id="learnerName" autocomplete="name" placeholder="Họ và tên học sinh"><div class="avatars"><button class="avatarPick active" data-avatar="🙂">🙂</button><button class="avatarPick" data-avatar="🤖">🤖</button><button class="avatarPick" data-avatar="🎓">🎓</button><button class="avatarPick" data-avatar="🌟">🌟</button><button class="avatarPick" data-avatar="🚀">🚀</button><button class="avatarPick" data-avatar="🎨">🎨</button></div><button id="startLesson" class="startBtn">Bắt đầu học</button></div></div><canvas id="fx"></canvas><div id="bonus" class="bonus">+10</div><div class="app themeSync"><main class="shell"><div class="topbar"><span>Video bài giảng tương tác</span><div class="stats"><span>★ Điểm: <b id="score">0</b></span><span id="learnerBadge"></span><span>${escapeHtml(playerTheme.logoText || 'GV')}</span></div></div><div class="layout"><section class="main"><div class="player"><div class="metaTop"><div class="brand"><span class="logo">${logoMarkup}</span><span>${escapeHtml(playerTheme.publishTitle || title)}</span></div><div class="badge">${escapeHtml(playerTheme.publishSubtitle || '')}</div></div><div class="stage"><video id="video" src="${videoFileName}" playsinline></video><div id="overlay" class="overlay"><div class="card"><h2 id="qtext" class="qtitle"></h2><div id="opts"></div><div class="actions"><button class="primary" id="answer">Trả lời ngay</button><button class="secondary" id="rewatch">Xem lại</button></div><div id="result" class="result"></div></div></div></div><div class="foot"><span>${escapeHtml(playerTheme.footerLeftText || 'Giáo viên yêu công nghệ')}</span><span>${escapeHtml(playerTheme.footerRightText || '')}</span></div><div class="controls"><button class="ctrl" id="back">≪</button><button class="ctrl" id="play">▶</button><button class="ctrl" id="next">≫</button><button class="ctrl" id="restart">↻</button><span class="page">1 / 1</span><input class="progress" id="progress" type="range" min="0" value="0" step="0.1"><span class="time"><b id="now">00:00</b> / <b id="dur">00:00</b></span><button class="ctrl" id="full">⛶</button></div></div></section><aside class="side" id="side"><div class="school-logo">${logoMarkup}</div>${playerTheme.showAuthorPanel ? `<div class="profile"><div class="avatar">${escapeHtml((playerTheme.authorName || 'GV').slice(0, 2).toUpperCase())}</div><div><div class="name">${authorName}</div><div class="role">${authorInfo}</div></div></div><button class="info" id="authorInfo">Hiện thông tin</button>` : ''}<div class="tabs"><button class="tab active" id="menuTab">Mục lục</button><button class="tab" id="guideTab">Hướng dẫn</button></div><input class="search" id="searchBox" placeholder="Tìm kiếm"><h3 class="section-title">Trang 1</h3><div class="qlist" id="qlist"></div><div class="guide">${guideText}</div><button class="cert" id="certBtn">Xuất thư khen</button></aside></div></main></div>
 <script>
 const data=${JSON.stringify(exportData)};
+const scormVersion=data.scormVersion;
+let scormApi=null,scormStarted=false,scormDone=false;
+const findScormApi=(win,name)=>{let depth=0;while(win&&depth<8){try{if(win[name])return win[name];if(win.parent===win)break;win=win.parent;depth++}catch(e){break}}try{return window.opener&&window.opener[name]}catch(e){return null}};
+const scormCall=(method,...args)=>{try{return scormApi&&scormApi[method]?scormApi[method](...args):null}catch(e){return null}};
+const scormInitialize=()=>{if(!scormVersion||scormStarted)return;scormApi=findScormApi(window,scormVersion==='2004'?'API_1484_11':'API');if(!scormApi)return;scormStarted=true;if(scormVersion==='2004'){scormCall('Initialize','');scormCall('SetValue','cmi.completion_status','incomplete');scormCall('SetValue','cmi.success_status','unknown');scormCall('SetValue','cmi.score.min','0');scormCall('SetValue','cmi.score.max',String(data.questions.length*10||100));scormCall('Commit','')}else{scormCall('LMSInitialize','');scormCall('LMSSetValue','cmi.core.lesson_status','incomplete');scormCall('LMSSetValue','cmi.core.score.min','0');scormCall('LMSSetValue','cmi.core.score.max',String(data.questions.length*10||100));scormCall('LMSCommit','')}};
+const scormSetScore=(raw,total)=>{if(!scormVersion)return;scormInitialize();if(!scormApi)return;const score=String(raw||0),max=String(total||100);if(scormVersion==='2004'){scormCall('SetValue','cmi.score.raw',score);scormCall('SetValue','cmi.score.max',max);scormCall('SetValue','cmi.score.scaled',String(total?Math.min(1,raw/total):0));scormCall('Commit','')}else{scormCall('LMSSetValue','cmi.core.score.raw',score);scormCall('LMSSetValue','cmi.core.score.max',max);scormCall('LMSCommit','')}};
+const scormComplete=()=>{if(scormDone)return;scormInitialize();if(!scormApi)return;scormDone=true;const total=data.questions.length*10||100;scormSetScore(points,total);if(scormVersion==='2004'){scormCall('SetValue','cmi.completion_status','completed');scormCall('SetValue','cmi.success_status','passed');scormCall('Commit','')}else{scormCall('LMSSetValue','cmi.core.lesson_status','passed');scormCall('LMSCommit','')}};
+const scormFinish=()=>{if(!scormStarted||!scormApi)return;if(scormVersion==='2004')scormCall('Terminate','');else scormCall('LMSFinish','')};
+scormInitialize();addEventListener('beforeunload',scormFinish);
 const video=document.getElementById('video'),overlay=document.getElementById('overlay'),qtext=document.getElementById('qtext'),opts=document.getElementById('opts'),result=document.getElementById('result'),progress=document.getElementById('progress'),now=document.getElementById('now'),dur=document.getElementById('dur'),play=document.getElementById('play'),score=document.getElementById('score'),menuTab=document.getElementById('menuTab'),guideTab=document.getElementById('guideTab'),side=document.getElementById('side'),qlist=document.getElementById('qlist'),searchBox=document.getElementById('searchBox'),bonus=document.getElementById('bonus'),certBtn=document.getElementById('certBtn'),fx=document.getElementById('fx'),fctx=fx.getContext('2d'),startGate=document.getElementById('startGate'),learnerInput=document.getElementById('learnerName'),startBtn=document.getElementById('startLesson'),learnerBadge=document.getElementById('learnerBadge');
 let current=null,selected=null,answered=[],points=0,particles=[],fxRunning=false,learnerName='',learnerAvatar='🙂';
 const fmt=s=>{s=Math.max(0,Math.floor(s||0));return String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0')};
@@ -316,7 +327,7 @@ const firework=()=>{for(let i=0;i<5;i++)setTimeout(()=>burst(innerWidth*(.2+Math
 const showBonus=()=>{bonus.classList.add('show');setTimeout(()=>bonus.classList.remove('show'),900)};
 const safe=s=>String(s||'').replace(/[&<>]/g,m=>({'&':'&amp;','<':'&lt;','>':'&gt;'}[m]));
 document.querySelectorAll('.avatarPick').forEach(btn=>btn.onclick=()=>{document.querySelectorAll('.avatarPick').forEach(x=>x.classList.remove('active'));btn.classList.add('active');learnerAvatar=btn.dataset.avatar||'🙂'});
-startBtn.onclick=()=>{const name=learnerInput.value.trim();if(!name){learnerInput.focus();learnerInput.placeholder='Vui lòng nhập họ tên trước khi học';return}learnerName=name;learnerBadge.textContent=learnerAvatar+' '+learnerName;startGate.style.display='none';video.play()};
+startBtn.onclick=()=>{const name=learnerInput.value.trim();if(!name){learnerInput.focus();learnerInput.placeholder='Vui lòng nhập họ tên trước khi học';return}learnerName=name;learnerBadge.textContent=learnerAvatar+' '+learnerName;startGate.style.display='none';scormInitialize();video.play()};
 learnerInput.addEventListener('keydown',e=>{if(e.key==='Enter')startBtn.click()});
 const certificate=()=>{const learner=learnerName||(prompt('Nhập tên học sinh để ghi thư khen:','Học sinh')||'Học sinh').trim()||'Học sinh',total=data.questions.length*10,date=new Date().toLocaleDateString('vi-VN'),w=window.open('','_blank');if(!w)return;w.document.write('<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Thư khen</title><style>body{margin:0;background:#f8fafc;font-family:Arial,sans-serif;color:#1f2937}.paper{width:900px;max-width:94%;margin:32px auto;padding:54px;border:12px solid #f59e0b;border-radius:28px;background:radial-gradient(circle at top,#fff7ed,#fff 42%);text-align:center;box-shadow:0 24px 80px rgba(15,23,42,.18)}h1{margin:0;color:#b45309;font-size:52px;text-transform:uppercase}.sub{font-size:20px;font-weight:700;color:#64748b}.avatarCert{font-size:54px;margin:24px 0 0}.name{margin:12px 0 18px;font-size:42px;font-weight:950;color:#7c3aed}.score{display:inline-block;margin:16px 0 26px;padding:12px 28px;border-radius:999px;background:#ecfdf5;color:#047857;font-size:24px;font-weight:950}.text{font-size:22px;line-height:1.55}.sign{display:flex;justify-content:space-between;margin-top:54px;font-weight:800}@media print{button{display:none}.paper{box-shadow:none;margin:0 auto}}</style></head><body><div class="paper"><h1>Thư khen</h1><p class="sub">Hoàn thành bài học tương tác</p><div class="avatarCert">'+learnerAvatar+'</div><div class="name">'+safe(learner)+'</div><p class="text">Đã hoàn thành bài học: <b>'+safe(data.title)+'</b><br>với tinh thần học tập tích cực.</p><div class="score">'+points+' / '+total+' điểm</div><div class="sign"><span>Ngày '+date+'</span><span>Giáo viên: ${authorName}</span></div><button onclick="window.print()" style="margin-top:32px;padding:12px 22px;border:0;border-radius:12px;background:#7c3aed;color:white;font-weight:900">In hoặc lưu PDF</button></div></body></html>');w.document.close();w.focus();setTimeout(()=>w.print(),400)};
 const renderList=(filter='')=>{qlist.innerHTML=data.questions.map((q,i)=>({q,i})).filter(({q,i})=>('câu '+(i+1)+' '+q.text).toLowerCase().includes(filter.toLowerCase())).map(({q,i})=>'<div class="qitem" data-time="'+q.time+'"><span><span class="qnum">'+(i+1)+'</span>Câu '+(i+1)+'</span><small>'+fmt(q.time)+'</small></div>').join('')};
@@ -338,12 +349,79 @@ document.getElementById('full').onclick=()=>document.querySelector('.shell').req
 menuTab.onclick=()=>{side.classList.remove('show-guide');menuTab.classList.add('active');guideTab.classList.remove('active')};
 guideTab.onclick=()=>{side.classList.add('show-guide');guideTab.classList.add('active');menuTab.classList.remove('active')};
 const authorInfo=document.getElementById('authorInfo');if(authorInfo){authorInfo.onclick=()=>alert('${authorName.replace(/'/g, "\\'")}\\n${escapeHtml(playerTheme.authorInfo || '').replace(/\n/g, '\\n').replace(/'/g, "\\'")}')};
-document.getElementById('answer').onclick=()=>{if(!current||selected===null)return;if(selected===current.correctOption){playCorrectSound();firework();showBonus();result.textContent='Ch\\u00ednh x\\u00e1c! +10 \\u0111i\\u1ec3m';answered.push(current.id);points+=10;score.textContent=points;setTimeout(()=>{overlay.classList.remove('show');if(answered.length===data.questions.length&&confirm('Ch\\u00fac m\\u1eebng! Em \\u0111\\u00e3 ho\\u00e0n th\\u00e0nh b\\u00e0i h\\u1ecdc. Xu\\u1ea5t th\\u01b0 khen ngay?'))certificate();video.play()},1100)}else{playIncorrectSound();result.textContent='Ch\\u01b0a \\u0111\\u00fang, em h\\u00e3y xem l\\u1ea1i \\u0111o\\u1ea1n video nh\\u00e9.'}};
+document.getElementById('answer').onclick=()=>{if(!current||selected===null)return;if(selected===current.correctOption){playCorrectSound();firework();showBonus();result.textContent='Ch\\u00ednh x\\u00e1c! +10 \\u0111i\\u1ec3m';answered.push(current.id);points+=10;score.textContent=points;scormSetScore(points,data.questions.length*10);setTimeout(()=>{overlay.classList.remove('show');if(answered.length===data.questions.length){scormComplete();if(confirm('Ch\\u00fac m\\u1eebng! Em \\u0111\\u00e3 ho\\u00e0n th\\u00e0nh b\\u00e0i h\\u1ecdc. Xu\\u1ea5t th\\u01b0 khen ngay?'))certificate()}video.play()},1100)}else{playIncorrectSound();result.textContent='Ch\\u01b0a \\u0111\\u00fang, em h\\u00e3y xem l\\u1ea1i \\u0111o\\u1ea1n video nh\\u00e9.'}};
 certBtn.onclick=certificate;
 document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.classList.remove('show');video.currentTime=Math.max(0,current.time-10);video.play()};
 </script>
 </body>
 </html>`;
+    };
+
+    const createScormManifest = (version: ScormVersion, videoFileName: string) => {
+        const escapeXml = (value: string) => String(value || '')
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;')
+            .replace(/"/g, '&quot;')
+            .replace(/'/g, '&apos;');
+        const manifestId = `GVCN-${safeFileName(title)}-${Date.now()}`;
+        const titleXml = escapeXml(title || 'Video bài giảng tương tác');
+
+        if (version === '1.2') {
+            return `<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="${manifestId}" version="1.0"
+  xmlns="http://www.imsproject.org/xsd/imscp_rootv1p1p2"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_rootv1p2"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>1.2</schemaversion>
+  </metadata>
+  <organizations default="ORG-1">
+    <organization identifier="ORG-1">
+      <title>${titleXml}</title>
+      <item identifier="ITEM-1" identifierref="RES-1">
+        <title>${titleXml}</title>
+      </item>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="RES-1" type="webcontent" adlcp:scormtype="sco" href="index.html">
+      <file href="index.html" />
+      <file href="${escapeXml(videoFileName)}" />
+    </resource>
+  </resources>
+</manifest>`;
+        }
+
+        return `<?xml version="1.0" encoding="UTF-8"?>
+<manifest identifier="${manifestId}" version="1.0"
+  xmlns="http://www.imsglobal.org/xsd/imscp_v1p1"
+  xmlns:adlcp="http://www.adlnet.org/xsd/adlcp_v1p3"
+  xmlns:imsss="http://www.imsglobal.org/xsd/imsss"
+  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance">
+  <metadata>
+    <schema>ADL SCORM</schema>
+    <schemaversion>2004 4th Edition</schemaversion>
+  </metadata>
+  <organizations default="ORG-1">
+    <organization identifier="ORG-1">
+      <title>${titleXml}</title>
+      <item identifier="ITEM-1" identifierref="RES-1">
+        <title>${titleXml}</title>
+        <imsss:sequencing>
+          <imsss:controlMode choice="true" flow="true" />
+        </imsss:sequencing>
+      </item>
+    </organization>
+  </organizations>
+  <resources>
+    <resource identifier="RES-1" type="webcontent" adlcp:scormType="sco" href="index.html">
+      <file href="index.html" />
+      <file href="${escapeXml(videoFileName)}" />
+    </resource>
+  </resources>
+</manifest>`;
     };
 
     const handleExportHtml5 = async () => {
@@ -369,6 +447,37 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
         const link = document.createElement('a');
         link.href = URL.createObjectURL(blob);
         link.download = `${safeFileName(title)}-html5.zip`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(link.href);
+    };
+
+    const handleExportScorm = async (version: ScormVersion) => {
+        if (!title.trim()) return alert('Vui lòng nhập tên video trước khi xuất SCORM.');
+        if (videoSource !== 'local') {
+            alert('Xuất SCORM cần video tải từ máy để đóng gói vào LMS. Vui lòng chọn nguồn "Từ máy" trước khi xuất.');
+            return;
+        }
+
+        const videoFile = localVideoFile || (editingLesson?.id ? await getLocalVideoFile(editingLesson.id) : null);
+        if (!videoFile) {
+            alert('Chưa tìm thấy file video cục bộ. Vui lòng chọn lại video từ máy rồi xuất SCORM.');
+            return;
+        }
+
+        const originalName = localVideoName || editingLesson?.localVideoName || 'video.mp4';
+        const extension = originalName.includes('.') ? originalName.split('.').pop() || 'mp4' : 'mp4';
+        const videoName = `media/${safeFileName(title)}.${extension}`;
+        const zip = new JSZip();
+        zip.file('index.html', createExportHtml(videoName, version));
+        zip.file('imsmanifest.xml', createScormManifest(version, videoName));
+        zip.file(videoName, videoFile);
+        zip.file('README.txt', `Gói SCORM ${version} được xuất từ giaoviencn.io.vn.\nTải file ZIP này lên LMS, không giải nén trước khi import.`);
+        const blob = await zip.generateAsync({ type: 'blob' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${safeFileName(title)}-scorm-${version === '1.2' ? '12' : '2004'}.zip`;
         document.body.appendChild(link);
         link.click();
         link.remove();
@@ -881,11 +990,11 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                                     Tải HTML5 (.zip)
                                 </button>
                                 <div className="grid grid-cols-2 gap-2">
-                                    <button disabled className="rounded-xl bg-white/70 px-3 py-2 text-xs font-bold text-slate-400 ring-1 ring-indigo-100">
-                                        SCORM 1.2 sắp có
+                                    <button onClick={() => handleExportScorm('1.2')} className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-indigo-700 ring-1 ring-indigo-100 transition hover:bg-indigo-600 hover:text-white">
+                                                                                SCORM 1.2
                                     </button>
-                                    <button disabled className="rounded-xl bg-white/70 px-3 py-2 text-xs font-bold text-slate-400 ring-1 ring-indigo-100">
-                                        SCORM 2004 sắp có
+                                    <button onClick={() => handleExportScorm('2004')} className="rounded-xl bg-white px-3 py-2 text-xs font-bold text-indigo-700 ring-1 ring-indigo-100 transition hover:bg-indigo-600 hover:text-white">
+                                                                                SCORM 2004
                                     </button>
                                 </div>
                             </div>
