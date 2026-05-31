@@ -30,6 +30,84 @@ const questionStyles: Array<{ value: VideoQuestionStyle; label: string }> = [
   { value: 'playful', label: 'Vui nhộn' },
 ];
 
+const formatBytes = (bytes: number) => {
+  if (bytes < 1024) return `${bytes} B`;
+  const kb = bytes / 1024;
+  if (kb < 1024) return `${kb.toFixed(kb >= 100 ? 0 : 1)} KB`;
+  return `${(kb / 1024).toFixed(2)} MB`;
+};
+
+const blobToDataUrl = (blob: Blob) => new Promise<string>((resolve, reject) => {
+  const reader = new FileReader();
+  reader.onload = () => resolve(String(reader.result || ''));
+  reader.onerror = () => reject(reader.error);
+  reader.readAsDataURL(blob);
+});
+
+const fileToDataUrl = (file: File) => blobToDataUrl(file);
+
+const loadImage = (src: string) => new Promise<HTMLImageElement>((resolve, reject) => {
+  const image = new Image();
+  image.onload = () => resolve(image);
+  image.onerror = () => reject(new Error('Cannot load image'));
+  image.src = src;
+});
+
+const canvasToBlob = (canvas: HTMLCanvasElement, type: string, quality: number) => new Promise<Blob>((resolve, reject) => {
+  canvas.toBlob((blob) => {
+    if (blob) resolve(blob);
+    else reject(new Error('Cannot compress image'));
+  }, type, quality);
+});
+
+const compressLogoImage = async (file: File) => {
+  const source = await fileToDataUrl(file);
+  if (file.type === 'image/svg+xml' && file.size <= 1024 * 1024) {
+    return { dataUrl: source, originalSize: file.size, compressedSize: file.size };
+  }
+
+  const image = await loadImage(source);
+  const maxSize = 512;
+  const ratio = Math.min(1, maxSize / Math.max(image.width || maxSize, image.height || maxSize));
+  const width = Math.max(1, Math.round((image.width || maxSize) * ratio));
+  const height = Math.max(1, Math.round((image.height || maxSize) * ratio));
+  const canvas = document.createElement('canvas');
+  canvas.width = width;
+  canvas.height = height;
+  const context = canvas.getContext('2d');
+  if (!context) throw new Error('Canvas is not supported');
+  context.clearRect(0, 0, width, height);
+  context.drawImage(image, 0, 0, width, height);
+
+  const attempts = [
+    { type: 'image/webp', quality: 0.86 },
+    { type: 'image/webp', quality: 0.72 },
+    { type: 'image/jpeg', quality: 0.78 },
+  ];
+
+  let bestBlob: Blob | null = null;
+  for (const attempt of attempts) {
+    try {
+      const blob = await canvasToBlob(canvas, attempt.type, attempt.quality);
+      if (!bestBlob || blob.size < bestBlob.size) bestBlob = blob;
+      if (blob.size <= 1024 * 1024) break;
+    } catch {
+      // Continue with the next browser-supported format.
+    }
+  }
+
+  if (!bestBlob) {
+    return { dataUrl: source, originalSize: file.size, compressedSize: file.size };
+  }
+
+  const dataUrl = await blobToDataUrl(bestBlob);
+  return {
+    dataUrl: bestBlob.size < file.size ? dataUrl : source,
+    originalSize: file.size,
+    compressedSize: Math.min(bestBlob.size, file.size),
+  };
+};
+
 const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void }> = ({ theme, onClose }) => {
   const isSidebar = theme.layout === 'sidebar';
   const questionSurface = theme.questionStyle === 'card'
@@ -142,6 +220,7 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
 const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, onChange }) => {
   const [showPreview, setShowPreview] = useState(false);
   const [activePanel, setActivePanel] = useState<'publish' | 'colors' | 'layout' | null>(null);
+  const [logoStatus, setLogoStatus] = useState('');
   const updateTheme = (patch: Partial<VideoPlayerTheme>) => onChange({ ...theme, ...patch });
   const handleLogoUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
@@ -158,6 +237,29 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
     reader.onload = () => updateTheme({ logoImage: String(reader.result || '') });
     reader.readAsDataURL(file);
   };
+  const handleCompressedLogoUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const input = event.currentTarget;
+    const file = input.files?.[0];
+    input.value = '';
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      alert('Vui lòng chọn file ảnh logo.');
+      return;
+    }
+    setLogoStatus('Đang nén logo...');
+    try {
+      const result = await compressLogoImage(file);
+      updateTheme({ logoImage: result.dataUrl });
+      const saved = result.originalSize - result.compressedSize;
+      setLogoStatus(saved > 1024
+        ? `Đã nén: ${formatBytes(result.originalSize)} -> ${formatBytes(result.compressedSize)}`
+        : `Logo đã tối ưu: ${formatBytes(result.compressedSize)}`);
+    } catch {
+      setLogoStatus('');
+      alert('Không nén được logo này. Vui lòng thử ảnh PNG/JPG/WebP khác.');
+    }
+  };
+
   const panelButtonClass = (id: 'publish' | 'colors' | 'layout') =>
     `flex w-full items-center justify-between rounded-xl border px-4 py-3 text-left transition ${activePanel === id ? 'border-purple-300 bg-purple-50 text-purple-800' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`;
 
@@ -191,7 +293,7 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
             <div className="min-w-0 flex-1">
               <label className="inline-flex cursor-pointer items-center justify-center rounded-lg bg-purple-600 px-3 py-2 text-xs font-black text-white hover:bg-purple-700">
                 Tải logo lên
-                <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+                <input type="file" accept="image/*" onChange={handleCompressedLogoUpload} className="hidden" />
               </label>
               {theme.logoImage && (
                 <button type="button" onClick={() => updateTheme({ logoImage: '' })} className="ml-2 rounded-lg bg-white px-3 py-2 text-xs font-black text-slate-500 ring-1 ring-purple-100 hover:text-red-600">
@@ -199,6 +301,7 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
                 </button>
               )}
               <p className="mt-1 truncate text-[11px] font-semibold text-purple-500">PNG/JPG/WebP, nên dùng ảnh vuông.</p>
+              {logoStatus && <p className="mt-1 truncate text-[11px] font-black text-emerald-600">{logoStatus}</p>}
             </div>
           </div>
           <input
