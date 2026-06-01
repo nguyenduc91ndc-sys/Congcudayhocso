@@ -4,7 +4,7 @@ import { database } from './firebaseConfig';
 // Danh sách tất cả app IDs
 export const ALL_APP_IDS = [
     'interactiveVideo', 'beeGame', 'beeGameEditable', 'bacteriaGame',
-    'vongQuay', 'kingGame', 'kingGameLopHocCompact', 'luckyWheel', 'starWheel',
+    'vongQuay', 'luckyWheel', 'starWheel',
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
     'clockExperiment', 'yogurtExperiment', 'earthSeasons',
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
@@ -23,7 +23,6 @@ export type AppId = typeof ALL_APP_IDS[number];
 // Thông tin hiển thị app
 export const APP_INFO: Record<AppId, { name: string; icon: string; section: string }> = {
     qrGenerator: { name: 'Tạo mã QR', icon: '▦', section: 'Học liệu tương tác' },
-    kingGameLopHocCompact: { name: 'Đường tới Ngôi Vua - Lớp học số', icon: '👑🏫', section: 'Công cụ dạy học' },
     nhayBaoBo: { name: 'Nhảy Bao Bố', icon: '🏁', section: 'Công cụ dạy học' },
     keoCoTriTue: { name: 'Kéo Co Trí Tuệ', icon: '✊🖐️', section: 'Công cụ dạy học' },
     solarSystem: { name: 'Hệ Mặt Trời', icon: '🪐', section: 'Ứng dụng 3D & VR' },
@@ -33,7 +32,6 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     beeGameEditable: { name: 'Ong về Tổ (Tự soạn)', icon: '🐝📝', section: 'Công cụ dạy học' },
     bacteriaGame: { name: 'Vi Khuẩn Phiêu Lưu', icon: '🦠', section: 'Công cụ dạy học' },
     vongQuay: { name: 'Vòng quay', icon: '🔄', section: 'Công cụ dạy học' },
-    kingGame: { name: 'Đường đến Ngôi Vua', icon: '👑', section: 'Công cụ dạy học' },
     luckyWheel: { name: 'Vòng quay may mắn', icon: '🎡', section: 'Công cụ dạy học' },
     starWheel: { name: 'Vòng Xoay Ngôi Sao', icon: '⭐', section: 'Công cụ dạy học' },
     puzzleGame: { name: 'Giải Mã Bức Tranh', icon: '🧩', section: 'Công cụ dạy học' },

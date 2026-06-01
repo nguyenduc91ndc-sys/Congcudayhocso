@@ -33,8 +33,6 @@ interface DashboardProps {
     onBacteriaGame: () => void;
     onVongQuay: () => void;
     onLuckyWheel: () => void;
-    onKingGame: () => void;
-    onKingGameLopHocCompact: () => void;
     onStarWheel: () => void;
     onVideoStore: () => void;
     onInteractiveVideo: () => void;
@@ -287,7 +285,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onKingGame, onKingGameLopHocCompact, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -754,8 +752,6 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('beeGameEditable') && <ToolCard title="Ong về Tổ (Tự soạn)" description="Tự tạo câu hỏi và chia sẻ cho học sinh" icon={<span className="text-2xl">🐝📝</span>} accentColor="bg-orange-500" onClick={onBeeGameEditable} badge="Mới" />}
                                         {!hiddenApps.includes('bacteriaGame') && <ToolCard title="Vi Khuẩn Phiêu Lưu" description="Game vi khuẩn tìm đường về hũ sữa chua" icon={<span className="text-2xl">🦠</span>} accentColor="bg-green-500" onClick={onBacteriaGame} badge="Mới" />}
                                         {!hiddenApps.includes('vongQuay') && <ToolCard title="Vòng quay" description="Vòng tròn gọi tên học sinh" icon={<RotateCcw size={24} className="text-white" />} accentColor="bg-pink-500" onClick={onVongQuay} />}
-                                        {!hiddenApps.includes('kingGame') && <ToolCard title="Đường đến Ngôi Vua" description="Gọi tên học sinh kết hợp câu hỏi" icon={<span className="text-2xl">👑</span>} accentColor="bg-yellow-500" onClick={onKingGame} />}
-                                        {!hiddenApps.includes('kingGameLopHocCompact') && <ToolCard title="Đường tới Ngôi Vua – Lớp học số" description="Quản lý lớp học số, tích điểm theo cấp bậc" icon={<span className="text-2xl">👑🏫</span>} accentColor="bg-gradient-to-br from-yellow-600 to-amber-700" onClick={onKingGameLopHocCompact} />}
                                         {!hiddenApps.includes('luckyWheel') && <ToolCard title="Vòng quay may mắn" description="Bánh xe quay chọn người may mắn" icon={<span className="text-2xl">🎡</span>} accentColor="bg-rose-500" onClick={onLuckyWheel} />}
                                         {!hiddenApps.includes('starWheel') && <ToolCard title="Vòng Xoay Ngôi Sao" description="Vòng quay ngôi sao may mắn" icon={<span className="text-2xl">⭐</span>} accentColor="bg-indigo-500" onClick={onStarWheel} />}
                                         {!hiddenApps.includes('puzzleGame') && <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" />}

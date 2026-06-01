@@ -28,8 +28,6 @@ import BeeGameEditable from './components/BeeGameEditable';
 import BacteriaGameEditable from './components/BacteriaGameEditable';
 import VongQuay from './components/VongQuay';
 import LuckyWheel from './components/LuckyWheel';
-import KingGame from './components/KingGame';
-import KingGameLopHocCompact from './components/KingGameLopHocCompact';
 import StarWheel from './components/StarWheel';
 import VideoStore from './components/VideoStore';
 import InteractiveVideoModule from './components/InteractiveVideoModule';
@@ -80,8 +78,6 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   BACTERIA_GAME: 'bacteriaGame',
   VONG_QUAY: 'vongQuay',
   LUCKY_WHEEL: 'luckyWheel',
-  KING_GAME: 'kingGame',
-  KING_GAME_LOP_HOC_COMPACT: 'kingGameLopHocCompact',
   STAR_WHEEL: 'starWheel',
   VIDEO_STORE: 'videoStore',
   INTERACTIVE_VIDEO: 'interactiveVideo',
@@ -624,8 +620,6 @@ function App() {
                   onBacteriaGame={() => requireLogin(() => setView('BACTERIA_GAME'))}
                   onVongQuay={() => requireLogin(() => setView('VONG_QUAY'))}
                   onLuckyWheel={() => requireLogin(() => setView('LUCKY_WHEEL'))}
-                  onKingGame={() => requireLogin(() => setView('KING_GAME'))}
-                  onKingGameLopHocCompact={() => requireLogin(() => setView('KING_GAME_LOP_HOC_COMPACT'))}
                   onStarWheel={() => requireLogin(() => setView('STAR_WHEEL'))}
                   onVideoStore={() => requireLogin(() => setView('VIDEO_STORE'))}
                   onInteractiveVideo={() => requireLogin(() => setView('INTERACTIVE_VIDEO'))}
@@ -721,14 +715,6 @@ function App() {
 
           {view === 'LUCKY_WHEEL' && (
             <LuckyWheel onBack={() => setView('DASHBOARD')} />
-          )}
-
-          {view === 'KING_GAME' && (
-            <KingGame onBack={() => setView('DASHBOARD')} />
-          )}
-
-          {view === 'KING_GAME_LOP_HOC_COMPACT' && (
-            <KingGameLopHocCompact onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'STAR_WHEEL' && (
