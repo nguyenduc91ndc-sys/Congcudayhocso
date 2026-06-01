@@ -188,13 +188,13 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
         </div>
 
         <div
-          className="p-5"
+          className="p-5 sm:p-6"
           style={{
             background: `radial-gradient(circle at 15% 0%, ${theme.primaryColor}66, transparent 34%), radial-gradient(circle at 85% 10%, ${theme.secondaryColor}55, transparent 34%), ${theme.backgroundColor}`,
           }}
         >
-          <div className={`mx-auto overflow-hidden border-4 border-white/30 bg-black shadow-2xl ${isSidebar ? 'grid max-w-4xl grid-cols-[1fr_230px]' : 'max-w-4xl'}`} style={{ borderRadius: theme.radius }}>
-            <div className="relative aspect-video bg-gradient-to-br from-slate-950 via-slate-900 to-black">
+          <div className={`mx-auto overflow-hidden border-4 border-white/30 bg-black shadow-2xl ${isSidebar ? 'grid w-full max-w-[900px] md:grid-cols-[minmax(0,1fr)_220px]' : 'w-full max-w-[820px]'}`} style={{ borderRadius: theme.radius }}>
+            <div className="relative aspect-video min-w-0 bg-gradient-to-br from-slate-950 via-slate-900 to-black">
               <div className="absolute left-4 top-4 flex items-center gap-2 rounded-full px-3 py-1 text-xs font-bold text-white" style={{ backgroundColor: theme.primaryColor }}>
                 <span className="flex h-6 w-6 items-center justify-center overflow-hidden rounded-full bg-white/20">
                   {theme.logoImage ? <img src={theme.logoImage} alt="Logo" className="h-full w-full object-contain" /> : (theme.logoText || 'GV')}
@@ -216,8 +216,8 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
                 <span className="text-xs font-bold text-white">{theme.footerRightText || '01:24'}</span>
               </div>
               <div className="absolute inset-0 flex items-center justify-center bg-black/25 p-6">
-                <div className="w-full max-w-md border p-5 shadow-2xl" style={{ ...questionSurface, borderRadius: Math.max(14, theme.radius) }}>
-                  <h4 className="mb-4 text-center text-xl font-black">Câu hỏi hiện ra trong video?</h4>
+                <div className="w-full max-w-[430px] border p-5 shadow-2xl" style={{ ...questionSurface, borderRadius: Math.max(14, theme.radius) }}>
+                  <h4 className="mb-4 text-center text-lg font-black">Câu hỏi hiện ra trong video?</h4>
                   {['A. Đáp án thứ nhất', 'B. Đáp án thứ hai', 'C. Đáp án thứ ba'].map((item, index) => (
                     <div key={item} className="mb-2 flex items-center justify-between rounded-full bg-white px-4 py-3 text-sm font-bold text-slate-700">
                       <span>{item}</span>
@@ -232,8 +232,8 @@ const ThemePreviewModal: React.FC<{ theme: VideoPlayerTheme; onClose: () => void
             </div>
 
             {isSidebar && (
-              <aside className="hidden bg-white/95 p-4 text-slate-800 md:block">
-                <div className="mx-auto mb-3 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-white p-1 text-sm font-black" style={{ color: theme.primaryColor }}>
+              <aside className="hidden min-w-0 border-l border-slate-200 bg-white/95 p-4 text-slate-800 md:block">
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center overflow-hidden rounded-full bg-white p-1 text-sm font-black shadow-md ring-1 ring-slate-200" style={{ color: theme.primaryColor }}>
                   {theme.logoImage ? <img src={theme.logoImage} alt="Logo" className="h-full w-full object-contain" /> : (theme.logoText || 'GV')}
                 </div>
                 <h4 className="mb-1 text-base font-black" style={{ color: theme.primaryColor }}>Mục lục bài học</h4>

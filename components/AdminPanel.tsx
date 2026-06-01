@@ -1115,7 +1115,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     onClick={() => setNewVideoExportLimit(10)}
                                                     className={`rounded-lg px-3 py-2 text-sm font-bold ${newVideoExportLimit === 10 ? 'bg-sky-600 text-white' : 'bg-white text-sky-700'}`}
                                                 >
-                                                    10 lượt - 80k
+                                                    10 lượt - 100k
                                                 </button>
                                             </div>
                                         )}

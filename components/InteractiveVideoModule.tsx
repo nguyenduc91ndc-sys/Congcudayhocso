@@ -58,9 +58,9 @@ const EXPORT_PACKAGES: Array<{
     {
         id: 'bundle',
         title: '10 lượt xuất',
-        description: 'Tiết kiệm hơn cho thầy cô xuất nhiều bài.',
+        description: 'Phù hợp khi thầy cô cần xuất nhiều bài giảng.',
         turns: 10,
-        amount: 80000,
+        amount: 100000,
         transferCode: '10LUOT',
         badge: 'Tiết kiệm',
     },
@@ -1162,7 +1162,7 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                             {controlPanel === 'export' && (
                                 <div className="order-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
                                 <div className="mb-3 rounded-xl bg-white/80 p-3 text-xs font-semibold leading-relaxed text-indigo-900 ring-1 ring-indigo-100">
-                                    Link YouTube online dùng miễn phí. Chỉ xuất file độc lập HTML5/SCORM mới tính lượt: 20k/1 lượt hoặc 80k/10 lượt.
+                                    Link YouTube online dùng miễn phí. Chỉ xuất file độc lập HTML5/SCORM mới tính lượt: 20k/1 lượt hoặc 100k/10 lượt.
                                 </div>
                                 <button
                                     onClick={handleExportHtml5}
