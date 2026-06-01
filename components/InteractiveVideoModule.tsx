@@ -1143,21 +1143,24 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                 {isEditing && (
                     <div className="w-80 bg-white border-l border-gray-200 p-6 flex flex-col overflow-y-auto">
                         <h3 className="text-lg font-bold text-gray-800 mb-2">Bảng điều khiển</h3>
-                        <p className="mb-5 text-xs font-medium leading-relaxed text-gray-500">
+                        <div className="mb-5 rounded-2xl border border-sky-200 bg-gradient-to-r from-sky-50 to-indigo-50 px-3 py-2.5 text-xs font-bold leading-relaxed text-sky-800 shadow-sm">
+                            <span className="mr-1.5 inline-flex h-5 w-5 items-center justify-center rounded-full bg-sky-500 text-[11px] font-black text-white">
+                                i
+                            </span>
                             Nhấn vào từng mục bên dưới để xổ xuống và chỉnh sửa chi tiết.
-                        </p>
+                        </div>
 
-                        <div className="space-y-3 flex-1">
+                        <div className="flex flex-1 flex-col gap-3">
                             <button
                                 type="button"
                                 onClick={() => setControlPanel(controlPanel === 'export' ? 'actions' : 'export')}
-                                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'export' ? 'border-indigo-200 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
+                                className={`order-5 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'export' ? 'border-indigo-200 bg-indigo-50 text-indigo-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
                             >
                                 <span className="flex items-center gap-2 text-sm font-black"><Download size={18} /> Xuất file</span>
                                 <ChevronDown size={18} className={`transition ${controlPanel === 'export' ? 'rotate-180' : ''}`} />
                             </button>
                             {controlPanel === 'export' && (
-                                <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
+                                <div className="order-6 rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
                                 <div className="mb-3 rounded-xl bg-white/80 p-3 text-xs font-semibold leading-relaxed text-indigo-900 ring-1 ring-indigo-100">
                                     Link YouTube online dùng miễn phí. Chỉ xuất file độc lập HTML5/SCORM mới tính lượt: 20k/1 lượt hoặc 80k/10 lượt.
                                 </div>
@@ -1182,13 +1185,13 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                             <button
                                 type="button"
                                 onClick={() => setControlPanel(controlPanel === 'design' ? 'actions' : 'design')}
-                                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'design' ? 'border-purple-200 bg-purple-50 text-purple-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
+                                className={`order-3 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'design' ? 'border-purple-200 bg-purple-50 text-purple-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
                             >
                                 <span className="flex items-center gap-2 text-sm font-black"><Palette size={18} /> Tùy chỉnh giao diện</span>
                                 <ChevronDown size={18} className={`transition ${controlPanel === 'design' ? 'rotate-180' : ''}`} />
                             </button>
                             {controlPanel === 'design' && (
-                                <div className="rounded-2xl border border-purple-100 bg-white p-4 shadow-sm">
+                                <div className="order-4 rounded-2xl border border-purple-100 bg-white p-4 shadow-sm">
                                     <PlayerThemeCustomizer theme={playerTheme} onChange={setPlayerTheme} />
                                 </div>
                             )}
@@ -1196,13 +1199,13 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                             <button
                                 type="button"
                                 onClick={() => setControlPanel('actions')}
-                                className={`flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'actions' ? 'border-orange-200 bg-orange-50 text-orange-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
+                                className={`order-1 flex w-full items-center justify-between rounded-2xl border px-4 py-3 text-left transition ${controlPanel === 'actions' ? 'border-orange-200 bg-orange-50 text-orange-900' : 'border-gray-200 bg-white text-gray-700 hover:bg-gray-50'}`}
                             >
                                 <span className="flex items-center gap-2 text-sm font-black"><Play size={18} /> Thao tác nhanh</span>
                                 <ChevronDown size={18} className={`transition ${controlPanel === 'actions' ? 'rotate-180' : ''}`} />
                             </button>
                             {controlPanel === 'actions' && (
-                                <div className="space-y-3 rounded-2xl border border-orange-100 bg-orange-50 p-3">
+                                <div className="order-2 space-y-3 rounded-2xl border border-orange-100 bg-orange-50 p-3">
                                     <div className="flex items-center justify-between p-3 bg-white rounded-xl">
                                         <span className="text-gray-700 font-medium">Cho phép tua video</span>
                                         <button
@@ -1224,7 +1227,11 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                                 <Plus size={20} />
                                 Thêm câu hỏi
                             </button>
+                                </div>
+                            )}
+                        </div>
 
+                        <div className="mt-5 grid gap-3 rounded-2xl border border-violet-100 bg-violet-50 p-3 shadow-sm">
                             <button
                                 onClick={handleSave}
                                 className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-indigo-500 to-purple-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
@@ -1240,8 +1247,6 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                                 <Play size={20} />
                                 Xem thử
                             </button>
-                                </div>
-                            )}
                         </div>
 
                         {/* Back Button */}
