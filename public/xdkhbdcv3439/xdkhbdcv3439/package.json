@@ -1,0 +1,18 @@
+{
+  "name": "giao-an-generator",
+  "version": "1.0.0",
+  "description": "Ứng dụng tạo kế hoạch bài dạy tự động từ ảnh bài học sử dụng Google Gemini AI",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "dependencies": {
+    "@google/genai": "^1.0.0",
+    "dotenv": "^16.4.7",
+    "express": "^4.21.2",
+    "mammoth": "^1.12.0",
+    "multer": "^1.4.5-lts.2",
+    "sharp": "^0.34.5"
+  }
+}

@@ -263,7 +263,7 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                         </div>
                         <div>
                             <h3 className="font-bold text-white text-lg">Công cụ dạy học số</h3>
-                            <p className="text-purple-300 text-sm">Phát triển bởi: Thầy Thế Đức</p>
+                            <p className="text-purple-300 text-sm">By Thầy Đức - GV yêu CN</p>
                         </div>
                     </motion.div>
 

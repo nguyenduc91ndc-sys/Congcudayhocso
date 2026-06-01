@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BookOpen, Calendar, Clock, ChevronRight, ArrowLeft } from 'lucide-react';
+import { BookOpen, Calendar, Clock, ChevronRight, ArrowLeft, ExternalLink, PlayCircle, X } from 'lucide-react';
 
 // --- Sample Blog Data ---
 export interface BlogPost {
@@ -243,6 +243,125 @@ export const blogPosts: BlogPost[] = [
 
 // --- Components ---
 
+const FEATURED_VIDEO = {
+    title: 'Biến ảnh thành video AI miễn phí cho bài giảng',
+    description: 'Hướng dẫn nhanh cách dùng AI tạo video từ ảnh, phù hợp làm tư liệu minh họa cho tiết học.',
+    youtubeUrl: 'https://youtu.be/osNFv1dRkik',
+    embedUrl: 'https://www.youtube.com/embed/osNFv1dRkik?autoplay=1&rel=0',
+    thumbnailUrl: 'https://img.youtube.com/vi/osNFv1dRkik/hqdefault.jpg',
+};
+
+const FeaturedGuideVideo: React.FC = () => {
+    const [isOpen, setIsOpen] = useState(false);
+
+    return (
+        <>
+            <motion.div
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                className="mb-8 overflow-hidden rounded-2xl border border-amber-400/25 bg-gradient-to-r from-amber-500/14 via-white/6 to-cyan-500/10 shadow-xl shadow-amber-500/5"
+            >
+                <div className="grid gap-0 md:grid-cols-[minmax(0,1.05fr)_minmax(320px,0.95fr)]">
+                    <button
+                        type="button"
+                        onClick={() => setIsOpen(true)}
+                        className="group relative aspect-video min-h-[220px] overflow-hidden bg-slate-950 text-left"
+                        title="Xem video hướng dẫn"
+                    >
+                        <img
+                            src={FEATURED_VIDEO.thumbnailUrl}
+                            alt={FEATURED_VIDEO.title}
+                            className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                        <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
+                        <div className="absolute inset-0 grid place-items-center">
+                            <span className="inline-flex h-16 w-16 items-center justify-center rounded-full bg-amber-400 text-slate-950 shadow-2xl shadow-amber-500/30 transition-transform group-hover:scale-110">
+                                <PlayCircle size={34} />
+                            </span>
+                        </div>
+                        <span className="absolute left-4 top-4 rounded-full border border-white/15 bg-black/55 px-3 py-1 text-xs font-bold text-white backdrop-blur">
+                            Video hướng dẫn nổi bật
+                        </span>
+                    </button>
+
+                    <div className="flex flex-col justify-center p-6 sm:p-7">
+                        <div className="mb-3 inline-flex w-fit items-center gap-2 rounded-full border border-amber-300/25 bg-amber-400/10 px-3 py-1 text-xs font-bold text-amber-200">
+                            <PlayCircle size={14} />
+                            Học nhanh qua video
+                        </div>
+                        <h3 className="text-2xl font-black leading-tight text-white sm:text-3xl">
+                            {FEATURED_VIDEO.title}
+                        </h3>
+                        <p className="mt-3 text-sm leading-relaxed text-slate-300 sm:text-base">
+                            {FEATURED_VIDEO.description}
+                        </p>
+                        <div className="mt-5 flex flex-wrap gap-3">
+                            <button
+                                type="button"
+                                onClick={() => setIsOpen(true)}
+                                className="inline-flex items-center gap-2 rounded-xl bg-amber-400 px-4 py-2.5 text-sm font-black text-slate-950 transition hover:bg-amber-300"
+                            >
+                                <PlayCircle size={17} />
+                                Xem hướng dẫn
+                            </button>
+                            <a
+                                href={FEATURED_VIDEO.youtubeUrl}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/8 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
+                            >
+                                <ExternalLink size={16} />
+                                Mở YouTube
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </motion.div>
+
+            <AnimatePresence>
+                {isOpen && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-50 flex items-center justify-center bg-slate-950/85 p-4 backdrop-blur-md"
+                        onClick={() => setIsOpen(false)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.96, y: 12 }}
+                            animate={{ scale: 1, y: 0 }}
+                            exit={{ scale: 0.96, y: 12 }}
+                            className="w-full max-w-5xl overflow-hidden rounded-2xl border border-white/15 bg-slate-950 shadow-2xl"
+                            onClick={(event) => event.stopPropagation()}
+                        >
+                            <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
+                                <h3 className="truncate text-sm font-bold text-white sm:text-base">{FEATURED_VIDEO.title}</h3>
+                                <button
+                                    type="button"
+                                    onClick={() => setIsOpen(false)}
+                                    className="inline-flex h-9 w-9 items-center justify-center rounded-lg bg-white/10 text-white transition hover:bg-white/20"
+                                    title="Đóng video"
+                                >
+                                    <X size={18} />
+                                </button>
+                            </div>
+                            <div className="aspect-video bg-black">
+                                <iframe
+                                    src={FEATURED_VIDEO.embedUrl}
+                                    title={FEATURED_VIDEO.title}
+                                    className="h-full w-full"
+                                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                                    allowFullScreen
+                                />
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        </>
+    );
+};
+
 const BlogList: React.FC<{ onReadPost: (post: BlogPost) => void }> = ({ onReadPost }) => {
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -360,7 +479,6 @@ const BlogReader: React.FC<{ post: BlogPost; onBack: () => void }> = ({ post, on
                         </div>
                         <div>
                             <h4 className="font-semibold text-white">Thầy Thế Đức</h4>
-                            <p className="text-sm text-slate-400">Giáo viên phát triển hệ thống Giáo Viên Công Nghệ</p>
                         </div>
                     </div>
                 </div>
@@ -392,6 +510,7 @@ export const BlogSection: React.FC = () => {
                                 <p className="text-sm text-white/60">Kinh nghiệm giảng dạy, chuyển đổi số và ứng dụng công nghệ</p>
                             </div>
                         </div>
+                        <FeaturedGuideVideo />
                         <BlogList onReadPost={setSelectedPost} />
                     </motion.div>
                 )}
