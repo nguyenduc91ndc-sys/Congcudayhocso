@@ -96,7 +96,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const [copiedId, setCopiedId] = useState<string | null>(null);
     const [showSavedCard, setShowSavedCard] = useState(false);
     const [savedLesson, setSavedLesson] = useState<VideoLesson | null>(null);
-    const [controlPanel, setControlPanel] = useState<'export' | 'design' | 'actions'>('export');
+    const [controlPanel, setControlPanel] = useState<'export' | 'design' | 'actions'>('actions');
     const [pendingExport, setPendingExport] = useState<PendingExport | null>(null);
     const [selectedExportPackageId, setSelectedExportPackageId] = useState<ExportPackageId>('single');
     const [copiedPaymentField, setCopiedPaymentField] = useState<string | null>(null);
@@ -1142,7 +1142,10 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                 {/* Right Control Panel - Only show when editing */}
                 {isEditing && (
                     <div className="w-80 bg-white border-l border-gray-200 p-6 flex flex-col overflow-y-auto">
-                        <h3 className="text-lg font-bold text-gray-800 mb-6">Bảng điều khiển</h3>
+                        <h3 className="text-lg font-bold text-gray-800 mb-2">Bảng điều khiển</h3>
+                        <p className="mb-5 text-xs font-medium leading-relaxed text-gray-500">
+                            Nhấn vào từng mục bên dưới để xổ xuống và chỉnh sửa chi tiết.
+                        </p>
 
                         <div className="space-y-3 flex-1">
                             <button
