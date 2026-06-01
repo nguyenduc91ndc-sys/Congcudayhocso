@@ -752,6 +752,7 @@ function App() {
               onDelete={handleDeleteLesson}
               onPlay={handlePlayLesson}
               onBack={() => setView('DASHBOARD')}
+              userEmail={user?.email || ''}
             />
           )}
 

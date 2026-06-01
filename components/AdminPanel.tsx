@@ -13,6 +13,7 @@ import { saveProKey, deleteProKey, subscribeToProKeys, ProKey, revokeProForEmail
 import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode, revokeBeeProForEmail } from '../utils/firebaseBeeProKeys';
 import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, generateSKKNProCode, revokeSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
 import { saveKyYeuAccessCode, deleteKyYeuAccessCode, subscribeToKyYeuAccessCodes, generateKyYeuAccessCode, setKyYeuAccessCodeActive, KyYeuAccessCode } from '../utils/firebaseKyYeuAccess';
+import { deleteVideoExportCode, generateVideoExportCode, saveVideoExportCode, setVideoExportCodeActive, subscribeToVideoExportCodes } from '../utils/firebaseVideoExportCodes';
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
 import { getAppUsageSummaries, AppUsageSummary } from '../utils/firebaseAppUsage';
 
@@ -48,6 +49,21 @@ type KyYeuAdminKey = {
     lastExportYear?: string;
 };
 
+type VideoExportAdminKey = {
+    key: string;
+    createdAt: string;
+    note: string;
+    usedBy?: string;
+    active: boolean;
+    usageCount?: number;
+    exportCount?: number;
+    exportLimit?: number;
+    lastExportAt?: string;
+    lastExportBy?: string;
+    lastExportTitle?: string;
+    lastExportType?: string;
+};
+
 const formatKyYeuDateTime = (value?: string): string => {
     if (!value) return '';
     const date = new Date(value);
@@ -64,8 +80,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [skknKeys, setSkknKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [kyYeuKeys, setKyYeuKeys] = useState<KyYeuAdminKey[]>([]);
-    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn' | 'kyyeu'>('pro');
+    const [videoExportKeys, setVideoExportKeys] = useState<VideoExportAdminKey[]>([]);
+    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn' | 'kyyeu' | 'videoExport'>('pro');
     const [newNote, setNewNote] = useState('');
+    const [newVideoExportLimit, setNewVideoExportLimit] = useState<1 | 10>(1);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
     const [showCreateForm, setShowCreateForm] = useState(false);
     const [analytics, setAnalytics] = useState<Analytics>({ totalVisits: 0, uniqueVisitors: 0, todayVisits: 0, recentVisitors: [] });
@@ -174,6 +192,24 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             setKyYeuKeys(formattedKeys);
         });
 
+        const unsubscribeVideoExportKeys = subscribeToVideoExportCodes((firebaseKeys) => {
+            const formattedKeys = firebaseKeys.map(k => ({
+                key: k.key,
+                createdAt: new Date(k.createdAt).toLocaleDateString('vi-VN'),
+                note: k.note,
+                usedBy: k.usedBy,
+                active: k.active !== false,
+                usageCount: k.usageCount || 0,
+                exportCount: k.exportCount || 0,
+                exportLimit: k.exportLimit || 0,
+                lastExportAt: k.lastExportAt,
+                lastExportBy: k.lastExportBy,
+                lastExportTitle: k.lastExportTitle,
+                lastExportType: k.lastExportType
+            }));
+            setVideoExportKeys(formattedKeys);
+        });
+
         // Subscribe to videos
         const unsubscribeVideos = subscribeToVideos(setVideos);
         // Subscribe to orders
@@ -195,6 +231,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             unsubscribeBeeKeys();
             unsubscribeSkknKeys();
             unsubscribeKyYeuKeys();
+            unsubscribeVideoExportKeys();
             unsubscribeVideos();
             unsubscribeOrders();
             unsubscribeAppVis();
@@ -450,6 +487,35 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         const action = active ? 'mở lại' : 'thu hồi';
         if (window.confirm(`Bạn muốn ${action} mã ${keyToToggle}?`)) {
             await setKyYeuAccessCodeActive(keyToToggle, active);
+        }
+    };
+
+    const handleCreateVideoExportKey = async () => {
+        const newKey = generateVideoExportCode();
+        const note = newNote || `Mã xuất video ${newVideoExportLimit} lượt`;
+        const success = await saveVideoExportCode(newKey, note, newVideoExportLimit);
+        if (!success) {
+            alert('Lỗi khi lưu mã xuất video lên Firebase!');
+            return;
+        }
+
+        setNewNote('');
+        setShowCreateForm(false);
+        navigator.clipboard.writeText(newKey);
+        setCopiedKey(newKey);
+        setTimeout(() => setCopiedKey(null), 2000);
+    };
+
+    const handleDeleteVideoExportKey = async (keyToDelete: string) => {
+        if (window.confirm('Xóa hẳn mã xuất video này? Người dùng sẽ không xuất được bằng mã này nữa.')) {
+            await deleteVideoExportCode(keyToDelete);
+        }
+    };
+
+    const handleToggleVideoExportKey = async (keyToToggle: string, active: boolean) => {
+        const action = active ? 'mở lại' : 'thu hồi';
+        if (window.confirm(`Bạn muốn ${action} mã ${keyToToggle}?`)) {
+            await setVideoExportCodeActive(keyToToggle, active);
         }
     };
 
@@ -978,6 +1044,15 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 >
                                     🎓 Kỷ Yếu ({kyYeuKeys.length})
                                 </button>
+                                <button
+                                    onClick={() => setKeySubTab('videoExport')}
+                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'videoExport'
+                                        ? 'bg-sky-500 text-white shadow-lg'
+                                        : 'bg-sky-100 text-sky-700 hover:bg-sky-200'
+                                        }`}
+                                >
+                                    Video xuất ({videoExportKeys.length})
+                                </button>
                             </div>
 
                             {/* Button tao ma */}
@@ -991,10 +1066,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         ? 'bg-gradient-to-r from-orange-500 to-amber-600'
                                         : keySubTab === 'skkn'
                                             ? 'bg-gradient-to-r from-teal-500 to-emerald-600'
-                                            : 'bg-gradient-to-r from-rose-500 to-pink-600'
+                                            : keySubTab === 'videoExport'
+                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600'
+                                                : 'bg-gradient-to-r from-rose-500 to-pink-600'
                                     }`}
                             >
-                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : 'Tạo mã KYYEU- (Kỷ Yếu)'}
+                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- (Video xuất file)' : 'Tạo mã KYYEU- (Kỷ Yếu)'}
                             </motion.button>
 
                             <AnimatePresence>
@@ -1005,8 +1082,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         exit={{ opacity: 0, height: 0 }}
                                         className="bg-white rounded-2xl p-4 mb-4 shadow-lg"
                                     >
-                                        <div className={`text-sm font-semibold mb-2 ${keySubTab === 'pro' ? 'text-purple-600' : keySubTab === 'bee' ? 'text-orange-600' : keySubTab === 'skkn' ? 'text-emerald-600' : 'text-rose-600'}`}>
-                                            {keySubTab === 'pro' ? '🔑 Tạo mã PRO- (dùng cho nhiều game)' : keySubTab === 'bee' ? '🐝 Tạo mã BEE- (chỉ dùng cho Ong về Tổ)' : keySubTab === 'skkn' ? '✍️ Tạo mã SKKN- (chỉ dùng cho Viết SKKN)' : '🎓 Tạo mã KYYEU- (thu hồi được, dùng cho app Kỷ Yếu)'}
+                                        <div className={`text-sm font-semibold mb-2 ${keySubTab === 'pro' ? 'text-purple-600' : keySubTab === 'bee' ? 'text-orange-600' : keySubTab === 'skkn' ? 'text-emerald-600' : keySubTab === 'videoExport' ? 'text-sky-600' : 'text-rose-600'}`}>
+                                            {keySubTab === 'pro' ? 'Tạo mã PRO- (dùng cho nhiều game)' : keySubTab === 'bee' ? 'Tạo mã BEE- (chỉ dùng cho Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (chỉ dùng cho Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- cho xuất file video tương tác' : 'Tạo mã KYYEU- (thu hồi được, dùng cho app Kỷ Yếu)'}
                                         </div>
                                         <input
                                             type="text"
@@ -1019,19 +1096,41 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     ? 'border-orange-200 focus:border-orange-500'
                                                     : keySubTab === 'skkn'
                                                         ? 'border-emerald-200 focus:border-emerald-500'
-                                                        : 'border-rose-200 focus:border-rose-500'
+                                                        : keySubTab === 'videoExport'
+                                                            ? 'border-sky-200 focus:border-sky-500'
+                                                            : 'border-rose-200 focus:border-rose-500'
                                                 }`}
                                         />
+                                        {keySubTab === 'videoExport' && (
+                                            <div className="mb-3 grid grid-cols-2 gap-2 rounded-xl bg-sky-50 p-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewVideoExportLimit(1)}
+                                                    className={`rounded-lg px-3 py-2 text-sm font-bold ${newVideoExportLimit === 1 ? 'bg-sky-600 text-white' : 'bg-white text-sky-700'}`}
+                                                >
+                                                    1 lượt - 20k
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setNewVideoExportLimit(10)}
+                                                    className={`rounded-lg px-3 py-2 text-sm font-bold ${newVideoExportLimit === 10 ? 'bg-sky-600 text-white' : 'bg-white text-sky-700'}`}
+                                                >
+                                                    10 lượt - 80k
+                                                </button>
+                                            </div>
+                                        )}
                                         <div className="flex gap-2">
                                             <button
-                                                onClick={keySubTab === 'pro' ? handleCreateKey : keySubTab === 'bee' ? handleCreateBeeKey : keySubTab === 'skkn' ? handleCreateSKKNKey : handleCreateKyYeuKey}
+                                                onClick={keySubTab === 'pro' ? handleCreateKey : keySubTab === 'bee' ? handleCreateBeeKey : keySubTab === 'skkn' ? handleCreateSKKNKey : keySubTab === 'videoExport' ? handleCreateVideoExportKey : handleCreateKyYeuKey}
                                                 className={`flex-1 text-white font-bold py-2 rounded-xl ${keySubTab === 'pro'
                                                     ? 'bg-purple-600 hover:bg-purple-700'
                                                     : keySubTab === 'bee'
                                                         ? 'bg-orange-500 hover:bg-orange-600'
                                                         : keySubTab === 'skkn'
                                                             ? 'bg-emerald-500 hover:bg-emerald-600'
-                                                            : 'bg-rose-500 hover:bg-rose-600'
+                                                            : keySubTab === 'videoExport'
+                                                                ? 'bg-sky-500 hover:bg-sky-600'
+                                                                : 'bg-rose-500 hover:bg-rose-600'
                                                     }`}
                                             >
                                                 Tạo & Copy
@@ -1156,6 +1255,51 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     <Copy size={18} />
                                                 </button>
                                                 <button onClick={() => handleDeleteSKKNKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200">
+                                                    <Trash2 size={18} />
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    ))
+                                ) : keySubTab === 'videoExport' ? (
+                                    videoExportKeys.length === 0 ? (
+                                        <div className="text-center text-gray-500 py-10">
+                                            <Package size={48} className="mx-auto mb-4 opacity-30" />
+                                            <p>Chưa có mã VIDX nào</p>
+                                            <p className="text-sm mt-2">Mã VIDX dùng để trừ lượt khi xuất HTML5/SCORM trong Video tương tác.</p>
+                                        </div>
+                                    ) : videoExportKeys.map((item) => (
+                                        <motion.div key={item.key} className={`rounded-2xl p-4 shadow-md flex items-center justify-between border ${item.active ? 'bg-gradient-to-r from-sky-50 to-blue-50 border-sky-200' : 'bg-gray-100 border-gray-200 opacity-75'}`}>
+                                            <div>
+                                                <div className={`font-mono text-lg font-bold flex items-center gap-2 ${item.active ? 'text-sky-700' : 'text-gray-500'}`}>
+                                                    {item.key}
+                                                    <span className={`text-xs px-2 py-0.5 rounded-full ${item.active ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                                        {item.active ? 'Đang mở' : 'Đã thu hồi'}
+                                                    </span>
+                                                    {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
+                                                </div>
+                                                <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
+                                                <div className={`mt-2 inline-flex items-center gap-2 rounded-lg px-2.5 py-1 text-xs font-bold ${(item.exportCount || 0) > 0 ? 'bg-emerald-100 text-emerald-700' : 'bg-gray-100 text-gray-500'}`}>
+                                                    <Package size={14} />
+                                                    <span>Lượt xuất: {item.exportCount || 0}/{item.exportLimit || 0}</span>
+                                                </div>
+                                                {(item.usedBy || item.lastExportBy || item.lastExportAt || item.lastExportTitle) && (
+                                                    <div className="mt-1 space-y-0.5 text-xs text-gray-600">
+                                                        {item.usedBy && <div>Gmail gắn mã: <span className="font-semibold text-gray-800">{item.usedBy}</span></div>}
+                                                        {item.lastExportBy && <div>Gmail xuất gần nhất: <span className="font-semibold text-gray-800">{item.lastExportBy}</span></div>}
+                                                        {item.lastExportTitle && <div>Bài xuất gần nhất: <span className="font-semibold text-gray-800">{item.lastExportTitle}</span></div>}
+                                                        {item.lastExportType && <div>Định dạng: <span className="font-semibold text-gray-800">{item.lastExportType}</span></div>}
+                                                        {item.lastExportAt && <div>Thời điểm xuất: <span className="font-semibold text-gray-800">{formatKyYeuDateTime(item.lastExportAt)}</span></div>}
+                                                    </div>
+                                                )}
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button onClick={() => handleCopyKey(item.key)} className="p-2 rounded-lg bg-blue-100 text-blue-600 hover:bg-blue-200" title="Copy mã">
+                                                    <Copy size={18} />
+                                                </button>
+                                                <button onClick={() => handleToggleVideoExportKey(item.key, !item.active)} className={`p-2 rounded-lg ${item.active ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`} title={item.active ? 'Thu hồi mã' : 'Mở lại mã'}>
+                                                    {item.active ? <XCircle size={18} /> : <CheckCircle size={18} />}
+                                                </button>
+                                                <button onClick={() => handleDeleteVideoExportKey(item.key)} className="p-2 rounded-lg bg-red-100 text-red-600 hover:bg-red-200" title="Xóa mã">
                                                     <Trash2 size={18} />
                                                 </button>
                                             </div>

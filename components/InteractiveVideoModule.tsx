@@ -13,6 +13,7 @@ import { cleanYouTubeUrl, isValidYouTubeUrl, extractStartTime } from '../utils/y
 import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareUtils';
 import { getLocalVideoFile, saveLocalVideoFile } from '../utils/localVideoStore';
 import PlayerThemeCustomizer from './PlayerThemeCustomizer';
+import { isValidVideoExportEmail, reserveVideoExportTurn, rollbackVideoExportTurn } from '../utils/firebaseVideoExportCodes';
 
 interface InteractiveVideoModuleProps {
     lessons: VideoLesson[];
@@ -20,17 +21,58 @@ interface InteractiveVideoModuleProps {
     onDelete: (lessonId: string) => void;
     onPlay: (lesson: VideoLesson) => void;
     onBack: () => void;
+    userEmail?: string;
 }
 
 type ModuleView = 'MY_VIDEOS' | 'CREATE_NEW' | 'EDIT';
 type ScormVersion = '1.2' | '2004';
+type PendingExport = { kind: 'html5' } | { kind: 'scorm'; version: ScormVersion };
+type ExportPackageId = 'single' | 'bundle';
+
+const EXPORT_BANK_INFO = {
+    bankName: 'BIDV',
+    branch: 'BIDV - PGD Trảng Dài',
+    accountNumber: '6790470451',
+    accountHolder: 'NGUYEN THE DUC',
+    bankCode: 'BIDV',
+    adminZalo: '0975509490',
+};
+
+const EXPORT_PACKAGES: Array<{
+    id: ExportPackageId;
+    title: string;
+    description: string;
+    turns: number;
+    amount: number;
+    transferCode: string;
+    badge?: string;
+}> = [
+    {
+        id: 'single',
+        title: '1 lượt xuất',
+        description: 'Phù hợp khi chỉ cần xuất một bài giảng độc lập.',
+        turns: 1,
+        amount: 20000,
+        transferCode: '1LUOT',
+    },
+    {
+        id: 'bundle',
+        title: '10 lượt xuất',
+        description: 'Tiết kiệm hơn cho thầy cô xuất nhiều bài.',
+        turns: 10,
+        amount: 80000,
+        transferCode: '10LUOT',
+        badge: 'Tiết kiệm',
+    },
+];
 
 const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     lessons,
     onSave,
     onDelete,
     onPlay,
-    onBack
+    onBack,
+    userEmail = ''
 }) => {
     const [currentView, setCurrentView] = useState<ModuleView>('MY_VIDEOS');
     const [editingLesson, setEditingLesson] = useState<VideoLesson | null>(null);
@@ -55,6 +97,12 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const [showSavedCard, setShowSavedCard] = useState(false);
     const [savedLesson, setSavedLesson] = useState<VideoLesson | null>(null);
     const [controlPanel, setControlPanel] = useState<'export' | 'design' | 'actions'>('export');
+    const [pendingExport, setPendingExport] = useState<PendingExport | null>(null);
+    const [selectedExportPackageId, setSelectedExportPackageId] = useState<ExportPackageId>('single');
+    const [copiedPaymentField, setCopiedPaymentField] = useState<string | null>(null);
+    const [exportCodeInput, setExportCodeInput] = useState('');
+    const [exportEmailInput, setExportEmailInput] = useState(userEmail || '');
+    const [isExportingPaidFile, setIsExportingPaidFile] = useState(false);
 
     // Reset form when switching to create new
     const resetForm = () => {
@@ -256,6 +304,51 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             .toLowerCase() || 'video-tuong-tac';
     };
 
+    const formatCurrency = (amount: number) => new Intl.NumberFormat('vi-VN').format(amount);
+
+    const cleanPaymentNotePart = (value: string) => {
+        return String(value || '')
+            .normalize('NFD')
+            .replace(/[\u0300-\u036f]/g, '')
+            .replace(/Ä‘/g, 'd')
+            .replace(/Ä/g, 'D')
+            .replace(/[^a-zA-Z0-9]+/g, ' ')
+            .trim()
+            .slice(0, 32);
+    };
+
+    const selectedExportPackage = EXPORT_PACKAGES.find(pkg => pkg.id === selectedExportPackageId) || EXPORT_PACKAGES[0];
+
+    const getExportPaymentNote = (pkg = selectedExportPackage) => {
+        const lessonNote = cleanPaymentNotePart(title || 'VIDEO');
+        return `VIDEO XUAT FILE ${pkg.transferCode}${lessonNote ? ` ${lessonNote}` : ''}`.slice(0, 80);
+    };
+
+    const getExportPaymentQrUrl = (pkg = selectedExportPackage) => {
+        const params = new URLSearchParams({
+            amount: String(pkg.amount),
+            addInfo: getExportPaymentNote(pkg),
+            accountName: EXPORT_BANK_INFO.accountHolder,
+        });
+        return `https://img.vietqr.io/image/${EXPORT_BANK_INFO.bankCode}-${EXPORT_BANK_INFO.accountNumber}-compact2.png?${params.toString()}`;
+    };
+
+    const copyPaymentText = async (text: string, field: string) => {
+        try {
+            await navigator.clipboard.writeText(text);
+            setCopiedPaymentField(field);
+            setTimeout(() => setCopiedPaymentField(null), 1800);
+        } catch {
+            alert('Khong sao chep duoc tu dong, thay co vui long copy thu cong.');
+        }
+    };
+
+    useEffect(() => {
+        if (userEmail && !exportEmailInput) {
+            setExportEmailInput(userEmail);
+        }
+    }, [userEmail, exportEmailInput]);
+
     const createExportHtml = (videoFileName: string, scormVersion?: ScormVersion) => {
         const escapeHtml = (value: string) => String(value || '')
             .replace(/&/g, '&amp;')
@@ -448,7 +541,21 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
 </manifest>`;
     };
 
-    const handleExportHtml5 = async () => {
+    const openExportPayment = (request: PendingExport) => {
+        if (!title.trim()) return alert('Vui lòng nhập tên video trước khi xuất file.');
+        if (videoSource !== 'local') {
+            alert('Dùng link YouTube online thì miễn phí. Xuất file độc lập chạy offline cần chọn nguồn "Từ máy" và thanh toán theo lượt.');
+            return;
+        }
+        setSelectedExportPackageId('single');
+        setCopiedPaymentField(null);
+        setExportEmailInput(userEmail || exportEmailInput || '');
+        setPendingExport(request);
+    };
+
+    const handleExportHtml5 = () => openExportPayment({ kind: 'html5' });
+
+    const runExportHtml5 = async () => {
         if (!title.trim()) return alert('Vui lòng nhập tên video trước khi xuất file.');
         if (videoSource !== 'local') {
             alert('Xuất HTML5 hiện hỗ trợ tốt nhất với video tải từ máy. Với YouTube, thầy cô dùng chia sẻ link trong app trước nhé.');
@@ -477,7 +584,9 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
         URL.revokeObjectURL(link.href);
     };
 
-    const handleExportScorm = async (version: ScormVersion) => {
+    const handleExportScorm = (version: ScormVersion) => openExportPayment({ kind: 'scorm', version });
+
+    const runExportScorm = async (version: ScormVersion) => {
         if (!title.trim()) return alert('Vui lòng nhập tên video trước khi xuất SCORM.');
         if (videoSource !== 'local') {
             alert('Xuất SCORM cần video tải từ máy để đóng gói vào LMS. Vui lòng chọn nguồn "Từ máy" trước khi xuất.');
@@ -506,6 +615,46 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
         link.click();
         link.remove();
         URL.revokeObjectURL(link.href);
+    };
+
+    const confirmPaidExport = async () => {
+        const request = pendingExport;
+        if (!request) return;
+
+        const code = exportCodeInput.toUpperCase().replace(/\s+/g, '').trim();
+        const email = exportEmailInput.toLowerCase().trim();
+        if (!code) {
+            alert('Vui lòng nhập mã lượt xuất VIDX- do admin cấp.');
+            return;
+        }
+        if (!isValidVideoExportEmail(email)) {
+            alert('Vui lòng nhập đúng Gmail dùng mã xuất.');
+            return;
+        }
+
+        setIsExportingPaidFile(true);
+        const exportType = request.kind === 'html5' ? 'HTML5' : `SCORM ${request.version}`;
+        const reserved = await reserveVideoExportTurn(code, email, title, exportType);
+        if (!reserved.ok) {
+            setIsExportingPaidFile(false);
+            alert(`${reserved.reason}\n\nNếu vừa chuyển khoản, vui lòng liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo} để được cấp/cộng lượt.`);
+            return;
+        }
+
+        try {
+            if (request.kind === 'html5') {
+                await runExportHtml5();
+            } else {
+                await runExportScorm(request.version);
+            }
+            setPendingExport(null);
+            alert(`Đã trừ 1 lượt xuất từ mã ${reserved.reservation.code}. Còn ${reserved.reservation.exportLimit - reserved.reservation.exportCount} lượt.`);
+        } catch (error) {
+            await rollbackVideoExportTurn(reserved.reservation);
+            alert('Xuất file bị lỗi nên hệ thống đã hoàn lại lượt. Vui lòng thử lại.');
+        } finally {
+            setIsExportingPaidFile(false);
+        }
     };
 
     const handleUrlChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -573,7 +722,7 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                 </button>
 
                 <button
-                    onClick={() => window.open('https://zalo.me/0975509490', '_blank')}
+                    onClick={() => window.open('https://youtu.be/bxSN16ySCgw', '_blank')}
                     className="flex items-center gap-3 w-full px-4 py-3 bg-gradient-to-r from-yellow-400 to-amber-500 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
                 >
                     <HelpCircle size={20} />
@@ -1006,6 +1155,9 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                             </button>
                             {controlPanel === 'export' && (
                                 <div className="rounded-2xl border border-indigo-100 bg-indigo-50 p-3">
+                                <div className="mb-3 rounded-xl bg-white/80 p-3 text-xs font-semibold leading-relaxed text-indigo-900 ring-1 ring-indigo-100">
+                                    Link YouTube online dùng miễn phí. Chỉ xuất file độc lập HTML5/SCORM mới tính lượt: 20k/1 lượt hoặc 80k/10 lượt.
+                                </div>
                                 <button
                                     onClick={handleExportHtml5}
                                     className="mb-2 w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold rounded-xl shadow-lg hover:shadow-xl transition-all hover:scale-105"
@@ -1214,6 +1366,185 @@ document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.class
                                     className="py-3 px-4 rounded-xl font-bold text-white bg-gradient-to-r from-gray-500 to-slate-600 shadow-md hover:shadow-lg transition-transform active:scale-95 flex items-center justify-center gap-2"
                                 >
                                     <Home size={16} /> Đóng
+                                </button>
+                            </div>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Export Payment Modal */}
+            <AnimatePresence>
+                {pendingExport && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+                        onClick={() => setPendingExport(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.94, opacity: 0, y: 18 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.94, opacity: 0, y: 18 }}
+                            className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+                            onClick={e => e.stopPropagation()}
+                        >
+                            <div className="flex items-start justify-between gap-4 bg-gradient-to-r from-indigo-600 to-sky-600 px-6 py-5 text-white">
+                                <div>
+                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-white/75">Thanh toán xuất file</p>
+                                    <h3 className="mt-1 text-2xl font-black">Chọn gói lượt xuất độc lập</h3>
+                                    <p className="mt-2 max-w-2xl text-sm font-medium text-white/85">
+                                        Dùng link YouTube online miễn phí. Chỉ thanh toán khi thầy cô xuất file HTML5/SCORM để chạy độc lập.
+                                    </p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingExport(null)}
+                                    className="rounded-full bg-white/15 p-2 transition hover:bg-white/25"
+                                    aria-label="Đóng"
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <div className="grid gap-5 p-6 lg:grid-cols-[1fr_260px]">
+                                <div className="space-y-4">
+                                    <div className="grid gap-3 sm:grid-cols-2">
+                                        {EXPORT_PACKAGES.map(pkg => (
+                                            <button
+                                                key={pkg.id}
+                                                type="button"
+                                                onClick={() => setSelectedExportPackageId(pkg.id)}
+                                                className={`relative rounded-2xl border p-4 text-left transition ${selectedExportPackageId === pkg.id
+                                                    ? 'border-indigo-500 bg-indigo-50 shadow-md ring-2 ring-indigo-100'
+                                                    : 'border-slate-200 bg-white hover:border-indigo-200 hover:bg-slate-50'
+                                                    }`}
+                                            >
+                                                {pkg.badge && (
+                                                    <span className="absolute right-3 top-3 rounded-full bg-emerald-500 px-2 py-1 text-[11px] font-black text-white">
+                                                        {pkg.badge}
+                                                    </span>
+                                                )}
+                                                <span className="block text-base font-black text-slate-900">{pkg.title}</span>
+                                                <span className="mt-1 block text-sm font-medium text-slate-500">{pkg.description}</span>
+                                                <span className="mt-4 block text-2xl font-black text-indigo-700">{formatCurrency(pkg.amount)}đ</span>
+                                                <span className="mt-1 block text-xs font-bold text-slate-500">{formatCurrency(Math.round(pkg.amount / pkg.turns))}đ/lượt</span>
+                                            </button>
+                                        ))}
+                                    </div>
+
+                                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                                        <p className="font-black">Ghi chú</p>
+                                        <p className="mt-1">
+                                            Sau khi chuyển khoản, admin sẽ cấp mã VIDX- có đúng số lượt theo gói. Mỗi lần xuất thành công hệ thống tự trừ 1 lượt.
+                                        </p>
+                                    </div>
+
+                                    <div className="grid gap-3 rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+                                        <div>
+                                            <label className="mb-1 block text-xs font-black uppercase text-indigo-700">Gmail dùng mã</label>
+                                            <input
+                                                type="email"
+                                                value={exportEmailInput}
+                                                onChange={e => setExportEmailInput(e.target.value)}
+                                                className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 text-sm font-bold text-slate-800 outline-none focus:border-indigo-400"
+                                                placeholder="email@gmail.com"
+                                            />
+                                        </div>
+                                        <div>
+                                            <label className="mb-1 block text-xs font-black uppercase text-indigo-700">Mã lượt xuất</label>
+                                            <input
+                                                type="text"
+                                                value={exportCodeInput}
+                                                onChange={e => setExportCodeInput(e.target.value.toUpperCase())}
+                                                className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 font-mono text-sm font-black text-slate-900 outline-none focus:border-indigo-400"
+                                                placeholder="VIDX-ABCDEFGH"
+                                            />
+                                            <p className="mt-1 text-xs font-semibold text-indigo-700">Gói 1 lượt và 10 lượt đều dùng 1 mã riêng, hệ thống tự đếm số lượt còn lại.</p>
+                                        </div>
+                                    </div>
+
+                                    <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs font-bold uppercase text-slate-500">Số tài khoản</p>
+                                                <p className="font-mono text-base font-black text-slate-900">{EXPORT_BANK_INFO.accountNumber}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyPaymentText(EXPORT_BANK_INFO.accountNumber, 'account')}
+                                                className="rounded-xl bg-white p-2 text-slate-500 shadow-sm transition hover:text-indigo-600"
+                                                aria-label="Sao chép số tài khoản"
+                                            >
+                                                {copiedPaymentField === 'account' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Copy size={18} />}
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div>
+                                                <p className="text-xs font-bold uppercase text-slate-500">Số tiền</p>
+                                                <p className="text-base font-black text-orange-600">{formatCurrency(selectedExportPackage.amount)}đ</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyPaymentText(String(selectedExportPackage.amount), 'amount')}
+                                                className="rounded-xl bg-white p-2 text-slate-500 shadow-sm transition hover:text-indigo-600"
+                                                aria-label="Sao chép số tiền"
+                                            >
+                                                {copiedPaymentField === 'amount' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Copy size={18} />}
+                                            </button>
+                                        </div>
+                                        <div className="flex items-center justify-between gap-3">
+                                            <div className="min-w-0">
+                                                <p className="text-xs font-bold uppercase text-slate-500">Nội dung chuyển khoản</p>
+                                                <p className="break-words font-mono text-sm font-black text-slate-900">{getExportPaymentNote()}</p>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => copyPaymentText(getExportPaymentNote(), 'note')}
+                                                className="rounded-xl bg-white p-2 text-slate-500 shadow-sm transition hover:text-indigo-600"
+                                                aria-label="Sao chép nội dung chuyển khoản"
+                                            >
+                                                {copiedPaymentField === 'note' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Copy size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+                                    <img
+                                        src={getExportPaymentQrUrl()}
+                                        alt="QR thanh toán VietQR"
+                                        className="h-56 w-56 rounded-xl object-contain"
+                                    />
+                                    <p className="mt-3 text-sm font-black text-slate-900">{EXPORT_BANK_INFO.accountHolder}</p>
+                                    <p className="text-xs font-semibold text-slate-500">{EXPORT_BANK_INFO.bankName} - {EXPORT_BANK_INFO.branch}</p>
+                                    <a
+                                        href={`https://zalo.me/${EXPORT_BANK_INFO.adminZalo}`}
+                                        target="_blank"
+                                        rel="noopener noreferrer"
+                                        className="mt-4 w-full rounded-xl bg-sky-50 px-4 py-2 text-sm font-black text-sky-700 transition hover:bg-sky-100"
+                                    >
+                                        Zalo admin {EXPORT_BANK_INFO.adminZalo}
+                                    </a>
+                                </div>
+                            </div>
+
+                            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
+                                <button
+                                    type="button"
+                                    onClick={() => setPendingExport(null)}
+                                    className="rounded-xl bg-white px-5 py-3 text-sm font-black text-slate-600 shadow-sm transition hover:bg-slate-100"
+                                >
+                                    Để sau
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={confirmPaidExport}
+                                    disabled={isExportingPaidFile}
+                                    className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
+                                >
+                                    {isExportingPaidFile ? 'Đang kiểm tra mã...' : `Kiểm tra mã và xuất ${pendingExport.kind === 'scorm' ? `SCORM ${pendingExport.version}` : 'HTML5'}`}
                                 </button>
                             </div>
                         </motion.div>
