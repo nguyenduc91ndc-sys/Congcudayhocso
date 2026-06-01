@@ -20,10 +20,117 @@ const templates = [
     { id: 'tech', name: 'Công nghệ', bg: '#eef2ff', fg: '#4338ca', accent: '#818cf8' },
 ];
 
+type QrTemplate = typeof templates[number];
+
+const qrFrames = [
+    { id: 'soft', name: 'Bo tròn kẹo', hint: 'Mềm, sạch, dễ in' },
+    { id: 'stars', name: 'Sao vui', hint: 'Nổi bật cho lớp học' },
+    { id: 'flowers', name: 'Hoa điểm 10', hint: 'Dễ thương, tiểu học' },
+    { id: 'notebook', name: 'Vở ô ly', hint: 'Gọn như phiếu học tập' },
+    { id: 'rainbow', name: 'Cầu vồng', hint: 'Nhiều màu, bắt mắt' },
+] as const;
+
+type QrFrameId = typeof qrFrames[number]['id'];
+
 const normalizeUrl = (url: string) => {
     const trimmed = url.trim();
     if (!trimmed) return '';
     return /^https?:\/\//i.test(trimmed) ? trimmed : `https://${trimmed}`;
+};
+
+const drawStar = (ctx: CanvasRenderingContext2D, cx: number, cy: number, outer: number, inner: number, color: string) => {
+    ctx.save();
+    ctx.beginPath();
+    for (let i = 0; i < 10; i += 1) {
+        const angle = (Math.PI / 5) * i - Math.PI / 2;
+        const radius = i % 2 === 0 ? outer : inner;
+        const x = cx + Math.cos(angle) * radius;
+        const y = cy + Math.sin(angle) * radius;
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+    }
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+};
+
+const drawFlower = (ctx: CanvasRenderingContext2D, cx: number, cy: number, color: string, center: string) => {
+    ctx.save();
+    ctx.fillStyle = color;
+    for (let i = 0; i < 6; i += 1) {
+        const angle = (Math.PI / 3) * i;
+        ctx.beginPath();
+        ctx.arc(cx + Math.cos(angle) * 18, cy + Math.sin(angle) * 18, 14, 0, Math.PI * 2);
+        ctx.fill();
+    }
+    ctx.fillStyle = center;
+    ctx.beginPath();
+    ctx.arc(cx, cy, 13, 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
+};
+
+const drawFrameOnCanvas = (ctx: CanvasRenderingContext2D, frameId: QrFrameId, template: QrTemplate) => {
+    ctx.save();
+    ctx.lineCap = 'round';
+    ctx.lineJoin = 'round';
+
+    if (frameId === 'notebook') {
+        ctx.strokeStyle = '#dbeafe';
+        ctx.lineWidth = 3;
+        for (let y = 140; y <= 760; y += 48) {
+            ctx.beginPath();
+            ctx.moveTo(122, y);
+            ctx.lineTo(778, y);
+            ctx.stroke();
+        }
+        ctx.strokeStyle = '#fb7185';
+        ctx.lineWidth = 5;
+        ctx.beginPath();
+        ctx.moveTo(150, 118);
+        ctx.lineTo(150, 782);
+        ctx.stroke();
+    }
+
+    if (frameId === 'rainbow') {
+        ['#22c55e', template.accent, template.fg, '#f59e0b'].forEach((color, index) => {
+            ctx.strokeStyle = color;
+            ctx.lineWidth = 7;
+            ctx.beginPath();
+            ctx.roundRect(86 + index * 17, 86 + index * 17, 728 - index * 34, 728 - index * 34, 48 - index * 5);
+            ctx.stroke();
+        });
+    } else {
+        ctx.strokeStyle = template.accent;
+        ctx.lineWidth = frameId === 'soft' ? 18 : 12;
+        ctx.beginPath();
+        ctx.roundRect(88, 88, 724, 724, 58);
+        ctx.stroke();
+    }
+
+    if (frameId === 'soft') {
+        ctx.fillStyle = template.fg;
+        [[128, 128], [772, 128], [128, 772], [772, 772]].forEach(([x, y]) => {
+            ctx.beginPath();
+            ctx.arc(x, y, 18, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
+
+    if (frameId === 'stars') {
+        [[145, 145], [755, 145], [145, 755], [755, 755], [450, 115], [450, 785], [115, 450], [785, 450]].forEach(([x, y], index) => {
+            drawStar(ctx, x, y, index % 2 === 0 ? 22 : 17, index % 2 === 0 ? 9 : 7, index % 2 === 0 ? template.fg : template.accent);
+        });
+    }
+
+    if (frameId === 'flowers') {
+        [[145, 145], [755, 145], [145, 755], [755, 755]].forEach(([x, y], index) => {
+            drawFlower(ctx, x, y, index % 2 === 0 ? template.accent : '#fdba74', template.fg);
+        });
+    }
+
+    ctx.restore();
 };
 
 const QrGenerator: React.FC<QrGeneratorProps> = ({ user, onBack }) => {
@@ -31,6 +138,7 @@ const QrGenerator: React.FC<QrGeneratorProps> = ({ user, onBack }) => {
     const [title, setTitle] = useState('Mã QR của tôi');
     const [targetUrl, setTargetUrl] = useState('');
     const [templateId, setTemplateId] = useState('pastel');
+    const [frameId, setFrameId] = useState<QrFrameId>('soft');
     const [qrDataUrl, setQrDataUrl] = useState('');
     const [dynamicLinks, setDynamicLinks] = useState<QrLink[]>([]);
     const [selectedDynamicId, setSelectedDynamicId] = useState<string | null>(null);
@@ -38,6 +146,7 @@ const QrGenerator: React.FC<QrGeneratorProps> = ({ user, onBack }) => {
     const [message, setMessage] = useState('');
 
     const template = templates.find(item => item.id === templateId) || templates[0];
+    const frame = qrFrames.find(item => item.id === frameId) || qrFrames[0];
     const selectedDynamic = dynamicLinks.find(item => item.id === selectedDynamicId) || null;
     const qrValue = useMemo(() => {
         if (mode === 'dynamic' && selectedDynamic) {
@@ -138,31 +247,27 @@ const QrGenerator: React.FC<QrGeneratorProps> = ({ user, onBack }) => {
 
         const canvas = document.createElement('canvas');
         canvas.width = 900;
-        canvas.height = 1100;
+        canvas.height = 900;
         const ctx = canvas.getContext('2d');
         if (!ctx) return;
 
         ctx.fillStyle = template.bg;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
-        ctx.fillStyle = template.accent;
-        ctx.fillRect(0, 0, canvas.width, 26);
-
-        ctx.fillStyle = template.fg;
-        ctx.font = 'bold 42px Arial';
-        ctx.textAlign = 'center';
-        ctx.fillText(title || 'Mã QR', canvas.width / 2, 105);
 
         const qrImage = new Image();
         qrImage.onload = () => {
             ctx.fillStyle = '#ffffff';
             ctx.beginPath();
-            ctx.roundRect(160, 160, 580, 580, 36);
+            ctx.roundRect(62, 62, 776, 776, 64);
+            ctx.fill();
+
+            drawFrameOnCanvas(ctx, frameId, template);
+
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(174, 174, 552, 552, 34);
             ctx.fill();
             ctx.drawImage(qrImage, 190, 190, 520, 520);
-
-            ctx.fillStyle = '#334155';
-            ctx.font = '28px Arial';
-            ctx.fillText(mode === 'dynamic' ? 'QR động - có thể đổi link sau' : 'QR tĩnh', canvas.width / 2, 810);
 
             const link = document.createElement('a');
             link.download = `${(title || 'qr').replace(/[^\w-]+/g, '-').toLowerCase()}.png`;
@@ -203,7 +308,7 @@ const QrGenerator: React.FC<QrGeneratorProps> = ({ user, onBack }) => {
 
                         <div className="grid gap-4 md:grid-cols-2">
                             <label className="block">
-                                <span className="text-sm font-bold text-slate-700">Tiêu đề</span>
+                                <span className="text-sm font-bold text-slate-700">Tên lưu QR</span>
                                 <input value={title} onChange={e => setTitle(e.target.value)} className="mt-1 w-full rounded-xl border border-slate-200 px-3 py-2 outline-none focus:border-sky-400" />
                             </label>
                             <label className="block">
@@ -224,6 +329,22 @@ const QrGenerator: React.FC<QrGeneratorProps> = ({ user, onBack }) => {
                                     >
                                         <div className="mb-2 h-5 w-16 rounded-full" style={{ background: item.accent }} />
                                         <div className="font-bold" style={{ color: item.fg }}>{item.name}</div>
+                                    </button>
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="mt-5">
+                            <span className="text-sm font-bold text-slate-700">Khung viền tiểu học</span>
+                            <div className="mt-2 grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3">
+                                {qrFrames.map(item => (
+                                    <button
+                                        key={item.id}
+                                        onClick={() => setFrameId(item.id)}
+                                        className={`rounded-xl border bg-white p-3 text-left transition ${frameId === item.id ? 'border-slate-900 ring-2 ring-slate-900/10' : 'border-slate-200 hover:border-slate-400'}`}
+                                    >
+                                        <div className="font-bold text-slate-900">{item.name}</div>
+                                        <div className="text-xs font-semibold text-slate-500">{item.hint}</div>
                                     </button>
                                 ))}
                             </div>
@@ -277,17 +398,56 @@ const QrGenerator: React.FC<QrGeneratorProps> = ({ user, onBack }) => {
                 </section>
 
                 <aside className="lg:sticky lg:top-24 lg:self-start">
-                    <div className="rounded-3xl p-5 shadow-xl ring-1 ring-black/5" style={{ background: template.bg }}>
-                        <div className="rounded-2xl bg-white/80 p-4 text-center">
-                            <h2 className="mb-4 text-xl font-black" style={{ color: template.fg }}>{title || 'Mã QR'}</h2>
+                    <div className="rounded-3xl p-5 shadow-xl ring-1 ring-black/5" style={{ background: `linear-gradient(135deg, ${template.bg}, #ffffff)` }}>
+                        <div
+                            className="relative mx-auto aspect-square w-full max-w-[370px] overflow-hidden rounded-[2rem] bg-white p-6 text-center shadow-lg"
+                            aria-label={`Xem trước QR với khung ${frame.name}`}
+                            style={{ border: `10px solid ${frameId === 'rainbow' ? template.fg : template.accent}` }}
+                        >
+                            {frameId === 'notebook' && (
+                                <div className="pointer-events-none absolute inset-0 opacity-80">
+                                    <span className="absolute left-12 top-0 h-full w-1 rounded-full bg-rose-300" />
+                                    {[18, 30, 42, 54, 66, 78].map(item => (
+                                        <span key={item} className="absolute left-6 right-6 h-px bg-sky-200" style={{ top: `${item}%` }} />
+                                    ))}
+                                </div>
+                            )}
+                            {frameId === 'rainbow' && (
+                                <div className="pointer-events-none absolute inset-3 rounded-[1.5rem] border-[6px] border-emerald-400 shadow-[inset_0_0_0_6px_#f59e0b]" />
+                            )}
+                            {frameId === 'stars' && (
+                                <>
+                                    <span className="pointer-events-none absolute left-5 top-5 text-3xl" style={{ color: template.fg }}>★</span>
+                                    <span className="pointer-events-none absolute right-6 top-8 text-2xl" style={{ color: template.accent }}>★</span>
+                                    <span className="pointer-events-none absolute bottom-6 left-8 text-2xl" style={{ color: template.accent }}>★</span>
+                                    <span className="pointer-events-none absolute bottom-5 right-5 text-3xl" style={{ color: template.fg }}>★</span>
+                                </>
+                            )}
+                            {frameId === 'flowers' && (
+                                <>
+                                    <span className="pointer-events-none absolute left-4 top-4 text-3xl">🌸</span>
+                                    <span className="pointer-events-none absolute right-4 top-5 text-3xl">🌼</span>
+                                    <span className="pointer-events-none absolute bottom-4 left-5 text-3xl">🌼</span>
+                                    <span className="pointer-events-none absolute bottom-4 right-4 text-3xl">🌸</span>
+                                </>
+                            )}
+                            {frameId === 'soft' && (
+                                <>
+                                    <span className="pointer-events-none absolute left-7 top-7 h-5 w-5 rounded-full" style={{ background: template.fg }} />
+                                    <span className="pointer-events-none absolute right-7 top-7 h-5 w-5 rounded-full" style={{ background: template.fg }} />
+                                    <span className="pointer-events-none absolute bottom-7 left-7 h-5 w-5 rounded-full" style={{ background: template.fg }} />
+                                    <span className="pointer-events-none absolute bottom-7 right-7 h-5 w-5 rounded-full" style={{ background: template.fg }} />
+                                </>
+                            )}
+                            <div className="relative z-10 flex h-full items-center justify-center rounded-[1.5rem] bg-white p-3 shadow-inner">
                             {qrDataUrl ? (
-                                <img src={qrDataUrl} alt="QR preview" className="mx-auto w-full max-w-[320px] rounded-2xl" />
+                                <img src={qrDataUrl} alt="QR preview" className="w-full rounded-2xl" />
                             ) : (
-                                <div className="mx-auto flex aspect-square max-w-[320px] items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 text-slate-400">
+                                <div className="flex aspect-square w-full items-center justify-center rounded-2xl border-2 border-dashed border-slate-300 text-slate-400">
                                     Nhập link để xem QR
                                 </div>
                             )}
-                            <p className="mt-4 text-sm font-semibold text-slate-600">{mode === 'dynamic' ? 'QR động - có thể đổi link sau' : 'QR tĩnh'}</p>
+                            </div>
                         </div>
                     </div>
                 </aside>
