@@ -44,13 +44,26 @@ export const generateVideoExportCode = (): string => {
 };
 
 const VISUALLY_SIMILAR_CHARS: Record<string, string[]> = {
+    '0': ['O'],
+    '1': ['I', 'L'],
     '2': ['Z'],
     '5': ['S'],
     '8': ['B'],
     B: ['8'],
+    I: ['1', 'L'],
+    L: ['1', 'I'],
+    O: ['0'],
     S: ['5'],
     Z: ['2'],
 };
+
+const getCodeFingerprint = (code: string): string =>
+    normalizeCode(code)
+        .replace(/[5S]/g, 'S')
+        .replace(/[0O]/g, 'O')
+        .replace(/[8B]/g, 'B')
+        .replace(/[2Z]/g, 'Z')
+        .replace(/[1IL]/g, 'I');
 
 const getVisualCodeVariants = (code: string): string[] => {
     const variants = new Set<string>();
@@ -87,7 +100,20 @@ const resolveExistingVideoExportCode = async (normalizedCode: string): Promise<s
         if (matchedCodes.length > 1) break;
     }
 
-    return matchedCodes.length === 1 ? matchedCodes[0] : null;
+    if (matchedCodes.length === 1) return matchedCodes[0];
+
+    const allCodesSnapshot = await get(ref(database, VIDEO_EXPORT_CODES_REF));
+    if (!allCodesSnapshot.exists()) return null;
+
+    const inputFingerprint = getCodeFingerprint(normalizedCode);
+    const visualMatches = Object.entries(allCodesSnapshot.val() || {})
+        .map(([pathKey, value]) => {
+            const data = value as Partial<VideoExportCode>;
+            return normalizeCode(data.key || pathKey);
+        })
+        .filter(existingCode => getCodeFingerprint(existingCode) === inputFingerprint);
+
+    return visualMatches.length === 1 ? visualMatches[0] : null;
 };
 
 export const saveVideoExportCode = async (key: string, note: string, exportLimit: number): Promise<boolean> => {
