@@ -28,7 +28,13 @@ export interface VideoExportReservation {
     exportLimit: number;
 }
 
-const normalizeCode = (code: string): string => code.toUpperCase().replace(/\s+/g, '').trim();
+const normalizeCode = (code: string): string =>
+    code
+        .normalize('NFKC')
+        .toUpperCase()
+        .replace(/[‐‑‒–—―−]/g, '-')
+        .replace(/[^A-Z0-9-]/g, '')
+        .trim();
 const normalizeEmail = (email: string): string => email.toLowerCase().trim();
 
 export const isValidVideoExportEmail = (email: string): boolean =>
