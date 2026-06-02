@@ -1,5 +1,5 @@
 import { ref, remove, runTransaction, set, onValue, get } from 'firebase/database';
-import { database } from './firebaseConfig';
+import { database, firebaseConfig } from './firebaseConfig';
 
 const VIDEO_EXPORT_CODES_REF = 'interactive_video_export_codes';
 
@@ -33,6 +33,7 @@ const normalizeCode = (code: string): string =>
         .normalize('NFKC')
         .toUpperCase()
         .replace(/[‐‑‒–—―−]/g, '-')
+        .replace(/[\u2010\u2011\u2012\u2013\u2014\u2015\u2212]/g, '-')
         .replace(/[^A-Z0-9-]/g, '')
         .trim();
 const normalizeEmail = (email: string): string => email.toLowerCase().trim();
@@ -72,6 +73,24 @@ const getCodeFingerprint = (code: string): string =>
         .replace(/[2Z]/g, 'Z')
         .replace(/[1IL]/g, 'I');
 
+const getVideoExportCodeUrl = (code: string): string =>
+    `${firebaseConfig.databaseURL}/${VIDEO_EXPORT_CODES_REF}/${encodeURIComponent(code)}.json`;
+
+const getVideoExportCodesUrl = (): string =>
+    `${firebaseConfig.databaseURL}/${VIDEO_EXPORT_CODES_REF}.json`;
+
+const fetchVideoExportCode = async (code: string): Promise<VideoExportCode | null> => {
+    const response = await fetch(getVideoExportCodeUrl(code));
+    if (!response.ok) return null;
+    return (await response.json()) || null;
+};
+
+const fetchAllVideoExportCodes = async (): Promise<Record<string, VideoExportCode>> => {
+    const response = await fetch(getVideoExportCodesUrl());
+    if (!response.ok) return {};
+    return (await response.json()) || {};
+};
+
 const getVisualCodeVariants = (code: string): string[] => {
     const variants = new Set<string>();
     const queue = [code];
@@ -100,20 +119,23 @@ const resolveExistingVideoExportCode = async (normalizedCode: string): Promise<s
     const exactSnapshot = await get(ref(database, `${VIDEO_EXPORT_CODES_REF}/${normalizedCode}`));
     if (exactSnapshot.exists()) return normalizedCode;
 
+    if (await fetchVideoExportCode(normalizedCode)) return normalizedCode;
+
     const matchedCodes: string[] = [];
     for (const candidate of getVisualCodeVariants(normalizedCode)) {
         const snapshot = await get(ref(database, `${VIDEO_EXPORT_CODES_REF}/${candidate}`));
-        if (snapshot.exists()) matchedCodes.push(candidate);
+        if (snapshot.exists() || await fetchVideoExportCode(candidate)) matchedCodes.push(candidate);
         if (matchedCodes.length > 1) break;
     }
 
     if (matchedCodes.length === 1) return matchedCodes[0];
 
     const allCodesSnapshot = await get(ref(database, VIDEO_EXPORT_CODES_REF));
-    if (!allCodesSnapshot.exists()) return null;
+    const sdkCodes = allCodesSnapshot.exists() ? allCodesSnapshot.val() : {};
+    const restCodes = await fetchAllVideoExportCodes();
 
     const inputFingerprint = getCodeFingerprint(normalizedCode);
-    const visualMatches = Object.entries(allCodesSnapshot.val() || {})
+    const visualMatches = Object.entries({ ...restCodes, ...sdkCodes })
         .map(([pathKey, value]) => {
             const data = value as Partial<VideoExportCode>;
             return normalizeCode(data.key || pathKey);
@@ -192,6 +214,67 @@ const makeReservationId = () => {
     return `${Date.now().toString(36)}-${Array.from(bytes, b => b.toString(16).padStart(2, '0')).join('')}`;
 };
 
+const reserveVideoExportTurnWithRest = async (
+    resolvedCode: string,
+    normalizedEmail: string,
+    title: string,
+    exportType: string,
+    reservationId: string,
+    now: string
+): Promise<{ ok: true; reservation: VideoExportReservation } | { ok: false; reason: string }> => {
+    const codeData = await fetchVideoExportCode(resolvedCode);
+    if (!codeData) {
+        return { ok: false, reason: 'Mã không tồn tại hoặc đã nhập sai.' };
+    }
+
+    if (codeData.active === false) {
+        return { ok: false, reason: 'Mã này đã bị thu hồi. Vui lòng liên hệ admin.' };
+    }
+
+    const assignedEmail = codeData.usedBy ? normalizeEmail(codeData.usedBy) : '';
+    if (assignedEmail && assignedEmail !== normalizedEmail) {
+        return { ok: false, reason: 'Mã này đã được gắn với Gmail khác. Mỗi mã chỉ dùng cho 1 Gmail.' };
+    }
+
+    const exportLimit = Math.max(1, Number(codeData.exportLimit) || 1);
+    const exportCount = Math.max(0, Number(codeData.exportCount) || 0);
+    if (exportCount >= exportLimit) {
+        return { ok: false, reason: `Mã ${resolvedCode} đã hết lượt xuất (${exportCount}/${exportLimit}). Vui lòng mua thêm gói lượt.` };
+    }
+
+    const reservation = {
+        code: resolvedCode,
+        email: normalizedEmail,
+        reservationId,
+        exportCount: exportCount + 1,
+        exportLimit,
+    };
+
+    const response = await fetch(getVideoExportCodeUrl(resolvedCode), {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            key: codeData.key || resolvedCode,
+            usedBy: assignedEmail || normalizedEmail,
+            usedAt: codeData.usedAt || now,
+            usageCount: assignedEmail === normalizedEmail ? (Number(codeData.usageCount) || 1) : (Number(codeData.usageCount) || 0) + 1,
+            exportCount: exportCount + 1,
+            exportLimit,
+            lastExportAt: now,
+            lastExportBy: normalizedEmail,
+            lastExportTitle: title || '',
+            lastExportType: exportType,
+            lastExportReservationId: reservationId,
+        }),
+    });
+
+    if (!response.ok) {
+        return { ok: false, reason: 'Không giữ được lượt xuất. Vui lòng thử lại.' };
+    }
+
+    return { ok: true, reservation };
+};
+
 export const reserveVideoExportTurn = async (
     code: string,
     email: string,
@@ -268,12 +351,22 @@ export const reserveVideoExportTurn = async (
         }, { applyLocally: false });
 
         if (!result.committed || !reservation) {
+            const fallbackReservation = await reserveVideoExportTurnWithRest(resolvedCode, normalizedEmail, title, exportType, reservationId, now);
+            if (fallbackReservation.ok) return fallbackReservation;
             return { ok: false, reason: failureReason || 'Không giữ được lượt xuất. Vui lòng thử lại.' };
         }
 
         return { ok: true, reservation };
     } catch (error) {
         console.error('Error reserving video export turn:', error);
+        try {
+            const resolvedCode = await resolveExistingVideoExportCode(normalizedCode);
+            if (resolvedCode) {
+                return await reserveVideoExportTurnWithRest(resolvedCode, normalizedEmail, title, exportType, reservationId, now);
+            }
+        } catch (fallbackError) {
+            console.error('Error reserving video export turn with REST fallback:', fallbackError);
+        }
         return { ok: false, reason: 'Không kiểm tra được mã xuất. Vui lòng kiểm tra mạng hoặc liên hệ admin.' };
     }
 };
