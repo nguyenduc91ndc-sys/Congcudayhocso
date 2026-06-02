@@ -1,4 +1,4 @@
-import { ref, remove, runTransaction, set, onValue } from 'firebase/database';
+import { ref, remove, runTransaction, set, onValue, get } from 'firebase/database';
 import { database } from './firebaseConfig';
 
 const VIDEO_EXPORT_CODES_REF = 'interactive_video_export_codes';
@@ -35,12 +35,59 @@ export const isValidVideoExportEmail = (email: string): boolean =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(email));
 
 export const generateVideoExportCode = (): string => {
-    const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+    const chars = 'ACDEFGHJKMNPQRTUVWXY34679';
     let code = 'VIDX-';
     for (let i = 0; i < 8; i += 1) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
     }
     return code;
+};
+
+const VISUALLY_SIMILAR_CHARS: Record<string, string[]> = {
+    '2': ['Z'],
+    '5': ['S'],
+    '8': ['B'],
+    B: ['8'],
+    S: ['5'],
+    Z: ['2'],
+};
+
+const getVisualCodeVariants = (code: string): string[] => {
+    const variants = new Set<string>();
+    const queue = [code];
+
+    for (let i = 0; i < code.length; i += 1) {
+        const next: string[] = [];
+        for (const current of queue) {
+            const replacements = VISUALLY_SIMILAR_CHARS[current[i]] || [];
+            for (const replacement of replacements) {
+                const chars = current.split('');
+                chars[i] = replacement;
+                const variant = chars.join('');
+                if (variant !== code) {
+                    variants.add(variant);
+                    next.push(variant);
+                }
+            }
+        }
+        queue.push(...next);
+    }
+
+    return Array.from(variants);
+};
+
+const resolveExistingVideoExportCode = async (normalizedCode: string): Promise<string | null> => {
+    const exactSnapshot = await get(ref(database, `${VIDEO_EXPORT_CODES_REF}/${normalizedCode}`));
+    if (exactSnapshot.exists()) return normalizedCode;
+
+    const matchedCodes: string[] = [];
+    for (const candidate of getVisualCodeVariants(normalizedCode)) {
+        const snapshot = await get(ref(database, `${VIDEO_EXPORT_CODES_REF}/${candidate}`));
+        if (snapshot.exists()) matchedCodes.push(candidate);
+        if (matchedCodes.length > 1) break;
+    }
+
+    return matchedCodes.length === 1 ? matchedCodes[0] : null;
 };
 
 export const saveVideoExportCode = async (key: string, note: string, exportLimit: number): Promise<boolean> => {
@@ -133,7 +180,12 @@ export const reserveVideoExportTurn = async (
     const now = new Date().toISOString();
 
     try {
-        const result = await runTransaction(ref(database, `${VIDEO_EXPORT_CODES_REF}/${normalizedCode}`), (currentCode) => {
+        const resolvedCode = await resolveExistingVideoExportCode(normalizedCode);
+        if (!resolvedCode) {
+            return { ok: false, reason: 'Mã không tồn tại hoặc đã nhập sai.' };
+        }
+
+        const result = await runTransaction(ref(database, `${VIDEO_EXPORT_CODES_REF}/${resolvedCode}`), (currentCode) => {
             if (!currentCode) {
                 failureReason = 'Mã không tồn tại hoặc đã nhập sai.';
                 return;
@@ -154,12 +206,12 @@ export const reserveVideoExportTurn = async (
             const exportLimit = Math.max(1, Number(codeData.exportLimit) || 1);
             const exportCount = Math.max(0, Number(codeData.exportCount) || 0);
             if (exportCount >= exportLimit) {
-                failureReason = `Mã ${normalizedCode} đã hết lượt xuất (${exportCount}/${exportLimit}). Vui lòng mua thêm gói lượt.`;
+                failureReason = `Mã ${resolvedCode} đã hết lượt xuất (${exportCount}/${exportLimit}). Vui lòng mua thêm gói lượt.`;
                 return;
             }
 
             reservation = {
-                code: normalizedCode,
+                code: resolvedCode,
                 email: normalizedEmail,
                 reservationId,
                 exportCount: exportCount + 1,
@@ -168,7 +220,7 @@ export const reserveVideoExportTurn = async (
 
             return {
                 ...codeData,
-                key: codeData.key || normalizedCode,
+                key: codeData.key || resolvedCode,
                 usedBy: assignedEmail || normalizedEmail,
                 usedAt: codeData.usedAt || now,
                 usageCount: assignedEmail === normalizedEmail ? (Number(codeData.usageCount) || 1) : (Number(codeData.usageCount) || 0) + 1,
