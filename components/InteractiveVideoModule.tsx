@@ -384,12 +384,25 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             : playerTheme.questionStyle === 'card'
                 ? 'rgba(2,6,23,.22)'
                 : `linear-gradient(135deg, ${playerTheme.backgroundColor}88, ${playerTheme.primaryColor}55, ${playerTheme.secondaryColor}44)`;
-        const exportLayoutClass = `layout-${playerTheme.layout || 'cinema'}`;
         const exportLayoutCss = playerTheme.layout === 'sidebar'
             ? ''
             : playerTheme.layout === 'full'
                 ? `.layout-full .app{width:100%;padding:0}.layout-full .shell{height:100vh!important;border:0!important;border-radius:0!important;box-shadow:none!important}.layout-full .topbar,.layout-full .metaTop,.layout-full .foot,.layout-full .side{display:none!important}.layout-full .layout{display:block!important;height:100vh!important;min-height:0!important}.layout-full .main{height:100vh!important;padding:0!important}.layout-full .player{height:100vh!important;border:0!important;border-radius:0!important}.layout-full .stage{flex:1 1 auto!important;height:calc(100vh - 54px)!important;aspect-ratio:auto!important}.layout-full .controls{height:54px!important}.layout-full video{object-fit:contain!important}`
                 : `.layout-cinema .side{display:none!important}.layout-cinema .layout{display:block!important;min-height:0!important}.layout-cinema .app{width:min(1440px,100%)}.layout-cinema .shell{min-height:calc(100vh - 16px)}.layout-cinema .main{padding:14px!important}.layout-cinema .player{max-width:1280px;margin:0 auto}.layout-cinema .stage{aspect-ratio:16/9!important}`;
+        const exportControlClasses = [
+            !playerTheme.showFooterBar && 'hide-footer',
+            !playerTheme.showControlBar && 'hide-controls',
+            !playerTheme.showBackButton && 'hide-back',
+            !playerTheme.showPlayButton && 'hide-play',
+            !playerTheme.showNextButton && 'hide-next',
+            !playerTheme.showRestartButton && 'hide-restart',
+            !playerTheme.showPageIndicator && 'hide-page',
+            !playerTheme.showProgressBar && 'hide-progress',
+            !playerTheme.showTimeDisplay && 'hide-time',
+            !playerTheme.showFullscreenButton && 'hide-fullscreen',
+        ].filter(Boolean).join(' ');
+        const exportLayoutClass = [`layout-${playerTheme.layout || 'cinema'}`, exportControlClasses].filter(Boolean).join(' ');
+        const exportControlCss = `.hide-footer .foot{display:none!important}.hide-controls .controls{display:none!important}.hide-back #back,.hide-play #play,.hide-next #next,.hide-restart #restart,.hide-page .page,.hide-progress .progress,.hide-time .time,.hide-fullscreen #full{display:none!important}.layout-full.hide-controls .stage{height:100vh!important}`;
         const exportData = {
             title,
             videoFileName,
@@ -415,6 +428,7 @@ body{background:radial-gradient(circle at 10% 0%,${playerTheme.primaryColor}33,t
 .gate{position:fixed;inset:0;z-index:120;display:flex;align-items:center;justify-content:center;padding:22px;background:radial-gradient(circle at 20% 0%,${playerTheme.primaryColor}66,transparent 36%),linear-gradient(135deg,#0f172aee,#312e81ee);backdrop-filter:blur(10px)}.gate-card{width:min(520px,100%);border:1px solid rgba(255,255,255,.22);border-radius:26px;background:rgba(255,255,255,.94);padding:28px;color:#1e293b;box-shadow:0 28px 90px rgba(0,0,0,.42);text-align:center}.gate-card h1{margin:0 0 8px;font-size:28px;color:${playerTheme.primaryColor}}.gate-card p{margin:0 0 18px;color:#64748b;font-weight:700}.gate-card input{width:100%;border:2px solid #e2e8f0;border-radius:16px;padding:14px 16px;font-size:17px;font-weight:800;outline:none}.gate-card input:focus{border-color:${playerTheme.primaryColor}}.avatars{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin:18px 0}.avatarPick{height:58px;border:2px solid #e2e8f0;border-radius:18px;background:#fff;font-size:30px;cursor:pointer;transition:.2s}.avatarPick.active{border-color:${playerTheme.primaryColor};background:${playerTheme.primaryColor}14;transform:translateY(-2px);box-shadow:0 12px 24px rgba(15,23,42,.15)}.startBtn{width:100%;border:0;border-radius:16px;background:linear-gradient(90deg,${playerTheme.primaryColor},${playerTheme.secondaryColor});color:#fff;padding:15px 18px;font-size:17px;font-weight:950;cursor:pointer}.startBtn:hover{filter:brightness(1.06)}
 @media (min-width:981px){html,body{height:100%;overflow:hidden}.app{height:100vh;padding:8px}.shell{height:calc(100vh - 16px);display:flex;flex-direction:column}.topbar{height:38px;flex:0 0 auto}.layout{flex:1;min-height:0;height:auto;grid-template-columns:minmax(0,1fr) clamp(250px,21vw,320px)}.main{min-height:0;padding:10px}.player{height:100%;display:flex;flex-direction:column}.metaTop{flex:0 0 auto;padding:8px 14px}.stage{flex:1;min-height:0;aspect-ratio:auto}.foot{flex:0 0 auto;padding:8px 14px}.controls{flex:0 0 auto;height:44px}.side{min-height:0;overflow-y:auto;padding:18px}.school-logo{width:70px;height:70px;margin-bottom:18px}.profile{margin-bottom:10px}.tabs{margin:18px 0 10px}.cert{margin-top:12px}.badge{max-width:42%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}}@media (max-width:980px){body{overflow:auto}.app{min-height:100vh}.player{display:flex;flex-direction:column}.stage{aspect-ratio:16/9}.side{max-height:none;overflow:visible}}@media (max-height:720px) and (min-width:981px){.topbar{height:34px}.main{padding:8px}.metaTop{padding:7px 12px}.foot{padding:7px 12px}.controls{height:40px}.side{padding:14px}.school-logo{width:58px;height:58px;margin-bottom:12px}.profile{gap:8px}.avatar{width:48px;height:48px}.info{padding:7px}.tabs{margin:12px 0 8px}.search{padding:9px;margin-bottom:14px}.qitem{padding:10px 12px}.cert{padding:10px 12px}}
 ${exportLayoutCss}
+${exportControlCss}
 </style>
 </head>
 <body class="${exportLayoutClass}">

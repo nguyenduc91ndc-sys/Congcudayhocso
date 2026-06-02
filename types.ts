@@ -30,6 +30,16 @@ export interface VideoPlayerTheme {
   showAuthorPanel: boolean;
   autoAdvance: boolean;
   showScoreReport: boolean;
+  showFooterBar: boolean;
+  showControlBar: boolean;
+  showBackButton: boolean;
+  showPlayButton: boolean;
+  showNextButton: boolean;
+  showRestartButton: boolean;
+  showPageIndicator: boolean;
+  showProgressBar: boolean;
+  showTimeDisplay: boolean;
+  showFullscreenButton: boolean;
   radius: number;
   fontFamily: string;
   layout: VideoPlayerLayout;
@@ -56,6 +66,16 @@ export const DEFAULT_VIDEO_PLAYER_THEME: VideoPlayerTheme = {
   showAuthorPanel: true,
   autoAdvance: true,
   showScoreReport: true,
+  showFooterBar: true,
+  showControlBar: true,
+  showBackButton: true,
+  showPlayButton: true,
+  showNextButton: true,
+  showRestartButton: true,
+  showPageIndicator: true,
+  showProgressBar: true,
+  showTimeDisplay: true,
+  showFullscreenButton: true,
   radius: 24,
   fontFamily: 'Nunito',
   layout: 'cinema',

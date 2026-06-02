@@ -495,6 +495,33 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
               className="h-4 w-4 accent-purple-600"
             />
           </label>
+          <div className="rounded-xl border border-gray-100 bg-white p-3">
+            <p className="mb-2 text-xs font-black uppercase text-gray-500">Bat/tat thanh duoi khi xuat file</p>
+            <div className="space-y-2">
+              {([
+                ['showFooterBar', 'Dong chu chan trang'],
+                ['showControlBar', 'Toan bo thanh dieu khien'],
+                ['showBackButton', 'Nut lui'],
+                ['showPlayButton', 'Nut phat/tam dung'],
+                ['showNextButton', 'Nut toi'],
+                ['showRestartButton', 'Nut lam lai'],
+                ['showPageIndicator', 'So trang 1/1'],
+                ['showProgressBar', 'Thanh tien trinh'],
+                ['showTimeDisplay', 'Thoi luong'],
+                ['showFullscreenButton', 'Nut toan man hinh'],
+              ] as const).map(([key, label]) => (
+                <label key={key} className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2 text-xs font-bold text-gray-700">
+                  {label}
+                  <input
+                    type="checkbox"
+                    checked={theme[key]}
+                    onChange={(e) => updateTheme({ [key]: e.target.checked })}
+                    className="h-4 w-4 accent-purple-600"
+                  />
+                </label>
+              ))}
+            </div>
+          </div>
         </div>
       </div>
       </>
