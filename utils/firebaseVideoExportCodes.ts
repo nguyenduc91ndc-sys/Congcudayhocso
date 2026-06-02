@@ -35,7 +35,7 @@ export const isValidVideoExportEmail = (email: string): boolean =>
     /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(email));
 
 export const generateVideoExportCode = (): string => {
-    const chars = 'ACDEFGHJKMNPQRTUVWXY34679';
+    const chars = 'ACDEFGHJKMNPRTUVWXY34679';
     let code = 'VIDX-';
     for (let i = 0; i < 8; i += 1) {
         code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -44,7 +44,7 @@ export const generateVideoExportCode = (): string => {
 };
 
 const VISUALLY_SIMILAR_CHARS: Record<string, string[]> = {
-    '0': ['O'],
+    '0': ['O', 'Q'],
     '1': ['I', 'L'],
     '2': ['Z'],
     '5': ['S'],
@@ -52,7 +52,8 @@ const VISUALLY_SIMILAR_CHARS: Record<string, string[]> = {
     B: ['8'],
     I: ['1', 'L'],
     L: ['1', 'I'],
-    O: ['0'],
+    O: ['0', 'Q'],
+    Q: ['0', 'O'],
     S: ['5'],
     Z: ['2'],
 };
@@ -60,7 +61,7 @@ const VISUALLY_SIMILAR_CHARS: Record<string, string[]> = {
 const getCodeFingerprint = (code: string): string =>
     normalizeCode(code)
         .replace(/[5S]/g, 'S')
-        .replace(/[0O]/g, 'O')
+        .replace(/[0OQ]/g, 'O')
         .replace(/[8B]/g, 'B')
         .replace(/[2Z]/g, 'Z')
         .replace(/[1IL]/g, 'I');
