@@ -319,8 +319,24 @@ export const getUniqueUserCount = async (): Promise<number> => {
  */
 export const getLoginHistoryCount = async (): Promise<number> => {
     try {
-        const history = await getLoginHistory(10000);
-        return history.length;
+        const historyRef = ref(database, LOGIN_HISTORY_REF);
+        const snapshot = await get(historyRef);
+
+        if (!snapshot.exists()) {
+            return 0;
+        }
+
+        const oneYearAgo = Date.now() - ONE_YEAR_MS;
+        let count = 0;
+
+        snapshot.forEach((child) => {
+            const entry = child.val() as LoginHistoryEntry;
+            if (entry.loginTime >= oneYearAgo) {
+                count++;
+            }
+        });
+
+        return count;
     } catch (error) {
         console.error('Error counting login history:', error);
         return 0;

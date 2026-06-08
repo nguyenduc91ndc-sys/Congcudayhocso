@@ -4,7 +4,7 @@ import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Cloc
 import { getAnalytics, Analytics, VisitorLog } from '../utils/analyticsUtils';
 import { getAllFeedbacks, getPendingFeedbacks, getApprovedFeedbacks, approveFeedback, rejectFeedback, deleteFeedback, updateFeedback, Feedback } from '../utils/feedbackUtils';
 import { getVisitStats, setVisitCount } from '../utils/visitCounter';
-import { getRecentVisitors, FirebaseVisitor, getLoginHistory, searchLoginHistory, LoginHistoryEntry, getTodayLoginCount, getUniqueUserCount, getLoginHistoryCount } from '../utils/firebaseVisitors';
+import { getRecentVisitors, FirebaseVisitor, getLoginHistory, searchLoginHistory, LoginHistoryEntry, getTodayLoginCount, getUniqueUserCount } from '../utils/firebaseVisitors';
 import { AIVideo, Order } from '../types/videoStoreTypes';
 import { subscribeToVideos, addVideo, updateVideo, deleteVideo } from '../utils/firebaseVideoStore';
 import { subscribeToOrders, confirmOrder, cancelOrder } from '../utils/firebaseOrders';
@@ -264,8 +264,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     // Load statistics from Firebase Realtime Database
     const loadStatistics = async () => {
         try {
-            const [totalVisits, uniqueCount, todayCount, usageStats] = await Promise.all([
-                getLoginHistoryCount(),
+            const [visitStats, uniqueCount, todayCount, usageStats] = await Promise.all([
+                getVisitStats(),
                 getUniqueUserCount(),
                 getTodayLoginCount(),
                 getAppUsageSummaries()
@@ -273,7 +273,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
             setAnalytics(prev => ({
                 ...prev,
-                totalVisits: totalVisits,
+                totalVisits: visitStats.totalVisits,
                 uniqueVisitors: uniqueCount,
                 todayVisits: todayCount
             }));
@@ -301,6 +301,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         if (isNaN(count) || count < 0) return;
         await setVisitCount(count);
         setGlobalVisitCount(count);
+        setAnalytics(prev => ({
+            ...prev,
+            totalVisits: count
+        }));
     };
 
     const loadFirebaseVisitors = async () => {
