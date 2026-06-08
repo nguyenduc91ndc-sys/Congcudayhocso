@@ -57,7 +57,7 @@
             "destination": "/contact/index.html"
         },
         {
-            "source": "/((?!giải-mã-bức-tranh|game-tùy-chỉnh|game-tuy-chinh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|dinh-doc-lap-3d|Đinhoclap3d|assets|.*\\.[a-z0-9]+$).*)",
+            "source": "/((?!api|giải-mã-bức-tranh|game-tùy-chỉnh|game-tuy-chinh|lucky-wheel|hinh-hoc-3d|chuctettudong|nhan-xet-tt27|about|privacy|terms|contact|dinh-doc-lap-3d|Đinhoclap3d|assets|.*\\.[a-z0-9]+$).*)",
             "destination": "/index.html"
         }
     ],

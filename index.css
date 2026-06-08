@@ -91,6 +91,150 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+.question-3d-option,
+.question-3d-action {
+  position: relative;
+  isolation: isolate;
+  overflow: visible;
+  transform-style: preserve-3d;
+  border-bottom-width: 3px;
+  box-shadow:
+    0 8px 0 rgba(15, 23, 42, .18),
+    0 18px 34px rgba(15, 23, 42, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .85);
+}
+
+.question-3d-option::before,
+.question-3d-action::before {
+  content: "";
+  position: absolute;
+  inset: 1px 1px auto 1px;
+  height: 44%;
+  z-index: 0;
+  border-radius: inherit;
+  background: linear-gradient(180deg, rgba(255, 255, 255, .72), rgba(255, 255, 255, 0));
+  pointer-events: none;
+}
+
+.question-3d-option::after,
+.question-3d-action::after {
+  content: "";
+  position: absolute;
+  left: 14px;
+  right: 14px;
+  bottom: -9px;
+  height: 12px;
+  z-index: -2;
+  border-radius: 0 0 18px 18px;
+  background: linear-gradient(180deg, rgba(15, 23, 42, .24), rgba(15, 23, 42, .08));
+  filter: blur(.2px);
+  pointer-events: none;
+}
+
+.question-3d-option:hover,
+.question-3d-action:hover {
+  box-shadow:
+    0 10px 0 rgba(15, 23, 42, .16),
+    0 24px 42px rgba(15, 23, 42, .2),
+    inset 0 1px 0 rgba(255, 255, 255, .9);
+}
+
+.question-3d-option:active,
+.question-3d-action:active {
+  box-shadow:
+    0 3px 0 rgba(15, 23, 42, .22),
+    0 10px 20px rgba(15, 23, 42, .16),
+    inset 0 1px 0 rgba(255, 255, 255, .7);
+}
+
+.question-3d-action:disabled {
+  box-shadow:
+    0 5px 0 rgba(15, 23, 42, .12),
+    0 12px 22px rgba(15, 23, 42, .1),
+    inset 0 1px 0 rgba(255, 255, 255, .5);
+}
+
+.question-3d-option > *,
+.question-3d-action > * {
+  position: relative;
+  z-index: 1;
+}
+
+.question-3d-label {
+  box-shadow:
+    0 4px 0 rgba(15, 23, 42, .14),
+    inset 0 1px 0 rgba(255, 255, 255, .8);
+}
+
+.video-question-font,
+.video-question-font button,
+.video-question-font input {
+  font-family: 'Play', 'Paytone One', 'Be Vietnam Pro', 'Nunito', Arial, sans-serif;
+}
+
+.video-question-font h3,
+.video-question-font .question-title-text {
+  font-family: 'Play', 'Paytone One', 'Be Vietnam Pro', 'Nunito', Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+  text-shadow: 0 3px 0 rgba(15, 23, 42, .08), 0 10px 24px rgba(15, 23, 42, .16);
+}
+
+.video-question-font .question-option-text,
+.video-question-font .question-action-text {
+  font-family: 'Play', 'Paytone One', 'Be Vietnam Pro', 'Nunito', Arial, sans-serif;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.video-bubble-layer {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.video-bubble-layer span {
+  position: absolute;
+  bottom: -120px;
+  display: block;
+  width: var(--bubble-size, 54px);
+  height: var(--bubble-size, 54px);
+  left: var(--bubble-left, 50%);
+  border-radius: 999px;
+  background:
+    radial-gradient(circle at 30% 28%, rgba(255, 255, 255, .92), rgba(255, 255, 255, .34) 28%, rgba(255, 255, 255, .12) 58%, rgba(255, 255, 255, .03) 100%);
+  box-shadow:
+    inset -10px -14px 22px rgba(255, 255, 255, .08),
+    inset 8px 10px 18px rgba(255, 255, 255, .2),
+    0 0 22px rgba(255, 255, 255, .16);
+  opacity: var(--bubble-opacity, .36);
+  animation: videoBubbleRise var(--bubble-duration, 16s) linear infinite;
+  animation-delay: var(--bubble-delay, 0s);
+  filter: blur(var(--bubble-blur, 0px));
+}
+
+@keyframes videoBubbleRise {
+  0% {
+    transform: translate3d(0, 0, 0) scale(.82);
+    opacity: 0;
+  }
+
+  12% {
+    opacity: var(--bubble-opacity, .36);
+  }
+
+  72% {
+    opacity: var(--bubble-opacity, .36);
+  }
+
+  100% {
+    transform: translate3d(var(--bubble-drift, 24px), -112vh, 0) scale(1.08);
+    opacity: 0;
+  }
+}
+
 /* Animated Gradient Border */
 @keyframes gradient-rotate {
   0% {
@@ -165,6 +309,58 @@ body {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: shimmer 3s linear infinite;
+}
+
+@keyframes video-question-soft-pulse {
+  0%,
+  100% {
+    filter: brightness(1);
+    box-shadow: 0 10px 24px rgba(15, 23, 42, .09), 0 0 0 1px rgba(34, 197, 94, .28);
+  }
+
+  50% {
+    filter: brightness(1.035);
+    box-shadow: 0 12px 28px rgba(15, 23, 42, .11), 0 0 0 1px rgba(34, 197, 94, .42), 0 0 18px rgba(34, 197, 94, .22);
+  }
+}
+
+@keyframes video-question-border-breathe {
+  0%,
+  100% {
+    opacity: .35;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.035);
+  }
+}
+
+.video-question-pulse {
+  position: relative;
+  overflow: visible;
+  animation: video-question-soft-pulse 1.8s ease-in-out infinite;
+  backface-visibility: hidden;
+  transform: translateZ(0);
+  will-change: box-shadow, filter;
+}
+
+.video-question-pulse::after {
+  content: "";
+  position: absolute;
+  inset: -3px;
+  z-index: 2;
+  border-radius: inherit;
+  border: 1px solid rgba(74, 222, 128, .72);
+  box-shadow: 0 0 10px rgba(74, 222, 128, .38), 0 0 24px rgba(34, 197, 94, .18);
+  pointer-events: none;
+  animation: video-question-border-breathe 1.75s ease-in-out infinite;
+}
+
+.video-question-pulse > * {
+  position: relative;
+  z-index: 3;
 }
 
 /* Premium Footer Hover Effect */

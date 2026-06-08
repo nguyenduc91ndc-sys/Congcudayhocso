@@ -1,14 +1,27 @@
+export type QuestionType = 'multiple-choice' | 'true-false' | 'short-answer' | 'fill-blank' | 'image-choice';
+
+export interface QuestionImageOption {
+  text: string;
+  imageUrl: string;
+}
+
 export interface Question {
   id: string;
+  type?: QuestionType;
   time: number; // in seconds
   text: string;
   options: string[]; // Mảng đáp án linh hoạt (2-4 đáp án)
   correctOption: number; // Index của đáp án đúng (0, 1, 2, 3)
+  imageOptions?: QuestionImageOption[];
+  acceptedAnswers?: string[];
+  caseSensitive?: boolean;
+  points?: number;
 }
 
 export type VideoSourceType = 'youtube' | 'local';
 export type VideoPlayerLayout = 'full' | 'cinema' | 'sidebar';
 export type VideoQuestionStyle = 'glass' | 'card' | 'playful' | 'gradient';
+export type VideoSidebarCardStyle = 'soft' | 'glow' | 'neon' | 'solid';
 
 export interface VideoPlayerTheme {
   primaryColor: string;
@@ -22,11 +35,24 @@ export interface VideoPlayerTheme {
   publishTitle: string;
   publishSubtitle: string;
   authorName: string;
+  reportEmail?: string;
+  reportApiUrl?: string;
   authorAvatarImage?: string;
   authorInfo: string;
   footerLeftText: string;
   footerRightText: string;
   guideText: string;
+  startTitle: string;
+  startSubtitle: string;
+  startButtonText: string;
+  startBackgroundImage?: string;
+  requireLearnerClass: boolean;
+  certificateTitle: string;
+  certificateSubtitle: string;
+  certificateMessage: string;
+  certificateLogoImage?: string;
+  certificateSealImage?: string;
+  certificateSignatureImage?: string;
   showAuthorPanel: boolean;
   autoAdvance: boolean;
   showScoreReport: boolean;
@@ -42,8 +68,12 @@ export interface VideoPlayerTheme {
   showFullscreenButton: boolean;
   radius: number;
   fontFamily: string;
+  fontScale: number;
   layout: VideoPlayerLayout;
   questionStyle: VideoQuestionStyle;
+  sidebarCardStyle: VideoSidebarCardStyle;
+  sidebarCardPulse: boolean;
+  sidebarIcon: string;
 }
 
 export const DEFAULT_VIDEO_PLAYER_THEME: VideoPlayerTheme = {
@@ -58,11 +88,24 @@ export const DEFAULT_VIDEO_PLAYER_THEME: VideoPlayerTheme = {
   publishTitle: 'Bài giảng tương tác',
   publishSubtitle: 'Thiết kế bởi Giáo viên CN',
   authorName: '',
+  reportEmail: '',
+  reportApiUrl: '',
   authorAvatarImage: '',
   authorInfo: '',
   footerLeftText: '',
   footerRightText: '',
   guideText: '',
+  startTitle: 'Vào bài học',
+  startSubtitle: 'Nhập họ tên, lớp và chọn nhân vật đại diện của em.',
+  startButtonText: 'Bắt đầu học',
+  startBackgroundImage: '',
+  requireLearnerClass: true,
+  certificateTitle: 'Thư khen',
+  certificateSubtitle: 'Hoàn thành bài học tương tác',
+  certificateMessage: 'Đã hoàn thành bài học với tinh thần học tập tích cực.',
+  certificateLogoImage: '',
+  certificateSealImage: '',
+  certificateSignatureImage: '',
   showAuthorPanel: true,
   autoAdvance: true,
   showScoreReport: true,
@@ -78,8 +121,12 @@ export const DEFAULT_VIDEO_PLAYER_THEME: VideoPlayerTheme = {
   showFullscreenButton: true,
   radius: 24,
   fontFamily: 'Nunito',
+  fontScale: 100,
   layout: 'cinema',
   questionStyle: 'glass',
+  sidebarCardStyle: 'glow',
+  sidebarCardPulse: true,
+  sidebarIcon: '👩‍🏫',
 };
 
 export function normalizeVideoPlayerTheme(theme?: Partial<VideoPlayerTheme>): VideoPlayerTheme {
@@ -91,16 +138,48 @@ export function normalizeVideoPlayerTheme(theme?: Partial<VideoPlayerTheme>): Vi
 
 // Hàm migration: chuyển đổi Question format cũ sang format mới
 export function migrateQuestion(q: any): Question {
+  const type = (q.type || 'multiple-choice') as QuestionType;
+  const normalizeAnswers = (answers: any) => Array.isArray(answers)
+    ? answers.map(answer => String(answer || '')).filter(answer => answer.trim() !== '')
+    : [];
+
   // Nếu đã là format mới (options là mảng), giữ nguyên
   if (Array.isArray(q.options)) {
-    return q as Question;
+    const migrated: Question = {
+      ...q,
+      type,
+      options: q.options,
+      correctOption: typeof q.correctOption === 'number' ? q.correctOption : 0,
+      points: typeof q.points === 'number' ? q.points : 10,
+    };
+
+    if (type === 'true-false' && migrated.options.length < 2) {
+      migrated.options = ['Dung', 'Sai'];
+    }
+
+    if ((type === 'short-answer' || type === 'fill-blank') && !migrated.acceptedAnswers?.length) {
+      migrated.acceptedAnswers = normalizeAnswers([q.answer, q.correctAnswer, q.options?.[0]]);
+    }
+
+    if (type === 'image-choice') {
+      migrated.imageOptions = Array.isArray(q.imageOptions)
+        ? q.imageOptions.map((option: any) => ({
+          text: String(option?.text || ''),
+          imageUrl: String(option?.imageUrl || option?.image || ''),
+        }))
+        : migrated.options.map(text => ({ text, imageUrl: '' }));
+    }
+
+    return migrated;
   }
   // Chuyển đổi từ format cũ (object {A, B, C, D})
   const optionKeys = ['A', 'B', 'C', 'D'] as const;
   return {
     ...q,
+    type: 'multiple-choice',
     options: optionKeys.map(key => q.options[key] || '').filter((opt: string) => opt.trim() !== ''),
-    correctOption: optionKeys.indexOf(q.correctOption as 'A' | 'B' | 'C' | 'D')
+    correctOption: optionKeys.indexOf(q.correctOption as 'A' | 'B' | 'C' | 'D'),
+    points: typeof q.points === 'number' ? q.points : 10,
   };
 }
 

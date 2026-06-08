@@ -2,6 +2,13 @@ import { ref, remove, runTransaction, set, onValue, get } from 'firebase/databas
 import { database, firebaseConfig } from './firebaseConfig';
 
 const VIDEO_EXPORT_CODES_REF = 'interactive_video_export_codes';
+const DEV_EXPORT_CODE = 'VIDX-DEMO2026';
+const DEV_EXPORT_EMAIL = 'dev-preview@giaovien.local';
+
+const isLocalDevHost = (): boolean => {
+    if (typeof window === 'undefined') return false;
+    return ['localhost', '127.0.0.1', '::1'].includes(window.location.hostname);
+};
 
 export interface VideoExportCode {
     key: string;
@@ -283,6 +290,18 @@ export const reserveVideoExportTurn = async (
 ): Promise<{ ok: true; reservation: VideoExportReservation } | { ok: false; reason: string }> => {
     const normalizedCode = normalizeCode(code);
     const normalizedEmail = normalizeEmail(email);
+    if (isLocalDevHost() && normalizedCode === DEV_EXPORT_CODE && normalizedEmail === DEV_EXPORT_EMAIL) {
+        return {
+            ok: true,
+            reservation: {
+                code: DEV_EXPORT_CODE,
+                email: DEV_EXPORT_EMAIL,
+                reservationId: `dev-${Date.now().toString(36)}`,
+                exportCount: 1,
+                exportLimit: 999,
+            },
+        };
+    }
     if (!normalizedCode.startsWith('VIDX-')) {
         return { ok: false, reason: 'Mã xuất video phải bắt đầu bằng VIDX-.' };
     }

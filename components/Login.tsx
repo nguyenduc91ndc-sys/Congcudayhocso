@@ -47,6 +47,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
   const [validatedNote, setValidatedNote] = useState('');
   const [isProMode, setIsProMode] = useState(false);
   const [trialStatus, setTrialStatus] = useState({ usesRemaining: 3, totalUses: 0, isPro: false });
+  const isLocalPreview = import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(window.location.hostname);
 
   // Decode JWT từ Google credential
   const decodeJWT = (token: string) => {
@@ -129,6 +130,18 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
     }, 500);
   };
 
+  const handleDevLogin = () => {
+    const userData: User = {
+      id: 'dev_preview_user',
+      name: 'Giáo viên xem thử',
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent('GV')}&backgroundColor=7c3aed&textColor=ffffff`,
+      email: 'dev-preview@giaovien.local',
+    };
+
+    setCurrentEmail(userData.email || '');
+    onLogin(userData);
+  };
+
   const formatCode = (value: string): string => {
     const cleaned = value.toUpperCase().replace(/[^A-Z0-9-]/g, '');
     return cleaned;
@@ -208,6 +221,16 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                     useOneTap
                   />
                 </div>
+
+                {isLocalPreview && (
+                  <button
+                    type="button"
+                    onClick={handleDevLogin}
+                    className="w-full rounded-xl border-2 border-dashed border-purple-300 bg-purple-50 px-4 py-3 text-sm font-black text-purple-700 transition hover:border-purple-500 hover:bg-purple-100"
+                  >
+                    Vào chế độ xem thử trên máy này
+                  </button>
+                )}
 
                 {/* Terms of Service */}
                 <p className="text-xs text-purple-500/70 pt-2 leading-relaxed">

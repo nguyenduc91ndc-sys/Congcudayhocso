@@ -49,8 +49,9 @@ export const playExternalSound = (src: string, volume: number = 1.0): void => {
 
 // Đường dẫn các file âm thanh
 const SOUND_PATHS = {
+    correct: 'https://s2.file2s.com/amthanhhieuung/dung-6.mp3',
     victory: '/sounds/Am_thanh_chuc_mung_chien_thang-www_tiengdong_com.mp3',
-    incorrect: '/sounds/Am_thanh_tra_loi_sai-www_tiengdong_com.mp3',
+    incorrect: 'https://s2.file2s.com/amthanhhieuung/sai-4.mp3',
 };
 
 // Pre-load các file âm thanh khi module được import
@@ -63,7 +64,7 @@ if (typeof window !== 'undefined') {
 /**
  * Phát âm thanh "Đúng rồi!" - tone vui vẻ, cao dần
  */
-export const playCorrectSound = (): void => {
+const playCorrectSoundSynthesized = (): void => {
     try {
         const ctx = getAudioContext();
         const now = ctx.currentTime;
@@ -105,6 +106,17 @@ export const playCorrectSound = (): void => {
 
     } catch (e) {
         console.warn('Could not play correct sound:', e);
+    }
+};
+
+export const playCorrectSound = (): void => {
+    try {
+        const audio = getAudioElement(SOUND_PATHS.correct);
+        audio.volume = 0.9;
+        audio.currentTime = 0;
+        audio.play().catch(() => playCorrectSoundSynthesized());
+    } catch {
+        playCorrectSoundSynthesized();
     }
 };
 

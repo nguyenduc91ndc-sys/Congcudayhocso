@@ -685,7 +685,7 @@ function App() {
           {view === 'PLAYER' && currentLesson && (
             <VideoPlayer
               lesson={currentLesson}
-              onBack={() => setView(currentLesson.id === 'preview' ? 'CREATE_EDIT' : 'DASHBOARD')}
+              onBack={() => setView(currentLesson.id === 'interactive-preview' ? 'INTERACTIVE_VIDEO' : currentLesson.id === 'preview' ? 'CREATE_EDIT' : 'DASHBOARD')}
             />
           )}
 
