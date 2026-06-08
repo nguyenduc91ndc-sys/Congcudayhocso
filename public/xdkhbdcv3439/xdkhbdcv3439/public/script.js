@@ -152,7 +152,7 @@
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ apiKey: key, provider: getProvider() }),
       });
-      const data = await res.json();
+      const data = await readApiJson(res);
 
       if (data.ok) {
         testApiBtn.className = "btn-test-key test-ok";
@@ -188,6 +188,23 @@
     }
     if (type === "error-persist") {
       apiStatus.style.color = "var(--red)";
+    }
+  }
+
+  async function readApiJson(res) {
+    const text = await res.text();
+    if (!text.trim()) {
+      throw new Error("Server API khong phan hoi. Kiem tra backend /api/generate da duoc chay hoac deploy chua.");
+    }
+
+    try {
+      return JSON.parse(text);
+    } catch (_) {
+      const contentType = res.headers.get("content-type") || "";
+      if (contentType.includes("text/html") || text.trim().startsWith("<")) {
+        throw new Error("Server dang tra ve trang HTML thay vi JSON. Thuong la route API chua duoc cau hinh.");
+      }
+      throw new Error("Server tra ve du lieu khong dung dinh dang JSON.");
     }
   }
 
@@ -317,7 +334,7 @@
 
     try {
       const res = await fetch(apiUrl, { method: "POST", body: fd });
-      const data = await res.json();
+      const data = await readApiJson(res);
       if (!res.ok) { showError(data.error || "Lỗi không xác định."); return; }
       rawMarkdown = data.result;
       showResult(rawMarkdown);
