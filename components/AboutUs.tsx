@@ -62,7 +62,7 @@ const AboutUs: React.FC = () => {
                         Website được phát triển và duy trì bởi <strong>Thầy Thế Đức</strong>. Với mong muốn lan tỏa giá trị cộng đồng, mọi công cụ trên nền tảng này đều hướng đến mục tiêu hỗ trợ cộng đồng giáo viên một cách thiết thực nhất.
                     </p>
                     <div className="mt-8">
-                        <img src="/og-image.png" alt="Giáo viên công nghệ logo" className="w-24 h-24 mx-auto rounded-2xl shadow-xl object-contain bg-white/10 p-2" />
+                        <img src="/avatar.jpg" alt="Ảnh Thầy Đức" className="w-28 h-28 mx-auto rounded-full shadow-xl object-cover border-4 border-white/20" />
                     </div>
                 </motion.div>
             </div>
