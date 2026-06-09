@@ -113,12 +113,51 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
     }, 10);
   };
 
-  const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const compressImage = (file: File): Promise<string> => {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onerror = () => reject(new Error('Không đọc được ảnh'));
+      reader.onload = () => {
+        const img = new Image();
+        img.onerror = () => reject(new Error('Không tải được ảnh'));
+        img.onload = () => {
+          const maxSize = 1200;
+          const scale = Math.min(1, maxSize / Math.max(img.width, img.height));
+          const width = Math.max(1, Math.round(img.width * scale));
+          const height = Math.max(1, Math.round(img.height * scale));
+
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) {
+            reject(new Error('Trình duyệt không hỗ trợ nén ảnh'));
+            return;
+          }
+
+          ctx.drawImage(img, 0, 0, width, height);
+          resolve(canvas.toDataURL('image/jpeg', 0.78));
+        };
+        img.src = reader.result as string;
+      };
+      reader.readAsDataURL(file);
+    });
+  };
+
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
-      const reader = new FileReader();
-      reader.onloadend = () => setLocalConfig({ ...localConfig, hiddenImage: reader.result as string });
-      reader.readAsDataURL(file);
+      try {
+        setSuccessMsg('Đang nén ảnh...');
+        const compressedImage = await compressImage(file);
+        setLocalConfig({ ...localConfig, hiddenImage: compressedImage });
+        setSuccessMsg(`Đã nén ảnh còn khoảng ${Math.round(compressedImage.length * 0.75 / 1024)} KB`);
+        setTimeout(() => setSuccessMsg(''), 2500);
+      } catch (error) {
+        console.error('Image compression failed:', error);
+        setSuccessMsg('Không nén được ảnh. Vui lòng chọn ảnh khác.');
+        setTimeout(() => setSuccessMsg(''), 3000);
+      }
     }
   };
 
