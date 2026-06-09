@@ -94,7 +94,7 @@ const DinhDocLap3D: React.FC<DinhDocLap3DProps> = ({ onBack }) => {
 
             {/* iFrame */}
             <iframe
-                src="/Đinhoclap3d/index.html"
+                src="/dinhoclap3d/index.html"
                 title="Dinh Độc Lập 3D"
                 className="flex-1 w-full border-0"
                 style={{ minHeight: 0 }}
