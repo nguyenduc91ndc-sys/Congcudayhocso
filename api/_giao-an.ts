@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Busboy from 'busboy';
 import mammoth from 'mammoth';
-import sharp from 'sharp';
 import { GoogleGenAI } from '@google/genai';
 
 export type Provider = 'gemini' | 'groq';
@@ -156,20 +155,10 @@ export function parseMultipart(req: VercelRequest): Promise<MultipartPayload> {
 }
 
 export async function fileToImagePart(file: UploadedFile, provider: Provider): Promise<AiPart> {
-    const compressedBuffer = await sharp(file.buffer)
-        .resize({
-            width: provider === 'groq' ? 900 : 1200,
-            height: provider === 'groq' ? 900 : 1200,
-            fit: 'inside',
-            withoutEnlargement: true,
-        })
-        .jpeg({ quality: provider === 'groq' ? 70 : 80 })
-        .toBuffer();
-
     return {
         inlineData: {
-            mimeType: 'image/jpeg',
-            data: compressedBuffer.toString('base64'),
+            mimeType: file.mimetype || 'image/jpeg',
+            data: file.buffer.toString('base64'),
         },
     };
 }
