@@ -76,8 +76,9 @@ body.modal-open { overflow: hidden; }
 
 .topbar-icon {
   display: flex; align-items: center; justify-content: center;
-  width: 46px; height: 46px; border-radius: 12px;
-  background: var(--grad); color: white;
+  width: 54px; height: 58px; border-radius: 12px;
+  padding: 3px;
+  background: #ffffff; color: white;
   box-shadow:
     0 4px 8px rgba(0,0,0,0.3),
     0 8px 20px rgba(0,0,0,0.25),
@@ -95,7 +96,10 @@ body.modal-open { overflow: hidden; }
     inset 0 1px 0 rgba(255,255,255,0.2);
 }
 .topbar-icon img {
-  border-radius: 10px;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 .topbar h1 {
