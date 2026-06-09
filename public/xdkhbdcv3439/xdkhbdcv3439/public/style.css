@@ -532,7 +532,7 @@ body.modal-open { overflow: hidden; }
 .result-panel { animation: fadeIn 0.4s ease; }
 
 .result-toolbar {
-  display: flex; align-items: center; justify-content: space-between;
+  display: flex; align-items: center; justify-content: flex-start; gap: 8px;
   margin-bottom: 20px; padding-bottom: 14px;
   border-bottom: 1px solid var(--border);
 }
@@ -540,11 +540,13 @@ body.modal-open { overflow: hidden; }
 .result-title {
   display: flex; align-items: center; gap: 8px;
   font-size: 1.1rem; font-weight: 700;
+  margin-right: auto;
   background: var(--grad); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;
 }
 .result-title svg { color: var(--accent2); }
 
-.btn-copy {
+.btn-copy,
+.btn-word {
   display: inline-flex; align-items: center; gap: 5px;
   padding: 6px 12px;
   border: 1px solid var(--border); border-radius: var(--r-sm);
@@ -554,6 +556,9 @@ body.modal-open { overflow: hidden; }
 }
 .btn-copy:hover { border-color: var(--accent2); color: var(--accent2); background: rgba(108,92,231,0.06); }
 .btn-copy.copied { border-color: var(--green); color: var(--green); background: rgba(52,211,153,0.06); }
+.btn-word { border-color: rgba(52,211,153,0.3); color: var(--green); background: rgba(52,211,153,0.06); }
+.btn-word:hover { border-color: var(--green); color: var(--green); background: rgba(52,211,153,0.13); }
+.btn-word.downloaded { border-color: var(--accent2); color: var(--accent2); background: rgba(139,195,74,0.12); }
 
 /* === Markdown Result Styles (Word Document Style) === */
 .result-content { 
@@ -633,6 +638,8 @@ body.modal-open { overflow: hidden; }
   .layout { flex-direction: column; height: auto; }
   .panel-left { width: 100%; min-width: 0; border-right: none; border-bottom: 1px solid var(--border); max-height: none; }
   .panel-right { min-height: 60vh; }
+  .result-toolbar { align-items: flex-start; flex-wrap: wrap; }
+  .result-title { width: 100%; }
 }
 
 /* === Footer === */

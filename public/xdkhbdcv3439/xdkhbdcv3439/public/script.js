@@ -32,6 +32,7 @@
   const errorSection = document.getElementById("errorSection");
   const errorMessage = document.getElementById("errorMessage");
   const copyBtn = document.getElementById("copyBtn");
+  const wordBtn = document.getElementById("wordBtn");
   
   const modeCreateBtn = document.getElementById("modeCreateBtn");
   const modeEnhanceBtn = document.getElementById("modeEnhanceBtn");
@@ -357,6 +358,112 @@
       document.body.appendChild(ta); ta.select(); document.execCommand("copy"); document.body.removeChild(ta);
     });
   });
+
+  // --- Download Word ---
+  wordBtn.addEventListener("click", () => {
+    if (!rawMarkdown || !resultContent.innerHTML.trim()) return;
+
+    const html = buildWordHtml(getWordContentHtml());
+    const blob = new Blob(["\ufeff", html], { type: "application/msword;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = buildWordFileName();
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+    wordBtn.classList.add("downloaded");
+    wordBtn.querySelector("span").textContent = "\u0110\u00e3 t\u1ea3i";
+    setTimeout(() => {
+      wordBtn.classList.remove("downloaded");
+      wordBtn.querySelector("span").textContent = "T\u1ea3i Word";
+    }, 2200);
+  });
+
+  function buildWordHtml(contentHtml) {
+    return `<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>K\u1ebf ho\u1ea1ch b\u00e0i d\u1ea1y</title>
+  <style>
+    @page WordSection1 { size: 21cm 29.7cm; margin: 2cm 1.8cm 2cm 1.8cm; }
+    body { font-family: "Times New Roman", Times, serif; font-size: 13pt; line-height: 1.5; color: #000; }
+    h1 { font-size: 16pt; font-weight: bold; text-align: center; text-transform: uppercase; margin: 14pt 0 10pt; }
+    h2 { font-size: 14pt; font-weight: bold; margin: 12pt 0 8pt; }
+    h3, h4, h5, h6 { font-size: 13pt; font-weight: bold; margin: 10pt 0 6pt; }
+    p { margin: 0 0 6pt; text-align: justify; }
+    ul, ol { margin: 4pt 0 8pt 24pt; padding-left: 0; }
+    li { margin-bottom: 3pt; text-align: justify; }
+    table { width: 100%; border-collapse: collapse; margin: 10pt 0; font-size: 12pt; }
+    th, td { border: 1pt solid #000; padding: 5pt; vertical-align: top; text-align: justify; }
+    th { text-align: center; font-weight: bold; background: #f2f2f2; }
+    blockquote { border-left: 3pt solid #ccc; padding-left: 10pt; color: #333; font-style: italic; }
+  </style>
+</head>
+<body>
+  <div class="WordSection1">${contentHtml}</div>
+</body>
+</html>`;
+  }
+
+  function getWordContentHtml() {
+    const clone = resultContent.cloneNode(true);
+    normalizeWordLists(clone, 1);
+    return clone.innerHTML;
+  }
+
+  function normalizeWordLists(parent, level) {
+    Array.from(parent.children).forEach(child => {
+      const tag = child.tagName ? child.tagName.toLowerCase() : "";
+      if (tag === "ul" || tag === "ol") {
+        child.replaceWith(convertWordList(child, level, tag === "ol"));
+      } else {
+        normalizeWordLists(child, level);
+      }
+    });
+  }
+
+  function convertWordList(list, level, ordered) {
+    const container = document.createElement("div");
+    Array.from(list.children).forEach((li, index) => {
+      if (!li.tagName || li.tagName.toLowerCase() !== "li") return;
+
+      const nestedLists = Array.from(li.children).filter(child => {
+        const tag = child.tagName ? child.tagName.toLowerCase() : "";
+        return tag === "ul" || tag === "ol";
+      });
+      nestedLists.forEach(child => child.remove());
+
+      const p = document.createElement("p");
+      const marker = ordered ? `${index + 1}. ` : (level > 1 ? "+ " : "- ");
+      p.innerHTML = marker + li.innerHTML.trim();
+      container.appendChild(p);
+
+      nestedLists.forEach(child => {
+        const tag = child.tagName ? child.tagName.toLowerCase() : "";
+        container.appendChild(convertWordList(child, level + 1, tag === "ol"));
+      });
+    });
+    return container;
+  }
+
+  function buildWordFileName() {
+    const subject = subjectSelect.value || "ke-hoach-bai-day";
+    const grade = gradeSelect.value ? `-lop-${gradeSelect.value}` : "";
+    const date = new Date().toISOString().slice(0, 10);
+    const slug = `${subject}${grade}-${date}`
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .replace(/đ/g, "d")
+      .replace(/Đ/g, "D")
+      .replace(/[^a-zA-Z0-9]+/g, "-")
+      .replace(/^-+|-+$/g, "")
+      .toLowerCase();
+    return `${slug || "ke-hoach-bai-day"}.doc`;
+  }
 
   // --- Helpers ---
   function setLoading(on) {
