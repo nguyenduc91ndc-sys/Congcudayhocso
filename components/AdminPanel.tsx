@@ -14,6 +14,16 @@ import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, gener
 import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, generateSKKNProCode, revokeSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
 import { saveKyYeuAccessCode, deleteKyYeuAccessCode, subscribeToKyYeuAccessCodes, generateKyYeuAccessCode, setKyYeuAccessCodeActive, KyYeuAccessCode } from '../utils/firebaseKyYeuAccess';
 import { deleteVideoExportCode, generateVideoExportCode, saveVideoExportCode, setVideoExportCodeActive, subscribeToVideoExportCodes } from '../utils/firebaseVideoExportCodes';
+import {
+    extendInteractiveVideoTrial,
+    getVietnamDateKey,
+    INTERACTIVE_VIDEO_DAILY_LIMIT,
+    INTERACTIVE_VIDEO_TRIAL_CODE,
+    InteractiveVideoTrial,
+    resetInteractiveVideoTrialToday,
+    setInteractiveVideoTrialActive,
+    subscribeToInteractiveVideoTrials
+} from '../utils/firebaseInteractiveVideoTrial';
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
 import { getAppUsageSummaries, AppUsageSummary } from '../utils/firebaseAppUsage';
 
@@ -81,7 +91,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [skknKeys, setSkknKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [kyYeuKeys, setKyYeuKeys] = useState<KyYeuAdminKey[]>([]);
     const [videoExportKeys, setVideoExportKeys] = useState<VideoExportAdminKey[]>([]);
-    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn' | 'kyyeu' | 'videoExport'>('pro');
+    const [videoTrials, setVideoTrials] = useState<InteractiveVideoTrial[]>([]);
+    const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn' | 'kyyeu' | 'videoExport' | 'videoTrial'>('pro');
     const [newNote, setNewNote] = useState('');
     const [newVideoExportLimit, setNewVideoExportLimit] = useState<1 | 10>(1);
     const [copiedKey, setCopiedKey] = useState<string | null>(null);
@@ -210,6 +221,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             setVideoExportKeys(formattedKeys);
         });
 
+        const unsubscribeVideoTrials = subscribeToInteractiveVideoTrials(setVideoTrials);
+
         // Subscribe to videos
         const unsubscribeVideos = subscribeToVideos(setVideos);
         // Subscribe to orders
@@ -232,6 +245,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             unsubscribeSkknKeys();
             unsubscribeKyYeuKeys();
             unsubscribeVideoExportKeys();
+            unsubscribeVideoTrials();
             unsubscribeVideos();
             unsubscribeOrders();
             unsubscribeAppVis();
@@ -520,6 +534,29 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         const action = active ? 'mở lại' : 'thu hồi';
         if (window.confirm(`Bạn muốn ${action} mã ${keyToToggle}?`)) {
             await setVideoExportCodeActive(keyToToggle, active);
+        }
+    };
+
+    const handleCopyVideoTrialCode = () => {
+        handleCopyKey(INTERACTIVE_VIDEO_TRIAL_CODE);
+    };
+
+    const handleToggleVideoTrial = async (deviceId: string, active: boolean) => {
+        const action = active ? 'mở lại' : 'thu hồi';
+        if (window.confirm(`Bạn muốn ${action} dùng thử của thiết bị này?`)) {
+            await setInteractiveVideoTrialActive(deviceId, active);
+        }
+    };
+
+    const handleExtendVideoTrial = async (deviceId: string) => {
+        if (window.confirm('Gia hạn thêm 3 ngày cho thiết bị này?')) {
+            await extendInteractiveVideoTrial(deviceId, 3);
+        }
+    };
+
+    const handleResetVideoTrialToday = async (deviceId: string) => {
+        if (window.confirm('Reset lượt Video tương tác hôm nay của thiết bị này về 0?')) {
+            await resetInteractiveVideoTrialToday(deviceId);
         }
     };
 
@@ -1011,10 +1048,10 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                     {activeTab === 'keys' && (
                         <div className="h-full flex flex-col">
                             {/* Sub-tabs for PRO vs BEE keys */}
-                            <div className="flex gap-2 mb-4">
+                            <div className="flex flex-wrap gap-2 mb-4">
                                 <button
                                     onClick={() => setKeySubTab('pro')}
-                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'pro'
+                                    className={`flex-1 min-w-[160px] py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'pro'
                                         ? 'bg-purple-600 text-white shadow-lg'
                                         : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                                         }`}
@@ -1023,7 +1060,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 </button>
                                 <button
                                     onClick={() => setKeySubTab('bee')}
-                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'bee'
+                                    className={`flex-1 min-w-[160px] py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'bee'
                                         ? 'bg-orange-500 text-white shadow-lg'
                                         : 'bg-orange-100 text-orange-700 hover:bg-orange-200'
                                         }`}
@@ -1032,7 +1069,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 </button>
                                 <button
                                     onClick={() => setKeySubTab('skkn')}
-                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'skkn'
+                                    className={`flex-1 min-w-[160px] py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'skkn'
                                         ? 'bg-emerald-500 text-white shadow-lg'
                                         : 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
                                         }`}
@@ -1041,7 +1078,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 </button>
                                 <button
                                     onClick={() => setKeySubTab('kyyeu')}
-                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'kyyeu'
+                                    className={`flex-1 min-w-[160px] py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'kyyeu'
                                         ? 'bg-rose-500 text-white shadow-lg'
                                         : 'bg-rose-100 text-rose-700 hover:bg-rose-200'
                                         }`}
@@ -1050,12 +1087,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 </button>
                                 <button
                                     onClick={() => setKeySubTab('videoExport')}
-                                    className={`flex-1 py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'videoExport'
+                                    className={`flex-1 min-w-[160px] py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'videoExport'
                                         ? 'bg-sky-500 text-white shadow-lg'
                                         : 'bg-sky-100 text-sky-700 hover:bg-sky-200'
                                         }`}
                                 >
                                     Video xuất ({videoExportKeys.length})
+                                </button>
+                                <button
+                                    onClick={() => setKeySubTab('videoTrial')}
+                                    className={`flex-1 min-w-[160px] py-2 px-3 rounded-lg font-semibold text-sm flex items-center justify-center gap-2 transition-all ${keySubTab === 'videoTrial'
+                                        ? 'bg-indigo-500 text-white shadow-lg'
+                                        : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
+                                        }`}
+                                >
+                                    Video dùng thử ({videoTrials.length})
                                 </button>
                             </div>
 
@@ -1063,7 +1109,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                             <motion.button
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
-                                onClick={() => setShowCreateForm(true)}
+                                onClick={() => keySubTab === 'videoTrial' ? handleCopyVideoTrialCode() : setShowCreateForm(true)}
                                 className={`w-full text-white font-bold py-4 px-6 rounded-2xl shadow-lg mb-4 flex items-center justify-center gap-2 ${keySubTab === 'pro'
                                     ? 'bg-gradient-to-r from-green-500 to-emerald-600'
                                     : keySubTab === 'bee'
@@ -1072,14 +1118,16 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                             ? 'bg-gradient-to-r from-teal-500 to-emerald-600'
                                             : keySubTab === 'videoExport'
                                                 ? 'bg-gradient-to-r from-sky-500 to-blue-600'
-                                                : 'bg-gradient-to-r from-rose-500 to-pink-600'
+                                                : keySubTab === 'videoTrial'
+                                                    ? 'bg-gradient-to-r from-indigo-500 to-sky-600'
+                                                    : 'bg-gradient-to-r from-rose-500 to-pink-600'
                                     }`}
                             >
-                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO- (Giải Mã Bức Tranh)' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- (Video xuất file)' : 'Tạo mã KYYEU- (Kỷ Yếu)'}
+                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO- (Giải Mã Bức Tranh)' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- (Video xuất file)' : keySubTab === 'videoTrial' ? `Copy mã dùng thử: ${INTERACTIVE_VIDEO_TRIAL_CODE}` : 'Tạo mã KYYEU- (Kỷ Yếu)'}
                             </motion.button>
 
                             <AnimatePresence>
-                                {showCreateForm && (
+                                {showCreateForm && keySubTab !== 'videoTrial' && (
                                     <motion.div
                                         initial={{ opacity: 0, height: 0 }}
                                         animate={{ opacity: 1, height: 'auto' }}
@@ -1309,6 +1357,72 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                             </div>
                                         </motion.div>
                                     ))
+                                ) : keySubTab === 'videoTrial' ? (
+                                    <div className="space-y-3">
+                                        <div className="rounded-2xl border border-indigo-200 bg-indigo-50 p-4">
+                                            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                                                <div>
+                                                    <div className="text-sm font-bold text-indigo-700">Mã dùng thử chung cho Video tương tác</div>
+                                                    <div className="mt-1 font-mono text-xl font-black text-indigo-900">{INTERACTIVE_VIDEO_TRIAL_CODE}</div>
+                                                    <div className="mt-1 text-sm text-indigo-700">3 ngày, mỗi ngày {INTERACTIVE_VIDEO_DAILY_LIMIT} lượt. Khóa theo Gmail và thiết bị.</div>
+                                                </div>
+                                                <button onClick={handleCopyVideoTrialCode} className="rounded-xl bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700">
+                                                    Copy mã
+                                                </button>
+                                            </div>
+                                        </div>
+
+                                        {videoTrials.length === 0 ? (
+                                            <div className="text-center text-gray-500 py-10">
+                                                <Monitor size={48} className="mx-auto mb-4 opacity-30" />
+                                                <p>Chưa có thiết bị nào kích hoạt dùng thử Video tương tác</p>
+                                            </div>
+                                        ) : videoTrials.map((item) => {
+                                            const todayUsed = item.dailyUsage?.[getVietnamDateKey()] || 0;
+                                            const expired = new Date(item.expiresAt).getTime() <= Date.now();
+                                            const active = item.active !== false && !expired;
+
+                                            return (
+                                                <motion.div key={item.deviceId} className={`rounded-2xl p-4 shadow-md border ${active ? 'bg-gradient-to-r from-indigo-50 to-sky-50 border-indigo-200' : 'bg-gray-100 border-gray-200 opacity-80'}`}>
+                                                    <div className="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
+                                                        <div className="min-w-0">
+                                                            <div className="flex flex-wrap items-center gap-2">
+                                                                <span className="font-mono text-base font-black text-indigo-800">{item.deviceId}</span>
+                                                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${active ? 'bg-green-100 text-green-700' : expired ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                                                    {active ? 'Đang dùng' : expired ? 'Hết hạn' : 'Đã thu hồi'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="mt-1 text-sm text-gray-600">
+                                                                Gmail chính: <span className="font-semibold text-gray-900">{item.primaryEmail}</span>
+                                                            </div>
+                                                            {(item.emails || []).length > 1 && (
+                                                                <div className="mt-1 text-xs text-gray-500">
+                                                                    Gmail đã dùng trên máy này: {(item.emails || []).join(', ')}
+                                                                </div>
+                                                            )}
+                                                            <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
+                                                                <span className="rounded-lg bg-white px-2.5 py-1 text-indigo-700">Hôm nay: {todayUsed}/{INTERACTIVE_VIDEO_DAILY_LIMIT}</span>
+                                                                <span className="rounded-lg bg-white px-2.5 py-1 text-slate-700">Bắt đầu: {formatKyYeuDateTime(item.startedAt)}</span>
+                                                                <span className="rounded-lg bg-white px-2.5 py-1 text-slate-700">Hết hạn: {formatKyYeuDateTime(item.expiresAt)}</span>
+                                                                {item.lastUsedAt && <span className="rounded-lg bg-white px-2.5 py-1 text-slate-700">Dùng gần nhất: {formatKyYeuDateTime(item.lastUsedAt)}</span>}
+                                                            </div>
+                                                        </div>
+                                                        <div className="flex flex-wrap gap-2 lg:justify-end">
+                                                            <button onClick={() => handleToggleVideoTrial(item.deviceId, !item.active)} className={`rounded-lg px-3 py-2 text-sm font-bold ${item.active !== false ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
+                                                                {item.active !== false ? 'Thu hồi' : 'Mở lại'}
+                                                            </button>
+                                                            <button onClick={() => handleExtendVideoTrial(item.deviceId)} className="rounded-lg bg-blue-100 px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-200">
+                                                                Gia hạn 3 ngày
+                                                            </button>
+                                                            <button onClick={() => handleResetVideoTrialToday(item.deviceId)} className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200">
+                                                                Reset hôm nay
+                                                            </button>
+                                                        </div>
+                                                    </div>
+                                                </motion.div>
+                                            );
+                                        })}
+                                    </div>
                                 ) : (
                                     kyYeuKeys.length === 0 ? (
                                         <div className="text-center text-gray-500 py-10">

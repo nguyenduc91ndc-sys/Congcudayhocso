@@ -65,6 +65,16 @@ import SoanGiaoAnNangLucSo from './components/SoanGiaoAnNangLucSo';
 import QrGenerator from './components/QrGenerator';
 import { getQrLinkById, incrementQrScan } from './utils/firebaseQrLinks';
 import { deleteLocalVideoFile } from './utils/localVideoStore';
+import { getTrialStatus } from './utils/trialUtils';
+import {
+  activateInteractiveVideoTrial,
+  getInteractiveVideoTrialStatus,
+  INTERACTIVE_VIDEO_DAILY_LIMIT,
+  INTERACTIVE_VIDEO_TRIAL_CODE,
+  INTERACTIVE_VIDEO_TRIAL_DAYS,
+  InteractiveVideoTrialStatus,
+  useInteractiveVideoTrialTurn,
+} from './utils/firebaseInteractiveVideoTrial';
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
@@ -130,6 +140,11 @@ function App() {
   const [appVisibilityLoaded, setAppVisibilityLoaded] = useState(false);
   const [sharedThuMoiId, setSharedThuMoiId] = useState<string | null>(() => getInitialSharedAppId('thu_moi_tuong_tac'));
   const [sharedThiepMoiId, setSharedThiepMoiId] = useState<string | null>(() => getInitialSharedAppId('thiep_moi_online'));
+  const [showVideoTrialModal, setShowVideoTrialModal] = useState(false);
+  const [videoTrialCode, setVideoTrialCode] = useState('');
+  const [videoTrialStatus, setVideoTrialStatus] = useState<InteractiveVideoTrialStatus | null>(null);
+  const [videoTrialMessage, setVideoTrialMessage] = useState('');
+  const [isCheckingVideoTrial, setIsCheckingVideoTrial] = useState(false);
   const lastAppUsageLogRef = useRef<{ key: string; time: number } | null>(null);
 
   useEffect(() => {
@@ -497,6 +512,113 @@ function App() {
     setView('PLAYER');
   }
 
+  const getEffectiveUser = (): User | null => {
+    if (user) return user;
+    try {
+      const savedUser = localStorage.getItem('ntd_user');
+      return savedUser ? JSON.parse(savedUser) as User : null;
+    } catch {
+      return null;
+    }
+  };
+
+  const openVideoTrialModal = async (message = '') => {
+    const effectiveUser = getEffectiveUser();
+    const status = effectiveUser?.email ? await getInteractiveVideoTrialStatus(effectiveUser.email) : null;
+    setVideoTrialStatus(status);
+    setVideoTrialMessage(message || status?.message || '');
+    setShowVideoTrialModal(true);
+  };
+
+  const handleOpenInteractiveVideo = async () => {
+    const effectiveUser = getEffectiveUser();
+    const email = effectiveUser?.email?.trim();
+    const effectiveIsAdmin = Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()));
+
+    if (effectiveIsAdmin || getTrialStatus().isPro) {
+      setView('INTERACTIVE_VIDEO');
+      return;
+    }
+
+    if (!email) {
+      setVideoTrialStatus(null);
+      setVideoTrialMessage('Vui lòng đăng nhập bằng Gmail để dùng thử Video tương tác.');
+      setShowVideoTrialModal(true);
+      return;
+    }
+
+    setIsCheckingVideoTrial(true);
+    try {
+      const status = await getInteractiveVideoTrialStatus(email);
+      setVideoTrialStatus(status);
+
+      if (status.active && status.todayRemaining > 0) {
+        const result = await useInteractiveVideoTrialTurn(email);
+        if (result.success) {
+          setShowVideoTrialModal(false);
+          setVideoTrialMessage('');
+          setView('INTERACTIVE_VIDEO');
+          return;
+        }
+
+        setVideoTrialStatus(result.status);
+        setVideoTrialMessage(result.message || 'Không thể trừ lượt dùng thử.');
+        setShowVideoTrialModal(true);
+        return;
+      }
+
+      if (status.blockedByEmail || status.expired || status.hasTrial) {
+        await openVideoTrialModal(status.message || (status.todayRemaining <= 0 && status.active
+          ? 'Hôm nay thiết bị này đã dùng hết 3 lượt Video tương tác.'
+          : 'Bạn cần kích hoạt mã dùng thử Video tương tác.'));
+      } else {
+        await openVideoTrialModal('Nhập mã dùng thử để mở Video tương tác.');
+      }
+    } catch (error) {
+      console.error('Interactive video trial error:', error);
+      await openVideoTrialModal('Không kiểm tra được mã dùng thử. Vui lòng thử lại hoặc liên hệ admin.');
+    } finally {
+      setIsCheckingVideoTrial(false);
+    }
+  };
+
+  const handleActivateVideoTrial = async () => {
+    const effectiveUser = getEffectiveUser();
+    const email = effectiveUser?.email?.trim();
+
+    if (!email) {
+      setVideoTrialMessage('Vui lòng đăng nhập bằng Gmail để kích hoạt dùng thử.');
+      return;
+    }
+
+    setIsCheckingVideoTrial(true);
+    try {
+      const activated = await activateInteractiveVideoTrial(email, videoTrialCode);
+      setVideoTrialStatus(activated.status);
+
+      if (!activated.success) {
+        setVideoTrialMessage(activated.message || 'Không kích hoạt được mã dùng thử.');
+        return;
+      }
+
+      const used = await useInteractiveVideoTrialTurn(email);
+      setVideoTrialStatus(used.status);
+
+      if (used.success) {
+        setShowVideoTrialModal(false);
+        setVideoTrialMessage('');
+        setView('INTERACTIVE_VIDEO');
+      } else {
+        setVideoTrialMessage(used.message || activated.message || 'Đã kích hoạt nhưng chưa thể mở app.');
+      }
+    } catch (error) {
+      console.error('Activate interactive video trial error:', error);
+      setVideoTrialMessage('Lỗi kích hoạt mã dùng thử. Vui lòng thử lại hoặc liên hệ admin.');
+    } finally {
+      setIsCheckingVideoTrial(false);
+    }
+  };
+
   const handleEditLesson = (lesson: VideoLesson) => {
     setCurrentLesson(lesson);
     setView('CREATE_EDIT');
@@ -622,7 +744,7 @@ function App() {
                   onLuckyWheel={() => requireLogin(() => setView('LUCKY_WHEEL'))}
                   onStarWheel={() => requireLogin(() => setView('STAR_WHEEL'))}
                   onVideoStore={() => requireLogin(() => setView('VIDEO_STORE'))}
-                  onInteractiveVideo={() => requireLogin(() => setView('INTERACTIVE_VIDEO'))}
+                  onInteractiveVideo={() => requireLogin(() => { void handleOpenInteractiveVideo(); })}
                   onAICourseStore={() => requireLogin(() => setView('AI_COURSE_STORE'))}
                   onSoanGiaoAnNangLucSo={() => setView('SOAN_GIAO_AN_NANG_LUC_SO')}
                   onCanvaBasics={() => requireLogin(() => setView('CANVA_BASICS'))}
@@ -978,6 +1100,90 @@ function App() {
                   className="w-full max-w-md"
                 >
                   <Login onLogin={handleLogin} />
+                </motion.div>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
+          {/* Interactive Video Trial Modal */}
+          <AnimatePresence>
+            {showVideoTrialModal && (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                exit={{ opacity: 0 }}
+                className="fixed inset-0 bg-black/65 backdrop-blur-sm z-[210] flex items-center justify-center p-4"
+                onClick={() => setShowVideoTrialModal(false)}
+              >
+                <motion.div
+                  initial={{ scale: 0.94, opacity: 0, y: 16 }}
+                  animate={{ scale: 1, opacity: 1, y: 0 }}
+                  exit={{ scale: 0.94, opacity: 0, y: 16 }}
+                  onClick={e => e.stopPropagation()}
+                  className="w-full max-w-lg rounded-3xl bg-white p-6 shadow-2xl"
+                >
+                  <div className="mb-4 flex items-start justify-between gap-4">
+                    <div>
+                      <div className="mb-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
+                        Video tương tác
+                      </div>
+                      <h2 className="text-2xl font-black text-slate-900">Mã dùng thử 3 ngày</h2>
+                      <p className="mt-2 text-sm leading-relaxed text-slate-600">
+                        Mỗi thiết bị được dùng {INTERACTIVE_VIDEO_DAILY_LIMIT} lượt/ngày trong {INTERACTIVE_VIDEO_TRIAL_DAYS} ngày. Mã sẽ gắn với Gmail và thiết bị để tránh dùng nhiều tài khoản.
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setShowVideoTrialModal(false)}
+                      className="rounded-full bg-slate-100 px-3 py-1.5 text-sm font-bold text-slate-600 hover:bg-slate-200"
+                    >
+                      Đóng
+                    </button>
+                  </div>
+
+                  {videoTrialStatus && (
+                    <div className="mb-4 grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-2xl bg-slate-50 p-3">
+                        <div className="text-xs font-semibold text-slate-500">Còn ngày</div>
+                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.daysLeft}</div>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-3">
+                        <div className="text-xs font-semibold text-slate-500">Hôm nay</div>
+                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.todayUsed}/{INTERACTIVE_VIDEO_DAILY_LIMIT}</div>
+                      </div>
+                      <div className="rounded-2xl bg-slate-50 p-3">
+                        <div className="text-xs font-semibold text-slate-500">Còn lượt</div>
+                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.todayRemaining}</div>
+                      </div>
+                    </div>
+                  )}
+
+                  {videoTrialMessage && (
+                    <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
+                      {videoTrialMessage}
+                    </div>
+                  )}
+
+                  <div className="space-y-3">
+                    <input
+                      value={videoTrialCode}
+                      onChange={(e) => setVideoTrialCode(e.target.value.toUpperCase())}
+                      placeholder={INTERACTIVE_VIDEO_TRIAL_CODE}
+                      className="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 font-mono text-base font-bold text-slate-800 outline-none focus:border-indigo-500"
+                    />
+                    <button
+                      type="button"
+                      onClick={handleActivateVideoTrial}
+                      disabled={isCheckingVideoTrial}
+                      className="w-full rounded-2xl bg-gradient-to-r from-indigo-600 to-sky-600 px-5 py-3 font-black text-white shadow-lg hover:from-indigo-700 hover:to-sky-700 disabled:cursor-not-allowed disabled:opacity-60"
+                    >
+                      {isCheckingVideoTrial ? 'Đang kiểm tra...' : 'Kích hoạt và mở Video tương tác'}
+                    </button>
+                  </div>
+
+                  <p className="mt-4 text-center text-xs text-slate-500">
+                    Cần mở thêm lượt hoặc gia hạn: liên hệ admin 0975509490.
+                  </p>
                 </motion.div>
               </motion.div>
             )}
