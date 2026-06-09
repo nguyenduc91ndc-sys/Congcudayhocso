@@ -219,6 +219,11 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
                   <p className="text-amber-600 font-semibold text-sm">
                     ⚠️ Bạn chưa có quyền Pro. Nhập mã Pro để sử dụng.
                   </p>
+                  <div className="rounded-2xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800 font-semibold">
+                    Pro: 49.000đ - tạo quiz không giới hạn.
+                    <br />
+                    Liên hệ admin: <a href="tel:0975509490" className="underline font-black">0975509490</a>
+                  </div>
 
                   {!showProInput ? (
                     <button

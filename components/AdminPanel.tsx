@@ -1019,7 +1019,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         : 'bg-purple-100 text-purple-700 hover:bg-purple-200'
                                         }`}
                                 >
-                                    <Key size={16} /> PRO- Tất cả Game ({keys.length})
+                                    <Key size={16} /> PRO- Giải Mã Bức Tranh ({keys.length})
                                 </button>
                                 <button
                                     onClick={() => setKeySubTab('bee')}
@@ -1075,7 +1075,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                 : 'bg-gradient-to-r from-rose-500 to-pink-600'
                                     }`}
                             >
-                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO-' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- (Video xuất file)' : 'Tạo mã KYYEU- (Kỷ Yếu)'}
+                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO- (Giải Mã Bức Tranh)' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- (Video xuất file)' : 'Tạo mã KYYEU- (Kỷ Yếu)'}
                             </motion.button>
 
                             <AnimatePresence>
@@ -1087,7 +1087,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         className="bg-white rounded-2xl p-4 mb-4 shadow-lg"
                                     >
                                         <div className={`text-sm font-semibold mb-2 ${keySubTab === 'pro' ? 'text-purple-600' : keySubTab === 'bee' ? 'text-orange-600' : keySubTab === 'skkn' ? 'text-emerald-600' : keySubTab === 'videoExport' ? 'text-sky-600' : 'text-rose-600'}`}>
-                                            {keySubTab === 'pro' ? 'Tạo mã PRO- (dùng cho nhiều game)' : keySubTab === 'bee' ? 'Tạo mã BEE- (chỉ dùng cho Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (chỉ dùng cho Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- cho xuất file video tương tác' : 'Tạo mã KYYEU- (thu hồi được, dùng cho app Kỷ Yếu)'}
+                                            {keySubTab === 'pro' ? 'Tạo mã PRO- cho Giải Mã Bức Tranh - Pro 49.000đ' : keySubTab === 'bee' ? 'Tạo mã BEE- (chỉ dùng cho Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (chỉ dùng cho Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- cho xuất file video tương tác' : 'Tạo mã KYYEU- (thu hồi được, dùng cho app Kỷ Yếu)'}
                                         </div>
                                         <input
                                             type="text"
@@ -1163,8 +1163,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     {copiedKey === item.key && <span className="text-green-500 text-sm"><CheckCircle size={14} /> Đã copy!</span>}
                                                 </div>
                                                 <div className="text-sm text-gray-500">{item.note} • {item.createdAt}</div>
-                                                <div className="text-xs text-rose-600 mt-1 font-semibold">
-                                                    Lượt xuất ZIP: {item.exportCount || 0}/{item.exportLimit || 0}
+                                                <div className="mt-1 inline-flex rounded-full bg-purple-50 px-2 py-0.5 text-xs font-bold text-purple-700">
+                                                    Giải Mã Bức Tranh - Pro 49.000đ
                                                 </div>
                                                 {item.usedBy && (
                                                     <div className="text-xs text-green-600 flex items-center gap-2">

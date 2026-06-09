@@ -688,6 +688,9 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
               <div className="text-6xl mb-4">👑</div>
               <h3 className="text-2xl font-black text-indigo-700">Kích hoạt Pro</h3>
               <p className="text-gray-500 mt-2">Nhập mã Pro để tạo quiz không giới hạn</p>
+              <p className="mt-3 rounded-2xl bg-amber-50 border border-amber-200 p-3 text-sm text-amber-800 font-bold">
+                Pro: 49.000đ - liên hệ admin 0975509490 để nhận mã.
+              </p>
             </div>
 
             <input
@@ -740,7 +743,7 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
             </div>
 
             <p className="mt-6 text-center text-sm text-gray-400">
-              💡 Liên hệ admin để nhận mã Pro
+              💡 Liên hệ admin 0975509490 để nhận mã Pro
             </p>
           </div>
         </div>
@@ -758,6 +761,7 @@ const AdminView: React.FC<AdminViewProps> = ({ config, onUpdateConfig, onExit })
             <p className="text-gray-600 mt-3 mb-6">
               Bạn đã sử dụng hết <strong>{QUOTA_LIMIT} lượt</strong> tạo quiz miễn phí.
               <br />Nhập mã Pro để tiếp tục không giới hạn.
+              <br /><span className="font-bold text-amber-600">Pro: 49.000đ - liên hệ admin 0975509490.</span>
             </p>
             <button
               onClick={() => setShowProModal(true)}
