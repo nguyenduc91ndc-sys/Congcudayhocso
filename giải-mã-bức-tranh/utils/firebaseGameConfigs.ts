@@ -3,6 +3,7 @@
  * Giải quyết vấn đề URL quá dài khi chia sẻ link
  */
 import { database } from '../../utils/firebaseConfig';
+import { firebaseConfig } from '../../utils/firebaseConfig';
 import { ref, set, get, query, orderByChild, equalTo } from 'firebase/database';
 import { GameConfig } from '../types';
 
@@ -16,6 +17,52 @@ const generateGameId = (): string => {
     return result;
 };
 
+const DATABASE_URL = firebaseConfig.databaseURL.replace(/\/$/, '');
+
+const sanitizeForFirebase = (value: any): any => {
+    if (value === undefined) return null;
+    if (value === null || typeof value !== 'object') return value;
+    if (Array.isArray(value)) return value.map(sanitizeForFirebase);
+
+    return Object.fromEntries(
+        Object.entries(value).map(([key, nestedValue]) => [key, sanitizeForFirebase(nestedValue)])
+    );
+};
+
+const withTimeout = async <T,>(promise: Promise<T>, timeoutMs: number, label: string): Promise<T> => {
+    let timeoutId: ReturnType<typeof setTimeout> | undefined;
+    const timeoutPromise = new Promise<never>((_, reject) => {
+        timeoutId = setTimeout(() => reject(new Error(`${label} quá thời gian chờ`)), timeoutMs);
+    });
+
+    try {
+        return await Promise.race([promise, timeoutPromise]);
+    } finally {
+        if (timeoutId) clearTimeout(timeoutId);
+    }
+};
+
+const saveGameConfigByRest = async (gameId: string, data: any): Promise<void> => {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 10000);
+
+    try {
+        const response = await fetch(`${DATABASE_URL}/decode_games/${gameId}.json`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(data),
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            const detail = await response.text().catch(() => '');
+            throw new Error(`REST ${response.status}: ${detail || response.statusText}`);
+        }
+    } finally {
+        clearTimeout(timeoutId);
+    }
+};
+
 /**
  * Lưu cấu hình game lên Firebase
  * @param config Cấu hình game cần lưu
@@ -25,12 +72,18 @@ const generateGameId = (): string => {
 export const saveGameConfig = async (config: GameConfig, ownerId?: string): Promise<string> => {
     const gameId = generateGameId();
     const gameRef = ref(database, `decode_games/${gameId}`);
-
-    await set(gameRef, {
+    const payload = sanitizeForFirebase({
         ...config,
         ownerId: ownerId || 'anonymous',
         createdAt: Date.now(),
     });
+
+    try {
+        await withTimeout(set(gameRef, payload), 8000, 'Firebase SDK');
+    } catch (sdkError) {
+        console.warn('Firebase SDK save failed, using REST fallback:', sdkError);
+        await saveGameConfigByRest(gameId, payload);
+    }
 
     return gameId;
 };
