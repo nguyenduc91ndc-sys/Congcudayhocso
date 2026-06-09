@@ -10,7 +10,7 @@ import {
     normalizeProvider,
     parseMultipart,
     type AiPart,
-} from './_giao-an';
+} from './_giao-an.js';
 
 export const config = {
     api: {

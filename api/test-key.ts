@@ -1,5 +1,5 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
-import { callGemini, callGroq, errorMessage, normalizeProvider } from './_giao-an';
+import { callGemini, callGroq, errorMessage, normalizeProvider } from './_giao-an.js';
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     if (req.method !== 'POST') {
