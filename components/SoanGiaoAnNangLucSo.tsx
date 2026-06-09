@@ -4,7 +4,7 @@ interface SoanGiaoAnNangLucSoProps {
     onBack: () => void;
 }
 
-const APP_URL = '/xdkhbdcv3439/xdkhbdcv3439/public/index.html';
+const APP_URL = '/xdkhbdcv3439/xdkhbdcv3439/public/index.html?v=word-download-20260609';
 
 const SoanGiaoAnNangLucSo: React.FC<SoanGiaoAnNangLucSoProps> = ({ onBack }) => {
     useEffect(() => {
