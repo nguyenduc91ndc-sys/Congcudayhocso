@@ -563,7 +563,7 @@ function App() {
 
       if (status.blockedByEmail || status.expired || status.hasTrial) {
         await openVideoTrialModal(status.message || (status.remainingCount <= 0
-          ? 'Thiết bị này đã dùng hết 3 lần xuất thử.'
+          ? 'Thiết bị này đã dùng hết 3 lần xuất thử. Thầy cô vẫn có thể vào Video tương tác, khi xuất file chọn gói trả phí 1 lượt hoặc 10 lượt để nhận mã VIDX.'
           : 'Bạn cần kích hoạt mã dùng thử Video tương tác.'));
       } else {
         await openVideoTrialModal('Nhập mã dùng thử để mở Video tương tác.');
@@ -608,6 +608,12 @@ function App() {
     } finally {
       setIsCheckingVideoTrial(false);
     }
+  };
+
+  const handleOpenInteractiveVideoForPaidExport = () => {
+    setShowVideoTrialModal(false);
+    setVideoTrialMessage('');
+    setView('INTERACTIVE_VIDEO');
   };
 
   const handleEditLesson = (lesson: VideoLesson) => {
@@ -1167,6 +1173,32 @@ function App() {
                   {videoTrialMessage && (
                     <div className="mb-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-semibold text-amber-800">
                       {videoTrialMessage}
+                    </div>
+                  )}
+
+                  {videoTrialStatus && (videoTrialStatus.remainingCount <= 0 || videoTrialStatus.blockedByEmail) && (
+                    <div className="mb-4 rounded-2xl border border-sky-200 bg-sky-50 p-4">
+                      <div className="text-sm font-black text-sky-900">Muốn mua lượt xuất?</div>
+                      <p className="mt-1 text-sm font-semibold text-sky-800">
+                        Bấm vào công cụ để tạo bài. Khi nhấn xuất HTML5/SCORM, chọn gói 1 lượt hoặc 10 lượt, chuyển khoản rồi nhập mã VIDX admin cấp.
+                      </p>
+                      <div className="mt-3 flex flex-col gap-2 sm:flex-row">
+                        <button
+                          type="button"
+                          onClick={handleOpenInteractiveVideoForPaidExport}
+                          className="flex-1 rounded-xl bg-sky-600 px-4 py-2.5 text-sm font-black text-white shadow hover:bg-sky-700"
+                        >
+                          Vào công cụ và mua lượt khi xuất
+                        </button>
+                        <a
+                          href="https://zalo.me/0975509490"
+                          target="_blank"
+                          rel="noreferrer"
+                          className="rounded-xl bg-white px-4 py-2.5 text-center text-sm font-black text-sky-700 ring-1 ring-sky-200 hover:bg-sky-100"
+                        >
+                          Zalo admin 0975509490
+                        </a>
+                      </div>
                     </div>
                   )}
 
