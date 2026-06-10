@@ -51,7 +51,7 @@ const EXPORT_PACKAGES: Array<{
     {
         id: 'trial',
         title: 'Dùng thử',
-        description: 'Nhập mã dùng thử xuất file do admin cấp. Không cần chuyển khoản.',
+        description: 'Nhập mã dùng thử xuất file do admin cấp. Chưa có mã liên hệ Zalo 0975509490.',
         turns: 1,
         amount: 0,
         transferCode: 'DUNGTHU',
@@ -109,7 +109,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const [savedLesson, setSavedLesson] = useState<VideoLesson | null>(null);
     const [controlPanel, setControlPanel] = useState<'export' | 'design' | 'actions'>('actions');
     const [pendingExport, setPendingExport] = useState<PendingExport | null>(null);
-    const [selectedExportPackageId, setSelectedExportPackageId] = useState<ExportPackageId>('single');
+    const [selectedExportPackageId, setSelectedExportPackageId] = useState<ExportPackageId>('trial');
     const [copiedPaymentField, setCopiedPaymentField] = useState<string | null>(null);
     const [exportCodeInput, setExportCodeInput] = useState('');
     const [exportEmailInput, setExportEmailInput] = useState(userEmail || '');
@@ -938,10 +938,10 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
     const openExportPayment = (request: PendingExport) => {
         if (!title.trim()) return alert('Vui lòng nhập tên video trước khi xuất file.');
         if (videoSource !== 'local') {
-            alert('Dùng link YouTube online thì miễn phí. Xuất file độc lập chạy offline cần chọn nguồn "Từ máy" và thanh toán theo lượt.');
+            alert('Dùng link YouTube online thì miễn phí. Xuất file độc lập chạy offline cần chọn nguồn "Từ máy", sau đó nhập mã dùng thử hoặc chọn gói lượt xuất.');
             return;
         }
-        setSelectedExportPackageId('single');
+        setSelectedExportPackageId('trial');
         setCopiedPaymentField(null);
         setExportEmailInput(userEmail || exportEmailInput || '');
         setPendingExport(request);
@@ -1998,7 +1998,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                         <p className="font-black">Ghi chú</p>
                                         <p className="mt-1">
                                             {isTrialExportPackage
-                                                ? 'Nếu thầy cô có mã dùng thử xuất file, nhập Gmail và mã VIDX- ở bên dưới để kiểm tra và xuất. Không cần quét QR hay chuyển khoản.'
+                                                ? `Nếu thầy cô có mã dùng thử xuất file, nhập Gmail và mã VIDX- ở bên dưới để kiểm tra và xuất. Chưa có mã dùng thử, liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo}.`
                                                 : 'Sau khi chuyển khoản, admin sẽ cấp mã VIDX- có đúng số lượt theo gói. Mỗi lần xuất thành công hệ thống tự trừ 1 lượt.'}
                                         </p>
                                     </div>
@@ -2030,6 +2030,16 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                                     ? 'Mã dùng thử cũng bắt đầu bằng VIDX- và hệ thống tự trừ lượt sau khi xuất thành công.'
                                                     : 'Gói 1 lượt và 10 lượt đều dùng 1 mã riêng, hệ thống tự đếm số lượt còn lại.'}
                                             </p>
+                                            {isTrialExportPackage && (
+                                                <a
+                                                    href={`https://zalo.me/${EXPORT_BANK_INFO.adminZalo}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="mt-3 inline-flex rounded-xl bg-emerald-100 px-3 py-2 text-xs font-black text-emerald-800 transition hover:bg-emerald-200"
+                                                >
+                                                    Liên hệ Zalo admin {EXPORT_BANK_INFO.adminZalo} để nhận mã dùng thử
+                                                </a>
+                                            )}
                                         </div>
                                     </div>
 
