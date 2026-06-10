@@ -69,10 +69,8 @@ import { getTrialStatus } from './utils/trialUtils';
 import {
   activateInteractiveVideoTrial,
   getInteractiveVideoTrialStatus,
-  INTERACTIVE_VIDEO_DAILY_LIMIT,
-  INTERACTIVE_VIDEO_TRIAL_DAYS,
+  INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT,
   InteractiveVideoTrialStatus,
-  useInteractiveVideoTrialTurn,
 } from './utils/firebaseInteractiveVideoTrial';
 
 // Email admin được phép vào trang quản lý mã
@@ -546,7 +544,7 @@ function App() {
       setVideoTrialStatus(null);
       setVideoTrialMessage('');
       setPendingAction(() => () => { void handleOpenInteractiveVideo(); });
-      setLoginModalMessage('Đăng nhập Gmail để dùng thử Video tương tác 3 ngày. Sau khi đăng nhập, hệ thống sẽ tự mở bước nhập mã dùng thử.');
+      setLoginModalMessage('Đăng nhập Gmail để dùng thử Video tương tác. Sau khi đăng nhập, hệ thống sẽ tự mở bước nhập mã dùng thử.');
       setShowLoginModal(true);
       return;
     }
@@ -556,24 +554,16 @@ function App() {
       const status = await getInteractiveVideoTrialStatus(email);
       setVideoTrialStatus(status);
 
-      if (status.active && status.todayRemaining > 0) {
-        const result = await useInteractiveVideoTrialTurn(email);
-        if (result.success) {
-          setShowVideoTrialModal(false);
-          setVideoTrialMessage('');
-          setView('INTERACTIVE_VIDEO');
-          return;
-        }
-
-        setVideoTrialStatus(result.status);
-        setVideoTrialMessage(result.message || 'Không thể trừ lượt dùng thử.');
-        setShowVideoTrialModal(true);
+      if (status.active && status.remainingCount > 0) {
+        setShowVideoTrialModal(false);
+        setVideoTrialMessage('');
+        setView('INTERACTIVE_VIDEO');
         return;
       }
 
       if (status.blockedByEmail || status.expired || status.hasTrial) {
-        await openVideoTrialModal(status.message || (status.todayRemaining <= 0 && status.active
-          ? 'Hôm nay thiết bị này đã dùng hết 3 lượt Video tương tác.'
+        await openVideoTrialModal(status.message || (status.remainingCount <= 0
+          ? 'Thiết bị này đã dùng hết 3 lần xuất thử.'
           : 'Bạn cần kích hoạt mã dùng thử Video tương tác.'));
       } else {
         await openVideoTrialModal('Nhập mã dùng thử để mở Video tương tác.');
@@ -605,15 +595,12 @@ function App() {
         return;
       }
 
-      const used = await useInteractiveVideoTrialTurn(email);
-      setVideoTrialStatus(used.status);
-
-      if (used.success) {
+      if (activated.status.remainingCount > 0) {
         setShowVideoTrialModal(false);
         setVideoTrialMessage('');
         setView('INTERACTIVE_VIDEO');
       } else {
-        setVideoTrialMessage(used.message || activated.message || 'Đã kích hoạt nhưng chưa thể mở app.');
+        setVideoTrialMessage(activated.message || 'Mã dùng thử đã hết lượt xuất.');
       }
     } catch (error) {
       console.error('Activate interactive video trial error:', error);
@@ -756,7 +743,7 @@ function App() {
                   onVideoStore={() => requireLogin(() => setView('VIDEO_STORE'))}
                   onInteractiveVideo={() => requireLogin(
                     () => { void handleOpenInteractiveVideo(); },
-                    'Đăng nhập Gmail để dùng thử Video tương tác 3 ngày. Sau khi đăng nhập, hệ thống sẽ tự mở bước nhập mã dùng thử.'
+                    'Đăng nhập Gmail để dùng thử Video tương tác. Sau khi đăng nhập, hệ thống sẽ tự mở bước nhập mã dùng thử.'
                   )}
                   onAICourseStore={() => requireLogin(() => setView('AI_COURSE_STORE'))}
                   onSoanGiaoAnNangLucSo={() => setView('SOAN_GIAO_AN_NANG_LUC_SO')}
@@ -1146,9 +1133,9 @@ function App() {
                       <div className="mb-2 inline-flex rounded-full bg-indigo-50 px-3 py-1 text-xs font-bold text-indigo-700">
                         Video tương tác
                       </div>
-                      <h2 className="text-2xl font-black text-slate-900">Mã dùng thử 3 ngày</h2>
+                      <h2 className="text-2xl font-black text-slate-900">Mã dùng thử xuất file</h2>
                       <p className="mt-2 text-sm leading-relaxed text-slate-600">
-                        Mỗi thiết bị được dùng {INTERACTIVE_VIDEO_DAILY_LIMIT} lượt/ngày trong {INTERACTIVE_VIDEO_TRIAL_DAYS} ngày. Mã sẽ gắn với Gmail và thiết bị để tránh dùng nhiều tài khoản.
+                        Mỗi thiết bị được dùng thử {INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT} lần xuất file. Mã sẽ gắn với Gmail và thiết bị để tránh dùng nhiều tài khoản.
                       </p>
                     </div>
                     <button
@@ -1163,16 +1150,16 @@ function App() {
                   {videoTrialStatus && (
                     <div className="mb-4 grid grid-cols-3 gap-2 text-center">
                       <div className="rounded-2xl bg-slate-50 p-3">
-                        <div className="text-xs font-semibold text-slate-500">Còn ngày</div>
-                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.daysLeft}</div>
+                        <div className="text-xs font-semibold text-slate-500">Đã xuất</div>
+                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.usageCount}</div>
                       </div>
                       <div className="rounded-2xl bg-slate-50 p-3">
-                        <div className="text-xs font-semibold text-slate-500">Hôm nay</div>
-                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.todayUsed}/{INTERACTIVE_VIDEO_DAILY_LIMIT}</div>
+                        <div className="text-xs font-semibold text-slate-500">Giới hạn</div>
+                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.trialLimit}</div>
                       </div>
                       <div className="rounded-2xl bg-slate-50 p-3">
-                        <div className="text-xs font-semibold text-slate-500">Còn lượt</div>
-                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.todayRemaining}</div>
+                        <div className="text-xs font-semibold text-slate-500">Còn lần</div>
+                        <div className="text-xl font-black text-slate-900">{videoTrialStatus.remainingCount}</div>
                       </div>
                     </div>
                   )}

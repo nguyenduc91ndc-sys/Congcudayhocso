@@ -15,10 +15,8 @@ import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, g
 import { saveKyYeuAccessCode, deleteKyYeuAccessCode, subscribeToKyYeuAccessCodes, generateKyYeuAccessCode, setKyYeuAccessCodeActive, KyYeuAccessCode } from '../utils/firebaseKyYeuAccess';
 import { deleteVideoExportCode, generateVideoExportCode, saveVideoExportCode, setVideoExportCodeActive, subscribeToVideoExportCodes } from '../utils/firebaseVideoExportCodes';
 import {
-    extendInteractiveVideoTrial,
-    getVietnamDateKey,
-    INTERACTIVE_VIDEO_DAILY_LIMIT,
     INTERACTIVE_VIDEO_TRIAL_CODE,
+    INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT,
     InteractiveVideoTrial,
     resetInteractiveVideoTrialToday,
     setInteractiveVideoTrialActive,
@@ -548,14 +546,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         }
     };
 
-    const handleExtendVideoTrial = async (deviceId: string) => {
-        if (window.confirm('Gia hạn thêm 3 ngày cho thiết bị này?')) {
-            await extendInteractiveVideoTrial(deviceId, 3);
-        }
-    };
-
     const handleResetVideoTrialToday = async (deviceId: string) => {
-        if (window.confirm('Reset lượt Video tương tác hôm nay của thiết bị này về 0?')) {
+        if (window.confirm('Reset dùng thử xuất file của thiết bị này về 0/3?')) {
             await resetInteractiveVideoTrialToday(deviceId);
         }
     };
@@ -1364,7 +1356,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                 <div>
                                                     <div className="text-sm font-bold text-indigo-700">Mã dùng thử chung cho Video tương tác</div>
                                                     <div className="mt-1 font-mono text-xl font-black text-indigo-900">{INTERACTIVE_VIDEO_TRIAL_CODE}</div>
-                                                    <div className="mt-1 text-sm text-indigo-700">3 ngày, mỗi ngày {INTERACTIVE_VIDEO_DAILY_LIMIT} lượt. Khóa theo Gmail và thiết bị.</div>
+                                                    <div className="mt-1 text-sm text-indigo-700">Dùng thử {INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT} lần xuất file. Khóa theo Gmail và thiết bị.</div>
                                                 </div>
                                                 <button onClick={handleCopyVideoTrialCode} className="rounded-xl bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700">
                                                     Copy mã
@@ -1378,9 +1370,11 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                 <p>Chưa có thiết bị nào kích hoạt dùng thử Video tương tác</p>
                                             </div>
                                         ) : videoTrials.map((item) => {
-                                            const todayUsed = item.dailyUsage?.[getVietnamDateKey()] || 0;
-                                            const expired = new Date(item.expiresAt).getTime() <= Date.now();
-                                            const active = item.active !== false && !expired;
+                                            const usedCount = typeof item.usageCount === 'number'
+                                                ? Math.max(0, item.usageCount)
+                                                : Object.values(item.dailyUsage || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
+                                            const exhausted = usedCount >= INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT;
+                                            const active = item.active !== false && !exhausted;
 
                                             return (
                                                 <motion.div key={item.deviceId} className={`rounded-2xl p-4 shadow-md border ${active ? 'bg-gradient-to-r from-indigo-50 to-sky-50 border-indigo-200' : 'bg-gray-100 border-gray-200 opacity-80'}`}>
@@ -1388,8 +1382,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                         <div className="min-w-0">
                                                             <div className="flex flex-wrap items-center gap-2">
                                                                 <span className="font-mono text-base font-black text-indigo-800">{item.deviceId}</span>
-                                                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${active ? 'bg-green-100 text-green-700' : expired ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
-                                                                    {active ? 'Đang dùng' : expired ? 'Hết hạn' : 'Đã thu hồi'}
+                                                                <span className={`rounded-full px-2 py-0.5 text-xs font-bold ${active ? 'bg-green-100 text-green-700' : exhausted ? 'bg-amber-100 text-amber-700' : 'bg-red-100 text-red-700'}`}>
+                                                                    {active ? 'Đang dùng' : exhausted ? 'Hết lượt' : 'Đã thu hồi'}
                                                                 </span>
                                                             </div>
                                                             <div className="mt-1 text-sm text-gray-600">
@@ -1401,9 +1395,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                                 </div>
                                                             )}
                                                             <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
-                                                                <span className="rounded-lg bg-white px-2.5 py-1 text-indigo-700">Hôm nay: {todayUsed}/{INTERACTIVE_VIDEO_DAILY_LIMIT}</span>
+                                                                <span className="rounded-lg bg-white px-2.5 py-1 text-indigo-700">Đã xuất: {usedCount}/{INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT}</span>
                                                                 <span className="rounded-lg bg-white px-2.5 py-1 text-slate-700">Bắt đầu: {formatKyYeuDateTime(item.startedAt)}</span>
-                                                                <span className="rounded-lg bg-white px-2.5 py-1 text-slate-700">Hết hạn: {formatKyYeuDateTime(item.expiresAt)}</span>
                                                                 {item.lastUsedAt && <span className="rounded-lg bg-white px-2.5 py-1 text-slate-700">Dùng gần nhất: {formatKyYeuDateTime(item.lastUsedAt)}</span>}
                                                             </div>
                                                         </div>
@@ -1411,11 +1404,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                             <button onClick={() => handleToggleVideoTrial(item.deviceId, !item.active)} className={`rounded-lg px-3 py-2 text-sm font-bold ${item.active !== false ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-100 text-green-700 hover:bg-green-200'}`}>
                                                                 {item.active !== false ? 'Thu hồi' : 'Mở lại'}
                                                             </button>
-                                                            <button onClick={() => handleExtendVideoTrial(item.deviceId)} className="rounded-lg bg-blue-100 px-3 py-2 text-sm font-bold text-blue-700 hover:bg-blue-200">
-                                                                Gia hạn 3 ngày
-                                                            </button>
                                                             <button onClick={() => handleResetVideoTrialToday(item.deviceId)} className="rounded-lg bg-slate-100 px-3 py-2 text-sm font-bold text-slate-700 hover:bg-slate-200">
-                                                                Reset hôm nay
+                                                                Reset 3 lần
                                                             </button>
                                                         </div>
                                                     </div>

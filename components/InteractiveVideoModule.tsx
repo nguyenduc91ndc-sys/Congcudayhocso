@@ -1068,7 +1068,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                 const used = await useInteractiveVideoTrialTurn(email);
                 if (!used.success) {
                     setIsExportingPaidFile(false);
-                    alert(`${used.message || 'Không còn lượt dùng thử hôm nay.'}\n\nLiên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo} để được hỗ trợ.`);
+                    alert(`${used.message || 'Không còn lượt xuất thử.'}\n\nLiên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo} để được hỗ trợ.`);
                     return;
                 }
 
@@ -1078,7 +1078,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                     await runExportScorm(request.version);
                 }
                 setPendingExport(null);
-                alert(`Đã dùng 1 lượt dùng thử để xuất ${exportType}. Hôm nay còn ${used.status.todayRemaining} lượt.`);
+                alert(`Đã dùng 1 lượt dùng thử để xuất ${exportType}. Còn ${used.status.remainingCount} lần xuất thử.`);
             } catch (error) {
                 alert(`Xuất file bằng mã dùng thử bị lỗi. Vui lòng thử lại hoặc liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo}.`);
             } finally {

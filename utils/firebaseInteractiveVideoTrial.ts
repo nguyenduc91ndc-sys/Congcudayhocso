@@ -3,8 +3,7 @@ import { database } from './firebaseConfig';
 import { getOrCreateDeviceId } from './firebaseDeviceTrial';
 
 export const INTERACTIVE_VIDEO_TRIAL_CODE = 'VIDEO-TRIAL-2026';
-export const INTERACTIVE_VIDEO_TRIAL_DAYS = 3;
-export const INTERACTIVE_VIDEO_DAILY_LIMIT = 3;
+export const INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT = 3;
 
 const TRIALS_REF = 'interactive_video_trials';
 const EMAILS_REF = 'interactive_video_trial_emails';
@@ -15,9 +14,10 @@ export interface InteractiveVideoTrial {
     primaryEmail: string;
     emails: string[];
     startedAt: string;
-    expiresAt: string;
+    expiresAt?: string;
     active: boolean;
-    dailyUsage: Record<string, number>;
+    usageCount?: number;
+    dailyUsage?: Record<string, number>;
     lastUsedAt?: string;
 }
 
@@ -26,7 +26,7 @@ export interface InteractiveVideoTrialEmail {
     deviceId: string;
     trialCode: string;
     startedAt: string;
-    expiresAt: string;
+    expiresAt?: string;
 }
 
 export interface InteractiveVideoTrialStatus {
@@ -42,6 +42,9 @@ export interface InteractiveVideoTrialStatus {
     primaryEmail?: string;
     emails: string[];
     expiresAt?: string;
+    usageCount: number;
+    remainingCount: number;
+    trialLimit: number;
     message?: string;
 }
 
@@ -69,22 +72,10 @@ export const getVietnamDateKey = (date = new Date()): string => {
     }).format(date);
 };
 
-const addDays = (date: Date, days: number): Date => {
-    const next = new Date(date);
-    next.setDate(next.getDate() + days);
-    return next;
-};
-
-const isExpired = (expiresAt?: string): boolean => {
-    if (!expiresAt) return false;
-    return new Date(expiresAt).getTime() <= Date.now();
-};
-
-const calculateDaysLeft = (expiresAt?: string): number => {
-    if (!expiresAt) return 0;
-    const ms = new Date(expiresAt).getTime() - Date.now();
-    if (ms <= 0) return 0;
-    return Math.ceil(ms / (24 * 60 * 60 * 1000));
+const getTrialUsageCount = (trial?: InteractiveVideoTrial | null): number => {
+    if (!trial) return 0;
+    if (typeof trial.usageCount === 'number') return Math.max(0, trial.usageCount);
+    return Object.values(trial.dailyUsage || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
 };
 
 const buildStatus = (
@@ -93,8 +84,9 @@ const buildStatus = (
     options: Partial<InteractiveVideoTrialStatus> = {}
 ): InteractiveVideoTrialStatus => {
     const todayKey = getVietnamDateKey();
-    const todayUsed = trial?.dailyUsage?.[todayKey] || 0;
-    const expired = isExpired(trial?.expiresAt);
+    const usageCount = getTrialUsageCount(trial);
+    const remainingCount = Math.max(0, INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT - usageCount);
+    const expired = Boolean(trial && remainingCount <= 0);
     const active = Boolean(trial && trial.active !== false && !expired);
 
     return {
@@ -104,12 +96,15 @@ const buildStatus = (
         expired,
         blockedByEmail: false,
         todayKey,
-        todayUsed,
-        todayRemaining: active ? Math.max(0, INTERACTIVE_VIDEO_DAILY_LIMIT - todayUsed) : 0,
-        daysLeft: calculateDaysLeft(trial?.expiresAt),
+        todayUsed: usageCount,
+        todayRemaining: active ? remainingCount : 0,
+        daysLeft: 0,
         primaryEmail: trial?.primaryEmail,
         emails: trial?.emails || [],
         expiresAt: trial?.expiresAt,
+        usageCount,
+        remainingCount: active ? remainingCount : 0,
+        trialLimit: INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT,
         ...options,
     };
 };
@@ -180,11 +175,11 @@ export const activateInteractiveVideoTrial = async (email: string, code: string)
             };
         }
 
-        if (isExpired(currentTrial.expiresAt)) {
+        if (getTrialUsageCount(currentTrial) >= INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT) {
             return {
                 success: false,
                 status: buildStatus(deviceId, currentTrial),
-                message: 'Thiết bị này đã hết 3 ngày dùng thử.',
+                message: 'Thiết bị này đã dùng hết 3 lần xuất thử.',
             };
         }
 
@@ -212,8 +207,8 @@ export const activateInteractiveVideoTrial = async (email: string, code: string)
         primaryEmail: normalizedEmail,
         emails: [normalizedEmail],
         startedAt: now.toISOString(),
-        expiresAt: addDays(now, INTERACTIVE_VIDEO_TRIAL_DAYS).toISOString(),
         active: true,
+        usageCount: 0,
         dailyUsage: {},
     };
 
@@ -224,7 +219,6 @@ export const activateInteractiveVideoTrial = async (email: string, code: string)
             deviceId,
             trialCode: trial.trialCode,
             startedAt: trial.startedAt,
-            expiresAt: trial.expiresAt,
         }),
     ]);
 
@@ -262,17 +256,13 @@ export const useInteractiveVideoTrialTurn = async (email: string): Promise<Inter
             return currentData;
         }
 
-        if (isExpired(currentData.expiresAt)) {
-            message = 'Thiết bị này đã hết 3 ngày dùng thử.';
-            return currentData;
-        }
-
         const todayKey = getVietnamDateKey();
         const dailyUsage = currentData.dailyUsage || {};
         const todayUsed = dailyUsage[todayKey] || 0;
+        const usageCount = getTrialUsageCount(currentData);
 
-        if (todayUsed >= INTERACTIVE_VIDEO_DAILY_LIMIT) {
-            message = 'Hôm nay thiết bị này đã dùng hết 3 lượt Video tương tác.';
+        if (usageCount >= INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT) {
+            message = 'Thiết bị này đã dùng hết 3 lần xuất thử.';
             return currentData;
         }
 
@@ -282,6 +272,7 @@ export const useInteractiveVideoTrialTurn = async (email: string): Promise<Inter
         return {
             ...currentData,
             emails: Array.from(new Set([...(currentData.emails || []), normalizedEmail])),
+            usageCount: usageCount + 1,
             dailyUsage: {
                 ...dailyUsage,
                 [todayKey]: todayUsed + 1,
@@ -298,7 +289,6 @@ export const useInteractiveVideoTrialTurn = async (email: string): Promise<Inter
                 deviceId,
                 trialCode: trial.trialCode,
                 startedAt: trial.startedAt,
-                expiresAt: trial.expiresAt,
             });
         }
     }
@@ -323,20 +313,18 @@ export const setInteractiveVideoTrialActive = async (deviceId: string, active: b
     await update(ref(database, `${TRIALS_REF}/${deviceId}`), { active });
 };
 
-export const extendInteractiveVideoTrial = async (deviceId: string, days = INTERACTIVE_VIDEO_TRIAL_DAYS): Promise<void> => {
+export const extendInteractiveVideoTrial = async (deviceId: string): Promise<void> => {
     const trial = await getDeviceTrial(deviceId);
     if (!trial) return;
 
-    const baseDate = isExpired(trial.expiresAt) ? new Date() : new Date(trial.expiresAt);
-    const expiresAt = addDays(baseDate, days).toISOString();
-
     await update(ref(database, `${TRIALS_REF}/${deviceId}`), {
-        expiresAt,
         active: true,
+        usageCount: 0,
+        dailyUsage: {},
     });
 
     await Promise.all((trial.emails || []).map((email) => (
-        update(ref(database, `${EMAILS_REF}/${getEmailKey(email)}`), { expiresAt })
+        update(ref(database, `${EMAILS_REF}/${getEmailKey(email)}`), { deviceId })
     )));
 };
 
@@ -345,9 +333,8 @@ export const resetInteractiveVideoTrialToday = async (deviceId: string): Promise
     if (!trial) return;
 
     await update(ref(database, `${TRIALS_REF}/${deviceId}`), {
-        dailyUsage: {
-            ...(trial.dailyUsage || {}),
-            [getVietnamDateKey()]: 0,
-        },
+        usageCount: 0,
+        dailyUsage: {},
+        active: true,
     });
 };
