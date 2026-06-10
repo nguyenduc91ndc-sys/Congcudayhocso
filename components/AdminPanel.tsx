@@ -1115,7 +1115,8 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     : 'bg-gradient-to-r from-rose-500 to-pink-600'
                                     }`}
                             >
-                                <Plus size={24} /> {keySubTab === 'pro' ? 'Tạo mã PRO- (Giải Mã Bức Tranh)' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- (Video xuất file)' : keySubTab === 'videoTrial' ? `Copy mã dùng thử: ${INTERACTIVE_VIDEO_TRIAL_CODE}` : 'Tạo mã KYYEU- (Kỷ Yếu)'}
+                                {keySubTab === 'videoTrial' && copiedKey === INTERACTIVE_VIDEO_TRIAL_CODE ? <CheckCircle size={24} /> : <Plus size={24} />}
+                                {keySubTab === 'pro' ? 'Tạo mã PRO- (Giải Mã Bức Tranh)' : keySubTab === 'bee' ? 'Tạo mã BEE- (Ong về Tổ)' : keySubTab === 'skkn' ? 'Tạo mã SKKN- (Viết SKKN)' : keySubTab === 'videoExport' ? 'Tạo mã VIDX- (Video xuất file)' : keySubTab === 'videoTrial' ? (copiedKey === INTERACTIVE_VIDEO_TRIAL_CODE ? 'Đã copy mã dùng thử' : `Copy mã dùng thử: ${INTERACTIVE_VIDEO_TRIAL_CODE}`) : 'Tạo mã KYYEU- (Kỷ Yếu)'}
                             </motion.button>
 
                             <AnimatePresence>
@@ -1358,8 +1359,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     <div className="mt-1 font-mono text-xl font-black text-indigo-900">{INTERACTIVE_VIDEO_TRIAL_CODE}</div>
                                                     <div className="mt-1 text-sm text-indigo-700">Dùng thử {INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT} lần xuất file. Khóa theo Gmail và thiết bị.</div>
                                                 </div>
-                                                <button onClick={handleCopyVideoTrialCode} className="rounded-xl bg-indigo-600 px-4 py-2 font-bold text-white hover:bg-indigo-700">
-                                                    Copy mã
+                                                <button onClick={handleCopyVideoTrialCode} className={`inline-flex items-center justify-center gap-2 rounded-xl px-4 py-2 font-bold text-white transition ${copiedKey === INTERACTIVE_VIDEO_TRIAL_CODE ? 'bg-emerald-600 hover:bg-emerald-700' : 'bg-indigo-600 hover:bg-indigo-700'}`}>
+                                                    {copiedKey === INTERACTIVE_VIDEO_TRIAL_CODE ? <CheckCircle size={18} /> : <Copy size={18} />}
+                                                    {copiedKey === INTERACTIVE_VIDEO_TRIAL_CODE ? 'Đã copy' : 'Copy mã'}
                                                 </button>
                                             </div>
                                         </div>
