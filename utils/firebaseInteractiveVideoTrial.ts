@@ -28,6 +28,8 @@ export interface InteractiveVideoTrialEmail {
     trialCode: string;
     startedAt: string;
     expiresAt?: string;
+    lastUsedAt?: string;
+    exportUsageCount?: number;
 }
 
 export interface InteractiveVideoTrialStatus {
@@ -119,6 +121,21 @@ const getEmailTrial = async (email: string): Promise<InteractiveVideoTrialEmail 
     return snapshot.exists() ? snapshot.val() as InteractiveVideoTrialEmail : null;
 };
 
+const buildEmailTrialRecord = (email: string, trial: InteractiveVideoTrial): InteractiveVideoTrialEmail => {
+    const record: InteractiveVideoTrialEmail = {
+        email: normalizeEmail(email),
+        deviceId: trial.deviceId,
+        trialCode: trial.trialCode,
+        startedAt: trial.startedAt,
+        exportUsageCount: getTrialUsageCount(trial),
+    };
+
+    if (trial.expiresAt) record.expiresAt = trial.expiresAt;
+    if (trial.lastUsedAt) record.lastUsedAt = trial.lastUsedAt;
+
+    return record;
+};
+
 export const getInteractiveVideoTrialStatus = async (email?: string): Promise<InteractiveVideoTrialStatus> => {
     const deviceId = getOrCreateDeviceId();
     const trial = await getDeviceTrial(deviceId);
@@ -185,13 +202,10 @@ export const activateInteractiveVideoTrial = async (email: string, code: string)
 
         const emails = Array.from(new Set([...(currentTrial.emails || []), normalizedEmail]));
         await update(ref(database, `${TRIALS_REF}/${deviceId}`), { emails });
-        await set(ref(database, `${EMAILS_REF}/${getEmailKey(normalizedEmail)}`), {
-            email: normalizedEmail,
-            deviceId,
-            trialCode: currentTrial.trialCode,
-            startedAt: currentTrial.startedAt,
-            expiresAt: currentTrial.expiresAt,
-        });
+        await set(ref(database, `${EMAILS_REF}/${getEmailKey(normalizedEmail)}`), buildEmailTrialRecord(normalizedEmail, {
+            ...currentTrial,
+            emails,
+        }));
 
         return {
             success: true,
@@ -220,6 +234,7 @@ export const activateInteractiveVideoTrial = async (email: string, code: string)
             deviceId,
             trialCode: trial.trialCode,
             startedAt: trial.startedAt,
+            exportUsageCount: trial.exportUsageCount,
         }),
     ]);
 
@@ -286,12 +301,7 @@ export const useInteractiveVideoTrialTurn = async (email: string): Promise<Inter
     if (success) {
         const trial = await getDeviceTrial(deviceId);
         if (trial) {
-            await set(ref(database, `${EMAILS_REF}/${getEmailKey(normalizedEmail)}`), {
-                email: normalizedEmail,
-                deviceId,
-                trialCode: trial.trialCode,
-                startedAt: trial.startedAt,
-            });
+            await set(ref(database, `${EMAILS_REF}/${getEmailKey(normalizedEmail)}`), buildEmailTrialRecord(normalizedEmail, trial));
         }
     }
 
@@ -308,6 +318,19 @@ export const subscribeToInteractiveVideoTrials = (callback: (trials: Interactive
         const trials = Object.values(value) as InteractiveVideoTrial[];
         trials.sort((a, b) => new Date(b.startedAt).getTime() - new Date(a.startedAt).getTime());
         callback(trials);
+    });
+};
+
+export const subscribeToInteractiveVideoTrialEmails = (callback: (accounts: InteractiveVideoTrialEmail[]) => void) => {
+    return onValue(ref(database, EMAILS_REF), (snapshot) => {
+        const value = snapshot.val() || {};
+        const accounts = Object.values(value) as InteractiveVideoTrialEmail[];
+        accounts.sort((a, b) => {
+            const dateA = a.lastUsedAt || a.startedAt;
+            const dateB = b.lastUsedAt || b.startedAt;
+            return new Date(dateB).getTime() - new Date(dateA).getTime();
+        });
+        callback(accounts);
     });
 };
 

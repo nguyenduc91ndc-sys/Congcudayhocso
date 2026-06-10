@@ -18,8 +18,10 @@ import {
     INTERACTIVE_VIDEO_TRIAL_CODE,
     INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT,
     InteractiveVideoTrial,
+    InteractiveVideoTrialEmail,
     resetInteractiveVideoTrialToday,
     setInteractiveVideoTrialActive,
+    subscribeToInteractiveVideoTrialEmails,
     subscribeToInteractiveVideoTrials
 } from '../utils/firebaseInteractiveVideoTrial';
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
@@ -90,6 +92,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [kyYeuKeys, setKyYeuKeys] = useState<KyYeuAdminKey[]>([]);
     const [videoExportKeys, setVideoExportKeys] = useState<VideoExportAdminKey[]>([]);
     const [videoTrials, setVideoTrials] = useState<InteractiveVideoTrial[]>([]);
+    const [videoTrialAccounts, setVideoTrialAccounts] = useState<InteractiveVideoTrialEmail[]>([]);
     const [keySubTab, setKeySubTab] = useState<'pro' | 'bee' | 'skkn' | 'kyyeu' | 'videoExport' | 'videoTrial'>('pro');
     const [newNote, setNewNote] = useState('');
     const [newVideoExportLimit, setNewVideoExportLimit] = useState<1 | 10>(1);
@@ -220,6 +223,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
         });
 
         const unsubscribeVideoTrials = subscribeToInteractiveVideoTrials(setVideoTrials);
+        const unsubscribeVideoTrialEmails = subscribeToInteractiveVideoTrialEmails(setVideoTrialAccounts);
 
         // Subscribe to videos
         const unsubscribeVideos = subscribeToVideos(setVideos);
@@ -244,6 +248,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             unsubscribeKyYeuKeys();
             unsubscribeVideoExportKeys();
             unsubscribeVideoTrials();
+            unsubscribeVideoTrialEmails();
             unsubscribeVideos();
             unsubscribeOrders();
             unsubscribeAppVis();
@@ -1093,7 +1098,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                         : 'bg-indigo-100 text-indigo-700 hover:bg-indigo-200'
                                         }`}
                                 >
-                                    Video dùng thử ({videoTrials.length})
+                                    Video dùng thử ({videoTrialAccounts.length}/{videoTrials.length})
                                 </button>
                             </div>
 
@@ -1364,6 +1369,39 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     {copiedKey === INTERACTIVE_VIDEO_TRIAL_CODE ? 'Đã copy' : 'Copy mã'}
                                                 </button>
                                             </div>
+                                        </div>
+
+                                        <div className="rounded-2xl border border-sky-200 bg-sky-50 p-4">
+                                            <div className="mb-3 flex flex-col gap-1 sm:flex-row sm:items-end sm:justify-between">
+                                                <div>
+                                                    <div className="text-sm font-bold text-sky-700">Tài khoản đã kích hoạt dùng thử</div>
+                                                    <div className="text-xs text-sky-700">Cập nhật theo Gmail, thiết bị và lượt xuất thử đã dùng.</div>
+                                                </div>
+                                                <div className="text-xs font-bold text-sky-800">{videoTrialAccounts.length} tài khoản</div>
+                                            </div>
+                                            {videoTrialAccounts.length === 0 ? (
+                                                <div className="rounded-xl bg-white/70 px-3 py-3 text-sm text-slate-500">Chưa có Gmail nào kích hoạt mã dùng thử.</div>
+                                            ) : (
+                                                <div className="grid gap-2 lg:grid-cols-2">
+                                                    {videoTrialAccounts.map((account) => {
+                                                        const linkedTrial = videoTrials.find((trial) => trial.deviceId === account.deviceId);
+                                                        const usedCount = Math.max(0, Number(account.exportUsageCount ?? linkedTrial?.exportUsageCount) || 0);
+                                                        const lastUsedAt = account.lastUsedAt || linkedTrial?.lastUsedAt;
+
+                                                        return (
+                                                            <div key={`${account.email}-${account.deviceId}`} className="rounded-xl bg-white px-3 py-3 shadow-sm">
+                                                                <div className="truncate text-sm font-bold text-slate-900">{account.email}</div>
+                                                                <div className="mt-1 truncate font-mono text-xs text-slate-500">{account.deviceId}</div>
+                                                                <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
+                                                                    <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-indigo-700">Đã xuất: {usedCount}/{INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT}</span>
+                                                                    <span className="rounded-lg bg-slate-50 px-2.5 py-1 text-slate-700">Kích hoạt: {formatKyYeuDateTime(account.startedAt)}</span>
+                                                                    {lastUsedAt && <span className="rounded-lg bg-emerald-50 px-2.5 py-1 text-emerald-700">Dùng gần nhất: {formatKyYeuDateTime(lastUsedAt)}</span>}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {videoTrials.length === 0 ? (
