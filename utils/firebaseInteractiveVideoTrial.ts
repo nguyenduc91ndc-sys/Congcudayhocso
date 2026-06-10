@@ -16,6 +16,7 @@ export interface InteractiveVideoTrial {
     startedAt: string;
     expiresAt?: string;
     active: boolean;
+    exportUsageCount?: number;
     usageCount?: number;
     dailyUsage?: Record<string, number>;
     lastUsedAt?: string;
@@ -74,8 +75,7 @@ export const getVietnamDateKey = (date = new Date()): string => {
 
 const getTrialUsageCount = (trial?: InteractiveVideoTrial | null): number => {
     if (!trial) return 0;
-    if (typeof trial.usageCount === 'number') return Math.max(0, trial.usageCount);
-    return Object.values(trial.dailyUsage || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
+    return Math.max(0, Number(trial.exportUsageCount) || 0);
 };
 
 const buildStatus = (
@@ -208,6 +208,7 @@ export const activateInteractiveVideoTrial = async (email: string, code: string)
         emails: [normalizedEmail],
         startedAt: now.toISOString(),
         active: true,
+        exportUsageCount: 0,
         usageCount: 0,
         dailyUsage: {},
     };
@@ -272,6 +273,7 @@ export const useInteractiveVideoTrialTurn = async (email: string): Promise<Inter
         return {
             ...currentData,
             emails: Array.from(new Set([...(currentData.emails || []), normalizedEmail])),
+            exportUsageCount: usageCount + 1,
             usageCount: usageCount + 1,
             dailyUsage: {
                 ...dailyUsage,
@@ -319,6 +321,7 @@ export const extendInteractiveVideoTrial = async (deviceId: string): Promise<voi
 
     await update(ref(database, `${TRIALS_REF}/${deviceId}`), {
         active: true,
+        exportUsageCount: 0,
         usageCount: 0,
         dailyUsage: {},
     });
@@ -333,6 +336,7 @@ export const resetInteractiveVideoTrialToday = async (deviceId: string): Promise
     if (!trial) return;
 
     await update(ref(database, `${TRIALS_REF}/${deviceId}`), {
+        exportUsageCount: 0,
         usageCount: 0,
         dailyUsage: {},
         active: true,

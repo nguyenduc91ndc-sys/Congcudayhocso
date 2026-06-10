@@ -1372,9 +1372,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                 <p>Chưa có thiết bị nào kích hoạt dùng thử Video tương tác</p>
                                             </div>
                                         ) : videoTrials.map((item) => {
-                                            const usedCount = typeof item.usageCount === 'number'
-                                                ? Math.max(0, item.usageCount)
-                                                : Object.values(item.dailyUsage || {}).reduce((sum, value) => sum + (Number(value) || 0), 0);
+                                            const usedCount = Math.max(0, Number(item.exportUsageCount) || 0);
                                             const exhausted = usedCount >= INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT;
                                             const active = item.active !== false && !exhausted;
 
