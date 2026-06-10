@@ -1,4 +1,4 @@
-import { get, onValue, ref, runTransaction, set, update } from 'firebase/database';
+import { get, onValue, ref, remove, runTransaction, set, update } from 'firebase/database';
 import { database } from './firebaseConfig';
 import { getOrCreateDeviceId } from './firebaseDeviceTrial';
 
@@ -338,6 +338,26 @@ export const setInteractiveVideoTrialActive = async (deviceId: string, active: b
     await update(ref(database, `${TRIALS_REF}/${deviceId}`), { active });
 };
 
+export const deleteInteractiveVideoTrialAccount = async (email: string, deviceId: string): Promise<void> => {
+    const normalizedEmail = normalizeEmail(email);
+    const trial = await getDeviceTrial(deviceId);
+
+    await remove(ref(database, `${EMAILS_REF}/${getEmailKey(normalizedEmail)}`));
+
+    if (!trial || trial.deviceId !== deviceId) return;
+
+    const remainingEmails = (trial.emails || []).filter((item) => normalizeEmail(item) !== normalizedEmail);
+    if (remainingEmails.length === 0) {
+        await remove(ref(database, `${TRIALS_REF}/${deviceId}`));
+        return;
+    }
+
+    await update(ref(database, `${TRIALS_REF}/${deviceId}`), {
+        emails: remainingEmails,
+        primaryEmail: normalizeEmail(trial.primaryEmail) === normalizedEmail ? remainingEmails[0] : trial.primaryEmail,
+    });
+};
+
 export const extendInteractiveVideoTrial = async (deviceId: string): Promise<void> => {
     const trial = await getDeviceTrial(deviceId);
     if (!trial) return;
@@ -350,7 +370,7 @@ export const extendInteractiveVideoTrial = async (deviceId: string): Promise<voi
     });
 
     await Promise.all((trial.emails || []).map((email) => (
-        update(ref(database, `${EMAILS_REF}/${getEmailKey(email)}`), { deviceId })
+        update(ref(database, `${EMAILS_REF}/${getEmailKey(email)}`), { deviceId, exportUsageCount: 0 })
     )));
 };
 
@@ -364,4 +384,8 @@ export const resetInteractiveVideoTrialToday = async (deviceId: string): Promise
         dailyUsage: {},
         active: true,
     });
+
+    await Promise.all((trial.emails || []).map((email) => (
+        update(ref(database, `${EMAILS_REF}/${getEmailKey(email)}`), { exportUsageCount: 0 })
+    )));
 };

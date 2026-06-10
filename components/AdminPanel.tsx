@@ -17,6 +17,7 @@ import { deleteVideoExportCode, generateVideoExportCode, saveVideoExportCode, se
 import {
     INTERACTIVE_VIDEO_TRIAL_CODE,
     INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT,
+    deleteInteractiveVideoTrialAccount,
     InteractiveVideoTrial,
     InteractiveVideoTrialEmail,
     resetInteractiveVideoTrialToday,
@@ -554,6 +555,12 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const handleResetVideoTrialToday = async (deviceId: string) => {
         if (window.confirm('Reset dùng thử xuất file của thiết bị này về 0/3?')) {
             await resetInteractiveVideoTrialToday(deviceId);
+        }
+    };
+
+    const handleDeleteVideoTrialAccount = async (email: string, deviceId: string) => {
+        if (window.confirm(`Xóa tài khoản dùng thử ${email}? Nếu đây là Gmail cuối cùng của thiết bị, bản ghi thiết bị cũng sẽ bị xóa.`)) {
+            await deleteInteractiveVideoTrialAccount(email, deviceId);
         }
     };
 
@@ -1385,13 +1392,43 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                 <div className="grid gap-2 lg:grid-cols-2">
                                                     {videoTrialAccounts.map((account) => {
                                                         const linkedTrial = videoTrials.find((trial) => trial.deviceId === account.deviceId);
-                                                        const usedCount = Math.max(0, Number(account.exportUsageCount ?? linkedTrial?.exportUsageCount) || 0);
+                                                        const usedCount = Math.max(0, Number(linkedTrial?.exportUsageCount ?? account.exportUsageCount) || 0);
                                                         const lastUsedAt = account.lastUsedAt || linkedTrial?.lastUsedAt;
+                                                        const accountActive = Boolean(linkedTrial && linkedTrial.active !== false && usedCount < INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT);
 
                                                         return (
                                                             <div key={`${account.email}-${account.deviceId}`} className="rounded-xl bg-white px-3 py-3 shadow-sm">
-                                                                <div className="truncate text-sm font-bold text-slate-900">{account.email}</div>
-                                                                <div className="mt-1 truncate font-mono text-xs text-slate-500">{account.deviceId}</div>
+                                                                <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                                                    <div className="min-w-0">
+                                                                        <div className="truncate text-sm font-bold text-slate-900">{account.email}</div>
+                                                                        <div className="mt-1 truncate font-mono text-xs text-slate-500">{account.deviceId}</div>
+                                                                    </div>
+                                                                    <div className="flex flex-wrap gap-1.5 sm:justify-end">
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={!linkedTrial}
+                                                                            onClick={() => handleToggleVideoTrial(account.deviceId, !accountActive)}
+                                                                            className={`rounded-lg px-2.5 py-1.5 text-xs font-bold ${accountActive ? 'bg-amber-100 text-amber-700 hover:bg-amber-200' : 'bg-green-100 text-green-700 hover:bg-green-200'} disabled:cursor-not-allowed disabled:bg-slate-100 disabled:text-slate-400`}
+                                                                        >
+                                                                            {accountActive ? 'Thu hồi' : 'Mở lại'}
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            disabled={!linkedTrial}
+                                                                            onClick={() => handleResetVideoTrialToday(account.deviceId)}
+                                                                            className="rounded-lg bg-slate-100 px-2.5 py-1.5 text-xs font-bold text-slate-700 hover:bg-slate-200 disabled:cursor-not-allowed disabled:text-slate-400"
+                                                                        >
+                                                                            Reset 3 lần
+                                                                        </button>
+                                                                        <button
+                                                                            type="button"
+                                                                            onClick={() => handleDeleteVideoTrialAccount(account.email, account.deviceId)}
+                                                                            className="rounded-lg bg-red-100 px-2.5 py-1.5 text-xs font-bold text-red-600 hover:bg-red-200"
+                                                                        >
+                                                                            Xóa
+                                                                        </button>
+                                                                    </div>
+                                                                </div>
                                                                 <div className="mt-2 flex flex-wrap gap-2 text-xs font-bold">
                                                                     <span className="rounded-lg bg-indigo-50 px-2.5 py-1 text-indigo-700">Đã xuất: {usedCount}/{INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT}</span>
                                                                     <span className="rounded-lg bg-slate-50 px-2.5 py-1 text-slate-700">Kích hoạt: {formatKyYeuDateTime(account.startedAt)}</span>
