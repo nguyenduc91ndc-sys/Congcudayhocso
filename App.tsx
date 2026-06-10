@@ -70,7 +70,6 @@ import {
   activateInteractiveVideoTrial,
   getInteractiveVideoTrialStatus,
   INTERACTIVE_VIDEO_DAILY_LIMIT,
-  INTERACTIVE_VIDEO_TRIAL_CODE,
   INTERACTIVE_VIDEO_TRIAL_DAYS,
   InteractiveVideoTrialStatus,
   useInteractiveVideoTrialTurn,
@@ -1188,7 +1187,7 @@ function App() {
                     <input
                       value={videoTrialCode}
                       onChange={(e) => setVideoTrialCode(e.target.value.toUpperCase())}
-                      placeholder={INTERACTIVE_VIDEO_TRIAL_CODE}
+                      placeholder="Nhập mã dùng thử do admin cấp"
                       className="w-full rounded-2xl border-2 border-slate-200 px-4 py-3 font-mono text-base font-bold text-slate-800 outline-none focus:border-indigo-500"
                     />
                     <button

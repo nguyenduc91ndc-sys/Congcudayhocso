@@ -1053,7 +1053,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
         if (isTrialExportPackage) {
             if (code !== INTERACTIVE_VIDEO_TRIAL_CODE) {
                 setIsExportingPaidFile(false);
-                alert(`Mã dùng thử chưa đúng.\n\nNhập mã ${INTERACTIVE_VIDEO_TRIAL_CODE} hoặc liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo} để nhận mã.`);
+                alert(`Mã dùng thử chưa đúng.\n\nVui lòng kiểm tra lại mã admin đã cấp hoặc liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo} để nhận mã.`);
                 return;
             }
 
@@ -2060,7 +2060,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                         <p className="font-black">Ghi chú</p>
                                         <p className="mt-1">
                                             {isTrialExportPackage
-                                                ? `Nếu thầy cô có mã dùng thử xuất file, nhập Gmail và mã ${INTERACTIVE_VIDEO_TRIAL_CODE} ở bên dưới để kiểm tra và xuất. Chưa có mã dùng thử, liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo}.`
+                                                ? `Nếu thầy cô có mã dùng thử xuất file, nhập Gmail và mã admin đã cấp ở bên dưới để kiểm tra và xuất. Chưa có mã dùng thử, liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo}.`
                                                 : 'Sau khi chuyển khoản, admin sẽ cấp mã VIDX- có đúng số lượt theo gói. Mỗi lần xuất thành công hệ thống tự trừ 1 lượt.'}
                                         </p>
                                     </div>
@@ -2085,11 +2085,11 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                                 value={exportCodeInput}
                                                 onChange={e => setExportCodeInput(e.target.value.toUpperCase())}
                                                 className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 font-mono text-sm font-black text-slate-900 outline-none focus:border-indigo-400"
-                                                placeholder={isTrialExportPackage ? INTERACTIVE_VIDEO_TRIAL_CODE : 'VIDX-ABCDEFGH'}
+                                                placeholder={isTrialExportPackage ? 'Nhập mã dùng thử do admin cấp' : 'VIDX-ABCDEFGH'}
                                             />
                                             <p className="mt-1 text-xs font-semibold text-indigo-700">
                                                 {isTrialExportPackage
-                                                    ? `Nhập mã ${INTERACTIVE_VIDEO_TRIAL_CODE}; hệ thống tự trừ lượt dùng thử sau khi xuất thành công.`
+                                                    ? 'Hệ thống tự trừ lượt dùng thử sau khi xuất thành công.'
                                                     : 'Gói 1 lượt và 10 lượt đều dùng 1 mã riêng, hệ thống tự đếm số lượt còn lại.'}
                                             </p>
                                             {isTrialExportPackage && (
