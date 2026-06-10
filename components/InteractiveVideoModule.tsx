@@ -114,6 +114,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const [exportCodeInput, setExportCodeInput] = useState('');
     const [exportEmailInput, setExportEmailInput] = useState(userEmail || '');
     const [isExportingPaidFile, setIsExportingPaidFile] = useState(false);
+    const [qrImageStatus, setQrImageStatus] = useState<Record<string, 'loading' | 'loaded' | 'error'>>({});
 
     // Reset form when switching to create new
     const resetForm = () => {
@@ -557,6 +558,24 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         });
         return `https://img.vietqr.io/image/${EXPORT_BANK_INFO.bankCode}-${EXPORT_BANK_INFO.accountNumber}-compact2.png?${params.toString()}`;
     };
+    const selectedExportPaymentQrUrl = isTrialExportPackage ? '' : getExportPaymentQrUrl();
+
+    useEffect(() => {
+        if (!pendingExport) return;
+
+        EXPORT_PACKAGES
+            .filter(pkg => !pkg.isTrial)
+            .forEach(pkg => {
+                const qrUrl = getExportPaymentQrUrl(pkg);
+                if (qrImageStatus[qrUrl] === 'loaded') return;
+
+                setQrImageStatus(prev => prev[qrUrl] ? prev : { ...prev, [qrUrl]: 'loading' });
+                const image = new Image();
+                image.onload = () => setQrImageStatus(prev => ({ ...prev, [qrUrl]: 'loaded' }));
+                image.onerror = () => setQrImageStatus(prev => ({ ...prev, [qrUrl]: 'error' }));
+                image.src = qrUrl;
+            });
+    }, [pendingExport]);
 
     const copyPaymentText = async (text: string, field: string) => {
         try {
@@ -2090,11 +2109,33 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                 </div>
 
                                 {!isTrialExportPackage && <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
-                                    <img
-                                        src={getExportPaymentQrUrl()}
-                                        alt="QR thanh toán VietQR"
-                                        className="h-44 w-44 rounded-xl object-contain lg:h-52 lg:w-52"
-                                    />
+                                    <div className="relative flex h-44 w-44 items-center justify-center overflow-hidden rounded-xl bg-slate-50 lg:h-52 lg:w-52">
+                                        {qrImageStatus[selectedExportPaymentQrUrl] !== 'loaded' && (
+                                            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 border border-dashed border-slate-200 bg-slate-50 px-4 text-center">
+                                                <div className="h-10 w-10 animate-pulse rounded-lg bg-slate-200" />
+                                                <p className="text-xs font-bold text-slate-500">
+                                                    {qrImageStatus[selectedExportPaymentQrUrl] === 'error' ? 'QR tải chậm' : 'Đang tải QR...'}
+                                                </p>
+                                                <a
+                                                    href={selectedExportPaymentQrUrl}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="text-[11px] font-black text-indigo-600 underline"
+                                                >
+                                                    Mở QR
+                                                </a>
+                                            </div>
+                                        )}
+                                        <img
+                                            src={selectedExportPaymentQrUrl}
+                                            alt="QR thanh toán VietQR"
+                                            loading="eager"
+                                            decoding="async"
+                                            onLoad={() => setQrImageStatus(prev => ({ ...prev, [selectedExportPaymentQrUrl]: 'loaded' }))}
+                                            onError={() => setQrImageStatus(prev => ({ ...prev, [selectedExportPaymentQrUrl]: 'error' }))}
+                                            className={`h-full w-full rounded-xl object-contain transition-opacity ${qrImageStatus[selectedExportPaymentQrUrl] === 'loaded' ? 'opacity-100' : 'opacity-0'}`}
+                                        />
+                                    </div>
                                     <p className="mt-3 text-sm font-black text-slate-900">{EXPORT_BANK_INFO.accountHolder}</p>
                                     <p className="text-xs font-semibold text-slate-500">{EXPORT_BANK_INFO.bankName} - {EXPORT_BANK_INFO.branch}</p>
                                     <a
