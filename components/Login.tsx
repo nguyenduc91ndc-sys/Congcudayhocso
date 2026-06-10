@@ -2,11 +2,12 @@ import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { User } from '../types';
 import { Key, User as UserIcon, AlertCircle, CheckCircle, Gift, Crown, Code2, MessageCircle, Sparkles, Play, GraduationCap, Heart, Laptop, ArrowRight } from 'lucide-react';
-import { getTrialStatusByEmail, upgradeToPro, setCurrentEmail, isValidEmail, canUseTrialByEmail } from '../utils/trialUtils';
+import { upgradeToPro, setCurrentEmail, isValidEmail, canUseTrialByEmail } from '../utils/trialUtils';
 import { GoogleLogin, CredentialResponse } from '@react-oauth/google';
 
 interface LoginProps {
   onLogin: (user: User) => void;
+  allowExpiredTrialLogin?: boolean;
 }
 
 // Mã Admin bí mật để đăng nhập lần đầu
@@ -37,7 +38,7 @@ const generateUserId = (): string => {
   return 'user_' + Date.now().toString(36) + Math.random().toString(36).substr(2);
 };
 
-const Login: React.FC<LoginProps> = ({ onLogin }) => {
+const Login: React.FC<LoginProps> = ({ onLogin, allowExpiredTrialLogin = false }) => {
   const [accessCode, setAccessCode] = useState('');
   const [displayName, setDisplayName] = useState('');
 
@@ -73,8 +74,7 @@ const Login: React.FC<LoginProps> = ({ onLogin }) => {
       const googleAvatar = decoded.picture; // Ảnh hồ sơ Google!
 
       // Kiểm tra trial
-      const status = getTrialStatusByEmail(googleEmail);
-      if (!canUseTrialByEmail(googleEmail)) {
+      if (!allowExpiredTrialLogin && !canUseTrialByEmail(googleEmail)) {
         setError('Email này đã hết lượt dùng thử miễn phí. Vui lòng nâng cấp Pro!');
         return;
       }

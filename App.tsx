@@ -135,6 +135,7 @@ function App() {
   const [currentLesson, setCurrentLesson] = useState<VideoLesson | null>(null);
   const [showLoginModal, setShowLoginModal] = useState(false); // Login modal for guest
   const [pendingAction, setPendingAction] = useState<(() => void) | null>(null); // Action after login
+  const [loginModalMessage, setLoginModalMessage] = useState('');
   const [showNewYearWelcome, setShowNewYearWelcome] = useState(false); // New Year welcome modal
   const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
   const [appVisibilityLoaded, setAppVisibilityLoaded] = useState(false);
@@ -447,6 +448,7 @@ function App() {
       setLessons([]);
     }
     setShowLoginModal(false);
+    setLoginModalMessage('');
     // Execute pending action if any
     const actionToRun = pendingAction;
     if (actionToRun) {
@@ -486,11 +488,12 @@ function App() {
   };
 
   // Helper: require login to perform action
-  const requireLogin = (action: () => void) => {
+  const requireLogin = (action: () => void, message = '') => {
     if (user) {
       action();
     } else {
       setPendingAction(() => action);
+      setLoginModalMessage(message);
       setShowLoginModal(true);
     }
   };
@@ -542,8 +545,10 @@ function App() {
 
     if (!email) {
       setVideoTrialStatus(null);
-      setVideoTrialMessage('Vui lòng đăng nhập bằng Gmail để dùng thử Video tương tác.');
-      setShowVideoTrialModal(true);
+      setVideoTrialMessage('');
+      setPendingAction(() => () => { void handleOpenInteractiveVideo(); });
+      setLoginModalMessage('Đăng nhập Gmail để dùng thử Video tương tác 3 ngày. Sau khi đăng nhập, hệ thống sẽ tự mở bước nhập mã dùng thử.');
+      setShowLoginModal(true);
       return;
     }
 
@@ -678,6 +683,7 @@ function App() {
               onClick={() => {
                 setShowLoginModal(false);
                 setPendingAction(null);
+                setLoginModalMessage('');
               }}
             >
               <motion.div
@@ -687,7 +693,12 @@ function App() {
                 onClick={e => e.stopPropagation()}
                 className="w-full max-w-md"
               >
-                <Login onLogin={handleLogin} />
+                {loginModalMessage && (
+                  <div className="mb-3 rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-sm font-bold leading-relaxed text-indigo-800 shadow-xl">
+                    {loginModalMessage}
+                  </div>
+                )}
+                <Login onLogin={handleLogin} allowExpiredTrialLogin={Boolean(loginModalMessage)} />
               </motion.div>
             </motion.div>
           )}
@@ -744,7 +755,10 @@ function App() {
                   onLuckyWheel={() => requireLogin(() => setView('LUCKY_WHEEL'))}
                   onStarWheel={() => requireLogin(() => setView('STAR_WHEEL'))}
                   onVideoStore={() => requireLogin(() => setView('VIDEO_STORE'))}
-                  onInteractiveVideo={() => requireLogin(() => { void handleOpenInteractiveVideo(); })}
+                  onInteractiveVideo={() => requireLogin(
+                    () => { void handleOpenInteractiveVideo(); },
+                    'Đăng nhập Gmail để dùng thử Video tương tác 3 ngày. Sau khi đăng nhập, hệ thống sẽ tự mở bước nhập mã dùng thử.'
+                  )}
                   onAICourseStore={() => requireLogin(() => setView('AI_COURSE_STORE'))}
                   onSoanGiaoAnNangLucSo={() => setView('SOAN_GIAO_AN_NANG_LUC_SO')}
                   onCanvaBasics={() => requireLogin(() => setView('CANVA_BASICS'))}
@@ -1090,6 +1104,7 @@ function App() {
                 onClick={() => {
                   setShowLoginModal(false);
                   setPendingAction(null);
+                  setLoginModalMessage('');
                 }}
               >
                 <motion.div
@@ -1099,7 +1114,12 @@ function App() {
                   onClick={e => e.stopPropagation()}
                   className="w-full max-w-md"
                 >
-                  <Login onLogin={handleLogin} />
+                  {loginModalMessage && (
+                    <div className="mb-3 rounded-2xl border border-indigo-200 bg-white px-4 py-3 text-sm font-bold leading-relaxed text-indigo-800 shadow-xl">
+                      {loginModalMessage}
+                    </div>
+                  )}
+                  <Login onLogin={handleLogin} allowExpiredTrialLogin={Boolean(loginModalMessage)} />
                 </motion.div>
               </motion.div>
             )}

@@ -534,8 +534,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const selectedExportPackage = EXPORT_PACKAGES.find(pkg => pkg.id === selectedExportPackageId) || EXPORT_PACKAGES[0];
 
     const getExportPaymentNote = (pkg = selectedExportPackage) => {
-        const lessonNote = cleanPaymentNotePart(title || 'VIDEO');
-        return `VIDEO XUAT FILE ${pkg.transferCode}${lessonNote ? ` ${lessonNote}` : ''}`.slice(0, 80);
+        return `VIDEO TUONG TAC XUAT FILE ${pkg.transferCode}`.slice(0, 80);
     };
 
     const getExportPaymentQrUrl = (pkg = selectedExportPackage) => {
@@ -1920,17 +1919,17 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 z-[110] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm"
+                        className="fixed inset-0 z-[110] flex items-start justify-center overflow-y-auto bg-slate-950/70 p-3 backdrop-blur-sm sm:p-4"
                         onClick={() => setPendingExport(null)}
                     >
                         <motion.div
                             initial={{ scale: 0.94, opacity: 0, y: 18 }}
                             animate={{ scale: 1, opacity: 1, y: 0 }}
                             exit={{ scale: 0.94, opacity: 0, y: 18 }}
-                            className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl"
+                            className="my-3 flex max-h-[calc(100vh-1.5rem)] w-full max-w-3xl flex-col overflow-hidden rounded-2xl bg-white shadow-2xl sm:my-4 sm:max-h-[calc(100vh-2rem)]"
                             onClick={e => e.stopPropagation()}
                         >
-                            <div className="flex items-start justify-between gap-4 bg-gradient-to-r from-indigo-600 to-sky-600 px-6 py-5 text-white">
+                            <div className="flex shrink-0 items-start justify-between gap-4 bg-gradient-to-r from-indigo-600 to-sky-600 px-4 py-4 text-white sm:px-6 sm:py-5">
                                 <div>
                                     <p className="text-xs font-black uppercase tracking-[0.18em] text-white/75">Thanh toán xuất file</p>
                                     <h3 className="mt-1 text-2xl font-black">Chọn gói lượt xuất độc lập</h3>
@@ -1948,7 +1947,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                 </button>
                             </div>
 
-                            <div className="grid gap-5 p-6 lg:grid-cols-[1fr_260px]">
+                            <div className="grid flex-1 gap-4 overflow-y-auto p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_240px]">
                                 <div className="space-y-4">
                                     <div className="grid gap-3 sm:grid-cols-2">
                                         {EXPORT_PACKAGES.map(pkg => (
@@ -2055,7 +2054,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                     <img
                                         src={getExportPaymentQrUrl()}
                                         alt="QR thanh toán VietQR"
-                                        className="h-56 w-56 rounded-xl object-contain"
+                                        className="h-44 w-44 rounded-xl object-contain lg:h-52 lg:w-52"
                                     />
                                     <p className="mt-3 text-sm font-black text-slate-900">{EXPORT_BANK_INFO.accountHolder}</p>
                                     <p className="text-xs font-semibold text-slate-500">{EXPORT_BANK_INFO.bankName} - {EXPORT_BANK_INFO.branch}</p>
@@ -2070,7 +2069,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                 </div>
                             </div>
 
-                            <div className="flex flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-6 py-4 sm:flex-row sm:justify-end">
+                            <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
                                 <button
                                     type="button"
                                     onClick={() => setPendingExport(null)}
