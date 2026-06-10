@@ -65,7 +65,6 @@ import SoanGiaoAnNangLucSo from './components/SoanGiaoAnNangLucSo';
 import QrGenerator from './components/QrGenerator';
 import { getQrLinkById, incrementQrScan } from './utils/firebaseQrLinks';
 import { deleteLocalVideoFile } from './utils/localVideoStore';
-import { getTrialStatus } from './utils/trialUtils';
 import {
   activateInteractiveVideoTrial,
   getInteractiveVideoTrialStatus,
@@ -531,49 +530,9 @@ function App() {
   };
 
   const handleOpenInteractiveVideo = async () => {
-    const effectiveUser = getEffectiveUser();
-    const email = effectiveUser?.email?.trim();
-    const effectiveIsAdmin = Boolean(email && ADMIN_EMAILS.includes(email.toLowerCase()));
-
-    if (effectiveIsAdmin || getTrialStatus().isPro) {
-      setView('INTERACTIVE_VIDEO');
-      return;
-    }
-
-    if (!email) {
-      setVideoTrialStatus(null);
-      setVideoTrialMessage('');
-      setPendingAction(() => () => { void handleOpenInteractiveVideo(); });
-      setLoginModalMessage('Đăng nhập Gmail để dùng thử Video tương tác. Sau khi đăng nhập, hệ thống sẽ tự mở bước nhập mã dùng thử.');
-      setShowLoginModal(true);
-      return;
-    }
-
-    setIsCheckingVideoTrial(true);
-    try {
-      const status = await getInteractiveVideoTrialStatus(email);
-      setVideoTrialStatus(status);
-
-      if (status.active && status.remainingCount > 0) {
-        setShowVideoTrialModal(false);
-        setVideoTrialMessage('');
-        setView('INTERACTIVE_VIDEO');
-        return;
-      }
-
-      if (status.blockedByEmail || status.expired || status.hasTrial) {
-        await openVideoTrialModal(status.message || (status.remainingCount <= 0
-          ? 'Thiết bị này đã dùng hết 3 lần xuất thử. Thầy cô vẫn có thể vào Video tương tác, khi xuất file chọn gói trả phí 1 lượt hoặc 10 lượt để nhận mã VIDX.'
-          : 'Bạn cần kích hoạt mã dùng thử Video tương tác.'));
-      } else {
-        await openVideoTrialModal('Nhập mã dùng thử để mở Video tương tác.');
-      }
-    } catch (error) {
-      console.error('Interactive video trial error:', error);
-      await openVideoTrialModal('Không kiểm tra được mã dùng thử. Vui lòng thử lại hoặc liên hệ admin.');
-    } finally {
-      setIsCheckingVideoTrial(false);
-    }
+    setShowVideoTrialModal(false);
+    setVideoTrialMessage('');
+    setView('INTERACTIVE_VIDEO');
   };
 
   const handleActivateVideoTrial = async () => {
