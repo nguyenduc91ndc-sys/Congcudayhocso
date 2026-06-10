@@ -27,7 +27,7 @@ interface InteractiveVideoModuleProps {
 type ModuleView = 'MY_VIDEOS' | 'CREATE_NEW' | 'EDIT';
 type ScormVersion = '1.2' | '2004';
 type PendingExport = { kind: 'html5' } | { kind: 'scorm'; version: ScormVersion };
-type ExportPackageId = 'single' | 'bundle';
+type ExportPackageId = 'trial' | 'single' | 'bundle';
 
 const EXPORT_BANK_INFO = {
     bankName: 'BIDV',
@@ -46,7 +46,18 @@ const EXPORT_PACKAGES: Array<{
     amount: number;
     transferCode: string;
     badge?: string;
+    isTrial?: boolean;
 }> = [
+    {
+        id: 'trial',
+        title: 'Dùng thử',
+        description: 'Nhập mã dùng thử xuất file do admin cấp. Không cần chuyển khoản.',
+        turns: 1,
+        amount: 0,
+        transferCode: 'DUNGTHU',
+        badge: 'Nhập mã',
+        isTrial: true,
+    },
     {
         id: 'single',
         title: '1 lượt xuất',
@@ -532,6 +543,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     };
 
     const selectedExportPackage = EXPORT_PACKAGES.find(pkg => pkg.id === selectedExportPackageId) || EXPORT_PACKAGES[0];
+    const isTrialExportPackage = Boolean(selectedExportPackage.isTrial);
 
     const getExportPaymentNote = (pkg = selectedExportPackage) => {
         return `VIDEO TUONG TAC XUAT FILE ${pkg.transferCode}`.slice(0, 80);
@@ -1931,10 +1943,10 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                         >
                             <div className="flex shrink-0 items-start justify-between gap-4 bg-gradient-to-r from-indigo-600 to-sky-600 px-4 py-4 text-white sm:px-6 sm:py-5">
                                 <div>
-                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-white/75">Thanh toán xuất file</p>
-                                    <h3 className="mt-1 text-2xl font-black">Chọn gói lượt xuất độc lập</h3>
+                                    <p className="text-xs font-black uppercase tracking-[0.18em] text-white/75">Xuất file độc lập</p>
+                                    <h3 className="mt-1 text-2xl font-black">Chọn dùng thử hoặc gói lượt xuất</h3>
                                     <p className="mt-2 max-w-2xl text-sm font-medium text-white/85">
-                                        Dùng link YouTube online miễn phí. Chỉ thanh toán khi thầy cô xuất file HTML5/SCORM để chạy độc lập.
+                                        Có mã dùng thử thì nhập trực tiếp. Nếu cần xuất nhiều file HTML5/SCORM để chạy độc lập, thầy cô chọn gói lượt và chuyển khoản.
                                     </p>
                                 </div>
                                 <button
@@ -1947,9 +1959,9 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                 </button>
                             </div>
 
-                            <div className="grid flex-1 gap-4 overflow-y-auto p-4 sm:p-5 lg:grid-cols-[minmax(0,1fr)_240px]">
+                            <div className={`grid flex-1 gap-4 overflow-y-auto p-4 sm:p-5 ${isTrialExportPackage ? '' : 'lg:grid-cols-[minmax(0,1fr)_240px]'}`}>
                                 <div className="space-y-4">
-                                    <div className="grid gap-3 sm:grid-cols-2">
+                                    <div className="grid gap-3 sm:grid-cols-3">
                                         {EXPORT_PACKAGES.map(pkg => (
                                             <button
                                                 key={pkg.id}
@@ -1967,16 +1979,27 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                                 )}
                                                 <span className="block text-base font-black text-slate-900">{pkg.title}</span>
                                                 <span className="mt-1 block text-sm font-medium text-slate-500">{pkg.description}</span>
-                                                <span className="mt-4 block text-2xl font-black text-indigo-700">{formatCurrency(pkg.amount)}đ</span>
-                                                <span className="mt-1 block text-xs font-bold text-slate-500">{formatCurrency(Math.round(pkg.amount / pkg.turns))}đ/lượt</span>
+                                                {pkg.isTrial ? (
+                                                    <>
+                                                        <span className="mt-4 block text-2xl font-black text-emerald-700">0đ</span>
+                                                        <span className="mt-1 block text-xs font-bold text-emerald-700">Cần mã dùng thử</span>
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <span className="mt-4 block text-2xl font-black text-indigo-700">{formatCurrency(pkg.amount)}đ</span>
+                                                        <span className="mt-1 block text-xs font-bold text-slate-500">{formatCurrency(Math.round(pkg.amount / pkg.turns))}đ/lượt</span>
+                                                    </>
+                                                )}
                                             </button>
                                         ))}
                                     </div>
 
-                                    <div className="rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900">
+                                    <div className={`rounded-2xl border p-4 text-sm ${isTrialExportPackage ? 'border-emerald-200 bg-emerald-50 text-emerald-900' : 'border-amber-200 bg-amber-50 text-amber-900'}`}>
                                         <p className="font-black">Ghi chú</p>
                                         <p className="mt-1">
-                                            Sau khi chuyển khoản, admin sẽ cấp mã VIDX- có đúng số lượt theo gói. Mỗi lần xuất thành công hệ thống tự trừ 1 lượt.
+                                            {isTrialExportPackage
+                                                ? 'Nếu thầy cô có mã dùng thử xuất file, nhập Gmail và mã VIDX- ở bên dưới để kiểm tra và xuất. Không cần quét QR hay chuyển khoản.'
+                                                : 'Sau khi chuyển khoản, admin sẽ cấp mã VIDX- có đúng số lượt theo gói. Mỗi lần xuất thành công hệ thống tự trừ 1 lượt.'}
                                         </p>
                                     </div>
 
@@ -1992,7 +2015,9 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                             />
                                         </div>
                                         <div>
-                                            <label className="mb-1 block text-xs font-black uppercase text-indigo-700">Mã lượt xuất</label>
+                                            <label className="mb-1 block text-xs font-black uppercase text-indigo-700">
+                                                {isTrialExportPackage ? 'Mã dùng thử xuất file' : 'Mã lượt xuất'}
+                                            </label>
                                             <input
                                                 type="text"
                                                 value={exportCodeInput}
@@ -2000,11 +2025,15 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                                 className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 font-mono text-sm font-black text-slate-900 outline-none focus:border-indigo-400"
                                                 placeholder="VIDX-ABCDEFGH"
                                             />
-                                            <p className="mt-1 text-xs font-semibold text-indigo-700">Gói 1 lượt và 10 lượt đều dùng 1 mã riêng, hệ thống tự đếm số lượt còn lại.</p>
+                                            <p className="mt-1 text-xs font-semibold text-indigo-700">
+                                                {isTrialExportPackage
+                                                    ? 'Mã dùng thử cũng bắt đầu bằng VIDX- và hệ thống tự trừ lượt sau khi xuất thành công.'
+                                                    : 'Gói 1 lượt và 10 lượt đều dùng 1 mã riêng, hệ thống tự đếm số lượt còn lại.'}
+                                            </p>
                                         </div>
                                     </div>
 
-                                    <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
+                                    {!isTrialExportPackage && <div className="grid gap-3 rounded-2xl border border-slate-200 bg-slate-50 p-4 text-sm">
                                         <div className="flex items-center justify-between gap-3">
                                             <div>
                                                 <p className="text-xs font-bold uppercase text-slate-500">Số tài khoản</p>
@@ -2047,10 +2076,10 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                                 {copiedPaymentField === 'note' ? <CheckCircle2 size={18} className="text-emerald-500" /> : <Copy size={18} />}
                                             </button>
                                         </div>
-                                    </div>
+                                    </div>}
                                 </div>
 
-                                <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
+                                {!isTrialExportPackage && <div className="flex flex-col items-center rounded-2xl border border-slate-200 bg-white p-4 text-center shadow-sm">
                                     <img
                                         src={getExportPaymentQrUrl()}
                                         alt="QR thanh toán VietQR"
@@ -2066,7 +2095,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                     >
                                         Zalo admin {EXPORT_BANK_INFO.adminZalo}
                                     </a>
-                                </div>
+                                </div>}
                             </div>
 
                             <div className="flex shrink-0 flex-col-reverse gap-3 border-t border-slate-200 bg-slate-50 px-4 py-3 sm:flex-row sm:justify-end sm:px-6 sm:py-4">
@@ -2083,7 +2112,9 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                     disabled={isExportingPaidFile}
                                     className="rounded-xl bg-gradient-to-r from-emerald-500 to-teal-600 px-5 py-3 text-sm font-black text-white shadow-lg transition hover:shadow-xl disabled:cursor-not-allowed disabled:opacity-60"
                                 >
-                                    {isExportingPaidFile ? 'Đang kiểm tra mã...' : `Kiểm tra mã và xuất ${pendingExport.kind === 'scorm' ? `SCORM ${pendingExport.version}` : 'HTML5'}`}
+                                    {isExportingPaidFile
+                                        ? 'Đang kiểm tra mã...'
+                                        : `${isTrialExportPackage ? 'Kiểm tra mã dùng thử và xuất' : 'Kiểm tra mã và xuất'} ${pendingExport.kind === 'scorm' ? `SCORM ${pendingExport.version}` : 'HTML5'}`}
                                 </button>
                             </div>
                         </motion.div>
