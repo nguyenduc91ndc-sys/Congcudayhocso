@@ -14,6 +14,11 @@ import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareU
 import { getLocalVideoFile, saveLocalVideoFile } from '../utils/localVideoStore';
 import PlayerThemeCustomizer from './PlayerThemeCustomizer';
 import { isValidVideoExportEmail, reserveVideoExportTurn, rollbackVideoExportTurn } from '../utils/firebaseVideoExportCodes';
+import {
+    activateInteractiveVideoTrial,
+    INTERACTIVE_VIDEO_TRIAL_CODE,
+    useInteractiveVideoTrialTurn,
+} from '../utils/firebaseInteractiveVideoTrial';
 
 interface InteractiveVideoModuleProps {
     lessons: VideoLesson[];
@@ -1034,7 +1039,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
         const code = exportCodeInput.toUpperCase().replace(/\s+/g, '').trim();
         const email = exportEmailInput.toLowerCase().trim();
         if (!code) {
-            alert('Vui lòng nhập mã lượt xuất VIDX- do admin cấp.');
+            alert(isTrialExportPackage ? 'Vui lòng nhập mã dùng thử xuất file.' : 'Vui lòng nhập mã lượt xuất VIDX- do admin cấp.');
             return;
         }
         if (!isValidVideoExportEmail(email)) {
@@ -1044,6 +1049,44 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
 
         setIsExportingPaidFile(true);
         const exportType = request.kind === 'html5' ? 'HTML5' : `SCORM ${request.version}`;
+
+        if (isTrialExportPackage) {
+            if (code !== INTERACTIVE_VIDEO_TRIAL_CODE) {
+                setIsExportingPaidFile(false);
+                alert(`Mã dùng thử chưa đúng.\n\nNhập mã ${INTERACTIVE_VIDEO_TRIAL_CODE} hoặc liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo} để nhận mã.`);
+                return;
+            }
+
+            try {
+                const activated = await activateInteractiveVideoTrial(email, code);
+                if (!activated.success && !activated.status.active) {
+                    setIsExportingPaidFile(false);
+                    alert(`${activated.message || 'Không kích hoạt được mã dùng thử.'}\n\nLiên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo} để được hỗ trợ.`);
+                    return;
+                }
+
+                const used = await useInteractiveVideoTrialTurn(email);
+                if (!used.success) {
+                    setIsExportingPaidFile(false);
+                    alert(`${used.message || 'Không còn lượt dùng thử hôm nay.'}\n\nLiên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo} để được hỗ trợ.`);
+                    return;
+                }
+
+                if (request.kind === 'html5') {
+                    await runExportHtml5();
+                } else {
+                    await runExportScorm(request.version);
+                }
+                setPendingExport(null);
+                alert(`Đã dùng 1 lượt dùng thử để xuất ${exportType}. Hôm nay còn ${used.status.todayRemaining} lượt.`);
+            } catch (error) {
+                alert(`Xuất file bằng mã dùng thử bị lỗi. Vui lòng thử lại hoặc liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo}.`);
+            } finally {
+                setIsExportingPaidFile(false);
+            }
+            return;
+        }
+
         const reserved = await reserveVideoExportTurn(code, email, title, exportType);
         if (!reserved.ok) {
             setIsExportingPaidFile(false);
@@ -2017,7 +2060,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                         <p className="font-black">Ghi chú</p>
                                         <p className="mt-1">
                                             {isTrialExportPackage
-                                                ? `Nếu thầy cô có mã dùng thử xuất file, nhập Gmail và mã VIDX- ở bên dưới để kiểm tra và xuất. Chưa có mã dùng thử, liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo}.`
+                                                ? `Nếu thầy cô có mã dùng thử xuất file, nhập Gmail và mã ${INTERACTIVE_VIDEO_TRIAL_CODE} ở bên dưới để kiểm tra và xuất. Chưa có mã dùng thử, liên hệ Zalo admin ${EXPORT_BANK_INFO.adminZalo}.`
                                                 : 'Sau khi chuyển khoản, admin sẽ cấp mã VIDX- có đúng số lượt theo gói. Mỗi lần xuất thành công hệ thống tự trừ 1 lượt.'}
                                         </p>
                                     </div>
@@ -2042,11 +2085,11 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                                 value={exportCodeInput}
                                                 onChange={e => setExportCodeInput(e.target.value.toUpperCase())}
                                                 className="w-full rounded-xl border border-indigo-100 bg-white px-3 py-2 font-mono text-sm font-black text-slate-900 outline-none focus:border-indigo-400"
-                                                placeholder="VIDX-ABCDEFGH"
+                                                placeholder={isTrialExportPackage ? INTERACTIVE_VIDEO_TRIAL_CODE : 'VIDX-ABCDEFGH'}
                                             />
                                             <p className="mt-1 text-xs font-semibold text-indigo-700">
                                                 {isTrialExportPackage
-                                                    ? 'Mã dùng thử cũng bắt đầu bằng VIDX- và hệ thống tự trừ lượt sau khi xuất thành công.'
+                                                    ? `Nhập mã ${INTERACTIVE_VIDEO_TRIAL_CODE}; hệ thống tự trừ lượt dùng thử sau khi xuất thành công.`
                                                     : 'Gói 1 lượt và 10 lượt đều dùng 1 mã riêng, hệ thống tự đếm số lượt còn lại.'}
                                             </p>
                                             {isTrialExportPackage && (
