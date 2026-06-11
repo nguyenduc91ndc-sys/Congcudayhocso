@@ -707,7 +707,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
 
   return (
     <div
-      className="h-full flex flex-col items-center justify-center p-4 relative"
+      className="interactive-video-player h-full min-h-[100dvh] w-full overflow-y-auto overflow-x-hidden p-2 relative sm:flex sm:flex-col sm:items-center sm:justify-center sm:p-4"
       style={{
         fontFamily: `${theme.fontFamily}, Nunito, Arial, sans-serif`,
         fontSize: `${theme.fontScale || 100}%`,
@@ -727,7 +727,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
       {/* Nút Quay lại */}
       {showStartGate && !videoError && (
         <div
-          className="absolute inset-0 z-[70] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-[2px]"
+          className="absolute inset-0 z-[70] flex items-start justify-center overflow-y-auto bg-slate-950/80 p-3 py-14 backdrop-blur-[2px] sm:items-center sm:p-4"
           style={{
             background: theme.startBackgroundImage
               ? `linear-gradient(rgba(2,6,23,.34), rgba(2,6,23,.42)), url("${theme.startBackgroundImage}") center/cover no-repeat`
@@ -747,9 +747,9 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
           <motion.div
             initial={{ opacity: 0, scale: 0.94, y: 16 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
-            className="w-full max-w-lg rounded-[28px] border border-white/20 bg-white p-6 text-center shadow-2xl"
+            className="w-full max-w-lg rounded-[24px] border border-white/20 bg-white p-4 text-center shadow-2xl sm:rounded-[28px] sm:p-6"
           >
-            <h2 className="mb-2 text-3xl font-black" style={{ color: theme.primaryColor }}>{theme.startTitle || 'Vào bài học'}</h2>
+            <h2 className="mb-2 text-2xl font-black sm:text-3xl" style={{ color: theme.primaryColor }}>{theme.startTitle || 'Vào bài học'}</h2>
             <p className="mb-5 text-sm font-bold text-slate-500">{theme.startSubtitle || 'Nhập họ tên, lớp và chọn nhân vật đại diện của em.'}</p>
             <input
               value={learnerName}
@@ -772,7 +772,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                 className="mb-4 w-full rounded-2xl border-2 border-slate-200 px-4 py-3 text-base font-bold text-slate-800 outline-none focus:border-purple-400"
               />
             )}
-            <div className="mb-5 grid grid-cols-6 gap-2 [perspective:760px]">
+            <div className="mb-5 grid grid-cols-3 gap-2 [perspective:760px] min-[390px]:grid-cols-6">
               {avatarOptions.map((avatar, index) => {
                 const selected = learnerAvatar === avatar.icon;
                 return (
@@ -788,7 +788,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                   transition={{ delay: index * 0.04, duration: 0.24 }}
                   whileHover={{ y: -3, scale: 1.06 }}
                   whileTap={{ scale: 0.94 }}
-                  className={`relative grid h-14 place-items-center rounded-2xl border-2 bg-white text-3xl transition ${selected ? 'scale-105 border-purple-500 shadow-lg' : 'border-slate-200 hover:border-purple-200 hover:shadow-md'}`}
+                  className={`relative grid h-12 place-items-center rounded-2xl border-2 bg-white text-2xl transition sm:h-14 sm:text-3xl ${selected ? 'scale-105 border-purple-500 shadow-lg' : 'border-slate-200 hover:border-purple-200 hover:shadow-md'}`}
                   style={selected ? { animation: 'startAvatarPulse 1.25s ease-in-out infinite' } : undefined}
                 >
                   <span
@@ -816,36 +816,36 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
 
       <button
         onClick={onBack}
-        className="absolute top-4 left-4 z-50 bg-white/80 p-3 rounded-full shadow-lg hover:bg-white transition-all text-purple-700"
+        className="absolute left-2 top-2 z-50 bg-white/85 p-2 rounded-full shadow-lg hover:bg-white transition-all text-purple-700 sm:left-4 sm:top-4 sm:p-3"
       >
-        <ArrowLeft size={24} />
+        <ArrowLeft className="h-5 w-5 sm:h-6 sm:w-6" />
       </button>
 
-      <div className={`relative z-10 w-full ${theme.layout === 'full' ? 'max-w-6xl' : theme.layout === 'sidebar' ? 'max-w-6xl' : 'max-w-5xl'} ${theme.layout === 'sidebar' ? 'grid grid-cols-1 lg:grid-cols-[1fr_260px]' : ''} bg-black shadow-2xl overflow-hidden border-4 sm:border-8 border-white/40 backdrop-blur-sm`}
+      <div className={`relative z-10 w-full ${theme.layout === 'full' ? 'max-w-6xl' : theme.layout === 'sidebar' ? 'max-w-6xl' : 'max-w-5xl'} ${theme.layout === 'sidebar' ? 'grid grid-cols-1 lg:grid-cols-[1fr_260px]' : ''} bg-black shadow-2xl overflow-hidden border-2 sm:border-8 border-white/40 backdrop-blur-sm`}
         style={{ borderRadius: theme.radius }}>
 
         <div className="bg-slate-950">
         {!videoError && (
-          <div className="flex items-center justify-between gap-3 border-b border-white/10 bg-slate-950 px-4 py-3 text-white">
+          <div className="flex items-center justify-between gap-2 border-b border-white/10 bg-slate-950 px-3 py-2 text-white sm:gap-3 sm:px-4 sm:py-3">
             <div className="flex min-w-0 items-center gap-2">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center overflow-hidden rounded-full text-xs font-black" style={{ backgroundColor: theme.primaryColor }}>
+              <span className="flex h-7 w-7 shrink-0 items-center justify-center overflow-hidden rounded-full text-[10px] font-black sm:h-8 sm:w-8 sm:text-xs" style={{ backgroundColor: theme.primaryColor }}>
                 {theme.logoImage ? <img src={theme.logoImage} alt="Logo" className="h-full w-full rounded-full object-contain" /> : (theme.logoText || 'GV')}
               </span>
               <div className="min-w-0">
-                <p className="truncate text-sm font-black">{theme.publishTitle || lesson.title}</p>
+                <p className="truncate text-xs font-black sm:text-sm">{theme.publishTitle || lesson.title}</p>
                 {(theme.publishSubtitle || theme.authorName) && (
                   <p className="truncate text-[11px] text-white/60">{theme.publishSubtitle || theme.authorName}</p>
                 )}
               </div>
             </div>
-            <div className="flex shrink-0 items-center gap-2">
+            <div className="flex shrink-0 items-center gap-1.5 sm:gap-2">
               {learnerName && (
-                <div className="rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white">
+                <div className="max-w-[104px] truncate rounded-full bg-white/10 px-2 py-1.5 text-[11px] font-black text-white sm:max-w-[160px] sm:px-3 sm:py-2 sm:text-xs">
                   {learnerAvatar} {learnerName}
                 </div>
               )}
               {theme.showScoreReport && (
-                <div className="rounded-full bg-white/10 px-3 py-2 text-xs font-black text-white">
+                <div className="rounded-full bg-white/10 px-2 py-1.5 text-[11px] font-black text-white sm:px-3 sm:py-2 sm:text-xs">
                   {answeredQuestions.length}/{migratedLesson.questions.length} câu hỏi
                 </div>
               )}
@@ -950,7 +950,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-40 flex items-center justify-center p-2 sm:p-4"
+              className="absolute inset-0 z-40 flex items-start justify-center overflow-y-auto p-2 sm:items-center sm:p-4"
               style={questionOverlayStyle}
             >
               <motion.div
@@ -958,7 +958,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                 animate={{ scale: 1, y: 0, filter: 'blur(0px)' }}
                 exit={{ scale: 0.94, y: 24, filter: 'blur(6px)' }}
                 transition={{ type: 'spring', damping: 20, stiffness: 220 }}
-                className={`${questionCardClass} video-question-font relative w-full max-w-[95vw] overflow-hidden rounded-[24px] border p-4 shadow-2xl sm:max-w-xl sm:p-5 md:max-w-2xl md:p-6`}
+                className={`${questionCardClass} video-question-font relative my-2 max-h-[calc(100dvh-120px)] w-full max-w-[95vw] overflow-y-auto rounded-[20px] border p-3 shadow-2xl sm:my-0 sm:max-w-xl sm:rounded-[24px] sm:p-5 md:max-w-2xl md:p-6`}
                 style={questionCardStyle}
               >
                 <motion.div
@@ -974,8 +974,8 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                   animate={{ x: '120%' }}
                   transition={{ duration: 3.8, repeat: Infinity, ease: 'easeInOut', repeatDelay: 1.6 }}
                 />
-                <div className="mb-5">
-                  <div className="mb-3 flex items-center justify-between gap-3">
+                <div className="mb-3 sm:mb-5">
+                  <div className="mb-3 flex items-center justify-between gap-2">
                     <span className="rounded-full px-3 py-1 text-[11px] font-black uppercase text-white shadow-sm" style={{ background: `linear-gradient(90deg, ${theme.primaryColor}, ${theme.secondaryColor})` }}>
                       Câu hỏi tương tác
                     </span>
@@ -984,7 +984,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                     </span>
                   </div>
                   <h3
-                    className="question-title-text text-left text-xl font-bold leading-tight sm:text-2xl md:text-3xl"
+                    className="question-title-text text-left text-lg font-bold leading-tight sm:text-2xl md:text-3xl"
                     style={{ color: theme.questionStyle === 'card' ? theme.textColor : '#ffffff' }}
                   >
                     {currentQuestion.text}
@@ -1006,7 +1006,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                 </div>
 
                 {/* Các lựa chọn - kiểu A. B. C. D. - Dynamic */}
-                <div className="mb-5 flex flex-col gap-3">
+                <div className="mb-4 flex flex-col gap-2.5 sm:mb-5 sm:gap-3">
                   {(getQuestionType(currentQuestion) === 'multiple-choice' || getQuestionType(currentQuestion) === 'true-false') && currentQuestion.options
                     .map((optText, optIndex) => ({ optText, optIndex }))
                     .filter(({ optText }) => String(optText || '').trim())
@@ -1019,7 +1019,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                       transition={{ delay: optIndex * 0.06, duration: 0.24 }}
                       whileHover={{ y: -2, scale: 1.01 }}
                       whileTap={{ scale: 0.985 }}
-                      className={`question-3d-option group relative flex w-full items-center gap-3 rounded-2xl border px-3 py-3 text-left transition-all sm:px-4 sm:py-3.5
+                      className={`question-3d-option group relative flex w-full items-center gap-2.5 rounded-2xl border px-3 py-2.5 text-left transition-all sm:gap-3 sm:px-4 sm:py-3.5
                         ${selectedOption === optIndex
                           ? 'border-transparent bg-white shadow-lg ring-2 ring-slate-900/10'
                           : 'border-slate-200 bg-white/95 hover:border-slate-300 hover:bg-white hover:shadow-md'
@@ -1105,11 +1105,11 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                 </div>
 
                 {/* 2 nút xếp ngang */}
-                <div className="flex flex-row gap-2 sm:gap-3 justify-center">
+                <div className="flex flex-col gap-2 sm:flex-row sm:gap-3 sm:justify-center">
                   <button
                     onClick={handleAnswer}
                     disabled={feedback !== null || ((getQuestionType(currentQuestion) === 'short-answer' || getQuestionType(currentQuestion) === 'fill-blank') ? !textAnswer.trim() : selectedOption === null)}
-                    className={`question-3d-action question-action-text flex-1 rounded-2xl px-4 py-3 text-sm font-bold text-white shadow-lg transition-all sm:text-base
+                    className={`question-3d-action question-action-text flex-1 rounded-2xl px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all sm:py-3 sm:text-base
                             ${feedback !== null || ((getQuestionType(currentQuestion) === 'short-answer' || getQuestionType(currentQuestion) === 'fill-blank') ? !textAnswer.trim() : selectedOption === null)
                         ? 'bg-gray-400/50 cursor-not-allowed'
                         : 'hover:brightness-105 active:scale-95'
@@ -1130,7 +1130,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                       setTextAnswer('');
                       setPlaying(true);
                     }}
-                    className="question-3d-action question-action-text flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-slate-900 px-4 py-3 text-sm font-bold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95 sm:text-base"
+                    className="question-3d-action question-action-text flex flex-1 items-center justify-center gap-1.5 rounded-2xl bg-slate-900 px-4 py-2.5 text-sm font-bold text-white shadow-lg transition-all hover:bg-slate-800 active:scale-95 sm:py-3 sm:text-base"
                   >
                     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
                       <polygon points="11 19 2 12 11 5 11 19"></polygon>
@@ -1150,7 +1150,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-[55] flex items-center justify-center bg-slate-950/80 p-4 backdrop-blur-md"
+              className="absolute inset-0 z-[55] flex items-start justify-center overflow-y-auto bg-slate-950/80 p-3 py-8 backdrop-blur-md sm:items-center sm:p-4"
             >
               <motion.div
                 initial={{ scale: 0.92, y: 18 }}
@@ -1263,7 +1263,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 z-50 bg-gradient-to-br from-red-900/90 to-orange-900/90 backdrop-blur-md flex items-center justify-center p-4"
+              className="absolute inset-0 z-50 bg-gradient-to-br from-red-900/90 to-orange-900/90 backdrop-blur-md flex items-start justify-center overflow-y-auto p-3 py-8 sm:items-center sm:p-4"
             >
               <motion.div
                 initial={{ scale: 0.8, rotate: -5 }}
@@ -1272,7 +1272,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                   rotate: 0,
                   transition: { type: "spring", damping: 10 }
                 }}
-                className="bg-white rounded-[32px] p-8 max-w-lg w-full shadow-2xl border-4 border-red-300 text-center"
+                className="bg-white rounded-[24px] p-5 max-w-lg w-full shadow-2xl border-4 border-red-300 text-center sm:rounded-[32px] sm:p-8"
               >
                 <motion.div
                   animate={{
@@ -1319,16 +1319,16 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
               whileHover={{ scale: 1.1 }}
               whileTap={{ scale: 0.9 }}
               onClick={() => setPlaying(true)}
-              className="w-24 h-24 bg-white/90 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)] pointer-events-auto cursor-pointer text-purple-600 hover:bg-white"
+              className="w-16 h-16 bg-white/90 rounded-full flex items-center justify-center shadow-[0_0_30px_rgba(255,255,255,0.3)] pointer-events-auto cursor-pointer text-purple-600 hover:bg-white sm:h-24 sm:w-24"
             >
-              <Play fill="currentColor" size={48} className="ml-2" />
+              <Play fill="currentColor" className="ml-1 h-8 w-8 sm:ml-2 sm:h-12 sm:w-12" />
             </motion.button>
           </div>
         )}
         </div>
 
         {!videoError && (theme.footerLeftText || theme.footerRightText || theme.guideText) && (
-          <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-slate-950 px-4 py-3 text-xs font-bold text-white">
+          <div className="flex items-center justify-between gap-3 border-t border-white/10 bg-slate-950 px-3 py-2 text-[11px] font-bold text-white sm:px-4 sm:py-3 sm:text-xs">
             <span className="min-w-0 truncate">{theme.footerLeftText || theme.guideText}</span>
             <span className="shrink-0">{theme.footerRightText}</span>
           </div>
@@ -1391,8 +1391,8 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
 
       {/* Controls below video */}
       {!videoError && (
-        <div className="relative z-10 mt-8 flex gap-4">
-          <button onClick={handleReplay} className="bg-white/80 backdrop-blur-md hover:bg-white text-purple-900 px-8 py-3 rounded-2xl font-bold shadow-lg flex items-center gap-2 transition-transform hover:scale-105 border border-white/50">
+        <div className="relative z-10 mt-4 flex w-full justify-center gap-4 px-2 sm:mt-8">
+          <button onClick={handleReplay} className="bg-white/80 backdrop-blur-md hover:bg-white text-purple-900 px-5 py-3 rounded-2xl font-bold shadow-lg flex items-center justify-center gap-2 transition-transform hover:scale-105 border border-white/50 sm:px-8">
             <RotateCcw size={20} /> Xem lại từ đầu
           </button>
         </div>
