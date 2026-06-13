@@ -5,7 +5,7 @@ import {
     Clock, ChevronUp, ChevronDown, CheckCircle2, AlertCircle, ExternalLink,
     Share2, Edit3, X, Copy, ArrowLeft, Minus, Upload, Link2, Palette, Download
 } from 'lucide-react';
-import { VideoLesson, Question, QuestionType, VideoPlayerTheme, VideoSourceType, DEFAULT_VIDEO_PLAYER_THEME, normalizeVideoPlayerTheme, migrateQuestion } from '../types';
+import { VideoLesson, Question, QuestionType, VideoPlayerTheme, VideoSourceType, VideoQuestionDisplayMode, DEFAULT_VIDEO_PLAYER_THEME, normalizeVideoPlayerTheme, normalizeVideoQuestionDisplayMode, migrateQuestion } from '../types';
 import { v4 as uuidv4 } from 'uuid';
 import ReactPlayer from 'react-player';
 import JSZip from 'jszip';
@@ -98,6 +98,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
     const [url, setUrl] = useState('');
     const [startTime, setStartTime] = useState(0);
     const [allowSeeking, setAllowSeeking] = useState(false);
+    const [questionDisplayMode, setQuestionDisplayMode] = useState<VideoQuestionDisplayMode>('by-time');
     const [questions, setQuestions] = useState<Question[]>([]);
     const [urlError, setUrlError] = useState<boolean>(false);
     const [urlValid, setUrlValid] = useState<boolean | null>(null);
@@ -127,6 +128,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         setUrl('');
         setStartTime(0);
         setAllowSeeking(false);
+        setQuestionDisplayMode('by-time');
         setQuestions([]);
         setUrlValid(null);
         setUrlError(false);
@@ -144,6 +146,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         setUrl(lesson.youtubeUrl);
         setStartTime(lesson.startTime);
         setAllowSeeking(lesson.allowSeeking);
+        setQuestionDisplayMode(normalizeVideoQuestionDisplayMode(lesson.questionDisplayMode));
         setQuestions((lesson.questions || []).map(migrateQuestion));
         setVideoSource(lesson.videoSource || 'youtube');
         setLocalVideoFile(null);
@@ -184,6 +187,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
                 playerTheme: normalizeVideoPlayerTheme(rawLesson.playerTheme),
                 startTime: Number(rawLesson.startTime) || 0,
                 allowSeeking: Boolean(rawLesson.allowSeeking),
+                questionDisplayMode: normalizeVideoQuestionDisplayMode(rawLesson.questionDisplayMode),
                 questions: rawLesson.questions.map(migrateQuestion),
                 createdAt: Date.now(),
             };
@@ -192,6 +196,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             setUrl(importedLesson.youtubeUrl);
             setStartTime(importedLesson.startTime);
             setAllowSeeking(importedLesson.allowSeeking);
+            setQuestionDisplayMode(normalizeVideoQuestionDisplayMode(importedLesson.questionDisplayMode));
             setQuestions(importedLesson.questions);
             setVideoSource(importedSource);
             setLocalVideoFile(null);
@@ -359,9 +364,10 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
         setQuestions(questions.filter(q => q.id !== id));
     };
 
-    const prepareQuestionsForSave = () => questions
-        .map(question => normalizeQuestionForType(migrateQuestion(question), getQuestionType(question)))
-        .sort((a, b) => a.time - b.time);
+    const prepareQuestionsForSave = () => {
+        const prepared = questions.map(question => normalizeQuestionForType(migrateQuestion(question), getQuestionType(question)));
+        return questionDisplayMode === 'after-video' ? prepared : prepared.sort((a, b) => a.time - b.time);
+    };
 
     const updateQuestionType = (questionId: string, type: QuestionType) => {
         setQuestions(questions.map(question => question.id === questionId ? normalizeQuestionForType(question, type) : question));
@@ -451,6 +457,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             playerTheme,
             startTime,
             allowSeeking,
+            questionDisplayMode,
             questions: prepareQuestionsForSave(),
             createdAt: editingLesson?.createdAt || Date.now(),
         };
@@ -476,6 +483,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             playerTheme,
             startTime,
             allowSeeking,
+            questionDisplayMode,
             questions: prepareQuestionsForSave(),
             createdAt: Date.now(),
         };
@@ -503,6 +511,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             playerTheme: normalizeVideoPlayerTheme(playerTheme),
             startTime,
             allowSeeking,
+            questionDisplayMode,
             questions: prepareQuestionsForSave(),
             createdAt: editingLesson?.createdAt || Date.now(),
         };
@@ -678,6 +687,7 @@ const InteractiveVideoModule: React.FC<InteractiveVideoModuleProps> = ({
             videoFileName,
             startTime,
             allowSeeking,
+            questionDisplayMode,
             questions: prepareQuestionsForSave(),
             theme: playerTheme,
             scormVersion: scormVersion || null,
@@ -710,6 +720,7 @@ ${exportControlCss}
 <div class="bubble-bg" aria-hidden="true"><span style="--l:7%;--s:46px;--d:17s;--delay:-4s;--x:28px;--o:.24"></span><span style="--l:16%;--s:72px;--d:22s;--delay:-11s;--x:-34px;--o:.2;--b:.2px"></span><span style="--l:31%;--s:38px;--d:15s;--delay:-7s;--x:42px;--o:.28"></span><span style="--l:47%;--s:96px;--d:26s;--delay:-17s;--x:-26px;--o:.18;--b:.4px"></span><span style="--l:63%;--s:58px;--d:19s;--delay:-2s;--x:36px;--o:.23"></span><span style="--l:79%;--s:84px;--d:24s;--delay:-13s;--x:-42px;--o:.2"></span><span style="--l:93%;--s:34px;--d:14s;--delay:-8s;--x:-24px;--o:.3"></span></div><div id="startGate" class="gate"><div class="gate-card"><h1>Vào bài học</h1><p>Nhập họ tên và chọn nhân vật đại diện của em.</p><input id="learnerName" autocomplete="name" placeholder="Họ và tên học sinh"><div class="avatars"><button class="avatarPick active" title="Bé trai" data-avatar="👦"><span class="avatarIcon">👦</span></button><button class="avatarPick" title="Bé gái" data-avatar="👧"><span class="avatarIcon">👧</span></button><button class="avatarPick" title="Rô bốt" data-avatar="🤖"><span class="avatarIcon">🤖</span></button><button class="avatarPick" title="Siêu nhân nam" data-avatar="🦸‍♂️"><span class="avatarIcon">🦸‍♂️</span></button><button class="avatarPick" title="Siêu nhân nữ" data-avatar="🦸‍♀️"><span class="avatarIcon">🦸‍♀️</span></button><button class="avatarPick" title="Phi hành gia" data-avatar="👨‍🚀"><span class="avatarIcon">👨‍🚀</span></button></div><button id="startLesson" class="startBtn">Bắt đầu học</button></div></div><canvas id="fx"></canvas><div id="bonus" class="bonus">+10</div><div class="app themeSync"><main class="shell"><div class="topbar"><span>Video bài giảng tương tác</span><div class="stats"><span>★ Điểm: <b id="score">0</b></span><span id="learnerBadge"></span></div></div><div class="browserNotice"><b>Lưu ý:</b> Trình duyệt trong Zalo có thể làm video bật ra khung riêng. Nếu khó xem, hãy bấm dấu ba chấm và chọn <b>Mở bằng trình duyệt</b> hoặc sao chép liên kết sang Chrome/Safari.</div><div class="layout"><section class="main"><div class="player"><div class="metaTop"><div class="brand"><span class="logo">${logoMarkup}</span><span>${escapeHtml(playerTheme.publishTitle || title)}</span></div><div class="badge">${escapeHtml(playerTheme.publishSubtitle || '')}</div></div><div class="stage"><video id="video" src="${videoFileName}" preload="metadata" playsinline webkit-playsinline x5-playsinline x5-video-player-type="h5" x5-video-player-fullscreen="false" x-webkit-airplay="deny" controlslist="nodownload noplaybackrate noremoteplayback" disablepictureinpicture></video><div id="overlay" class="overlay"><div class="card"><div class="qhead"><span class="qtag">Câu hỏi tương tác</span><span class="qpoints">+10 điểm</span></div><h2 id="qtext" class="qtitle"></h2><p class="qhint">Chọn đáp án đúng nhất, sau đó kiểm tra kết quả.</p><div id="opts"></div><div class="actions"><button class="primary" id="answer">Kiểm tra đáp án</button><button class="secondary" id="rewatch">Xem lại</button></div><div id="result" class="result"></div></div></div></div><div class="foot"><span>${escapeHtml(playerTheme.footerLeftText || 'Giáo viên yêu công nghệ')}</span><span>${escapeHtml(playerTheme.footerRightText || '')}</span></div><div class="controls"><button class="ctrl" id="back">≪</button><button class="ctrl" id="play">▶</button><button class="ctrl" id="next">≫</button><button class="ctrl" id="restart">↻</button><span class="page">1 / 1</span><input class="progress" id="progress" type="range" min="0" value="0" step="0.1"><span class="time"><b id="now">00:00</b> / <b id="dur">00:00</b></span><button class="ctrl" id="full">⛶</button></div></div></section><aside class="side" id="side"><div class="school-logo">${logoMarkup}</div>${playerTheme.showAuthorPanel ? `<div class="profile"><div class="avatar">${authorAvatarMarkup}</div><div><div class="name">${authorName}</div><div class="role">${authorInfo}</div></div></div><button class="info" id="authorInfo">Hiện thông tin</button>` : ''}<div class="tabs"><button class="tab active" id="menuTab">Mục lục</button><button class="tab" id="guideTab">Hướng dẫn</button></div><input class="search" id="searchBox" placeholder="Tìm kiếm"><h3 class="section-title">Trang 1</h3><div class="qlist" id="qlist"></div><div class="guide">${guideText}</div><button class="cert" id="certBtn" disabled>Xuất thư khen</button></aside></div></main></div><div id="finalResult" class="final"><div class="final-card"><div class="final-bar"></div><div class="final-body"><div class="final-icon">🏆</div><p class="final-kicker">Kết quả bài học</p><h2 class="final-title">Hoàn thành xuất sắc</h2><p id="finalDesc" class="final-desc"></p><div id="finalScore" class="final-score"></div><div class="final-actions"><button class="final-cert" id="finalCert">Xuất thư khen</button><button class="final-replay" id="finalReplay">Xem lại</button><button class="final-exit" id="finalExit">Thoát video</button></div></div></div></div>
 <script>
 const data=${JSON.stringify(exportData)};
+const isAfterVideoMode=data.questionDisplayMode==='after-video';
 if(/Zalo/i.test(navigator.userAgent||''))document.body.classList.add('zalo-webview');
 const scormVersion=data.scormVersion;
 let scormApi=null,scormStarted=false,scormDone=false;
@@ -769,20 +780,20 @@ const certificateShowcase=()=>{const learner=learnerName||(prompt('Nhập tên h
 const certificateStage=()=>{const learner=learnerName||(prompt('Nhập tên học sinh để ghi vinh danh:','Học sinh')||'Học sinh').trim()||'Học sinh',classLine=learnerClass?'<p class="className">Lớp: '+safe(learnerClass)+'</p>':'',total=totalPoints(),date=new Date().toLocaleDateString('vi-VN'),displayTitle=(data.theme.certificateTitle&&data.theme.certificateTitle.trim())?data.theme.certificateTitle.trim():'Thư khen',w=window.open('','_blank');if(!w)return;const css="@import url('https://fonts.googleapis.com/css2?family=Nunito:wght@700;800;900&display=swap');*{box-sizing:border-box}body{margin:0;background:#080c1f;font-family:Arial,sans-serif;color:#fff}.wrap{min-height:100vh;padding:24px;background:radial-gradient(circle at 18% 20%,${playerTheme.primaryColor}55,transparent 26%),radial-gradient(circle at 86% 14%,${playerTheme.secondaryColor}48,transparent 24%),linear-gradient(135deg,#091023,#10143a 54%,#220f35)}.paper{position:relative;width:980px;max-width:100%;aspect-ratio:1.58/1;margin:0 auto;padding:34px 56px;border-radius:34px;background:linear-gradient(135deg,rgba(10,17,42,.94),rgba(16,21,63,.9) 52%,rgba(38,18,72,.92));box-shadow:0 26px 80px rgba(0,0,0,.35),inset 0 0 0 1px rgba(255,255,255,.18);overflow:hidden;text-align:center;animation:paperIn .72s cubic-bezier(.2,.8,.2,1) both}.paper:before{content:'';position:absolute;inset:-30%;background:conic-gradient(from 120deg,transparent,rgba(255,255,255,.2),transparent 28%,rgba(255,255,255,.14),transparent 60%);animation:spinGlow 9s linear infinite}.paper:after{content:'';position:absolute;inset:14px;border:1px solid rgba(255,255,255,.2);border-radius:26px;pointer-events:none}.beam{position:absolute;inset:-30% auto auto 50%;width:280px;height:880px;transform:translateX(-50%) rotate(18deg);background:linear-gradient(180deg,rgba(255,255,255,.3),transparent);filter:blur(6px);opacity:.42;animation:sweep 4.4s ease-in-out infinite}.dot{position:absolute;width:9px;height:9px;border-radius:50%;background:#fff;opacity:.45;animation:float 3.8s ease-in-out infinite}.d1{left:9%;top:20%}.d2{right:12%;top:26%;animation-delay:.7s}.d3{left:17%;bottom:22%;animation-delay:1.2s}.topLogos{position:absolute;left:54px;right:54px;top:36px;z-index:3;display:flex;justify-content:space-between}.certLogo img{max-width:94px;max-height:58px;object-fit:contain;mix-blend-mode:multiply;filter:saturate(1.12) contrast(1.08)}.seal img{max-width:80px;max-height:80px;object-fit:contain;mix-blend-mode:multiply;filter:saturate(1.12) contrast(1.08)}.content{position:relative;z-index:2;display:flex;min-height:100%;flex-direction:column;align-items:center;justify-content:center}.badgeIcon{display:grid;place-items:center;width:88px;height:88px;margin-bottom:12px;border-radius:28px;background:linear-gradient(135deg,${playerTheme.accentColor},${playerTheme.secondaryColor});font-size:48px;box-shadow:0 20px 46px ${playerTheme.secondaryColor}55;animation:float 3.4s ease-in-out infinite}.eyebrow{margin:0 0 8px;padding:7px 16px;border-radius:999px;background:rgba(255,255,255,.1);color:#c7d2fe;font-size:12px;font-weight:950;text-transform:uppercase;letter-spacing:.16em}.title{margin:0;font-size:48px;line-height:1.02;font-weight:950;text-transform:uppercase;letter-spacing:.02em;background:linear-gradient(90deg,#fff,#c7d2fe,#f0abfc);-webkit-background-clip:text;background-clip:text;color:transparent}.nameWrap{position:relative;margin:28px 0 8px}.halo{position:absolute;left:50%;top:50%;width:300px;height:120px;transform:translate(-50%,-50%);border-radius:999px;background:radial-gradient(circle,${playerTheme.primaryColor}3d,transparent 68%);animation:haloPulse 1.8s ease-in-out infinite}.avatarCert{position:relative;font-size:38px}.name{position:relative;margin:2px 0 0;font-size:58px;line-height:1;font-weight:950;text-shadow:0 8px 28px rgba(0,0,0,.35)}.className{position:relative;margin:8px 0 0;color:#cbd5e1;font-size:16px;font-weight:900}.ribbon{margin:18px auto 12px;max-width:760px;padding:13px 28px;border:1px solid rgba(255,255,255,.22);border-radius:18px;background:linear-gradient(90deg,rgba(255,255,255,.16),rgba(255,255,255,.08));backdrop-filter:blur(12px);color:#fff;font-size:17px;font-weight:950;text-transform:uppercase;box-shadow:0 16px 36px rgba(0,0,0,.2);animation:slideUp .7s ease .18s both}.score{display:grid;place-items:center;width:96px;height:96px;border-radius:30px;background:linear-gradient(135deg,#22c55e,#14b8a6);font-size:24px;font-weight:950;box-shadow:0 18px 46px rgba(20,184,166,.32);transform:rotate(-4deg)}.score small{display:block;font-size:13px}.sign{position:absolute;left:58px;right:58px;bottom:38px;z-index:2;display:flex;justify-content:space-between;align-items:flex-end;color:#cbd5e1;font-size:13px;font-weight:900}.sign>span{width:190px;text-align:center}.sign strong{display:block;color:#fff;font-size:16px}.line{width:130px;height:2px;margin:8px auto 8px;border-radius:999px;background:rgba(255,255,255,.34)}.teacher{display:flex;flex-direction:column;align-items:center;line-height:1.25;text-align:center}.signature{display:flex;align-items:flex-end;justify-content:center;width:100%;min-height:54px;margin-bottom:4px}.signature img{display:block;max-width:132px;max-height:50px;object-fit:contain}.toolbar{display:flex;justify-content:center;gap:10px;margin:16px auto 0}.toolbar button{border:0;border-radius:12px;padding:12px 17px;color:#fff;font-weight:950;cursor:pointer}.printBtn{background:${playerTheme.primaryColor}}.imageBtn{background:#111827}.content{gap:10px}.badgeIcon{width:72px;height:72px;margin:0 0 2px;border-radius:22px;font-size:38px}.eyebrow{margin:0;font-size:11px;letter-spacing:.08em}.title{max-width:820px;font-size:clamp(34px,4.8vw,44px);line-height:1.06;letter-spacing:0}.subtitle{max-width:760px;margin:-2px auto 2px;color:#cbd5e1;font-size:16px;font-weight:900;line-height:1.25}.nameWrap{width:min(760px,100%);margin:6px auto 0;padding:0 18px}.halo{display:none}.avatarCert{display:inline-grid;place-items:center;width:56px;height:56px;margin:0 auto 8px;border-radius:18px;background:rgba(255,255,255,.08);font-size:30px;line-height:1;box-shadow:inset 0 0 0 1px rgba(255,255,255,.14)}.name{display:block;max-width:100%;margin:0 auto;padding:14px 28px;border:1px solid rgba(255,255,255,.12);border-radius:24px;background:linear-gradient(90deg,rgba(148,163,184,.22),rgba(148,163,184,.1));font-size:clamp(28px,3.7vw,40px);line-height:1.08;letter-spacing:0;text-wrap:balance;overflow-wrap:anywhere;text-shadow:0 6px 18px rgba(0,0,0,.22)}.className{margin-top:8px}.ribbon{margin:8px auto 8px;padding:10px 24px;font-size:15px;line-height:1.25}.score{width:82px;height:82px;border-radius:24px;font-size:22px}.sign{bottom:28px}.signature:has(img){width:164px;min-height:56px;margin:5px 0 6px;padding:6px 12px;border-radius:14px;background:rgba(255,255,255,.58);box-shadow:0 8px 18px rgba(0,0,0,.12),inset 0 0 0 1px rgba(255,255,255,.38);backdrop-filter:blur(4px)}.signature:has(img) img{max-width:150px;max-height:44px;mix-blend-mode:multiply;filter:contrast(1.35) saturate(1.1);opacity:1}body,.paper,.paper *{font-family:'Nunito','Be Vietnam Pro',Arial,sans-serif}.wrap{background:radial-gradient(circle at 18% 20%,${playerTheme.primaryColor}30,transparent 28%),radial-gradient(circle at 86% 14%,${playerTheme.secondaryColor}2e,transparent 28%),linear-gradient(135deg,#ecfeff,#fdf2f8 52%,#fff7ed)}.paper{background:linear-gradient(135deg,rgba(255,255,255,.98),rgba(240,253,250,.96) 48%,rgba(253,242,248,.98));color:#172033;box-shadow:0 26px 80px rgba(51,65,85,.18),inset 0 0 0 1px rgba(255,255,255,.85)}.paper:before{opacity:.28}.paper:after{border-color:rgba(99,102,241,.22)}.beam{opacity:.2}.dot{background:${playerTheme.primaryColor};opacity:.24}.eyebrow{background:rgba(99,102,241,.08);color:#6366f1}.title{background:linear-gradient(90deg,#2563eb,#7c3aed,#db2777);-webkit-background-clip:text;background-clip:text;color:transparent}.subtitle,.className,.sign{color:#64748b}.name{border-color:rgba(99,102,241,.14);background:linear-gradient(90deg,rgba(255,255,255,.9),rgba(238,242,255,.86),rgba(253,242,248,.88));color:#1e1b4b;text-shadow:none}.ribbon{border-color:rgba(99,102,241,.14);background:linear-gradient(90deg,rgba(224,231,255,.8),rgba(252,231,243,.8));color:#3730a3}.sign strong{color:#1e1b4b}.title{font-family:'Nunito','Be Vietnam Pro',Arial,sans-serif;font-weight:900;text-transform:none}.eyebrow,.subtitle,.name,.className,.ribbon,.score,.sign{font-family:'Nunito','Be Vietnam Pro',Arial,sans-serif}.ribbon{text-transform:none;letter-spacing:0}.badgeIcon{background:linear-gradient(135deg,#38bdf8,#8b5cf6 52%,#ec4899);box-shadow:0 14px 30px rgba(124,58,237,.24)}.kidDecor{position:absolute;z-index:1;display:grid;place-items:center;font-family:'Nunito',Arial,sans-serif;font-size:26px;font-weight:900;filter:drop-shadow(0 8px 10px rgba(99,102,241,.18));animation:float 4s ease-in-out infinite}.kd1{left:9%;top:27%;color:#f59e0b}.kd2{right:10%;top:29%;color:#22c55e;animation-delay:.5s}.kd3{left:18%;bottom:24%;color:#ec4899;animation-delay:1s}.kd4{right:22%;bottom:22%;color:#38bdf8;animation-delay:1.4s}@media(max-width:760px){.kidDecor{display:none}}@keyframes paperIn{from{opacity:0;transform:translateY(20px) scale(.97)}to{opacity:1;transform:none}}@keyframes spinGlow{to{transform:rotate(360deg)}}@keyframes sweep{0%,100%{opacity:.2;transform:translateX(-95%) rotate(18deg)}50%{opacity:.48;transform:translateX(25%) rotate(18deg)}}@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-10px)}}@keyframes haloPulse{0%,100%{opacity:.6;transform:translate(-50%,-50%) scale(.96)}50%{opacity:1;transform:translate(-50%,-50%) scale(1.08)}}@keyframes slideUp{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}@media print{body{background:#fff}.wrap{padding:0;background:#fff}.toolbar{display:none}.paper{box-shadow:none;margin:0 auto}.paper:before,.beam,.dot{animation:none}}";w.document.write('<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>'+safe(displayTitle)+'</title><style id="certificateStyles">'+css+'</style></head><body><div class="wrap"><main id="certificatePaper" class="paper"><span class="kidDecor kd1">★</span><span class="kidDecor kd2">✦</span><span class="kidDecor kd3">●</span><span class="kidDecor kd4">◆</span><span class="beam"></span><span class="dot d1"></span><span class="dot d2"></span><span class="dot d3"></span><div class="topLogos"><div class="certLogo">${certificateLogoMarkup}</div><div class="seal">${certificateSealMarkup}</div></div><section class="content"><div class="badgeIcon">✦</div><p class="eyebrow">'+safe(data.title)+'</p><h1 class="title">'+safe(displayTitle)+'</h1><p class="subtitle">'+safe(data.theme.certificateSubtitle||'Hoàn thành bài học tương tác')+'</p><div class="nameWrap"><span class="halo"></span><div class="avatarCert">'+learnerAvatar+'</div><div class="name">'+safe(learner)+'</div>'+classLine+'</div><div class="ribbon">'+safe(data.theme.certificateMessage||'Đã hoàn thành bài học với tinh thần học tập tích cực.')+'</div><div class="score">'+points+'/'+total+'<small>điểm</small></div></section><div class="sign"><span><strong>'+date+'</strong><span class="line"></span>Ngày hoàn thành</span><span class="teacher"><span>Giáo viên</span><span class="signature">${certificateSignatureMarkup||'<span class="line"></span>'}</span><strong>${authorName}</strong></span></div></main><div class="toolbar"><button class="printBtn" onclick="window.print()">In hoặc lưu PDF</button><button class="imageBtn" onclick="saveCertificateImage()">Lưu ảnh PNG</button></div></div></body></html>');w.document.close();w.focus();w.saveCertificateImage=()=>saveCertificatePng(w,learner,'vinh-danh','#f8fafc');};
 let finalShown=false;
 const showFinal=()=>{if(finalShown)return;finalShown=true;const total=totalPoints();video.pause();playVictorySound();firework();setTimeout(firework,520);certBtn.disabled=false;finalDesc.textContent=(learnerAvatar+' '+(learnerName||'Học sinh')+' đã hoàn thành '+answered.length+'/'+data.questions.length+' câu hỏi.');finalScore.textContent=points+' / '+total+' điểm';finalResult.classList.add('show')};
-const renderList=(filter='')=>{const nextQuestion=(!current&&data.questions.find(x=>!answered.includes(x.id)&&(Number(x.time)||0)>=video.currentTime-.5))||null;qlist.innerHTML=data.questions.map((q,i)=>({q,i})).filter(({q,i})=>('câu '+(i+1)+' '+q.text).toLowerCase().includes(filter.toLowerCase())).map(({q,i})=>{const cls=['qitem'];if(answered.includes(q.id))cls.push('answered');else cls.push('${sidebarPulseCss}');if(current&&current.id===q.id){cls.push('active')}else if(nextQuestion&&nextQuestion.id===q.id){cls.push('active')}return '<div class="'+cls.filter(Boolean).join(' ')+'" data-time="'+q.time+'"><span class="qtext"><span class="qicon">${sidebarIcon}</span><span><span class="qname">Câu '+(i+1)+'</span></span></span><small>'+fmt(q.time)+'</small></div>'}).join('')};
+const renderList=(filter='')=>{const nextQuestion=(!current&&data.questions.find(x=>!answered.includes(x.id)&&(isAfterVideoMode||(Number(x.time)||0)>=video.currentTime-.5)))||null;qlist.innerHTML=data.questions.map((q,i)=>({q,i})).filter(({q,i})=>('câu '+(i+1)+' '+q.text).toLowerCase().includes(filter.toLowerCase())).map(({q,i})=>{const cls=['qitem'];if(answered.includes(q.id))cls.push('answered');else cls.push('${sidebarPulseCss}');if(current&&current.id===q.id){cls.push('active')}else if(nextQuestion&&nextQuestion.id===q.id){cls.push('active')}return '<div class="'+cls.filter(Boolean).join(' ')+'" data-time="'+q.time+'"><span class="qtext"><span class="qicon">${sidebarIcon}</span><span><span class="qname">Câu '+(i+1)+'</span></span></span><small>'+(isAfterVideoMode?'Sau video':fmt(q.time))+'</small></div>'}).join('')};
 renderList();
 video.currentTime=data.startTime||0;
 const renderQuestion=q=>{current=q;selected=null;video.pause();try{if(video.webkitDisplayingFullscreen&&video.webkitExitFullscreen)video.webkitExitFullscreen()}catch(e){}document.body.classList.add('question-open');qtext.textContent=q.text;result.textContent='';opts.innerHTML='';const pointLabel=document.querySelector('.qpoints');if(pointLabel)pointLabel.textContent='+'+qPoints(q)+' diem';const hint=document.querySelector('.qhint');if(hint)hint.textContent=(qType(q)==='short-answer'||qType(q)==='fill-blank')?'Nhập câu trả lời, sau đó kiểm tra đáp án.':'Chọn đáp án đúng nhất, sau đó kiểm tra kết quả.';if(qType(q)==='short-answer'||qType(q)==='fill-blank'){const input=document.createElement('input');input.id='textAnswer';input.placeholder=qType(q)==='fill-blank'?'Nhập từ/cụm từ còn thiếu':'Nhập câu trả lời';input.style.cssText='width:100%;border:2px solid #e2e8f0;border-radius:18px;padding:14px 16px;font-size:17px;font-weight:900;outline:none';input.onkeydown=e=>{if(e.key==='Enter')document.getElementById('answer').click()};opts.appendChild(input);setTimeout(()=>input.focus(),80)}else if(qType(q)==='image-choice'){(q.imageOptions||[]).forEach((o,i)=>{const b=document.createElement('button');b.className='option';b.style.borderRadius='18px';b.innerHTML='<span class="olabel">'+String.fromCharCode(65+i)+'</span><span class="otext"></span>';if(o.imageUrl){const img=document.createElement('img');img.src=o.imageUrl;img.alt=o.text||('Lựa chọn '+String.fromCharCode(65+i));img.style.cssText='width:130px;aspect-ratio:16/9;object-fit:cover;border-radius:12px;background:#e2e8f0;flex:0 0 130px';b.insertBefore(img,b.firstChild)}b.querySelector('.otext').textContent=o.text||('Lựa chọn '+String.fromCharCode(65+i));b.onclick=()=>{selected=i;document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'));b.classList.add('selected')};opts.appendChild(b)})}else{(q.options||[]).forEach((o,i)=>{if(!String(o||'').trim())return;const b=document.createElement('button');b.className='option';b.innerHTML='<span class="olabel">'+String.fromCharCode(65+i)+'</span><span class="otext"></span>';b.querySelector('.otext').textContent=o;b.onclick=()=>{selected=i;document.querySelectorAll('.option').forEach(el=>el.classList.remove('selected'));b.classList.add('selected')};opts.appendChild(b)})}renderList(searchBox.value);overlay.classList.add('show')};
 video.addEventListener('loadedmetadata',()=>{progress.max=video.duration||0;dur.textContent=fmt(video.duration)});
 video.addEventListener('play',()=>play.textContent='❚❚');
 video.addEventListener('pause',()=>play.textContent='▶');
-video.addEventListener('ended',()=>{if(answered.length===data.questions.length){scormComplete();showFinal()}});
+video.addEventListener('ended',()=>{if(isAfterVideoMode){const next=data.questions.find(x=>!answered.includes(x.id));if(next){renderQuestion(next);return}}if(answered.length===data.questions.length){scormComplete();showFinal()}});
 video.addEventListener('timeupdate',()=>{progress.value=video.currentTime;now.textContent=fmt(video.currentTime);if(!current)renderList(searchBox.value);
-const q=data.questions.find(x=>Math.abs(x.time-video.currentTime)<.7&&!answered.includes(x.id));if(q)renderQuestion(q)});
+if(!isAfterVideoMode){const q=data.questions.find(x=>Math.abs(x.time-video.currentTime)<.7&&!answered.includes(x.id));if(q)renderQuestion(q)}});
 play.onclick=()=>video.paused?video.play():video.pause();
 progress.oninput=()=>{if(data.allowSeeking)video.currentTime=Number(progress.value)};
 searchBox.oninput=()=>renderList(searchBox.value);
-qlist.onclick=e=>{const item=e.target.closest('.qitem');if(item&&data.allowSeeking){video.currentTime=Number(item.dataset.time)||0;video.play()}};
+qlist.onclick=e=>{const item=e.target.closest('.qitem');if(item&&data.allowSeeking&&!isAfterVideoMode){video.currentTime=Number(item.dataset.time)||0;video.play()}};
 document.getElementById('restart').onclick=()=>{video.currentTime=data.startTime||0;answered=[];points=0;current=null;answerReport={};questionAttempts={};finalShown=false;renderList(searchBox.value);score.textContent='0';certBtn.disabled=true;finalResult.classList.remove('show');video.play()};
 document.getElementById('back').onclick=()=>{video.currentTime=Math.max(0,video.currentTime-10)};
 document.getElementById('next').onclick=()=>{if(data.allowSeeking)video.currentTime=Math.min(video.duration||0,video.currentTime+10)};
@@ -790,12 +801,12 @@ document.getElementById('full').onclick=()=>document.querySelector('.shell').req
 menuTab.onclick=()=>{side.classList.remove('show-guide');menuTab.classList.add('active');guideTab.classList.remove('active')};
 guideTab.onclick=()=>{side.classList.add('show-guide');guideTab.classList.add('active');menuTab.classList.remove('active')};
 const authorInfo=document.getElementById('authorInfo');if(authorInfo){authorInfo.onclick=()=>alert('${authorName.replace(/'/g, "\\'")}\\n${escapeHtml(playerTheme.authorInfo || '').replace(/\n/g, '\\n').replace(/'/g, "\\'")}')};
-document.getElementById('answer').onclick=()=>{if(!current)return;const isText=qType(current)==='short-answer'||qType(current)==='fill-blank';const textInput=document.getElementById('textAnswer');if(isText&&(!textInput||!textInput.value.trim()))return;if(!isText&&selected===null)return;const ok=isText?textCorrect(current,textInput.value):selected===current.correctOption;if(ok){const add=qPoints(current),attempts=(questionAttempts[current.id]||0)+1,learnerAnswer=isText?textInput.value:answerText(current,selected);questionAttempts[current.id]=attempts;answerReport[current.id]={learnerAnswer:learnerAnswer,correctAnswer:correctText(current),attempts:attempts,points:add};playCorrectSound();correctSpark();showBonus(add);result.textContent='Ch\\u00ednh x\\u00e1c! +'+add+' \\u0111i\\u1ec3m';answered.push(current.id);renderList(searchBox.value);points+=add;score.textContent=points;scormSetScore(points,totalPoints());setTimeout(()=>{overlay.classList.remove('show');document.body.classList.remove('question-open');current=null;renderList(searchBox.value);if(answered.length===data.questions.length&&video.duration&&video.currentTime>=video.duration-.75){scormComplete();showFinal()}else video.play()},900)}else{questionAttempts[current.id]=(questionAttempts[current.id]||0)+1;playIncorrectSound();result.textContent='Ch\\u01b0a \\u0111\\u00fang, em h\\u00e3y xem l\\u1ea1i \\u0111o\\u1ea1n video nh\\u00e9.'}};
+document.getElementById('answer').onclick=()=>{if(!current)return;const isText=qType(current)==='short-answer'||qType(current)==='fill-blank';const textInput=document.getElementById('textAnswer');if(isText&&(!textInput||!textInput.value.trim()))return;if(!isText&&selected===null)return;const ok=isText?textCorrect(current,textInput.value):selected===current.correctOption;if(ok){const add=qPoints(current),attempts=(questionAttempts[current.id]||0)+1,learnerAnswer=isText?textInput.value:answerText(current,selected);questionAttempts[current.id]=attempts;answerReport[current.id]={learnerAnswer:learnerAnswer,correctAnswer:correctText(current),attempts:attempts,points:add};playCorrectSound();correctSpark();showBonus(add);result.textContent='Ch\\u00ednh x\\u00e1c! +'+add+' \\u0111i\\u1ec3m';answered.push(current.id);renderList(searchBox.value);points+=add;score.textContent=points;scormSetScore(points,totalPoints());setTimeout(()=>{overlay.classList.remove('show');document.body.classList.remove('question-open');current=null;renderList(searchBox.value);if(isAfterVideoMode){const next=data.questions.find(x=>!answered.includes(x.id));if(next)renderQuestion(next);else{scormComplete();showFinal()}}else if(answered.length===data.questions.length&&video.duration&&video.currentTime>=video.duration-.75){scormComplete();showFinal()}else video.play()},900)}else{questionAttempts[current.id]=(questionAttempts[current.id]||0)+1;playIncorrectSound();result.textContent='Ch\\u01b0a \\u0111\\u00fang, em h\\u00e3y xem l\\u1ea1i \\u0111o\\u1ea1n video nh\\u00e9.'}};
 certBtn.onclick=()=>{certificateStage();openGmailReport(true)};
 finalCert.onclick=()=>{certificateStage();openGmailReport(true)};
 finalReplay.onclick=()=>document.getElementById('restart').click();
 finalExit.onclick=()=>{try{window.close()}catch(e){}; if(!window.closed) finalResult.classList.remove('show')};
-document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.classList.remove('show');document.body.classList.remove('question-open');video.currentTime=Math.max(0,current.time-10);video.play()};
+document.getElementById('rewatch').onclick=()=>{if(!current)return;overlay.classList.remove('show');document.body.classList.remove('question-open');video.currentTime=isAfterVideoMode?(data.startTime||0):Math.max(0,current.time-10);video.play()};
 </script>
 </body>
 </html>`;
@@ -1518,6 +1529,43 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                     )}
 
                                     {/* Questions Counter */}
+                                    <div className="rounded-2xl border border-purple-100 bg-purple-50 p-4">
+                                        <div className="mb-3 flex items-center justify-between gap-3">
+                                            <div>
+                                                <h3 className="text-sm font-black text-purple-900">Khi nào hiện câu hỏi?</h3>
+                                                <p className="mt-1 text-xs font-semibold text-purple-600">
+                                                    Chọn cách đặt câu hỏi cho toàn bộ bài video này.
+                                                </p>
+                                            </div>
+                                            <span className="rounded-full bg-white px-3 py-1 text-xs font-black text-purple-700 shadow-sm">
+                                                {questions.length} câu
+                                            </span>
+                                        </div>
+                                        <div className="grid gap-2 md:grid-cols-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => setQuestionDisplayMode('by-time')}
+                                                className={`rounded-xl border px-4 py-3 text-left transition ${questionDisplayMode === 'by-time'
+                                                    ? 'border-purple-300 bg-white text-purple-900 shadow-sm'
+                                                    : 'border-purple-100 bg-white/60 text-gray-600 hover:bg-white'
+                                                    }`}
+                                            >
+                                                <span className="block text-sm font-black">Trong lúc xem video</span>
+                                                <span className="mt-1 block text-xs font-semibold opacity-75">Mỗi câu hiện theo phút/giây đã đặt.</span>
+                                            </button>
+                                            <button
+                                                type="button"
+                                                onClick={() => setQuestionDisplayMode('after-video')}
+                                                className={`rounded-xl border px-4 py-3 text-left transition ${questionDisplayMode === 'after-video'
+                                                    ? 'border-purple-300 bg-white text-purple-900 shadow-sm'
+                                                    : 'border-purple-100 bg-white/60 text-gray-600 hover:bg-white'
+                                                    }`}
+                                            >
+                                                <span className="block text-sm font-black">Sau khi xem hết video</span>
+                                                <span className="mt-1 block text-xs font-semibold opacity-75">Video kết thúc rồi lần lượt hiện các câu hỏi.</span>
+                                            </button>
+                                        </div>
+                                    </div>
                                     <div className="text-center text-gray-600 font-medium py-2 bg-gray-100 rounded-xl">
                                         Đã tạo: <strong>{questions.length}</strong> câu hỏi
                                     </div>
@@ -1541,6 +1589,7 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                                 <h4 className="text-lg font-bold text-gray-700 mb-4">Câu hỏi {index + 1}</h4>
 
                                                 {/* Time Input */}
+                                                {questionDisplayMode === 'by-time' ? (
                                                 <div className="flex items-center gap-4 mb-4">
                                                     <div className="flex items-center gap-2">
                                                         <input
@@ -1564,6 +1613,11 @@ ${extraFiles.filter(file => file !== 'index.html' && file !== videoFileName).map
                                                     </div>
                                                     <span className="text-gray-500 text-sm">Thời điểm xuất hiện câu hỏi</span>
                                                 </div>
+                                                ) : (
+                                                    <div className="mb-4 rounded-xl border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm font-bold text-emerald-700">
+                                                        Câu hỏi này sẽ hiện sau khi học sinh xem hết video.
+                                                    </div>
+                                                )}
 
                                                 <div className="mb-4 grid gap-3 md:grid-cols-[1fr_110px]">
                                                     <div>

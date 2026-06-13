@@ -1,4 +1,5 @@
 export type QuestionType = 'multiple-choice' | 'true-false' | 'short-answer' | 'fill-blank' | 'image-choice';
+export type VideoQuestionDisplayMode = 'by-time' | 'after-video';
 
 export interface QuestionImageOption {
   text: string;
@@ -136,6 +137,10 @@ export function normalizeVideoPlayerTheme(theme?: Partial<VideoPlayerTheme>): Vi
   };
 }
 
+export function normalizeVideoQuestionDisplayMode(mode?: string): VideoQuestionDisplayMode {
+  return mode === 'after-video' ? 'after-video' : 'by-time';
+}
+
 // Hàm migration: chuyển đổi Question format cũ sang format mới
 export function migrateQuestion(q: any): Question {
   const type = (q.type || 'multiple-choice') as QuestionType;
@@ -187,7 +192,8 @@ export function migrateQuestion(q: any): Question {
 export function migrateVideoLesson(lesson: any): VideoLesson {
   return {
     ...lesson,
-    questions: lesson.questions.map(migrateQuestion)
+    questionDisplayMode: normalizeVideoQuestionDisplayMode(lesson.questionDisplayMode),
+    questions: (lesson.questions || []).map(migrateQuestion)
   };
 }
 
@@ -201,6 +207,7 @@ export interface VideoLesson {
   playerTheme?: VideoPlayerTheme;
   startTime: number; // in seconds
   allowSeeking: boolean;
+  questionDisplayMode?: VideoQuestionDisplayMode;
   questions: Question[];
   createdAt: number;
 }

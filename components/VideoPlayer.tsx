@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect, useMemo } from 'react';
 import ReactPlayer from 'react-player';
-import { VideoLesson, Question, QuestionType, migrateVideoLesson, normalizeVideoPlayerTheme } from '../types';
+import { VideoLesson, Question, QuestionType, migrateVideoLesson, normalizeVideoPlayerTheme, normalizeVideoQuestionDisplayMode } from '../types';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Play, RotateCcw, ArrowLeft, CheckCircle, XCircle, AlertTriangle, ExternalLink, RefreshCw, Star, Trophy } from 'lucide-react';
 import confetti from 'canvas-confetti';
@@ -74,6 +74,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
 
   // Migration: chuyển đổi lesson cũ sang format mới
   const migratedLesson = useMemo(() => migrateVideoLesson(lesson), [lesson]);
+  const questionDisplayMode = normalizeVideoQuestionDisplayMode(migratedLesson.questionDisplayMode);
+  const isAfterVideoQuestionMode = questionDisplayMode === 'after-video';
   const getQuestionPoints = (question: Question) => question.points ?? 10;
   const totalPoints = useMemo(() => migratedLesson.questions.reduce((sum, question) => sum + getQuestionPoints(question), 0), [migratedLesson.questions]);
   const earnedPoints = useMemo(
@@ -206,6 +208,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     setMaxPlayed(lesson.startTime);
   }, [lesson.startTime, videoError]);
 
+  const openQuestion = (question: Question) => {
+    setPlaying(false);
+    setCurrentQuestion(question);
+    setSelectedOption(null);
+    setTextAnswer('');
+    setFeedback(null);
+  };
+
   const handleProgress = (state: { playedSeconds: number }) => {
     setPlayedSeconds(state.playedSeconds);
 
@@ -218,6 +228,8 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
       }
     }
 
+    if (isAfterVideoQuestionMode) return;
+
     // Kiểm tra câu hỏi đến giờ xuất hiện
     const question = migratedLesson.questions.find(
       (q) =>
@@ -226,9 +238,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     );
 
     if (question) {
-      setPlaying(false);
-      setCurrentQuestion(question);
-      setTextAnswer('');
+      openQuestion(question);
     }
   };
 
@@ -291,7 +301,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
         setSelectedOption(null);
         setTextAnswer('');
         setWrongAttempts(0);
-        if (nextAnswered.length >= migratedLesson.questions.length) {
+        if (isAfterVideoQuestionMode) {
+          const nextQuestion = migratedLesson.questions.find(question => !nextAnswered.includes(question.id));
+          if (nextQuestion) {
+            openQuestion(nextQuestion);
+          } else {
+            showCompletionResult();
+          }
+        } else if (nextAnswered.length >= migratedLesson.questions.length) {
           const duration = playerRef.current?.getDuration?.() || 0;
           if (duration && playedSeconds >= duration - 0.75) {
             showCompletionResult();
@@ -359,6 +376,14 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
 
   const handleVideoEnded = () => {
     setPlaying(false);
+    if (isAfterVideoQuestionMode) {
+      const nextQuestion = migratedLesson.questions.find(question => !answeredQuestions.includes(question.id));
+      if (nextQuestion) {
+        openQuestion(nextQuestion);
+        playNotificationSound();
+        return;
+      }
+    }
     if (migratedLesson.questions.length === 0 || answeredQuestions.length >= migratedLesson.questions.length) {
       showCompletionResult();
     }
@@ -367,7 +392,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
   const handleRewatchFromQuestion = () => {
     if (!currentQuestion) return;
 
-    const rewatchTime = Math.max(0, currentQuestion.time - 10);
+    const rewatchTime = isAfterVideoQuestionMode ? lesson.startTime : Math.max(0, currentQuestion.time - 10);
     playerRef.current?.seekTo(rewatchTime);
 
     setMustRewatch(false);
@@ -702,7 +727,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
   };
 
   const nextSidebarQuestionId = migratedLesson.questions.find(
-    question => !answeredQuestions.includes(question.id) && question.time >= playedSeconds - 0.5
+    question => !answeredQuestions.includes(question.id) && (isAfterVideoQuestionMode || question.time >= playedSeconds - 0.5)
   )?.id;
 
   return (
@@ -1123,7 +1148,7 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                   {/* Nút xem lại video */}
                   <button
                     onClick={() => {
-                      const rewatchTime = Math.max(0, currentQuestion.time - 10);
+                      const rewatchTime = isAfterVideoQuestionMode ? lesson.startTime : Math.max(0, currentQuestion.time - 10);
                       playerRef.current?.seekTo(rewatchTime);
                       setCurrentQuestion(null);
                       setSelectedOption(null);
@@ -1378,7 +1403,9 @@ async function saveCertificateImage(){try{if(document.fonts&&document.fonts.read
                       </span>
                       <div className="min-w-0">
                         <p className="truncate text-[0.95rem] font-black leading-tight">Câu {index + 1}</p>
-                        <p className="mt-1 font-mono text-[0.75rem] font-bold opacity-75">{Math.floor(q.time / 60)}:{String(q.time % 60).padStart(2, '0')}</p>
+                        <p className="mt-1 font-mono text-[0.75rem] font-bold opacity-75">
+                          {isAfterVideoQuestionMode ? 'Sau video' : `${Math.floor(q.time / 60)}:${String(q.time % 60).padStart(2, '0')}`}
+                        </p>
                       </div>
                     </div>
                   </div>
