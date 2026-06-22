@@ -530,6 +530,8 @@
             const [optionCount, setOptionCount] = useState(3);
             const [options, setOptions] = useState(['', '', '', '']);
             const [correctAnswer, setCorrectAnswer] = useState('A');
+            const [questionType, setQuestionType] = useState('multiple-choice');
+            const [acceptedAnswersText, setAcceptedAnswersText] = useState('');
 
             // Track which input is focused for formula insertion
             const [activeInputField, setActiveInputField] = useState('question');
@@ -593,11 +595,63 @@
                 setQuestionText('');
                 setOptions(['', '', '', '']);
                 setCorrectAnswer('A');
+                setQuestionType('multiple-choice');
+                setAcceptedAnswersText('');
                 setEditingIndex(null);
             };
 
             const handleAddQuestion = () => {
                 if (!questionText.trim()) return;
+
+                const isTextQuestion = questionType === 'short-answer' || questionType === 'fill-blank';
+                const acceptedAnswers = acceptedAnswersText
+                    .split(/[\n,]/)
+                    .map(answer => answer.trim())
+                    .filter(Boolean);
+
+                if (isTextQuestion && acceptedAnswers.length === 0) {
+                    alert('Vui lòng nhập ít nhất 1 đáp án đúng!');
+                    return;
+                }
+
+                if (questionType === 'true-false') {
+                    const newQuestion = {
+                        id: editingIndex !== null ? questions[editingIndex].id : Date.now(),
+                        type: questionType,
+                        question: questionText.trim(),
+                        options: [{ id: 'A', text: 'Đúng' }, { id: 'B', text: 'Sai' }],
+                        correctAnswerId: correctAnswer
+                    };
+                    if (editingIndex !== null) {
+                        const updated = [...questions];
+                        updated[editingIndex] = newQuestion;
+                        setQuestions(updated);
+                    } else {
+                        setQuestions([...questions, newQuestion]);
+                    }
+                    resetForm();
+                    return;
+                }
+
+                if (isTextQuestion) {
+                    const newQuestion = {
+                        id: editingIndex !== null ? questions[editingIndex].id : Date.now(),
+                        type: questionType,
+                        question: questionText.trim(),
+                        options: [],
+                        correctAnswerId: '',
+                        acceptedAnswers
+                    };
+                    if (editingIndex !== null) {
+                        const updated = [...questions];
+                        updated[editingIndex] = newQuestion;
+                        setQuestions(updated);
+                    } else {
+                        setQuestions([...questions, newQuestion]);
+                    }
+                    resetForm();
+                    return;
+                }
 
                 const filledOptions = options.slice(0, optionCount).filter(o => o.trim());
                 if (filledOptions.length < optionCount) {
@@ -607,6 +661,7 @@
 
                 const newQuestion = {
                     id: editingIndex !== null ? questions[editingIndex].id : Date.now(),
+                    type: questionType,
                     question: questionText.trim(),
                     options: options.slice(0, optionCount).map((text, i) => ({
                         id: String.fromCharCode(65 + i),
@@ -628,11 +683,14 @@
             const handleEditQuestion = (index) => {
                 const q = questions[index];
                 setQuestionText(q.question);
-                setOptionCount(q.options.length);
+                const type = q.type || 'multiple-choice';
+                setQuestionType(type);
+                setAcceptedAnswersText((q.acceptedAnswers || []).join('\n'));
+                setOptionCount(q.options?.length || 2);
                 const opts = ['', '', '', ''];
-                q.options.forEach((opt, i) => { opts[i] = opt.text; });
+                (q.options || []).forEach((opt, i) => { opts[i] = opt.text; });
                 setOptions(opts);
-                setCorrectAnswer(q.correctAnswerId);
+                setCorrectAnswer(q.correctAnswerId || 'A');
                 setEditingIndex(index);
             };
 
@@ -875,6 +933,20 @@ ${headClose}`;
                                     </div>
 
                                     <div>
+                                        <label className="block text-sm font-bold text-gray-700 mb-1">Loại câu hỏi</label>
+                                        <select
+                                            value={questionType}
+                                            onChange={(e) => setQuestionType(e.target.value)}
+                                            className="w-full px-4 py-3 border-2 border-yellow-300 rounded-xl focus:border-orange-400 focus:outline-none"
+                                        >
+                                            <option value="multiple-choice">Trắc nghiệm</option>
+                                            <option value="true-false">Đúng / Sai</option>
+                                            <option value="short-answer">Trả lời ngắn</option>
+                                            <option value="fill-blank">Điền khuyết</option>
+                                        </select>
+                                    </div>
+
+                                    <div style={{ display: questionType === 'multiple-choice' ? 'block' : 'none' }}>
                                         <label className="block text-sm font-bold text-gray-700 mb-1">Số đáp án</label>
                                         <select
                                             value={optionCount}
@@ -893,7 +965,7 @@ ${headClose}`;
                                         </select>
                                     </div>
 
-                                    {optionLabels.slice(0, optionCount).map((label, i) => (
+                                    {questionType === 'multiple-choice' && optionLabels.slice(0, optionCount).map((label, i) => (
                                         <div key={label} className="flex items-center gap-2">
                                             <input
                                                 type="radio"
@@ -920,6 +992,34 @@ ${headClose}`;
                                             />
                                         </div>
                                     ))}
+
+                                    {questionType === 'true-false' && (
+                                        <div className="space-y-2 rounded-xl border-2 border-yellow-200 bg-yellow-50 p-3">
+                                            <p className="text-sm font-bold text-gray-700">Chọn đáp án đúng</p>
+                                            {['A', 'B'].map((label, index) => (
+                                                <label key={label} className="flex items-center gap-3 rounded-lg bg-white px-3 py-2 cursor-pointer">
+                                                    <input type="radio" name="correct" checked={correctAnswer === label} onChange={() => setCorrectAnswer(label)} className="w-5 h-5 accent-green-500" />
+                                                    <span className="font-bold text-gray-700">{index === 0 ? 'Đúng' : 'Sai'}</span>
+                                                </label>
+                                            ))}
+                                        </div>
+                                    )}
+
+                                    {(questionType === 'short-answer' || questionType === 'fill-blank') && (
+                                        <div>
+                                            <label className="block text-sm font-bold text-gray-700 mb-1">
+                                                {questionType === 'fill-blank' ? 'Đáp án cho chỗ trống' : 'Đáp án đúng'}
+                                            </label>
+                                            <textarea
+                                                value={acceptedAnswersText}
+                                                onChange={(e) => setAcceptedAnswersText(e.target.value)}
+                                                className="w-full px-4 py-3 border-2 border-yellow-300 rounded-xl focus:border-orange-400 focus:outline-none resize-none"
+                                                rows={3}
+                                                placeholder="Nhập các đáp án đúng, mỗi dòng hoặc ngăn cách bằng dấu phẩy"
+                                            />
+                                            <p className="mt-1 text-xs text-gray-500">Hệ thống chấp nhận một trong các đáp án này, không phân biệt chữ hoa/thường.</p>
+                                        </div>
+                                    )}
 
                                     <div className="flex gap-2">
                                         <button
@@ -1168,11 +1268,13 @@ ${headClose}`;
         const QuestionModal = ({ question, questionIndex, onAnswer, playCorrectSound, playWrongSound, onPauseMusic }) => {
             const [selectedOption, setSelectedOption] = useState(null);
             const [showFeedback, setShowFeedback] = useState(null);
+            const [typedAnswer, setTypedAnswer] = useState('');
             const [timer, setTimer] = useState(5);
             const [isTimerRunning, setIsTimerRunning] = useState(false);
             const [isSpeaking, setIsSpeaking] = useState(false);
             const countdownAudioRef = useRef(null);
             const voiceAudioRef = useRef(null);
+            const isTextQuestion = question.type === 'short-answer' || question.type === 'fill-blank';
 
             // Mapping câu hỏi sang file âm thanh (chỉ dùng cho quiz mặc định, không phải quiz được chia sẻ)
             const getVoiceAudioUrl = (index) => {
@@ -1302,6 +1404,24 @@ ${headClose}`;
             const tryAgain = () => {
                 setShowFeedback(null);
                 setSelectedOption(null);
+                setTypedAnswer('');
+            };
+
+            const handleTextSubmit = (event) => {
+                event.preventDefault();
+                if (!typedAnswer.trim() || showFeedback !== null) return;
+
+                const normalize = (value) => String(value || '').trim().replace(/\s+/g, ' ').toLowerCase();
+                const isCorrect = (question.acceptedAnswers || []).some(answer => normalize(answer) === normalize(typedAnswer));
+                setSelectedOption('typed');
+
+                if (isCorrect) {
+                    setShowFeedback('correct');
+                    playCorrectSound();
+                } else {
+                    setShowFeedback('incorrect');
+                    playWrongSound();
+                }
             };
 
             return (
@@ -1362,7 +1482,28 @@ ${headClose}`;
                             </div>
 
                             <div className="space-y-3 relative">
-                                {question.options.map((option) => {
+                                {isTextQuestion && (
+                                    <form onSubmit={handleTextSubmit} className="rounded-2xl border-2 border-yellow-200 bg-white p-4 shadow-sm">
+                                        <label className="mb-2 block text-sm font-bold text-yellow-800">
+                                            {question.type === 'fill-blank' ? 'Điền đáp án vào chỗ trống' : 'Nhập câu trả lời của em'}
+                                        </label>
+                                        <div className="flex gap-2">
+                                            <input
+                                                autoFocus
+                                                value={typedAnswer}
+                                                onChange={(event) => setTypedAnswer(event.target.value)}
+                                                disabled={showFeedback !== null}
+                                                className="min-w-0 flex-1 rounded-xl border-2 border-yellow-300 px-4 py-3 text-lg outline-none focus:border-orange-400"
+                                                placeholder="Nhập đáp án..."
+                                            />
+                                            <button type="submit" disabled={!typedAnswer.trim() || showFeedback !== null} className="rounded-xl bg-green-600 px-5 py-3 font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+                                                Kiểm tra
+                                            </button>
+                                        </div>
+                                    </form>
+                                )}
+
+                                {!isTextQuestion && question.options.map((option) => {
                                     let buttonStyle = "border-2 border-yellow-200 bg-white hover:bg-yellow-100 hover:scale-[1.02] text-gray-700 shadow-sm";
 
                                     if (selectedOption === option.id) {
