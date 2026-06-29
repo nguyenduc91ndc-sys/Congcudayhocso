@@ -24,6 +24,35 @@ function getCurrentKey() {
 }
 
 const MAX_CHARS = 25000; // Giới hạn ký tự khuyên dùng
+const GROQ_MAX_OUTPUT_TOKENS = 2048;
+
+function getErrorMessage(error) {
+    return String(error?.message || error || '');
+}
+
+function isRateLimitError(message) {
+    const lower = getErrorMessage(message).toLowerCase();
+    return lower.includes('429')
+        || lower.includes('quota')
+        || lower.includes('rate')
+        || lower.includes('resource exhausted')
+        || lower.includes('tpm')
+        || lower.includes('rpm');
+}
+
+function isTextTooLargeError(message) {
+    const lower = getErrorMessage(message).toLowerCase();
+    return lower.includes('too large')
+        || lower.includes('too long')
+        || lower.includes('413')
+        || lower.includes('context length')
+        || lower.includes('context window')
+        || lower.includes('maximum context')
+        || lower.includes('token limit')
+        || lower.includes('tokens exceed')
+        || lower.includes('exceeds the maximum')
+        || lower.includes('reduce the length');
+}
 
 // ========================
 // DOM ELEMENTS
@@ -542,17 +571,18 @@ async function startScan() {
         console.error('Scan error:', error);
         let errorMsg = 'Có lỗi xảy ra khi phân tích. ';
 
-        const lowerError = error.message.toLowerCase();
+        const errorText = getErrorMessage(error);
+        const lowerError = errorText.toLowerCase();
         if (lowerError.includes('api key') || lowerError.includes('api_key') || lowerError.includes('401')) {
             errorMsg += 'API Key không hợp lệ. Vui lòng kiểm tra lại.';
-        } else if (lowerError.includes('429') || lowerError.includes('quota') || lowerError.includes('rate')) {
+        } else if (isRateLimitError(errorText)) {
             errorMsg += 'Đã hết giới hạn API. Vui lòng thử lại sau vài phút.';
         } else if (lowerError.includes('network') || lowerError.includes('fetch')) {
             errorMsg += 'Lỗi kết nối mạng. Vui lòng kiểm tra internet.';
-        } else if (lowerError.includes('too large') || lowerError.includes('too long') || lowerError.includes('413') || lowerError.includes('exhausted') || lowerError.includes('limit')) {
+        } else if (isTextTooLargeError(errorText)) {
             errorMsg = '⚠️ Bài của bạn quá dài! Hãy coppy ra làm 2 đoạn và quét 2 lần hoặc hơn vì bài của bạn hiện quá dài, bạn hiểu ý tôi chứ?';
         } else {
-            errorMsg += error.message;
+            errorMsg += errorText;
         }
 
         showToast(errorMsg, 'error');
@@ -586,7 +616,7 @@ async function callAIWithRetry(text, checkPlagiarism, checkAI, checkStyle, maxRe
             }
         } catch (error) {
             lastError = error;
-            const isRateLimit = error.message.includes('429') || error.message.includes('rate') || error.message.includes('quota');
+            const isRateLimit = isRateLimitError(error);
             if (!isRateLimit || attempt >= maxRetries) {
                 throw error;
             }
@@ -659,7 +689,7 @@ async function callGroqAPI(text, checkPlagiarism, checkAI, checkStyle) {
                 { role: 'user', content: prompt }
             ],
             temperature: 0,
-            max_tokens: 8192,
+            max_tokens: GROQ_MAX_OUTPUT_TOKENS,
             seed: 42,
             response_format: { type: 'json_object' },
         }),
