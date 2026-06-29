@@ -650,7 +650,7 @@ async function callGroqAPI(text, checkPlagiarism, checkAI, checkStyle) {
             'Authorization': `Bearer ${getCurrentKey()}`,
         },
         body: JSON.stringify({
-            model: 'llama-3.3-70b-versatile',
+            model: 'openai/gpt-oss-120b',
             messages: [
                 {
                     role: 'system',

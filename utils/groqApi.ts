@@ -37,7 +37,7 @@ export function setGeminiApiKey(key: string): void {
 export async function groqComplete(
     messages: GroqMessage[],
     apiKey: string,
-    model: string = 'llama-3.3-70b-versatile',
+    model: string = 'openai/gpt-oss-120b',
     temperature: number = 0.7,
     maxTokens: number = 4096
 ): Promise<string> {
@@ -71,7 +71,7 @@ export async function groqStream(
     onChunk: (text: string) => void,
     onComplete: () => void,
     onError: (error: Error) => void,
-    model: string = 'llama-3.3-70b-versatile',
+    model: string = 'openai/gpt-oss-120b',
     temperature: number = 0.7,
     maxTokens: number = 4096
 ): Promise<AbortController> {

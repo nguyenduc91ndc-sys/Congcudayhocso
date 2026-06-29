@@ -29,8 +29,8 @@ export interface MultipartPayload {
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'xdkhbdcv3439', 'xdkhbdcv3439', 'data');
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
-const GROQ_TEXT_MODEL = 'llama-3.3-70b-versatile';
-const GROQ_VISION_MODEL = 'meta-llama/llama-4-scout-17b-16e-instruct';
+const GROQ_TEXT_MODEL = 'openai/gpt-oss-120b';
+const GROQ_VISION_MODEL = 'qwen/qwen3.6-27b';
 
 let referencePartsPromise: Promise<AiPart[]> | null = null;
 

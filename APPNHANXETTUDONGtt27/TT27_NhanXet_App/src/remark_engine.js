@@ -127,7 +127,7 @@ async function callGroq(apiKey, model, prompt) {
       'Content-Type': 'application/json',
     },
     body: JSON.stringify({
-      model: model || 'llama-3.1-8b-instant',
+      model: model || 'openai/gpt-oss-20b',
       messages: [
         { role: 'system', content: 'Bạn là trợ lý giáo dục chuyên viết nhận xét học sinh Tiểu học theo Thông tư 27 và Chương trình GDPT 2018 (Thông tư 32). Trả về đúng MỘT câu cụt (hoặc mệnh đề ngắn) bằng tiếng Việt. TUYỆT ĐỐI KHÔNG dùng chủ ngữ (Không dùng "Em", "Học sinh", "Bạn này"). Bắt đầu câu thẳng vào Hành động/Năng lực (Ví dụ: Trình bày, Tính toán, Kĩ năng, Đọc, Viết, Thực hành...). Không ngoặc kép, không giải thích.' },
         { role: 'user', content: prompt }

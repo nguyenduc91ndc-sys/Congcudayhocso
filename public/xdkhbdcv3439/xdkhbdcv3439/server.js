@@ -10,8 +10,8 @@ const sharp = require("sharp");
 const app = express();
 const PORT = process.env.PORT || 3000;
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
-const GROQ_TEXT_MODEL = "llama-3.3-70b-versatile";
-const GROQ_VISION_MODEL = "meta-llama/llama-4-scout-17b-16e-instruct";
+const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
+const GROQ_VISION_MODEL = "qwen/qwen3.6-27b";
 
 // --- Multer config: store uploads in memory ---
 const upload = multer({

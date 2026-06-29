@@ -99,7 +99,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
         if (apiProvider === 'gemini') {
             return geminiStream(messages, key, onChunk, onComplete, onError, selectedModel);
         } else {
-            return groqStream(messages, key, onChunk, onComplete, onError, forceModel || 'llama-3.3-70b-versatile', temperature);
+            return groqStream(messages, key, onChunk, onComplete, onError, forceModel || 'openai/gpt-oss-120b', temperature);
         }
     };
     const [reportType, setReportType] = useState<ReportType>('skkn');
@@ -258,7 +258,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                 setIsAnalyzingTopic(false);
                 setError(`Lỗi: ${err.message}`);
             },
-            'llama-3.3-70b-versatile',
+            'openai/gpt-oss-120b',
             0.7
         );
     };
@@ -299,7 +299,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                 setIsSuggestingTopic(false);
                 setError(`Lỗi: ${err.message}`);
             },
-            'llama-3.3-70b-versatile',
+            'openai/gpt-oss-120b',
             0.9
         );
     };
@@ -508,7 +508,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                 setIsStreaming(false);
                 setError(`Lỗi AI: ${err.message}`);
             },
-            useVision ? 'meta-llama/llama-4-scout-17b-16e-instruct' : undefined
+            useVision ? 'qwen/qwen3.6-27b' : undefined
         );
         abortRef.current = controller;
     };
@@ -548,7 +548,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                         lastAiResult = parsed;
                     }
                 } catch { /* ignore */ }
-            }, () => { }, 'llama-3.3-70b-versatile', 0.1);
+            }, () => { }, 'openai/gpt-oss-120b', 0.1);
 
             // Wait to avoid rate limit
             await delay(3000);
@@ -564,7 +564,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                         if (!lastAiResult) lastAiResult = parsed;
                     }
                 } catch { /* ignore */ }
-            }, () => { }, 'llama-3.3-70b-versatile', 0.1);
+            }, () => { }, 'openai/gpt-oss-120b', 0.1);
 
             // Average the scores (works with 1 or 2 results)
             if (aiScores.length > 0 && lastAiResult) {
@@ -589,7 +589,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                     const jsonMatch = plagText.match(/\{[\s\S]*\}/);
                     if (jsonMatch) setPlagResult(JSON.parse(jsonMatch[0]));
                 } catch { setError('Không thể phân tích kết quả plagiarism'); }
-            }, (e: Error) => setError(e.message), 'llama-3.3-70b-versatile', 0.1);
+            }, (e: Error) => setError(e.message), 'openai/gpt-oss-120b', 0.1);
         } finally {
             setIsChecking(false);
         }
@@ -675,7 +675,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                 setIsStreaming(false);
                 setError(`Lỗi: ${err.message}`);
             },
-            'llama-3.3-70b-versatile',
+            'openai/gpt-oss-120b',
             0.5
         );
     };
@@ -751,7 +751,7 @@ const SangKienKinhNghiem: React.FC<Props> = ({ onBack, isAdmin, userEmail, userN
                 setChartModalSuggesting(false);
                 setError(`Lỗi: ${err.message}`);
             },
-            'llama-3.3-70b-versatile',
+            'openai/gpt-oss-120b',
             0.5
         );
     };

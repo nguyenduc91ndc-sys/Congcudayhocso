@@ -61,7 +61,7 @@ const singleDropArea = document.getElementById('singleDropArea');
 
 // ===== INIT =====
 groqKey.value = localStorage.getItem('groqKey') || '';
-groqModel.value = localStorage.getItem('groqModel') || 'llama-3.1-8b-instant';
+groqModel.value = localStorage.getItem('groqModel') || 'openai/gpt-oss-20b';
 
 // ===== GUIDE MODAL =====
 openGuideBtn.addEventListener('click', () => guideModal.classList.add('active'));
