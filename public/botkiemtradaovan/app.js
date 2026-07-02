@@ -25,6 +25,9 @@ function getCurrentKey() {
 
 const MAX_CHARS = 25000; // Giới hạn ký tự khuyên dùng
 const GROQ_MAX_OUTPUT_TOKENS = 2048;
+const ANALYSIS_CACHE_KEY = 'stable_analysis_cache_v1';
+const ANALYSIS_CACHE_VERSION = '2026-07-02-stable-rubric';
+const MAX_ANALYSIS_CACHE_ENTRIES = 10;
 
 function getErrorMessage(error) {
     return String(error?.message || error || '');
@@ -52,6 +55,68 @@ function isTextTooLargeError(message) {
         || lower.includes('tokens exceed')
         || lower.includes('exceeds the maximum')
         || lower.includes('reduce the length');
+}
+
+function hashText(text) {
+    let hash = 2166136261;
+    for (let i = 0; i < text.length; i++) {
+        hash ^= text.charCodeAt(i);
+        hash = Math.imul(hash, 16777619);
+    }
+    return (hash >>> 0).toString(36);
+}
+
+function getAnalysisCacheSignature(text, checkPlagiarism, checkAI, checkStyle) {
+    const normalizedText = text.trim().replace(/\r\n/g, '\n');
+    const model = state.provider === 'gemini'
+        ? (state.geminiModel || 'gemini-2.0-flash')
+        : 'openai/gpt-oss-120b';
+    const options = [
+        checkPlagiarism ? 'p1' : 'p0',
+        checkAI ? 'a1' : 'a0',
+        checkStyle ? 's1' : 's0',
+    ].join('-');
+
+    return [
+        ANALYSIS_CACHE_VERSION,
+        state.provider,
+        model,
+        options,
+        normalizedText.length,
+        hashText(normalizedText),
+    ].join(':');
+}
+
+function getCachedAnalysis(signature) {
+    try {
+        const cache = JSON.parse(localStorage.getItem(ANALYSIS_CACHE_KEY) || '{}');
+        const entry = cache[signature];
+        if (entry?.version === ANALYSIS_CACHE_VERSION && entry.result) {
+            return entry.result;
+        }
+    } catch {
+        // Ignore cache corruption.
+    }
+    return null;
+}
+
+function saveCachedAnalysis(signature, result) {
+    try {
+        const cache = JSON.parse(localStorage.getItem(ANALYSIS_CACHE_KEY) || '{}');
+        cache[signature] = {
+            version: ANALYSIS_CACHE_VERSION,
+            savedAt: Date.now(),
+            result,
+        };
+
+        const entries = Object.entries(cache)
+            .sort(([, a], [, b]) => (b.savedAt || 0) - (a.savedAt || 0))
+            .slice(0, MAX_ANALYSIS_CACHE_ENTRIES);
+
+        localStorage.setItem(ANALYSIS_CACHE_KEY, JSON.stringify(Object.fromEntries(entries)));
+    } catch {
+        // Browser storage can be full; analysis should still work without cache.
+    }
 }
 
 // ========================
@@ -552,6 +617,18 @@ async function startScan() {
         els.loadingStatus.textContent = `Đang gửi văn bản đến ${providerName} để phân tích...`;
         animateProgress(20);
 
+        const cacheSignature = getAnalysisCacheSignature(text, checkPlagiarism, checkAI, checkStyle);
+        const cachedResult = getCachedAnalysis(cacheSignature);
+        if (cachedResult) {
+            els.loadingStatus.textContent = 'Đang dùng lại kết quả ổn định đã lưu cho văn bản này...';
+            animateProgress(100);
+            await delay(250);
+            displayResults(cachedResult, text);
+            saveToHistory(text, cachedResult);
+            showToast('Đã dùng lại kết quả ổn định cho cùng văn bản và thiết lập.', 'info');
+            return;
+        }
+
         const result = await callAIWithRetry(text, checkPlagiarism, checkAI, checkStyle);
 
         els.loadingStatus.textContent = 'Đang xử lý kết quả...';
@@ -566,6 +643,7 @@ async function startScan() {
 
         // Save to history
         saveToHistory(text, result);
+        saveCachedAnalysis(cacheSignature, result);
 
     } catch (error) {
         console.error('Scan error:', error);
@@ -715,16 +793,64 @@ async function callGroqAPI(text, checkPlagiarism, checkAI, checkStyle) {
 }
 
 function parseAIResponse(resultText) {
+    let parsed;
     try {
-        return JSON.parse(resultText);
+        parsed = JSON.parse(resultText);
     } catch {
         // Try to extract JSON from the response
         const jsonMatch = resultText.match(/\{[\s\S]*\}/);
         if (jsonMatch) {
-            return JSON.parse(jsonMatch[0]);
+            parsed = JSON.parse(jsonMatch[0]);
+        } else {
+            throw new Error('Không thể phân tích kết quả từ AI');
         }
-        throw new Error('Không thể phân tích kết quả từ AI');
     }
+
+    return normalizeAnalysisResult(parsed);
+}
+
+function normalizeScore(value) {
+    const numeric = Number(value);
+    if (!Number.isFinite(numeric)) return 0;
+    return Math.max(0, Math.min(100, Math.round(numeric / 5) * 5));
+}
+
+function labelForRiskScore(score) {
+    if (score <= 15) return 'Rất thấp';
+    if (score <= 35) return 'Thấp';
+    if (score <= 60) return 'Trung bình';
+    if (score <= 80) return 'Cao';
+    return 'Rất cao';
+}
+
+function labelForOriginalScore(score) {
+    if (score >= 85) return 'Rất cao';
+    if (score >= 65) return 'Cao';
+    if (score >= 40) return 'Trung bình';
+    if (score >= 20) return 'Thấp';
+    return 'Rất thấp';
+}
+
+function normalizeAnalysisResult(result) {
+    const overall = result.overall || {};
+    const plagiarismPercent = normalizeScore(overall.plagiarism_percent);
+    const aiPercent = normalizeScore(overall.ai_percent);
+    const originalPercent = Math.max(0, 100 - Math.max(plagiarismPercent, aiPercent));
+
+    return {
+        ...result,
+        overall: {
+            ...overall,
+            plagiarism_percent: plagiarismPercent,
+            ai_percent: aiPercent,
+            original_percent: originalPercent,
+            plagiarism_label: labelForRiskScore(plagiarismPercent),
+            ai_label: labelForRiskScore(aiPercent),
+            original_label: labelForOriginalScore(originalPercent),
+        },
+        segments: Array.isArray(result.segments) ? result.segments : [],
+        summary: result.summary || {},
+    };
 }
 
 function buildAnalysisPrompt(text, analysisTypes, checkPlagiarism, checkAI, checkStyle) {
@@ -765,6 +891,12 @@ ${text}
 - Tách văn bản thành từng đoạn (mỗi đoạn 1-3 câu)
 - Đánh giá TỪNG đoạn riêng biệt
 - Phải giữ nguyên nội dung text gốc
+- Dùng cùng một thang điểm cố định cho mọi lần phân tích: 0, 5, 10, 15... đến 100. Không trả về số lẻ hoặc số bất kỳ ngoài bội số của 5.
+- Nếu bằng chứng yếu hoặc mơ hồ, chọn mức thấp hơn thay vì tăng điểm theo cảm giác.
+- "plagiarism_percent" là ước lượng rủi ro sao chép/thiếu nguồn dựa trên dấu hiệu trong văn bản, không được khẳng định chắc chắn nếu không có nguồn đối chiếu.
+- "ai_percent" là ước lượng rủi ro văn bản do AI tạo ra dựa trên đặc điểm phong cách, không được khẳng định chắc chắn.
+- "original_percent" phải bằng 100 - max(plagiarism_percent, ai_percent).
+- Các nhãn phải khớp điểm: 0-15 = Rất thấp, 20-35 = Thấp, 40-60 = Trung bình, 65-80 = Cao, 85-100 = Rất cao.
 
 **TRẢ VỀ JSON với cấu trúc chính xác sau:**
 {
