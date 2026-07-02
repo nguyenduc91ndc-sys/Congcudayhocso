@@ -57,6 +57,16 @@ function isTextTooLargeError(message) {
         || lower.includes('reduce the length');
 }
 
+function isMalformedJsonError(message) {
+    const lower = getErrorMessage(message).toLowerCase();
+    return lower.includes('json')
+        && (lower.includes('parse')
+            || lower.includes('unexpected')
+            || lower.includes('expected')
+            || lower.includes('khong the phan tich')
+            || lower.includes('validate'));
+}
+
 function hashText(text) {
     let hash = 2166136261;
     for (let i = 0; i < text.length; i++) {
@@ -679,9 +689,14 @@ async function startScan() {
 // Auto-retry with exponential backoff
 async function callAIWithRetry(text, checkPlagiarism, checkAI, checkStyle, maxRetries = 2) {
     let lastError;
+    let retryReason = '';
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
         try {
-            if (attempt > 0) {
+            if (attempt > 0 && retryReason === 'malformed_json') {
+                els.loadingStatus.textContent = `Dang thu lai lan ${attempt + 1}...`;
+            }
+
+            if (attempt > 0 && retryReason !== 'malformed_json') {
                 const waitSec = Math.pow(2, attempt) * 5; // 10s, 20s
                 els.loadingStatus.textContent = `Rate limit — tự động thử lại sau ${waitSec}s (lần ${attempt + 1})...`;
                 await delay(waitSec * 1000);
@@ -697,8 +712,16 @@ async function callAIWithRetry(text, checkPlagiarism, checkAI, checkStyle, maxRe
         } catch (error) {
             lastError = error;
             const isRateLimit = isRateLimitError(error);
-            if (!isRateLimit || attempt >= maxRetries) {
+            const isMalformedJson = isMalformedJsonError(error);
+            if ((!isRateLimit && !isMalformedJson) || attempt >= maxRetries) {
                 throw error;
+            }
+            retryReason = isRateLimit ? 'rate_limit' : 'malformed_json';
+
+            if (isMalformedJson) {
+                els.loadingStatus.textContent = `AI tra ve JSON chua hop le - tu dong thu lai lan ${attempt + 2}...`;
+                await delay(1200);
+                animateProgress(35 + attempt * 15);
             }
         }
     }
@@ -793,7 +816,7 @@ async function callGroqAPI(text, checkPlagiarism, checkAI, checkStyle) {
     return parseAIResponse(resultText);
 }
 
-function parseAIResponse(resultText) {
+function parseAIResponseLegacy(resultText) {
     let parsed;
     try {
         parsed = JSON.parse(resultText);
@@ -808,6 +831,94 @@ function parseAIResponse(resultText) {
     }
 
     return normalizeAnalysisResult(parsed);
+}
+
+function parseAIResponse(resultText) {
+    const extractedJson = extractJsonCandidate(resultText);
+    const candidates = [
+        resultText,
+        extractedJson,
+        repairJsonCandidate(extractedJson),
+    ].filter(Boolean);
+
+    let lastError;
+    for (const candidate of [...new Set(candidates)]) {
+        try {
+            return normalizeAnalysisResult(JSON.parse(candidate));
+        } catch (error) {
+            lastError = error;
+        }
+    }
+
+    throw new Error(`JSON parse failed: ${lastError?.message || 'invalid AI response'}`);
+}
+
+function extractJsonCandidate(resultText) {
+    const text = String(resultText || '')
+        .trim()
+        .replace(/^```(?:json)?/i, '')
+        .replace(/```$/i, '')
+        .trim();
+
+    const firstBrace = text.indexOf('{');
+    if (firstBrace === -1) return text;
+
+    const lastBrace = text.lastIndexOf('}');
+    if (lastBrace > firstBrace) {
+        return text.slice(firstBrace, lastBrace + 1);
+    }
+
+    return text.slice(firstBrace);
+}
+
+function repairJsonCandidate(candidate) {
+    let text = String(candidate || '').trim();
+    if (!text) return text;
+
+    text = text.replace(/,\s*([}\]])/g, '$1');
+
+    const stack = [];
+    let inString = false;
+    let escaped = false;
+
+    for (let i = 0; i < text.length; i++) {
+        const char = text[i];
+
+        if (escaped) {
+            escaped = false;
+            continue;
+        }
+
+        if (char === '\\' && inString) {
+            escaped = true;
+            continue;
+        }
+
+        if (char === '"') {
+            inString = !inString;
+            continue;
+        }
+
+        if (inString) continue;
+
+        if (char === '{' || char === '[') {
+            stack.push(char);
+        } else if (char === '}' && stack[stack.length - 1] === '{') {
+            stack.pop();
+        } else if (char === ']' && stack[stack.length - 1] === '[') {
+            stack.pop();
+        }
+    }
+
+    if (inString) text += '"';
+    text = text.replace(/,\s*$/, '');
+
+    while (stack.length) {
+        const opener = stack.pop();
+        text += opener === '[' ? ']' : '}';
+    }
+
+    return text.replace(/,\s*([}\]])/g, '$1');
 }
 
 function normalizeScore(value) {
