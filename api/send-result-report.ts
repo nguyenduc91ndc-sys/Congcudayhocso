@@ -7,9 +7,18 @@ interface ReportPayload {
     html?: string;
     learnerName?: string;
     lessonTitle?: string;
+    appsScriptUrl?: string;
 }
 
 const isEmail = (value: string) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
+const isAppsScriptUrl = (value: string) => {
+    try {
+        const url = new URL(value);
+        return url.protocol === 'https:' && /^script\.google(?:usercontent)?\.com$/i.test(url.hostname);
+    } catch {
+        return false;
+    }
+};
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
     res.setHeader('Access-Control-Allow-Origin', '*');
@@ -39,7 +48,17 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             return res.status(400).json({ error: 'Nội dung báo cáo trống' });
         }
 
-        const appsScriptUrl = process.env.REPORT_APPS_SCRIPT_URL;
+        const payloadAppsScriptUrl = String(payload.appsScriptUrl || '').trim();
+        if (payloadAppsScriptUrl && !isAppsScriptUrl(payloadAppsScriptUrl)) {
+            return res.status(400).json({ error: 'Link Apps Script không hợp lệ' });
+        }
+
+        const configuredAppsScriptUrl = String(process.env.REPORT_APPS_SCRIPT_URL || '').trim();
+        const appsScriptUrl = payloadAppsScriptUrl || configuredAppsScriptUrl;
+        if (appsScriptUrl && !isAppsScriptUrl(appsScriptUrl)) {
+            return res.status(500).json({ error: 'Server đang cấu hình sai link Apps Script' });
+        }
+
         if (appsScriptUrl) {
             const response = await fetch(appsScriptUrl, {
                 method: 'POST',

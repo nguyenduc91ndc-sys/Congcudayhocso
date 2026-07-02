@@ -91,6 +91,9 @@ const fonts = [
   { label: 'Tahoma', value: 'Tahoma' },
 ];
 
+const REPORT_API_URL = 'https://giaoviencn.io.vn/api/send-result-report';
+const isAppsScriptReportUrl = (url: string) => /script\.google\.com|script\.googleusercontent\.com/i.test(url);
+
 const reportAppsScriptCode = `function doPost(e) {
   try {
     const payload = JSON.parse((e && e.postData && e.postData.contents) || '{}');
@@ -523,19 +526,18 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
 
     setReportTestStatus('Đang gửi thử...');
     try {
-      const directAppsScript = /script\.google\.com|script\.googleusercontent\.com/i.test(reportUrl);
-      const response = await fetch(reportUrl, directAppsScript ? {
+      const directAppsScript = isAppsScriptReportUrl(reportUrl);
+      const response = await fetch(directAppsScript ? REPORT_API_URL : reportUrl, directAppsScript ? {
         method: 'POST',
-        mode: 'no-cors',
-        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ...payload, appsScriptUrl: reportUrl }),
       } : {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
 
-      if (!directAppsScript && !response.ok) {
+      if (!response.ok) {
         const data = await response.json().catch(() => ({}));
         throw new Error(data.error || 'Không gửi được email thử.');
       }

@@ -28,6 +28,13 @@ interface ResultReportItem {
 
 const REPORT_API_URL = 'https://giaoviencn.io.vn/api/send-result-report';
 const isAppsScriptReportUrl = (url: string) => /script\.google\.com|script\.googleusercontent\.com/i.test(url);
+const getReportRequestTarget = (configuredUrl?: string) => {
+  const reportUrl = String(configuredUrl || '').trim();
+  if (isAppsScriptReportUrl(reportUrl)) {
+    return { url: REPORT_API_URL, appsScriptUrl: reportUrl };
+  }
+  return { url: reportUrl || REPORT_API_URL, appsScriptUrl: '' };
+};
 
 const getReportSendErrorMessage = (error: unknown) => {
   const message = error instanceof Error ? error.message : String(error || '');
@@ -502,8 +509,35 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     setReportSendStatus('sending');
 
     try {
-      const reportUrl = (theme.reportApiUrl || '').trim() || REPORT_API_URL;
-      const directAppsScript = isAppsScriptReportUrl(reportUrl);
+      const proxyTarget = getReportRequestTarget(theme.reportApiUrl);
+      const proxyResponse = await fetch(proxyTarget.url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to,
+          subject: `Bao cao ket qua - ${migratedLesson.title}`,
+          text: buildResultReportText(date),
+          html: buildResultReportHtml(date),
+          learnerName: learnerName || 'Hoc sinh',
+          lessonTitle: migratedLesson.title,
+          appsScriptUrl: proxyTarget.appsScriptUrl || undefined,
+        }),
+      });
+
+      if (!proxyResponse.ok) {
+        const data = await proxyResponse.json().catch(() => ({}));
+        throw new Error(data.error || 'Khong gui duoc bao cao');
+      }
+
+      setReportSendStatus('sent');
+      if (!options.silent) {
+        alert('Đã gửi báo cáo về Gmail.');
+      }
+      return;
+
+      const reportTarget = getReportRequestTarget(theme.reportApiUrl);
+      const reportUrl = reportTarget.url;
+      const directAppsScript = false;
       const response = await fetch(reportUrl, directAppsScript ? {
         method: 'POST',
         mode: 'no-cors',
@@ -515,6 +549,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
           html: buildResultReportHtml(date),
           learnerName: learnerName || 'Học sinh',
           lessonTitle: migratedLesson.title,
+          appsScriptUrl: reportTarget.appsScriptUrl || undefined,
         }),
       } : {
         method: 'POST',
@@ -560,6 +595,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
     if (!reportWindow) return;
 
     const date = new Date().toLocaleString('vi-VN');
+    const reportTarget = getReportRequestTarget(theme.reportApiUrl);
     const reportPayload = JSON.stringify({
       to: (theme.reportEmail || '').trim(),
       subject: `Báo cáo kết quả - ${migratedLesson.title}`,
@@ -567,6 +603,7 @@ const VideoPlayer: React.FC<VideoPlayerProps> = ({ lesson, onBack }) => {
       html: buildResultReportHtml(date),
       learnerName: learnerName || 'Học sinh',
       lessonTitle: migratedLesson.title,
+      appsScriptUrl: reportTarget.appsScriptUrl || undefined,
     }).replace(/</g, '\\u003c');
     const completedCount = answeredQuestions.length;
     const totalQuestions = migratedLesson.questions.length;
