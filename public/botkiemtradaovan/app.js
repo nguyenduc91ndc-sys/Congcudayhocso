@@ -234,7 +234,7 @@ function updateProviderUI() {
         if (videoTutorial) videoTutorial.style.display = '';
     } else {
         els.settingsDesc.innerHTML = 'Nhập Google Gemini API Key của bạn. Lấy miễn phí tại <a href="https://aistudio.google.com/apikey" target="_blank" rel="noopener" id="apiLink">Google AI Studio</a>. Key được lưu trên trình duyệt, không gửi đến bất kỳ server nào khác.';
-        els.apiKeyInput.placeholder = 'Dán Gemini API Key (AIza...)';
+        els.apiKeyInput.placeholder = 'Dán Gemini API Key (AQ... hoặc AIza...)';
         if (els.modelSelectorGroup) els.modelSelectorGroup.style.display = 'block';
         if (videoTutorial) {
             videoTutorial.style.display = 'none';
@@ -285,8 +285,8 @@ function saveApiKey() {
     }
 
     // Validate key format per provider
-    if (state.provider === 'gemini' && !key.startsWith('AIza')) {
-        showApiKeyStatus('⚠ Gemini Key không hợp lệ. Key phải bắt đầu bằng "AIza..."', 'error');
+    if (state.provider === 'gemini' && !(key.startsWith('AQ') || key.startsWith('AIza'))) {
+        showApiKeyStatus('⚠ Gemini Key không hợp lệ. Key thường bắt đầu bằng "AQ..." hoặc "AIza..."', 'error');
         return;
     }
     if (state.provider === 'groq' && !key.startsWith('gsk_')) {
@@ -633,11 +633,14 @@ async function callGeminiAPI(text, checkPlagiarism, checkAI, checkStyle) {
 
     const prompt = buildAnalysisPrompt(text, analysisTypes, checkPlagiarism, checkAI, checkStyle);
     const modelToUse = state.geminiModel || 'gemini-2.0-flash';
-    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent?key=${getCurrentKey()}`;
+    const apiUrl = `https://generativelanguage.googleapis.com/v1beta/models/${modelToUse}:generateContent`;
 
     const response = await fetch(apiUrl, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: {
+            'Content-Type': 'application/json',
+            'x-goog-api-key': getCurrentKey(),
+        },
         body: JSON.stringify({
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
