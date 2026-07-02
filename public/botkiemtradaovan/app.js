@@ -24,7 +24,7 @@ function getCurrentKey() {
 }
 
 const MAX_CHARS = 25000; // Giới hạn ký tự khuyên dùng
-const GROQ_MAX_OUTPUT_TOKENS = 2048;
+const GROQ_MAX_OUTPUT_TOKENS = 4096;
 const ANALYSIS_CACHE_KEY = 'stable_analysis_cache_v1';
 const ANALYSIS_CACHE_VERSION = '2026-07-02-stable-rubric';
 const MAX_ANALYSIS_CACHE_ENTRIES = 10;
@@ -655,6 +655,8 @@ async function startScan() {
             errorMsg += 'API Key không hợp lệ. Vui lòng kiểm tra lại.';
         } else if (isRateLimitError(errorText)) {
             errorMsg += 'Đã hết giới hạn API. Vui lòng thử lại sau vài phút.';
+        } else if (lowerError.includes('failed_generation') || lowerError.includes('validate json')) {
+            errorMsg += 'Groq không tạo được JSON hợp lệ trong lần này. Hãy bấm quét lại; hệ thống đã tắt chế độ ép JSON để ổn định hơn.';
         } else if (lowerError.includes('network') || lowerError.includes('fetch')) {
             errorMsg += 'Lỗi kết nối mạng. Vui lòng kiểm tra internet.';
         } else if (isTextTooLargeError(errorText)) {
@@ -765,14 +767,13 @@ async function callGroqAPI(text, checkPlagiarism, checkAI, checkStyle) {
             messages: [
                 {
                     role: 'system',
-                    content: 'Bạn là chuyên gia phân tích văn bản. Luôn trả về kết quả dạng JSON hợp lệ, không có text thừa trước/sau JSON.'
+                    content: 'Ban la chuyen gia phan tich van ban. Chi tra ve mot JSON object hop le, khong markdown, khong giai thich, khong text truoc hoac sau JSON. Neu khong chac, van phai dien day du cac truong bang gia tri an toan.'
                 },
                 { role: 'user', content: prompt }
             ],
             temperature: 0,
             max_tokens: GROQ_MAX_OUTPUT_TOKENS,
             seed: 42,
-            response_format: { type: 'json_object' },
         }),
     });
 
