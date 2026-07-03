@@ -26,9 +26,10 @@ function getCurrentKey() {
 const MAX_CHARS = 25000; // Giới hạn ký tự khuyên dùng
 const GROQ_MAX_OUTPUT_TOKENS = 4096;
 const ANALYSIS_CACHE_KEY = 'stable_analysis_cache_v1';
-const ANALYSIS_CACHE_VERSION = '2026-07-03-near-duplicate-pin';
+const ANALYSIS_CACHE_VERSION = '2026-07-03-short-text-calibration';
 const MAX_ANALYSIS_CACHE_ENTRIES = 20;
 const NEAR_DUPLICATE_SIMILARITY = 0.92;
+const SHORT_TEXT_WORD_LIMIT = 120;
 
 function getErrorMessage(error) {
     return String(error?.message || error || '');
@@ -724,7 +725,8 @@ async function startScan() {
         }
 
         const rawResult = await callAIWithRetry(text, checkPlagiarism, checkAI, checkStyle);
-        const result = stabilizeNearDuplicateResult(rawResult, similarCachedResult);
+        const calibratedResult = calibrateAnalysisForReliability(rawResult, text);
+        const result = stabilizeNearDuplicateResult(calibratedResult, similarCachedResult);
 
         els.loadingStatus.textContent = 'Đang xử lý kết quả...';
         animateProgress(80);
@@ -1031,6 +1033,10 @@ function labelForOriginalScore(score) {
     return 'Rất thấp';
 }
 
+function countWords(text) {
+    return String(text || '').trim().split(/\s+/).filter(Boolean).length;
+}
+
 function normalizeAnalysisResult(result) {
     const overall = result.overall || {};
     const plagiarismPercent = normalizeScore(overall.plagiarism_percent);
@@ -1050,6 +1056,47 @@ function normalizeAnalysisResult(result) {
         },
         segments: Array.isArray(result.segments) ? result.segments : [],
         summary: result.summary || {},
+    };
+}
+
+function calibrateAnalysisForReliability(result, originalText) {
+    const normalized = normalizeAnalysisResult(result);
+    const wordCount = countWords(originalText);
+    let plagiarismPercent = normalized.overall.plagiarism_percent;
+    let aiPercent = normalized.overall.ai_percent;
+    const notes = [];
+
+    if (wordCount > 0 && wordCount < SHORT_TEXT_WORD_LIMIT) {
+        notes.push(`Văn bản chỉ có khoảng ${wordCount} từ, nên không đủ ngữ cảnh để kết luận chắc chắn về AI. Điểm đã được hiệu chỉnh thận trọng hơn.`);
+
+        if (aiPercent <= 40) {
+            aiPercent = Math.min(aiPercent, 25);
+        } else if (aiPercent <= 60) {
+            aiPercent = Math.max(35, aiPercent - 10);
+        }
+
+        if (plagiarismPercent <= 40) {
+            plagiarismPercent = Math.min(plagiarismPercent, 25);
+        }
+    }
+
+    const originalPercent = Math.max(0, 100 - Math.max(plagiarismPercent, aiPercent));
+
+    return {
+        ...normalized,
+        overall: {
+            ...normalized.overall,
+            plagiarism_percent: plagiarismPercent,
+            ai_percent: aiPercent,
+            original_percent: originalPercent,
+            plagiarism_label: labelForRiskScore(plagiarismPercent),
+            ai_label: labelForRiskScore(aiPercent),
+            original_label: labelForOriginalScore(originalPercent),
+        },
+        summary: {
+            ...normalized.summary,
+            reliability_note: notes.join(' '),
+        },
     };
 }
 
@@ -1131,7 +1178,7 @@ ${text}
    - Trích dẫn không ghi nguồn
 
 2. **Phát hiện AI:** Tìm các dấu hiệu:
-   - Văn phong quá mượt mà, đều đặn, thiếu "vấp" tự nhiên
+   - Văn phong quá mượt mà, đều đặn, thiếu "vấp" tự nhiên, nhưng dấu hiệu này KHÔNG đủ để kết luận nếu đứng một mình
    - Sử dụng pattern lặp lại (ví dụ: liệt kê 3 điểm liên tục)
    - Câu trúc khuôn mẫu, thiếu cá tính
    - Thiếu kinh nghiệm cá nhân, ví dụ cụ thể thực tế
@@ -1149,6 +1196,9 @@ ${text}
 - Phải giữ nguyên nội dung text gốc
 - Dùng cùng một thang điểm cố định cho mọi lần phân tích: 0, 5, 10, 15... đến 100. Không trả về số lẻ hoặc số bất kỳ ngoài bội số của 5.
 - Nếu bằng chứng yếu hoặc mơ hồ, chọn mức thấp hơn thay vì tăng điểm theo cảm giác.
+- Không tăng "ai_percent" chỉ vì văn bản đã được chỉnh sửa cho mạch lạc, đúng chính tả, hoặc có giọng văn trôi chảy.
+- Với văn bản ngắn dưới 120 từ hoặc một đoạn bị tách khỏi bài gốc, tối đa chỉ đánh giá là rủi ro thấp/trung bình thấp nếu không có nhiều bằng chứng mạnh cùng lúc.
+- Phân biệt "văn bản sạch, chuẩn, ít lỗi" với "văn bản do AI tạo"; sạch lỗi không phải bằng chứng đủ.
 - "plagiarism_percent" là ước lượng rủi ro sao chép/thiếu nguồn dựa trên dấu hiệu trong văn bản, không được khẳng định chắc chắn nếu không có nguồn đối chiếu.
 - "ai_percent" là ước lượng rủi ro văn bản do AI tạo ra dựa trên đặc điểm phong cách, không được khẳng định chắc chắn.
 - "original_percent" phải bằng 100 - max(plagiarism_percent, ai_percent).
@@ -1229,7 +1279,7 @@ function displayResults(result, originalText) {
         disclaimer = document.createElement('div');
         disclaimer.id = 'resultDisclaimer';
         disclaimer.style.cssText = 'margin:16px 0 0 0;padding:12px 16px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1px solid #bfdbfe;border-radius:10px;font-size:13px;color:#1e40af;line-height:1.6;text-align:center;';
-        disclaimer.innerHTML = '⚠️ <strong>Lưu ý:</strong> Kết quả phân tích dựa trên AI và mang tính tham khảo. Với văn bản giống hệt hoặc gần giống lần kiểm tra trước, hệ thống sẽ dùng kết quả đã lưu làm mốc để giảm dao động điểm.';
+        disclaimer.innerHTML = '⚠️ <strong>Lưu ý:</strong> Kết quả phân tích dựa trên AI và mang tính tham khảo. Đoạn văn ngắn sẽ được hiệu chỉnh thận trọng hơn; văn bản giống hệt hoặc gần giống lần kiểm tra trước sẽ dùng kết quả đã lưu làm mốc để giảm dao động điểm.';
         els.resultsSection.appendChild(disclaimer);
     }
 }
@@ -1369,6 +1419,10 @@ function renderSummary(summary) {
 
     if (summary.overview) {
         html += `<h4>📋 Tổng quan</h4><p>${escapeHtml(summary.overview)}</p>`;
+    }
+
+    if (summary.reliability_note) {
+        html += `<h4>⚖️ Độ tin cậy</h4><p>${escapeHtml(summary.reliability_note)}</p>`;
     }
 
     if (summary.stability_note) {
@@ -1637,6 +1691,8 @@ function exportReport() {
         ${r.summary ? `
         <h2 style="color:#1E40AF; font-size:16px; margin:24px 0 12px 0; border-bottom:2px solid #E5E7EB; padding-bottom:6px;">📝 TÓM TẮT</h2>
         ${r.summary.overview ? `<p style="font-size:13px; color:#374151; line-height:1.7;">${r.summary.overview}</p>` : ''}
+        ${r.summary.reliability_note ? `<p style="font-size:12px; margin:8px 0;"><b style="color:#1E40AF;">⚖️ Độ tin cậy:</b> <span style="color:#374151;">${r.summary.reliability_note}</span></p>` : ''}
+        ${r.summary.stability_note ? `<p style="font-size:12px; margin:8px 0;"><b style="color:#1E40AF;">📌 Ghim kết quả:</b> <span style="color:#374151;">${r.summary.stability_note}</span></p>` : ''}
         ${r.summary.plagiarism_findings ? `<p style="font-size:12px; margin:8px 0;"><b style="color:#92400E;">🔍 Phát hiện đạo văn:</b> <span style="color:#374151;">${r.summary.plagiarism_findings}</span></p>` : ''}
         ${r.summary.ai_findings ? `<p style="font-size:12px; margin:8px 0;"><b style="color:#5B21B6;">🤖 Phát hiện AI:</b> <span style="color:#374151;">${r.summary.ai_findings}</span></p>` : ''}
         ` : ''}
