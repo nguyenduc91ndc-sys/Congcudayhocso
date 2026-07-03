@@ -26,8 +26,9 @@ function getCurrentKey() {
 const MAX_CHARS = 25000; // Giới hạn ký tự khuyên dùng
 const GROQ_MAX_OUTPUT_TOKENS = 4096;
 const ANALYSIS_CACHE_KEY = 'stable_analysis_cache_v1';
-const ANALYSIS_CACHE_VERSION = '2026-07-02-stable-rubric';
-const MAX_ANALYSIS_CACHE_ENTRIES = 10;
+const ANALYSIS_CACHE_VERSION = '2026-07-03-near-duplicate-pin';
+const MAX_ANALYSIS_CACHE_ENTRIES = 20;
+const NEAR_DUPLICATE_SIMILARITY = 0.92;
 
 function getErrorMessage(error) {
     return String(error?.message || error || '');
@@ -76,8 +77,18 @@ function hashText(text) {
     return (hash >>> 0).toString(36);
 }
 
-function getAnalysisCacheSignature(text, checkPlagiarism, checkAI, checkStyle) {
-    const normalizedText = text.trim().replace(/\r\n/g, '\n');
+function normalizeTextForCache(text) {
+    return text.trim().replace(/\r\n/g, '\n');
+}
+
+function normalizeTextForSimilarity(text) {
+    return normalizeTextForCache(text)
+        .toLowerCase()
+        .replace(/\s+/g, ' ')
+        .trim();
+}
+
+function getAnalysisCacheContext(checkPlagiarism, checkAI, checkStyle) {
     const model = state.provider === 'gemini'
         ? (state.geminiModel || 'gemini-2.0-flash')
         : 'openai/gpt-oss-120b';
@@ -92,9 +103,46 @@ function getAnalysisCacheSignature(text, checkPlagiarism, checkAI, checkStyle) {
         state.provider,
         model,
         options,
+    ];
+}
+
+function getAnalysisCacheSignature(text, checkPlagiarism, checkAI, checkStyle) {
+    const normalizedText = normalizeTextForCache(text);
+
+    return [
+        ...getAnalysisCacheContext(checkPlagiarism, checkAI, checkStyle),
         normalizedText.length,
         hashText(normalizedText),
     ].join(':');
+}
+
+function getTextSimilarity(a, b) {
+    const textA = normalizeTextForSimilarity(a);
+    const textB = normalizeTextForSimilarity(b);
+    if (!textA || !textB) return 0;
+    if (textA === textB) return 1;
+
+    const lenRatio = Math.min(textA.length, textB.length) / Math.max(textA.length, textB.length);
+    if (lenRatio < 0.75) return 0;
+
+    const tokensA = textA.split(' ').filter(Boolean);
+    const tokensB = textB.split(' ').filter(Boolean);
+    if (!tokensA.length || !tokensB.length) return lenRatio;
+
+    const counts = new Map();
+    for (const token of tokensA) counts.set(token, (counts.get(token) || 0) + 1);
+
+    let common = 0;
+    for (const token of tokensB) {
+        const count = counts.get(token) || 0;
+        if (count > 0) {
+            common++;
+            counts.set(token, count - 1);
+        }
+    }
+
+    const tokenSimilarity = (2 * common) / (tokensA.length + tokensB.length);
+    return Math.min(tokenSimilarity, lenRatio);
 }
 
 function getCachedAnalysis(signature) {
@@ -110,12 +158,43 @@ function getCachedAnalysis(signature) {
     return null;
 }
 
-function saveCachedAnalysis(signature, result) {
+function getSimilarCachedAnalysis(text, checkPlagiarism, checkAI, checkStyle) {
+    const contextPrefix = getAnalysisCacheContext(checkPlagiarism, checkAI, checkStyle).join(':') + ':';
+    let bestMatch = null;
+
+    try {
+        const cache = JSON.parse(localStorage.getItem(ANALYSIS_CACHE_KEY) || '{}');
+        for (const [signature, entry] of Object.entries(cache)) {
+            if (!signature.startsWith(contextPrefix) || !entry?.normalizedText || !entry.result) continue;
+
+            const similarity = getTextSimilarity(text, entry.normalizedText);
+            if (similarity < NEAR_DUPLICATE_SIMILARITY) continue;
+            const savedAt = entry.savedAt || 0;
+            if (!bestMatch
+                || similarity > bestMatch.similarity + 0.001
+                || (Math.abs(similarity - bestMatch.similarity) <= 0.001 && savedAt > bestMatch.savedAt)) {
+                bestMatch = {
+                    result: entry.result,
+                    signature,
+                    similarity,
+                    savedAt,
+                };
+            }
+        }
+    } catch {
+        // Ignore cache corruption.
+    }
+
+    return bestMatch;
+}
+
+function saveCachedAnalysis(signature, result, text) {
     try {
         const cache = JSON.parse(localStorage.getItem(ANALYSIS_CACHE_KEY) || '{}');
         cache[signature] = {
             version: ANALYSIS_CACHE_VERSION,
             savedAt: Date.now(),
+            normalizedText: normalizeTextForCache(text),
             result,
         };
 
@@ -639,7 +718,13 @@ async function startScan() {
             return;
         }
 
-        const result = await callAIWithRetry(text, checkPlagiarism, checkAI, checkStyle);
+        const similarCachedResult = getSimilarCachedAnalysis(text, checkPlagiarism, checkAI, checkStyle);
+        if (similarCachedResult) {
+            els.loadingStatus.textContent = 'Đã tìm thấy bản kiểm tra gần giống, đang dùng làm mốc ổn định điểm...';
+        }
+
+        const rawResult = await callAIWithRetry(text, checkPlagiarism, checkAI, checkStyle);
+        const result = stabilizeNearDuplicateResult(rawResult, similarCachedResult);
 
         els.loadingStatus.textContent = 'Đang xử lý kết quả...';
         animateProgress(80);
@@ -653,7 +738,10 @@ async function startScan() {
 
         // Save to history
         saveToHistory(text, result);
-        saveCachedAnalysis(cacheSignature, result);
+        saveCachedAnalysis(cacheSignature, result, text);
+        if (similarCachedResult && result !== rawResult) {
+            showToast('Đã ghim điểm theo bản kiểm tra gần nhất để giảm sai số giữa các lần quét.', 'info');
+        }
 
     } catch (error) {
         console.error('Scan error:', error);
@@ -965,6 +1053,62 @@ function normalizeAnalysisResult(result) {
     };
 }
 
+function getAllowedScoreDrift(similarity) {
+    if (similarity >= 0.985) return 3;
+    if (similarity >= 0.96) return 5;
+    return 8;
+}
+
+function roundRiskScore(score) {
+    return Math.max(0, Math.min(100, Math.round(score / 5) * 5));
+}
+
+function pinScoreToBaseline(currentScore, baselineScore, maxDrift) {
+    const current = normalizeScore(currentScore);
+    const baseline = normalizeScore(baselineScore);
+    if (Math.abs(current - baseline) <= maxDrift) return roundRiskScore(current);
+
+    const direction = current > baseline ? 1 : -1;
+    return roundRiskScore(baseline + direction * maxDrift);
+}
+
+function stabilizeNearDuplicateResult(result, similarCachedResult) {
+    if (!similarCachedResult?.result?.overall) return result;
+
+    const baseline = similarCachedResult.result.overall;
+    const current = normalizeAnalysisResult(result);
+    const maxDrift = getAllowedScoreDrift(similarCachedResult.similarity);
+    const plagiarismPercent = pinScoreToBaseline(
+        current.overall.plagiarism_percent,
+        baseline.plagiarism_percent,
+        maxDrift
+    );
+    const aiPercent = pinScoreToBaseline(
+        current.overall.ai_percent,
+        baseline.ai_percent,
+        maxDrift
+    );
+    const originalPercent = Math.max(0, 100 - Math.max(plagiarismPercent, aiPercent));
+    const stabilityNote = `Kết quả đã được ghim theo lần kiểm tra gần giống trước đó (${Math.round(similarCachedResult.similarity * 100)}% trùng khớp), nên điểm tổng chỉ dao động trong khoảng cho phép.`;
+
+    return {
+        ...current,
+        overall: {
+            ...current.overall,
+            plagiarism_percent: plagiarismPercent,
+            ai_percent: aiPercent,
+            original_percent: originalPercent,
+            plagiarism_label: labelForRiskScore(plagiarismPercent),
+            ai_label: labelForRiskScore(aiPercent),
+            original_label: labelForOriginalScore(originalPercent),
+        },
+        summary: {
+            ...current.summary,
+            stability_note: stabilityNote,
+        },
+    };
+}
+
 function buildAnalysisPrompt(text, analysisTypes, checkPlagiarism, checkAI, checkStyle) {
     return `Bạn là chuyên gia phân tích văn bản, chuyên phát hiện đạo văn (plagiarism) và nội dung do AI tạo ra. 
 
@@ -1085,7 +1229,7 @@ function displayResults(result, originalText) {
         disclaimer = document.createElement('div');
         disclaimer.id = 'resultDisclaimer';
         disclaimer.style.cssText = 'margin:16px 0 0 0;padding:12px 16px;background:linear-gradient(135deg,#eff6ff,#f0f9ff);border:1px solid #bfdbfe;border-radius:10px;font-size:13px;color:#1e40af;line-height:1.6;text-align:center;';
-        disclaimer.innerHTML = '⚠️ <strong>Lưu ý:</strong> Kết quả phân tích dựa trên AI và mang tính tham khảo. Có thể có sai số nhỏ (±3-5%) giữa các lần kiểm tra do bản chất xử lý ngôn ngữ của AI.';
+        disclaimer.innerHTML = '⚠️ <strong>Lưu ý:</strong> Kết quả phân tích dựa trên AI và mang tính tham khảo. Với văn bản giống hệt hoặc gần giống lần kiểm tra trước, hệ thống sẽ dùng kết quả đã lưu làm mốc để giảm dao động điểm.';
         els.resultsSection.appendChild(disclaimer);
     }
 }
@@ -1225,6 +1369,10 @@ function renderSummary(summary) {
 
     if (summary.overview) {
         html += `<h4>📋 Tổng quan</h4><p>${escapeHtml(summary.overview)}</p>`;
+    }
+
+    if (summary.stability_note) {
+        html += `<h4>📌 Ghim kết quả</h4><p>${escapeHtml(summary.stability_note)}</p>`;
     }
 
     if (summary.plagiarism_findings) {
