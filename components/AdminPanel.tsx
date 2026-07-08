@@ -8,7 +8,7 @@ import { getRecentVisitors, FirebaseVisitor, getLoginHistory, searchLoginHistory
 import { AIVideo, Order } from '../types/videoStoreTypes';
 import { subscribeToVideos, addVideo, updateVideo, deleteVideo } from '../utils/firebaseVideoStore';
 import { subscribeToOrders, confirmOrder, cancelOrder } from '../utils/firebaseOrders';
-import { uploadImage, isValidImage } from '../utils/firebaseStorage';
+import { uploadImage, isValidImage, compressImageForUpload } from '../utils/firebaseStorage';
 import { saveProKey, deleteProKey, subscribeToProKeys, ProKey, revokeProForEmail } from '../utils/firebaseProKeys';
 import { saveBeeProKey, deleteBeeProKey, subscribeToBeeProKeys, BeeProKey, generateBeeProCode, revokeBeeProForEmail } from '../utils/firebaseBeeProKeys';
 import { saveSKKNProKey, deleteSKKNProKey, subscribeToSKKNProKeys, SKKNProKey, generateSKKNProCode, revokeSKKNProForEmail } from '../utils/firebaseSKKNProKeys';
@@ -139,6 +139,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
     // Image upload states
     const [isUploadingImage, setIsUploadingImage] = useState(false);
+    const [videoThumbnailUploadMessage, setVideoThumbnailUploadMessage] = useState('');
     const fileInputRef = useRef<HTMLInputElement>(null);
 
     useEffect(() => {
@@ -367,11 +368,58 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const resetVideoForm = () => {
         setVideoForm({ title: '', description: '', thumbnail: '', price: 0, youtubeUrl: '', downloadUrl: '', author: 'Nguyễn Đức', rating: 5, isHot: false });
         setEditingVideo(null);
+        setVideoThumbnailUploadMessage('');
         setShowVideoForm(false);
     };
 
+    const formatBytes = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
+    const handleVideoThumbnailUpload = async (file?: File) => {
+        if (!file) return;
+        setVideoThumbnailUploadMessage('');
+
+        if (!isValidImage(file)) {
+            alert('Vui lòng chọn ảnh JPG, PNG, GIF hoặc WEBP!');
+            return;
+        }
+
+        if (file.size > 15 * 1024 * 1024) {
+            alert('Ảnh bìa nên nhỏ hơn 15MB trước khi nén.');
+            return;
+        }
+
+        setIsUploadingImage(true);
+        try {
+            const optimizedFile = await compressImageForUpload(file, {
+                maxWidth: 1280,
+                maxHeight: 720,
+                quality: 0.82,
+                outputType: 'image/webp'
+            });
+            const imageUrl = await uploadImage(optimizedFile, 'video-thumbnails');
+            if (!imageUrl) {
+                throw new Error('Upload failed');
+            }
+
+            setVideoForm(prev => ({ ...prev, thumbnail: imageUrl }));
+            const savedBytes = file.size - optimizedFile.size;
+            setVideoThumbnailUploadMessage(savedBytes > 0
+                ? `Đã nén: ${formatBytes(file.size)} -> ${formatBytes(optimizedFile.size)}`
+                : `Ảnh đã tối ưu: ${formatBytes(optimizedFile.size)}`);
+        } catch (error) {
+            console.error('Error uploading video cover:', error);
+            alert('Không thể tải ảnh bìa lên. Vui lòng thử lại!');
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
+
     const handleSaveVideo = async () => {
-        if (!videoForm.title || !videoForm.youtubeUrl) return;
+        if (!videoForm.title || !videoForm.youtubeUrl || isUploadingImage) return;
         if (editingVideo) {
             await updateVideo(editingVideo.id, videoForm);
         } else {
@@ -1566,6 +1614,50 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                             placeholder="Mô tả ngắn" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
                                         <input type="text" value={videoForm.youtubeUrl} onChange={(e) => setVideoForm({ ...videoForm, youtubeUrl: e.target.value })}
                                             placeholder="Link YouTube *" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                                        <div className="space-y-2">
+                                            <input type="text" value={videoForm.thumbnail} onChange={(e) => {
+                                                setVideoThumbnailUploadMessage('');
+                                                setVideoForm({ ...videoForm, thumbnail: e.target.value });
+                                            }}
+                                                placeholder="Link ảnh bìa hoặc chọn ảnh từ máy" className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
+                                            <div className="flex flex-wrap gap-2">
+                                                <label className={`inline-flex items-center justify-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 font-semibold rounded-xl border border-blue-200 hover:bg-blue-100 transition-colors cursor-pointer ${isUploadingImage ? 'opacity-60 pointer-events-none' : ''}`}>
+                                                    {isUploadingImage ? <Loader2 size={16} className="animate-spin" /> : <Upload size={16} />}
+                                                    {isUploadingImage ? 'Đang nén và tải ảnh...' : 'Chọn ảnh bìa'}
+                                                    <input
+                                                        ref={fileInputRef}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        disabled={isUploadingImage}
+                                                        className="hidden"
+                                                        onChange={(e) => {
+                                                            handleVideoThumbnailUpload(e.target.files?.[0]);
+                                                            e.currentTarget.value = '';
+                                                        }}
+                                                    />
+                                                </label>
+                                                {videoForm.thumbnail && (
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => {
+                                                            setVideoForm({ ...videoForm, thumbnail: '' });
+                                                            setVideoThumbnailUploadMessage('');
+                                                        }}
+                                                        className="px-4 py-2 bg-red-50 text-red-600 font-semibold rounded-xl border border-red-200 hover:bg-red-100 transition-colors"
+                                                    >
+                                                        Xóa ảnh
+                                                    </button>
+                                                )}
+                                            </div>
+                                            {videoThumbnailUploadMessage && (
+                                                <p className="text-xs font-medium text-green-600">{videoThumbnailUploadMessage}</p>
+                                            )}
+                                            {videoForm.thumbnail && (
+                                                <div className="aspect-video max-w-sm overflow-hidden rounded-xl bg-gray-100 border border-gray-200">
+                                                    <img src={videoForm.thumbnail} alt="Ảnh bìa video" className="w-full h-full object-cover" />
+                                                </div>
+                                            )}
+                                        </div>
                                         <div className="flex gap-3">
                                             <input type="number" value={videoForm.price} onChange={(e) => setVideoForm({ ...videoForm, price: parseInt(e.target.value) || 0 })}
                                                 placeholder="Giá (VNĐ) - Để 0 nếu miễn phí" className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:border-blue-500 focus:outline-none" />
@@ -1583,8 +1675,13 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                             </label>
                                         </div>
                                         <div className="flex gap-2">
-                                            <button onClick={handleSaveVideo} className="flex-1 bg-blue-600 text-white font-bold py-2 rounded-xl hover:bg-blue-700 flex items-center justify-center gap-2">
-                                                <Save size={18} /> {editingVideo ? 'Cập nhật' : 'Thêm Video'}
+                                            <button
+                                                onClick={handleSaveVideo}
+                                                disabled={isUploadingImage}
+                                                className="flex-1 bg-blue-600 text-white font-bold py-2 rounded-xl hover:bg-blue-700 disabled:opacity-50 flex items-center justify-center gap-2"
+                                            >
+                                                {isUploadingImage ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+                                                {editingVideo ? 'Cập nhật' : 'Thêm Video'}
                                             </button>
                                             <button onClick={resetVideoForm} className="px-4 py-2 text-gray-600 hover:bg-gray-100 rounded-xl">Hủy</button>
                                         </div>
