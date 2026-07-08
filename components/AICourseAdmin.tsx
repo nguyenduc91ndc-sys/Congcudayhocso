@@ -3,7 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     ArrowLeft, Plus, Trash2, Edit2, Save, X,
     GraduationCap, Loader2, Star, Flame, Sparkles,
-    ExternalLink, Play
+    ExternalLink, Play, Upload
 } from 'lucide-react';
 import { AICourse } from '../types/aiCourseTypes';
 import {
@@ -12,6 +12,7 @@ import {
     updateCourse,
     deleteCourse
 } from '../utils/firebaseAICourseStore';
+import { uploadImage, isValidImage } from '../utils/firebaseStorage';
 
 interface AICourseAdminProps {
     onBack: () => void;
@@ -43,6 +44,7 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
     const [editingCourse, setEditingCourse] = useState<AICourse | null>(null);
     const [formData, setFormData] = useState<Omit<AICourse, 'id'>>(defaultCourse);
     const [saving, setSaving] = useState(false);
+    const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
 
     // Load courses
     useEffect(() => {
@@ -56,6 +58,34 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
     // Handle form input change
     const handleInputChange = (field: keyof Omit<AICourse, 'id'>, value: any) => {
         setFormData(prev => ({ ...prev, [field]: value }));
+    };
+
+    const handleThumbnailUpload = async (file?: File) => {
+        if (!file) return;
+
+        if (!isValidImage(file)) {
+            alert('Vui lòng chọn ảnh JPG, PNG, GIF hoặc WEBP!');
+            return;
+        }
+
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Ảnh bìa nên nhỏ hơn 5MB để tải nhanh.');
+            return;
+        }
+
+        setUploadingThumbnail(true);
+        try {
+            const imageUrl = await uploadImage(file, 'ai-course-covers');
+            if (!imageUrl) {
+                throw new Error('Upload failed');
+            }
+            handleInputChange('thumbnail', imageUrl);
+        } catch (error) {
+            console.error('Error uploading course cover:', error);
+            alert('Không thể tải ảnh bìa lên. Vui lòng thử lại!');
+        } finally {
+            setUploadingThumbnail(false);
+        }
     };
 
     // Open form for new course
@@ -389,6 +419,35 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
                                         placeholder="https://example.com/anh-bia.jpg"
                                         className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:border-purple-500 focus:outline-none"
                                     />
+                                    <div className="mt-2 flex flex-wrap gap-2">
+                                        <label className={`inline-flex items-center gap-2 px-4 py-2 bg-white/10 text-white font-medium rounded-xl border border-white/20 hover:bg-white/20 transition-colors cursor-pointer ${uploadingThumbnail ? 'opacity-60 pointer-events-none' : ''}`}>
+                                            {uploadingThumbnail ? (
+                                                <Loader2 size={16} className="animate-spin" />
+                                            ) : (
+                                                <Upload size={16} />
+                                            )}
+                                            {uploadingThumbnail ? 'Đang tải ảnh...' : 'Chọn ảnh từ máy'}
+                                            <input
+                                                type="file"
+                                                accept="image/*"
+                                                disabled={uploadingThumbnail}
+                                                className="hidden"
+                                                onChange={e => {
+                                                    handleThumbnailUpload(e.target.files?.[0]);
+                                                    e.currentTarget.value = '';
+                                                }}
+                                            />
+                                        </label>
+                                        {formData.thumbnail && (
+                                            <button
+                                                type="button"
+                                                onClick={() => handleInputChange('thumbnail', '')}
+                                                className="px-4 py-2 bg-red-500/20 text-red-100 font-medium rounded-xl border border-red-300/20 hover:bg-red-500/30 transition-colors"
+                                            >
+                                                Xóa ảnh
+                                            </button>
+                                        )}
+                                    </div>
                                     {formData.thumbnail && (
                                         <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-black">
                                             <img
@@ -537,7 +596,7 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
                                 </button>
                                 <button
                                     onClick={handleSave}
-                                    disabled={saving}
+                                    disabled={saving || uploadingThumbnail}
                                     className="flex-1 py-3 bg-gradient-to-r from-purple-500 to-indigo-600 text-white font-bold rounded-xl hover:opacity-90 transition-opacity disabled:opacity-50 flex items-center justify-center gap-2"
                                 >
                                     {saving ? (
