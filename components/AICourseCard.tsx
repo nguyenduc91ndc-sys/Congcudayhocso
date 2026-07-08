@@ -61,6 +61,8 @@ const AICourseCard: React.FC<AICourseCardProps> = ({ course, onPreview, onRegist
         return '';
     };
 
+    const thumbnail = getThumbnail();
+
     // Render rating sao
     const renderRating = (rating: number) => {
         return (
@@ -103,11 +105,19 @@ const AICourseCard: React.FC<AICourseCardProps> = ({ course, onPreview, onRegist
         >
             {/* Thumbnail */}
             <div className="relative aspect-video overflow-hidden">
-                <img
-                    src={getThumbnail()}
-                    alt={course.title}
-                    className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
-                />
+                {thumbnail ? (
+                    <img
+                        src={thumbnail}
+                        alt={course.title}
+                        className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500"
+                    />
+                ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-cyan-500 via-blue-600 to-emerald-500 flex items-center justify-center p-5 text-center">
+                        <span className="text-white text-lg font-bold leading-tight line-clamp-3 drop-shadow">
+                            {course.title}
+                        </span>
+                    </div>
+                )}
 
                 {/* Play overlay */}
                 <div

@@ -377,6 +377,29 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
                                     )}
                                 </div>
 
+                                {/* Cover image URL */}
+                                <div>
+                                    <label className="block text-white/80 text-sm font-medium mb-1">
+                                        Link ảnh bìa
+                                    </label>
+                                    <input
+                                        type="text"
+                                        value={formData.thumbnail}
+                                        onChange={e => handleInputChange('thumbnail', e.target.value)}
+                                        placeholder="https://example.com/anh-bia.jpg"
+                                        className="w-full px-4 py-3 bg-white/10 border border-white/20 rounded-xl text-white placeholder-white/40 focus:border-purple-500 focus:outline-none"
+                                    />
+                                    {formData.thumbnail && (
+                                        <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-black">
+                                            <img
+                                                src={formData.thumbnail}
+                                                alt="Cover preview"
+                                                className="w-full h-full object-cover"
+                                            />
+                                        </div>
+                                    )}
+                                </div>
+
                                 {/* Price row */}
                                 <div className="grid grid-cols-2 gap-4">
                                     <div>
