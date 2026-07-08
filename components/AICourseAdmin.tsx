@@ -12,7 +12,7 @@ import {
     updateCourse,
     deleteCourse
 } from '../utils/firebaseAICourseStore';
-import { uploadImage, isValidImage } from '../utils/firebaseStorage';
+import { uploadImage, isValidImage, compressImageForUpload } from '../utils/firebaseStorage';
 
 interface AICourseAdminProps {
     onBack: () => void;
@@ -45,6 +45,7 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
     const [formData, setFormData] = useState<Omit<AICourse, 'id'>>(defaultCourse);
     const [saving, setSaving] = useState(false);
     const [uploadingThumbnail, setUploadingThumbnail] = useState(false);
+    const [thumbnailUploadMessage, setThumbnailUploadMessage] = useState('');
 
     // Load courses
     useEffect(() => {
@@ -60,26 +61,43 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
 
+    const formatBytes = (bytes: number) => {
+        if (bytes < 1024) return `${bytes} B`;
+        if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    };
+
     const handleThumbnailUpload = async (file?: File) => {
         if (!file) return;
+        setThumbnailUploadMessage('');
 
         if (!isValidImage(file)) {
             alert('Vui lòng chọn ảnh JPG, PNG, GIF hoặc WEBP!');
             return;
         }
 
-        if (file.size > 5 * 1024 * 1024) {
-            alert('Ảnh bìa nên nhỏ hơn 5MB để tải nhanh.');
+        if (file.size > 15 * 1024 * 1024) {
+            alert('Ảnh bìa nên nhỏ hơn 15MB trước khi nén.');
             return;
         }
 
         setUploadingThumbnail(true);
         try {
-            const imageUrl = await uploadImage(file, 'ai-course-covers');
+            const optimizedFile = await compressImageForUpload(file, {
+                maxWidth: 1280,
+                maxHeight: 720,
+                quality: 0.82,
+                outputType: 'image/webp'
+            });
+            const imageUrl = await uploadImage(optimizedFile, 'ai-course-covers');
             if (!imageUrl) {
                 throw new Error('Upload failed');
             }
             handleInputChange('thumbnail', imageUrl);
+            const savedBytes = file.size - optimizedFile.size;
+            setThumbnailUploadMessage(savedBytes > 0
+                ? `Đã nén: ${formatBytes(file.size)} -> ${formatBytes(optimizedFile.size)}`
+                : `Ảnh đã tối ưu: ${formatBytes(optimizedFile.size)}`);
         } catch (error) {
             console.error('Error uploading course cover:', error);
             alert('Không thể tải ảnh bìa lên. Vui lòng thử lại!');
@@ -441,13 +459,21 @@ const AICourseAdmin: React.FC<AICourseAdminProps> = ({ onBack }) => {
                                         {formData.thumbnail && (
                                             <button
                                                 type="button"
-                                                onClick={() => handleInputChange('thumbnail', '')}
+                                                onClick={() => {
+                                                    handleInputChange('thumbnail', '');
+                                                    setThumbnailUploadMessage('');
+                                                }}
                                                 className="px-4 py-2 bg-red-500/20 text-red-100 font-medium rounded-xl border border-red-300/20 hover:bg-red-500/30 transition-colors"
                                             >
                                                 Xóa ảnh
                                             </button>
                                         )}
                                     </div>
+                                    {thumbnailUploadMessage && (
+                                        <p className="mt-2 text-xs text-emerald-200">
+                                            {thumbnailUploadMessage}
+                                        </p>
+                                    )}
                                     {formData.thumbnail && (
                                         <div className="mt-2 aspect-video rounded-lg overflow-hidden bg-black">
                                             <img
