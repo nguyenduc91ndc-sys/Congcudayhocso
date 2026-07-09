@@ -45,17 +45,62 @@ export const themes: Theme[] = [
     },
     {
         id: 'candy',
-        name: 'Kẹo ngọt',
-        emoji: '🍭',
-        gradientFrom: '#ff9a9e',
-        gradientVia: '#fecfef',
-        gradientTo: '#a8edea',
+        name: 'Sắc màu lớp học',
+        emoji: '🎨',
+        gradientFrom: '#0ea5e9',
+        gradientVia: '#14b8a6',
+        gradientTo: '#f97316',
         bubbleColors: [
-            'rgba(255, 154, 158, 0.6)',
-            'rgba(254, 207, 239, 0.6)',
-            'rgba(168, 237, 234, 0.6)',
-            'rgba(255, 182, 193, 0.6)',
-            'rgba(255, 218, 185, 0.6)',
+            'rgba(14, 165, 233, 0.44)',
+            'rgba(20, 184, 166, 0.42)',
+            'rgba(249, 115, 22, 0.34)',
+            'rgba(250, 204, 21, 0.26)',
+            'rgba(255, 255, 255, 0.22)',
+        ],
+    },
+    {
+        id: 'school-rainbow',
+        name: 'Cầu vồng học đường',
+        emoji: '🌈',
+        gradientFrom: '#2563eb',
+        gradientVia: '#22c55e',
+        gradientTo: '#f59e0b',
+        bubbleColors: [
+            'rgba(37, 99, 235, 0.42)',
+            'rgba(34, 197, 94, 0.4)',
+            'rgba(245, 158, 11, 0.34)',
+            'rgba(244, 63, 94, 0.28)',
+            'rgba(255, 255, 255, 0.22)',
+        ],
+    },
+    {
+        id: 'green-schoolyard',
+        name: 'Vườn trường xanh',
+        emoji: '🌿',
+        gradientFrom: '#0f766e',
+        gradientVia: '#16a34a',
+        gradientTo: '#eab308',
+        bubbleColors: [
+            'rgba(15, 118, 110, 0.42)',
+            'rgba(22, 163, 74, 0.4)',
+            'rgba(234, 179, 8, 0.32)',
+            'rgba(20, 184, 166, 0.28)',
+            'rgba(255, 255, 255, 0.22)',
+        ],
+    },
+    {
+        id: 'school-sunshine',
+        name: 'Nắng sân trường',
+        emoji: '☀️',
+        gradientFrom: '#0ea5e9',
+        gradientVia: '#facc15',
+        gradientTo: '#fb7185',
+        bubbleColors: [
+            'rgba(14, 165, 233, 0.42)',
+            'rgba(250, 204, 21, 0.38)',
+            'rgba(251, 113, 133, 0.34)',
+            'rgba(251, 146, 60, 0.28)',
+            'rgba(255, 255, 255, 0.22)',
         ],
     },
     {
@@ -195,10 +240,13 @@ export const themes: Theme[] = [
     },
 ];
 
-const featuredThemeIds = ['rainbow', 'ocean', 'sakura', 'classroom', 'digital', 'dark'];
+const featuredThemeIds = ['rainbow', 'green-schoolyard', 'school-sunshine', 'digital', 'dark'];
 export const featuredThemes: Theme[] = featuredThemeIds
     .map(id => themes.find(theme => theme.id === id))
     .filter((theme): theme is Theme => Boolean(theme));
+
+const DEFAULT_THEME_ID = 'green-schoolyard';
+const THEME_DEFAULT_VERSION = '2026-07-green-schoolyard';
 
 interface ThemeContextType {
     currentTheme: Theme;
@@ -208,15 +256,24 @@ interface ThemeContextType {
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
-    const [currentTheme, setCurrentTheme] = useState<Theme>(themes[0]);
+    const defaultTheme = themes.find(theme => theme.id === DEFAULT_THEME_ID) || themes[0];
+    const [currentTheme, setCurrentTheme] = useState<Theme>(defaultTheme);
 
     useEffect(() => {
+        const savedDefaultVersion = localStorage.getItem('ntd_theme_default_version');
+        if (savedDefaultVersion !== THEME_DEFAULT_VERSION) {
+            localStorage.setItem('ntd_theme', DEFAULT_THEME_ID);
+            localStorage.setItem('ntd_theme_default_version', THEME_DEFAULT_VERSION);
+            setCurrentTheme(defaultTheme);
+            return;
+        }
+
         const savedThemeId = localStorage.getItem('ntd_theme');
         if (savedThemeId) {
             const found = themes.find(t => t.id === savedThemeId);
             if (found) setCurrentTheme(found);
         }
-    }, []);
+    }, [defaultTheme]);
 
     const setTheme = (themeId: string) => {
         const found = themes.find(t => t.id === themeId);

@@ -57,7 +57,7 @@ export const blogPosts: BlogPost[] = [
         date: '20/02/2026',
         category: 'Tâm lý học đường',
         readTime: '7 phút',
-        imageUrl: 'https://images.unsplash.com/photo-1596461404969-9ae70f2830c1?q=80&w=600&auto=format&fit=crop',
+        imageUrl: '/truytimkhobauanh.jpg',
         content: (
             <div className="space-y-6 text-slate-300 leading-relaxed">
                 <p>
@@ -96,7 +96,7 @@ export const blogPosts: BlogPost[] = [
         date: '18/02/2026',
         category: 'Thực hành công cụ',
         readTime: '3 phút',
-        imageUrl: 'https://images.unsplash.com/photo-1611162617213-7d7a39e9b1d7?q=80&w=600&auto=format&fit=crop',
+        imageUrl: '/videotuongtac.png',
         content: (
             <div className="space-y-6 text-slate-300 leading-relaxed">
                 <p>
@@ -238,20 +238,218 @@ export const blogPosts: BlogPost[] = [
                 </div>
             </div>
         )
+    },
+    {
+        id: '5',
+        title: 'Một số câu lệnh áp dụng trong NotebookLM dành cho giáo viên',
+        excerpt: 'Gợi ý các prompt thực tế để khai thác dữ liệu nguồn trong NotebookLM: tạo lời nhận xét học sinh, tổng hợp đánh giá năng lực và lập nhanh bài trình chiếu báo cáo phụ huynh.',
+        date: '10/07/2026',
+        category: 'AI trong giáo dục',
+        readTime: '6 phút',
+        imageUrl: '/ok klm.png',
+        content: (
+            <div className="space-y-6 text-slate-300 leading-relaxed">
+                <p>
+                    NotebookLM phát huy hiệu quả nhất khi giáo viên đã chuẩn bị sẵn dữ liệu nguồn rõ ràng, ví dụ bảng điểm, bảng mẫu nhận xét, kế hoạch giáo dục hoặc tài liệu tổng hợp của lớp. Sau khi tải dữ liệu lên, thầy cô có thể dùng các câu lệnh cụ thể để yêu cầu hệ thống phân tích, đối chiếu và xuất kết quả theo đúng cấu trúc cần dùng.
+                </p>
+
+                <div className="bg-amber-900/20 border border-amber-500/30 p-5 rounded-xl">
+                    <h3 className="text-xl font-semibold text-amber-200 mb-2">Nguyên tắc viết câu lệnh</h3>
+                    <ul className="list-disc pl-6 space-y-2 text-sm text-amber-50/80">
+                        <li>Nêu rõ dữ liệu nguồn cần dùng, ví dụ file Bảng điểm và file bảng mẫu nhận xét.</li>
+                        <li>Nêu đúng đối tượng, môn học, lớp, số lượng học sinh và học kỳ nếu có.</li>
+                        <li>Yêu cầu định dạng đầu ra cụ thể, tốt nhất là dạng bảng có tên từng cột.</li>
+                        <li>Thêm lưu ý về cách gộp câu, mức độ đạt được hoặc tiêu chí đánh giá để kết quả dùng được ngay.</li>
+                    </ul>
+                </div>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">1. Câu lệnh lấy lời nhận xét, đánh giá học sinh</h3>
+                <p>
+                    Trước tiên, thầy cô tải dữ liệu nguồn vào NotebookLM, gồm bảng điểm của lớp và bảng mẫu nhận xét theo môn học hoặc năng lực. Sau đó dùng câu lệnh theo mẫu dưới đây để hệ thống tạo lời nhận xét có căn cứ.
+                </p>
+
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
+                    <p className="text-sm text-purple-300 font-semibold mb-2">Ví dụ 1 - Lấy lời nhận xét môn Tiếng Việt</p>
+                    <p className="text-sm italic text-slate-300">
+                        "Dựa vào file Bảng điểm và file bảng mẫu nhận xét các môn học lớp 1. Hãy gợi ý cho tôi lời nhận xét cho 24 học sinh ở môn Tiếng Việt dưới dạng bảng bao gồm các cột: Số thứ tự, Họ và tên, Điểm thi, Mức độ đạt được, Lời nhận xét."
+                    </p>
+                </div>
+
+                <p>
+                    Với câu lệnh này, NotebookLM sẽ dựa vào điểm số và mẫu nhận xét đã cung cấp để gợi ý lời nhận xét tương ứng. Khi cần dùng cho môn khác, thầy cô chỉ cần thay tên môn, lớp hoặc số lượng học sinh.
+                </p>
+
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
+                    <p className="text-sm text-purple-300 font-semibold mb-2">Ví dụ 2 - Lấy lời nhận xét về Năng lực chung</p>
+                    <p className="text-sm italic text-slate-300">
+                        "Dựa vào file Bảng điểm và file bảng mẫu nhận xét các môn học lớp 1. Hãy gợi ý cho tôi lời nhận xét cho 24 học sinh về phần Năng lực chung dưới dạng bảng bao gồm các cột: Số thứ tự, Họ và tên, Tự chủ và tự học, Giao tiếp và hợp tác, Giải quyết vấn đề và sáng tạo, Lời nhận xét. Chú ý trong cột Tự chủ và tự học, Giao tiếp và hợp tác, Giải quyết vấn đề và sáng tạo sẽ hiển thị là mức đạt được của 3 tiêu chí này tương ứng với từng học sinh và Lời nhận xét sẽ được gộp thành 3 câu, với mỗi câu là lời nhận xét của 1 tiêu chí."
+                    </p>
+                </div>
+
+                <p>
+                    Câu lệnh thứ hai phù hợp khi giáo viên cần tổng hợp nhiều tiêu chí trong cùng một bảng. Điểm quan trọng là phải yêu cầu rõ mỗi tiêu chí hiển thị mức đạt được, còn cột lời nhận xét được gộp thành ba câu riêng để dễ đọc, dễ đưa vào hồ sơ hoặc phiếu nhận xét.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-emerald-900/20 border border-emerald-500/30 p-4 rounded-xl">
+                        <h4 className="font-bold text-emerald-300 mb-2">Nên kiểm tra lại</h4>
+                        <p className="text-sm text-emerald-50/75">
+                            Sau khi có bảng kết quả, giáo viên nên đọc lại từng lời nhận xét, chỉnh các câu chưa tự nhiên và đối chiếu với thực tế học tập của học sinh.
+                        </p>
+                    </div>
+                    <div className="bg-sky-900/20 border border-sky-500/30 p-4 rounded-xl">
+                        <h4 className="font-bold text-sky-300 mb-2">Có thể tùy biến</h4>
+                        <p className="text-sm text-sky-50/75">
+                            Có thể thêm yêu cầu như lời nhận xét ngắn gọn, tích cực, phù hợp học sinh tiểu học hoặc không lặp lại quá nhiều giữa các học sinh.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">2. Câu lệnh tạo bài trình chiếu nhanh</h3>
+                <p>
+                    Ngoài việc tạo nhận xét, NotebookLM cũng có thể hỗ trợ giáo viên phác thảo nội dung trình chiếu. Thầy cô nên nêu rõ mục đích báo cáo, đối tượng nghe, số trang, phong cách thiết kế và không khí chủ đạo.
+                </p>
+
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
+                    <p className="text-sm text-purple-300 font-semibold mb-2">Prompt tạo bản trình bày báo cáo phụ huynh</p>
+                    <p className="text-sm italic text-slate-300">
+                        "Tôi muốn tạo một bản trình bày báo cáo với Phụ huynh học sinh về tình hình học tập và rèn luyện chung của các học sinh trong lớp trong Học kỳ I, năm học 2025 - 2026 này. Bản báo cáo gồm 10 trang với Template sắc đỏ với các hình trang trí mang không khí rộn ràng đón tết, hình ảnh minh hoạ kèm theo đẹp, bắt mắt và phù hợp."
+                    </p>
+                </div>
+
+                <p>
+                    Sau khi nhận được dàn ý hoặc nội dung từng trang, giáo viên có thể tiếp tục yêu cầu NotebookLM viết ngắn lại, thêm tiêu đề từng slide, gợi ý hình minh họa, hoặc chuyển nội dung sang phong cách trang trọng hơn để dùng trong cuộc họp phụ huynh.
+                </p>
+
+                <div className="bg-indigo-900/30 border border-indigo-500/30 p-6 rounded-xl mt-8">
+                    <h4 className="text-xl text-indigo-300 font-semibold mb-2">Gợi ý mở rộng</h4>
+                    <p className="text-indigo-100/80">
+                        Nếu muốn kết quả sát lớp học hơn, hãy bổ sung thêm dữ liệu nguồn như bảng tổng hợp điểm, nhận xét rèn luyện, danh sách hoạt động nổi bật, hình ảnh lớp học hoặc kế hoạch học kỳ. Dữ liệu càng rõ, câu trả lời càng cụ thể và dễ sử dụng.
+                    </p>
+                </div>
+            </div>
+        )
+    },
+    {
+        id: '6',
+        title: 'Hướng dẫn tạo trang web lớp học đơn giản bằng AI',
+        excerpt: 'Cách viết prompt để tạo nhanh một website lớp học có trang chủ, kho học liệu, tin tức, tài liệu tham khảo, trò chơi, vinh danh và khu quản trị dành cho giáo viên.',
+        date: '10/07/2026',
+        category: 'AI trong giáo dục',
+        readTime: '7 phút',
+        imageUrl: '/weblop53.png',
+        content: (
+            <div className="space-y-6 text-slate-300 leading-relaxed">
+                <p>
+                    Một website lớp học giúp giáo viên tập hợp học liệu, thông báo, tài liệu tham khảo, trò chơi học tập và hoạt động vinh danh học sinh vào một nơi dễ truy cập. Với AI, thầy cô có thể bắt đầu bằng một prompt rõ ràng, sau đó yêu cầu AI tạo giao diện, dữ liệu mẫu và phần quản trị đơn giản.
+                </p>
+
+                <div className="bg-amber-900/20 border border-amber-500/30 p-5 rounded-xl">
+                    <h3 className="text-xl font-semibold text-amber-200 mb-2">Nên chuẩn bị trước khi viết prompt</h3>
+                    <ul className="list-disc pl-6 space-y-2 text-sm text-amber-50/80">
+                        <li>Tên lớp và tên website muốn hiển thị.</li>
+                        <li>Các menu chính của website.</li>
+                        <li>Danh sách môn học, học liệu, trò chơi hoặc tài liệu mẫu.</li>
+                        <li>Phong cách giao diện: màu sắc, độ sinh động, đối tượng học sinh.</li>
+                        <li>Có cần trang Admin để giáo viên tự thêm, sửa, xóa nội dung hay không.</li>
+                    </ul>
+                </div>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">1. Xác định cấu trúc website lớp học</h3>
+                <p>
+                    Với website lớp 5/3, có thể thiết kế các menu chính gồm Trang chủ, Kho học liệu, Tin tức, Tài liệu tham khảo, Trò chơi và Vinh danh. Đây là cấu trúc vừa đủ cho một website lớp học đơn giản nhưng vẫn có tính ứng dụng cao.
+                </p>
+
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+                        <h4 className="font-bold text-sky-300 mb-2">Trang học tập</h4>
+                        <p className="text-sm text-slate-300">
+                            Gồm trang chủ, kho học liệu, tài liệu tham khảo và trò chơi để học sinh dễ tìm nội dung học tập.
+                        </p>
+                    </div>
+                    <div className="bg-white/5 border border-white/10 p-4 rounded-xl">
+                        <h4 className="font-bold text-emerald-300 mb-2">Trang cộng đồng lớp</h4>
+                        <p className="text-sm text-slate-300">
+                            Gồm tin tức, thông báo, hình ảnh hoạt động và mục vinh danh học sinh tiêu biểu.
+                        </p>
+                    </div>
+                </div>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">2. Prompt mẫu tạo website lớp 5/3</h3>
+                <p>
+                    Thầy cô có thể dùng prompt dưới đây trong Google AI Studio, ChatGPT hoặc công cụ tạo web bằng AI. Nếu muốn dùng cho lớp khác, chỉ cần thay tên lớp, màu sắc và các menu cần thiết.
+                </p>
+
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
+                    <p className="text-sm text-purple-300 font-semibold mb-2">Prompt tạo website lớp học</p>
+                    <p className="text-sm italic text-slate-300">
+                        "Hãy thiết kế và xây dựng một website chuyên nghiệp cho lớp 5/3 với phong cách hiện đại, sinh động, màu sắc tươi sáng, hiệu ứng 3D nhẹ nhàng, phù hợp với học sinh tiểu học. Tên website: Lớp 5/3 - Ngôi nhà học tập vui vẻ. Website có các menu: Trang chủ, Kho học liệu, Tin tức, Tài liệu tham khảo, Trò chơi, Vinh danh. Trang chủ có banner lớn với dòng chữ 'Chào mừng đến với lớp 5/3', phụ đề 'Cùng học tập - Cùng sáng tạo - Cùng tỏa sáng', khu chọn nhanh các kho học liệu và các mục Thông báo mới nhất, Bài học nổi bật, Góc học sinh. Kho học liệu hiển thị các môn Toán học, Tiếng Việt, Tiếng Anh, Khoa học, Lịch sử và Địa lí, Tin học, Hoạt động trải nghiệm theo dạng thẻ 3D, mỗi thẻ có icon, mô tả ngắn và nút Xem học liệu. Tin tức hiển thị bài viết hoạt động của lớp. Tài liệu tham khảo có các nhóm tài liệu ôn tập, đề kiểm tra, hướng dẫn học tập và tài liệu dành cho phụ huynh. Trò chơi có các trò như Đố vui Toán học, Ghép chữ Tiếng Việt, Ô chữ kiến thức, Thử thách nhanh, Vòng quay may mắn. Vinh danh có khu tôn vinh học sinh tiêu biểu với ảnh, tên, thành tích và lời chúc mừng. Giao diện responsive tốt trên máy tính, máy tính bảng và điện thoại; code sạch, dễ chỉnh sửa; có dữ liệu mẫu minh họa; nội dung tiếng Việt chuẩn chính tả."
+                    </p>
+                </div>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">3. Prompt bổ sung trang Admin</h3>
+                <p>
+                    Nếu muốn website không chỉ là bản giới thiệu tĩnh, thầy cô nên yêu cầu AI tạo thêm khu quản trị. Phần này giúp giáo viên thêm học liệu, đăng tin, cập nhật tài liệu, trò chơi và danh sách học sinh được vinh danh.
+                </p>
+
+                <div className="bg-white/5 border border-white/10 p-5 rounded-xl">
+                    <p className="text-sm text-purple-300 font-semibold mb-2">Prompt thêm chức năng Admin</p>
+                    <p className="text-sm italic text-slate-300">
+                        "Hãy tạo thêm chức năng tài khoản Admin để giáo viên quản trị website. Website có trang đăng nhập Admin riêng tại /admin hoặc nút Quản trị. Admin đăng nhập bằng tài khoản mẫu: admin53, mật khẩu: Lop53@2026. Sau khi đăng nhập thành công, Admin vào được bảng điều khiển quản trị; người xem bình thường không được truy cập trang quản trị. Bảng quản trị gồm các chức năng: quản lý Kho học liệu, quản lý Tin tức, quản lý Tài liệu tham khảo, quản lý Trò chơi, quản lý Vinh danh. Mỗi mục có chức năng thêm mới, sửa, xóa, lưu và kiểm tra dữ liệu trước khi lưu. Dữ liệu sau khi Admin đăng bài phải tự động hiển thị ngoài website. Có thể dùng Firebase hoặc Supabase để lưu online; nếu làm bản demo thì dùng localStorage nhưng ghi rõ localStorage chỉ phù hợp chạy thử, không phù hợp dùng chính thức. Giao diện Admin gọn gàng, tiếng Việt rõ ràng, dễ dùng cho giáo viên không chuyên công nghệ."
+                    </p>
+                </div>
+
+                <h3 className="text-2xl font-semibold text-white mt-8 mb-4">4. Cách yêu cầu AI chỉnh tiếp sau khi tạo bản đầu</h3>
+                <p>
+                    Sau khi AI tạo bản website đầu tiên, giáo viên nên kiểm tra giao diện, nội dung mẫu, khả năng bấm menu và hiển thị trên điện thoại. Nếu chưa đạt, có thể yêu cầu AI chỉnh tiếp bằng các câu lệnh ngắn.
+                </p>
+
+                <div className="bg-indigo-900/30 border border-indigo-500/30 p-6 rounded-xl">
+                    <h4 className="text-xl text-indigo-300 font-semibold mb-3">Câu lệnh chỉnh sửa nhanh</h4>
+                    <ul className="list-disc pl-6 space-y-2 text-sm text-indigo-100/80">
+                        <li>"Hãy làm giao diện gọn hơn, ít rối mắt hơn, ưu tiên học sinh lớp 5 dễ sử dụng."</li>
+                        <li>"Hãy thêm dữ liệu mẫu cho mỗi môn học gồm video, phiếu bài tập và link xem trực tuyến."</li>
+                        <li>"Hãy tối ưu giao diện điện thoại, menu không được che nội dung."</li>
+                        <li>"Hãy đổi màu chủ đạo sang xanh dương, vàng và trắng, không dùng màu quá chói."</li>
+                        <li>"Hãy tách dữ liệu mẫu thành một mảng riêng để giáo viên dễ sửa."</li>
+                    </ul>
+                </div>
+
+                <p>
+                    Với cách làm này, giáo viên không cần bắt đầu từ code. Điều quan trọng là mô tả rõ mục đích, cấu trúc menu, nội dung cần quản lý và tiêu chí giao diện. Prompt càng cụ thể, website AI tạo ra càng gần với nhu cầu thật của lớp học.
+                </p>
+            </div>
+        )
     }
 ];
 
 // --- Components ---
 
-const FEATURED_VIDEO = {
+interface FeaturedVideo {
+    title: string;
+    description: string;
+    youtubeUrl: string;
+    embedUrl: string;
+    thumbnailUrl: string;
+    documentUrl?: string;
+}
+
+const FEATURED_VIDEOS: FeaturedVideo[] = [{
     title: 'Biến ảnh thành video AI miễn phí cho bài giảng',
     description: 'Hướng dẫn nhanh cách dùng AI tạo video từ ảnh, phù hợp làm tư liệu minh họa cho tiết học.',
     youtubeUrl: 'https://youtu.be/osNFv1dRkik',
     embedUrl: 'https://www.youtube.com/embed/osNFv1dRkik?autoplay=1&rel=0',
     thumbnailUrl: 'https://img.youtube.com/vi/osNFv1dRkik/hqdefault.jpg',
-};
+}, {
+    title: 'Hướng dẫn làm video AI phong cách tranh thêu dễ thương',
+    description: 'Các bước tạo video AI có phong cách tranh thêu sinh động, dễ thương, phù hợp làm tư liệu minh họa cho bài giảng.',
+    youtubeUrl: 'https://youtu.be/qOL6BizhYew',
+    embedUrl: 'https://www.youtube.com/embed/qOL6BizhYew?autoplay=1&rel=0',
+    thumbnailUrl: 'https://img.youtube.com/vi/qOL6BizhYew/hqdefault.jpg',
+    documentUrl: 'https://docs.google.com/document/d/1DR4MYHjc1cTZBVZTiEE-f3fZlH5qyrSB87sPyTIdzlA/edit?usp=sharing',
+}];
 
-const FeaturedGuideVideo: React.FC = () => {
+const FeaturedGuideVideo: React.FC<{ video: FeaturedVideo }> = ({ video }) => {
     const [isOpen, setIsOpen] = useState(false);
 
     return (
@@ -269,8 +467,8 @@ const FeaturedGuideVideo: React.FC = () => {
                         title="Xem video hướng dẫn"
                     >
                         <img
-                            src={FEATURED_VIDEO.thumbnailUrl}
-                            alt={FEATURED_VIDEO.title}
+                            src={video.thumbnailUrl}
+                            alt={video.title}
                             className="h-full w-full object-cover transition-transform duration-500 group-hover:scale-105"
                         />
                         <div className="absolute inset-0 bg-gradient-to-t from-slate-950/70 via-slate-950/20 to-transparent" />
@@ -290,10 +488,10 @@ const FeaturedGuideVideo: React.FC = () => {
                             Học nhanh qua video
                         </div>
                         <h3 className="text-2xl font-black leading-tight text-white sm:text-3xl">
-                            {FEATURED_VIDEO.title}
+                            {video.title}
                         </h3>
                         <p className="mt-3 text-sm leading-relaxed text-slate-300 sm:text-base">
-                            {FEATURED_VIDEO.description}
+                            {video.description}
                         </p>
                         <div className="mt-5 flex flex-wrap gap-3">
                             <button
@@ -305,7 +503,7 @@ const FeaturedGuideVideo: React.FC = () => {
                                 Xem hướng dẫn
                             </button>
                             <a
-                                href={FEATURED_VIDEO.youtubeUrl}
+                                href={video.youtubeUrl}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-2 rounded-xl border border-white/15 bg-white/8 px-4 py-2.5 text-sm font-bold text-white transition hover:bg-white/15"
@@ -313,6 +511,17 @@ const FeaturedGuideVideo: React.FC = () => {
                                 <ExternalLink size={16} />
                                 Mở YouTube
                             </a>
+                            {video.documentUrl && (
+                                <a
+                                    href={video.documentUrl}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="inline-flex items-center gap-2 rounded-xl border border-emerald-300/25 bg-emerald-400/15 px-4 py-2.5 text-sm font-bold text-emerald-100 transition hover:bg-emerald-400/25"
+                                >
+                                    <ExternalLink size={16} />
+                                    Xem tài liệu
+                                </a>
+                            )}
                         </div>
                     </div>
                 </div>
@@ -335,7 +544,7 @@ const FeaturedGuideVideo: React.FC = () => {
                             onClick={(event) => event.stopPropagation()}
                         >
                             <div className="flex items-center justify-between gap-3 border-b border-white/10 px-4 py-3">
-                                <h3 className="truncate text-sm font-bold text-white sm:text-base">{FEATURED_VIDEO.title}</h3>
+                                <h3 className="truncate text-sm font-bold text-white sm:text-base">{video.title}</h3>
                                 <button
                                     type="button"
                                     onClick={() => setIsOpen(false)}
@@ -347,8 +556,8 @@ const FeaturedGuideVideo: React.FC = () => {
                             </div>
                             <div className="aspect-video bg-black">
                                 <iframe
-                                    src={FEATURED_VIDEO.embedUrl}
-                                    title={FEATURED_VIDEO.title}
+                                    src={video.embedUrl}
+                                    title={video.title}
                                     className="h-full w-full"
                                     allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
                                     allowFullScreen
@@ -510,7 +719,11 @@ export const BlogSection: React.FC = () => {
                                 <p className="text-sm text-white/60">Kinh nghiệm giảng dạy, chuyển đổi số và ứng dụng công nghệ</p>
                             </div>
                         </div>
-                        <FeaturedGuideVideo />
+                        <div className="space-y-6 mb-8">
+                            {FEATURED_VIDEOS.map((video) => (
+                                <FeaturedGuideVideo key={video.youtubeUrl} video={video} />
+                            ))}
+                        </div>
                         <BlogList onReadPost={setSelectedPost} />
                     </motion.div>
                 )}

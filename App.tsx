@@ -14,6 +14,7 @@ import ChucTet from './components/ChucTet';
 import PuzzleGame from './components/PuzzleGame';
 import TreasureHunt from './components/TreasureHunt';
 import VirtualExperiment from './components/VirtualExperiment';
+import SensesExplorerSimulation from './components/SensesExplorerSimulation';
 import EarthSeasonsSimulation from './components/EarthSeasonsSimulation';
 import ClockExperiment from './components/ClockExperiment';
 import ThatLuong3D from './components/ThatLuong3D';
@@ -98,6 +99,7 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   PUZZLE_GAME: 'puzzleGame',
   TREASURE_HUNT: 'treasureHunt',
   VIRTUAL_EXPERIMENT: 'virtualExperiment',
+  SENSES_EXPLORER: 'sensesExplorer',
   CLOCK_EXPERIMENT: 'clockExperiment',
   BANG_CUU_CHUONG: 'bangCuuChuong',
   GAME_TUONG_TAC: 'gameTuongTac',
@@ -723,6 +725,7 @@ function App() {
                   onNgheNghiep={() => requireLogin(() => window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank'))}
                   onTreasureHunt={() => requireLogin(() => setView('TREASURE_HUNT'))}
                   onVirtualExperiment={() => requireLogin(() => setView('VIRTUAL_EXPERIMENT'))}
+                  onSensesExplorer={() => requireLogin(() => setView('SENSES_EXPLORER'))}
                   onClockExperiment={() => requireLogin(() => setView('CLOCK_EXPERIMENT'))}
                   onBangCuuChuong={() => requireLogin(() => setView('BANG_CUU_CHUONG'))}
                   onGameTuongTac={() => requireLogin(() => setView('GAME_TUONG_TAC'))}
@@ -896,6 +899,10 @@ function App() {
 
           {view === 'VIRTUAL_EXPERIMENT' && (
             <VirtualExperiment onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'SENSES_EXPLORER' && (
+            <SensesExplorerSimulation onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'EARTH_SEASONS' && (

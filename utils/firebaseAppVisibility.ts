@@ -6,7 +6,7 @@ export const ALL_APP_IDS = [
     'interactiveVideo', 'beeGame', 'beeGameEditable', 'bacteriaGame',
     'vongQuay', 'luckyWheel', 'starWheel',
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
-    'clockExperiment', 'yogurtExperiment', 'earthSeasons',
+    'clockExperiment', 'sensesExplorer', 'yogurtExperiment', 'earthSeasons',
     'aiCourseStore', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'chucTet', 'denHung3D', 'thatLuong3D',
     'dinhDocLap3D', 'solarSystem',
@@ -65,6 +65,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     sangKienKinhNghiem: { name: 'Viết SKKN & Báo Cáo', icon: '✍️', section: 'Khóa học & AI' },
     nhanXetTT27: { name: 'Nhận Xét TT27', icon: '📝', section: 'Khóa học & AI' },
     thuMoiTuongTac: { name: 'Thư Mời Họp Phụ Huynh', icon: '✉️', section: 'Học liệu tương tác' },
+    sensesExplorer: { name: 'Biệt đội 5 giác quan', icon: '👁️', section: 'Mô phỏng khoa học' },
 };
 
 

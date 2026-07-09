@@ -3,12 +3,14 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Star, ChevronLeft, ChevronRight, MessageCircle, Zap, Heart, ExternalLink, Eye } from 'lucide-react';
 import { getApprovedFeedbacks, Feedback } from '../utils/feedbackUtils';
 import { getVisitStats } from '../utils/visitCounter';
+import { useTheme } from '../contexts/ThemeContext';
 
 interface FooterProps {
     onViewChange?: (view: string) => void;
 }
 
 const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
+    const { currentTheme } = useTheme();
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
     const [currentIndex, setCurrentIndex] = useState(0);
     const [direction, setDirection] = useState(1); // 1 = forward, -1 = backward
@@ -75,6 +77,8 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
     }, [feedbacks.length, resetAutoPlay]);
 
     const currentFeedback = feedbacks[currentIndex];
+    const footerBackground = `linear-gradient(135deg, #0f172a 0%, ${currentTheme.gradientFrom} 35%, ${currentTheme.gradientVia} 70%, #0f172a 100%)`;
+    const brandGradient = `linear-gradient(135deg, ${currentTheme.gradientFrom}, ${currentTheme.gradientVia}, ${currentTheme.gradientTo})`;
 
     const socialLinks = [
         {
@@ -121,7 +125,8 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
     return (
         <footer className="relative overflow-hidden">
             {/* Animated Background */}
-            <div className="absolute inset-0 bg-gradient-to-br from-slate-900 via-purple-900 to-slate-900">
+            <div className="absolute inset-0 transition-all duration-500" style={{ background: footerBackground }}>
+                <div className="absolute inset-0 bg-black/35" />
                 {/* Floating particles */}
                 {[...Array(20)].map((_, i) => (
                     <motion.div
@@ -141,7 +146,7 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                             delay: Math.random() * 2,
                         }}
                     />
-                ))}
+                    ))}
             </div>
 
             <div className="relative z-10 max-w-6xl mx-auto px-6 py-8">
@@ -153,8 +158,8 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                         className="mb-8"
                     >
                         <div className="flex items-center justify-center gap-2 mb-4">
-                            <Heart size={16} className="text-pink-400" fill="currentColor" />
-                            <span className="text-sm font-medium text-purple-300">Cảm nhận từ người dùng</span>
+                            <Heart size={16} style={{ color: currentTheme.gradientTo }} fill="currentColor" />
+                            <span className="text-sm font-medium text-white/75">Cảm nhận từ người dùng</span>
                         </div>
 
                         <div className="relative max-w-xl mx-auto">
@@ -172,12 +177,13 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                                                 <img
                                                     src={currentFeedback.userAvatar}
                                                     alt={currentFeedback.userName}
-                                                    className="w-12 h-12 rounded-full border-2 border-purple-400/50 object-cover"
+                                                    className="w-12 h-12 rounded-full border-2 object-cover"
+                                                    style={{ borderColor: currentTheme.gradientVia }}
                                                 />
                                                 <div className="text-left">
                                                     <p className="font-semibold text-white">{currentFeedback.teacherName || currentFeedback.userName}</p>
                                                     {currentFeedback.schoolName && (
-                                                        <p className="text-xs text-purple-200/80 mb-0.5">{currentFeedback.schoolName}</p>
+                                                        <p className="text-xs text-white/65 mb-0.5">{currentFeedback.schoolName}</p>
                                                     )}
                                                     <div className="flex gap-0.5">
                                                         {[1, 2, 3, 4, 5].map((star) => (
@@ -231,8 +237,9 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                                         <button
                                             key={idx}
                                             onClick={(e) => { e.preventDefault(); e.stopPropagation(); goToFeedback(idx); }}
-                                            className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === currentIndex ? 'bg-purple-400 w-6' : 'bg-white/30 w-1.5 hover:bg-white/50'
+                                            className={`h-1.5 rounded-full transition-all cursor-pointer ${idx === currentIndex ? 'w-6' : 'bg-white/30 w-1.5 hover:bg-white/50'
                                                 }`}
+                                            style={idx === currentIndex ? { backgroundColor: currentTheme.gradientTo } : undefined}
                                         />
                                     ))}
                                 </div>
@@ -252,18 +259,25 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                         whileHover={{ scale: 1.02 }}
                     >
                         <div className="relative">
-                            <div className="w-12 h-12 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl flex items-center justify-center shadow-lg shadow-purple-500/30">
+                            <div
+                                className="w-12 h-12 rounded-xl flex items-center justify-center shadow-lg"
+                                style={{
+                                    background: brandGradient,
+                                    boxShadow: `0 12px 30px ${currentTheme.gradientFrom}55`,
+                                }}
+                            >
                                 <Zap size={24} className="text-white" />
                             </div>
                             <motion.div
-                                className="absolute inset-0 bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl"
+                                className="absolute inset-0 rounded-xl"
+                                style={{ background: brandGradient }}
                                 animate={{ scale: [1, 1.2, 1], opacity: [0.5, 0, 0.5] }}
                                 transition={{ duration: 2, repeat: Infinity }}
                             />
                         </div>
                         <div>
                             <h3 className="font-bold text-white text-lg">Công cụ dạy học số</h3>
-                            <p className="text-purple-300 text-sm">Bởi Thầy Đức & cộng đồng GV yêu công nghệ</p>
+                            <p className="text-white/70 text-sm">Bởi Thầy Đức & cộng đồng GV yêu công nghệ</p>
                         </div>
                     </motion.div>
 
@@ -320,10 +334,10 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                             <div className="flex items-center gap-2 px-3 py-1.5 bg-white/5 border border-white/10 rounded-full">
                                 <Eye size={14} className="text-emerald-400" />
                                 <span className="text-sm font-semibold text-white">{visitCount.toLocaleString('vi-VN')}</span>
-                                <span className="text-xs text-purple-300/70">lượt truy cập</span>
+                                <span className="text-xs text-white/60">lượt truy cập</span>
                             </div>
                         )}
-                        <div className="flex items-center gap-4 text-sm text-purple-300/70 mt-2">
+                        <div className="flex items-center gap-4 text-sm text-white/60 mt-2">
                             <button
                                 onClick={() => { window.history.pushState({}, '', '/about'); onViewChange && onViewChange('ABOUT'); }}
                                 className="hover:text-white transition-colors cursor-pointer bg-transparent border-none appearance-none font-sans"
@@ -352,7 +366,7 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                                 Liên hệ
                             </button>
                         </div>
-                        <p className="text-sm text-purple-300/70 mt-2">
+                        <p className="text-sm text-white/60 mt-2">
                             © 2025 Thầy Thế Đức. All rights reserved.
                         </p>
                     </div>

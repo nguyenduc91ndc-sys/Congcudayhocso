@@ -49,6 +49,7 @@ interface DashboardProps {
     onNgheNghiep: () => void;
     onTreasureHunt: () => void;
     onVirtualExperiment: () => void;
+    onSensesExplorer: () => void;
     onClockExperiment: () => void;
     onBangCuuChuong: () => void;
     onGameTuongTac: () => void;
@@ -285,7 +286,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onSensesExplorer, onClockExperiment, onBangCuuChuong, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -835,6 +836,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                                         {!hiddenApps.includes('virtualExperiment') && <ToolCard title="Thí nghiệm ảo tách muối ra khỏi dung dịch" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" />}
+                                        <ToolCard title="Biệt đội 5 giác quan" description="Mô phỏng TNXH lớp 1: khám phá, phân loại và bảo vệ các giác quan" icon={<span className="text-2xl">👁️</span>} accentColor="bg-gradient-to-br from-cyan-500 to-emerald-500" onClick={onSensesExplorer} badge="Mới" />
                                         {!hiddenApps.includes('clockExperiment') && <ToolCard title="Xem Giờ Trên Đồng Hồ" description="Học cách xem giờ trên đồng hồ kim và đồng hồ số" icon={<span className="text-2xl">⏰</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onClockExperiment} badge="Mới" />}
                                         {!hiddenApps.includes('yogurtExperiment') && <ToolCard title="Thí nghiệm làm Sữa chua" description="Mô phỏng thí nghiệm làm sữa chua với vi khuẩn lactic" icon={<span className="text-2xl">🥛</span>} accentColor="bg-gradient-to-br from-pink-500 to-purple-600" onClick={onYogurtExperiment} badge="Mới" />}
                                         {!hiddenApps.includes('earthSeasons') && <ToolCard title="Chuyển động Trái Đất & Các Mùa" description="Mô phỏng quỹ đạo Trái Đất, trục nghiêng và sự hình thành 4 mùa" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-blue-600" onClick={onEarthSeasons} badge="Mới" />}
