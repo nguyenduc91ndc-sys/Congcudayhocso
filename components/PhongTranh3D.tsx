@@ -1328,9 +1328,9 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
         const filledCount = getFilledCount(currentGallery);
 
         return (
-            <div ref={containerRef} className="h-screen overflow-hidden bg-slate-950 text-white">
+            <div ref={containerRef} className="h-[100dvh] overflow-hidden bg-slate-950 text-white">
                 <div className="flex h-full flex-col">
-                    <header className="z-20 flex h-16 items-center justify-between border-b border-white/10 bg-slate-950/95 px-3 md:px-5">
+                    <header className="z-20 flex min-h-14 items-center justify-between gap-2 border-b border-white/10 bg-slate-950/95 px-2 py-2 md:h-16 md:px-5 md:py-0">
                         <button
                             type="button"
                             onClick={() => {
@@ -1342,16 +1342,16 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
                                     loadUserGalleries();
                                 }
                             }}
-                            className="inline-flex items-center gap-2 rounded-2xl border border-white/15 bg-white/10 px-3 py-2 text-sm font-black text-white hover:bg-white/15"
+                            className="inline-flex shrink-0 items-center gap-1 rounded-xl border border-white/15 bg-white/10 px-2 py-2 text-xs font-black text-white hover:bg-white/15 md:gap-2 md:rounded-2xl md:px-3 md:text-sm"
                         >
-                            <ArrowLeft size={17} /> {readOnly ? 'Thoát' : 'Lưu & quay lại'}
+                            <ArrowLeft size={17} /> <span className="hidden sm:inline">{readOnly ? 'Thoát' : 'Lưu & quay lại'}</span><span className="sm:hidden">{readOnly ? 'Thoát' : 'Lưu'}</span>
                         </button>
-                        <div className="min-w-0 text-center">
-                            <h2 className="truncate text-base font-black md:text-xl">{currentGallery.title}</h2>
+                        <div className="min-w-0 flex-1 text-center">
+                            <h2 className="truncate text-sm font-black md:text-xl">{currentGallery.title}</h2>
                             {!readOnly && <p className="hidden text-xs font-bold text-white/55 md:block">{filledCount}/{paintings.length} khung đã có nội dung</p>}
                         </div>
-                        <div className="flex items-center gap-2">
-                                <button type="button" onClick={handleFullscreen} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-white/10 text-white hover:bg-white/15" title="Toàn màn hình">
+                        <div className="flex shrink-0 items-center gap-2">
+                                <button type="button" onClick={handleFullscreen} className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/15 md:h-10 md:w-10 md:rounded-2xl" title="Toàn màn hình">
                                 <Fullscreen size={18} />
                             </button>
                             {!readOnly && (
@@ -1364,9 +1364,9 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
 
                     <div className="flex min-h-0 flex-1">
                         <section className="relative min-w-0 flex-1">
-                            <div className="absolute left-4 top-4 z-10 rounded-2xl bg-white/90 px-4 py-3 text-slate-900 shadow-lg">
+                            <div className="absolute left-3 top-3 z-10 rounded-2xl bg-white/90 px-3 py-2 text-slate-900 shadow-lg md:left-4 md:top-4 md:px-4 md:py-3">
                                 <div className="flex items-center gap-2 text-sm font-black">
-                                    <span className={`inline-flex h-8 w-8 items-center justify-center rounded-xl bg-gradient-to-br ${template.color} text-white`}>{template.icon}</span>
+                                    <span className={`inline-flex h-7 w-7 items-center justify-center rounded-xl bg-gradient-to-br ${template.color} text-white md:h-8 md:w-8`}>{template.icon}</span>
                                     {template.label}
                                 </div>
                             </div>
@@ -1379,6 +1379,44 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
                                     else setSelectedFrame(frame);
                                 }}
                             />
+                            {!readOnly && (
+                                <div className="absolute inset-x-2 bottom-2 z-20 rounded-3xl border border-white/10 bg-slate-950/88 p-3 shadow-2xl backdrop-blur-md lg:hidden">
+                                    <div className="mb-3 flex items-center justify-between gap-2">
+                                        <div className="min-w-0">
+                                            <div className="truncate text-sm font-black">Danh sách khung</div>
+                                            <div className="text-xs font-bold text-white/55">{filledCount}/{paintings.length} khung đã có nội dung</div>
+                                        </div>
+                                        <div className="flex shrink-0 items-center gap-2">
+                                            <button type="button" onClick={handleDistributeFrames} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-violet-500 text-white shadow-lg shadow-violet-950/20" title="Sắp xếp đều">
+                                                <Sparkles size={18} />
+                                            </button>
+                                            <button type="button" onClick={handleAddFrame} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-emerald-500 text-white shadow-lg shadow-emerald-950/20" title="Thêm khung">
+                                                <Plus size={18} />
+                                            </button>
+                                            <button type="button" onClick={() => handleCopyShare(currentGallery.id)} className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-sky-500 text-white shadow-lg shadow-sky-950/20" title="Chia sẻ">
+                                                {copiedGalleryId === currentGallery.id ? <Check size={18} /> : <Copy size={18} />}
+                                            </button>
+                                        </div>
+                                    </div>
+                                    <div className="flex gap-2 overflow-x-auto pb-1">
+                                        {paintings.map((frame, index) => {
+                                            const hasContent = hasFrameContent(frame);
+                                            return (
+                                                <button
+                                                    key={frame.id}
+                                                    type="button"
+                                                    onClick={() => setSelectedFrame(frame)}
+                                                    className={`flex h-12 min-w-[3rem] flex-col items-center justify-center rounded-2xl border text-xs font-black ${selectedFrame?.id === frame.id ? 'border-yellow-300 bg-yellow-300 text-slate-950' : 'border-white/10 bg-white/10 text-white'}`}
+                                                    title={frame.title || frame.label}
+                                                >
+                                                    <span>{index + 1}</span>
+                                                    <span className={`mt-0.5 h-1.5 w-1.5 rounded-full ${hasContent ? 'bg-emerald-300' : 'bg-white/35'}`} />
+                                                </button>
+                                            );
+                                        })}
+                                    </div>
+                                </div>
+                            )}
                         </section>
 
                         {!readOnly && (
@@ -1602,19 +1640,19 @@ function FrameEditorModal({
     };
 
     return (
-        <motion.div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
-            <motion.div className="max-h-[92vh] w-full max-w-xl overflow-hidden rounded-[28px] bg-white text-slate-900 shadow-2xl" initial={{ scale: 0.94, y: 18 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 18 }}>
-                <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-                    <h2 className="text-xl font-black">Chỉnh sửa {frame.label}</h2>
+        <motion.div className="fixed inset-0 z-[210] flex items-center justify-center bg-slate-950/60 p-2 backdrop-blur-sm sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
+            <motion.div className="max-h-[96dvh] w-full max-w-xl overflow-hidden rounded-[24px] bg-white text-slate-900 shadow-2xl sm:rounded-[28px]" initial={{ scale: 0.94, y: 18 }} animate={{ scale: 1, y: 0 }} exit={{ scale: 0.94, y: 18 }}>
+                <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3 sm:px-5 sm:py-4">
+                    <h2 className="truncate pr-3 text-lg font-black sm:text-xl">Chỉnh sửa {frame.label}</h2>
                     <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 p-2 hover:bg-slate-200"><X size={20} /></button>
                 </div>
-                <div className="max-h-[70vh] space-y-4 overflow-y-auto p-5">
+                <div className="max-h-[calc(96dvh-148px)] space-y-4 overflow-y-auto p-4 sm:p-5">
                     {(imageUrl || localPreviewUrl) && (
                         <div className="rounded-2xl border-2 border-dashed border-sky-200 bg-sky-50 p-3">
                             <div className="mb-2 text-center text-xs font-black text-emerald-600">
                                 {imageUrl ? 'Ảnh đã lưu vào khung, gửi link sẽ thấy ảnh' : 'Đang xem trước ảnh'}
                             </div>
-                            <img src={imageUrl || localPreviewUrl} alt="Ảnh xem trước" className="mx-auto max-h-44 rounded-xl object-contain shadow-md" />
+                            <img src={imageUrl || localPreviewUrl} alt="Ảnh xem trước" className="mx-auto max-h-36 rounded-xl object-contain shadow-md sm:max-h-44" />
                         </div>
                     )}
                     <label className="block">
@@ -1639,7 +1677,7 @@ function FrameEditorModal({
                         <textarea value={description} onChange={event => setDescription(event.target.value)} rows={4} className="w-full resize-none rounded-2xl border-2 border-slate-200 px-4 py-3 font-bold outline-none focus:border-sky-400" placeholder="Nội dung ngắn gọn khi học sinh bấm vào tranh" />
                     </label>
                 </div>
-                <div className="flex flex-wrap justify-end gap-3 border-t border-slate-100 px-5 py-4">
+                <div className="flex flex-wrap justify-end gap-2 border-t border-slate-100 px-4 py-3 sm:gap-3 sm:px-5 sm:py-4">
                     {isSaving && (
                         <div className="mb-1 w-full rounded-2xl bg-sky-50 px-4 py-3">
                             <div className="mb-2 flex items-center justify-between gap-3 text-xs font-black text-sky-800">
@@ -1654,13 +1692,13 @@ function FrameEditorModal({
                             </div>
                         </div>
                     )}
-                    <button type="button" onClick={onClear} className="inline-flex items-center gap-2 rounded-2xl bg-rose-100 px-4 py-3 font-black text-rose-600"><Trash2 size={17} /> Xóa khung</button>
-                    <button type="button" onClick={onClose} className="rounded-2xl bg-slate-100 px-4 py-3 font-black text-slate-600">Đóng</button>
+                    <button type="button" onClick={onClear} className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-rose-100 px-3 py-3 text-sm font-black text-rose-600 sm:flex-none sm:px-4 sm:text-base"><Trash2 size={17} /> Xóa khung</button>
+                    <button type="button" onClick={onClose} className="flex-1 rounded-2xl bg-slate-100 px-3 py-3 text-sm font-black text-slate-600 sm:flex-none sm:px-4 sm:text-base">Đóng</button>
                     <button
                         type="button"
                         disabled={isSaving}
                         onClick={() => onSave({ title, imageUrl, youtubeUrl, description }, null)}
-                        className="inline-flex items-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 px-5 py-3 font-black text-white disabled:opacity-60"
+                        className="inline-flex flex-1 items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-sky-500 to-violet-500 px-3 py-3 text-sm font-black text-white disabled:opacity-60 sm:flex-none sm:px-5 sm:text-base"
                     >
                         {isSaving ? <Loader2 className="animate-spin" size={17} /> : <Save size={17} />} {isSaving ? 'Đang lưu' : 'Lưu lại'}
                     </button>
@@ -1674,9 +1712,9 @@ function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose
     const [isExpanded, setIsExpanded] = useState(false);
 
     return (
-        <motion.div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/70 p-4 backdrop-blur-sm" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
+        <motion.div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/70 p-2 backdrop-blur-sm sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
             <motion.div
-                className={`relative w-full overflow-hidden rounded-[34px] border-4 border-white bg-[#fff8ec] text-slate-900 shadow-2xl ${isExpanded ? 'h-[92vh] max-w-[96vw]' : 'max-w-4xl'}`}
+                className={`relative max-h-[96dvh] w-full overflow-hidden rounded-[26px] border-4 border-white bg-[#fff8ec] text-slate-900 shadow-2xl sm:rounded-[34px] ${isExpanded ? 'h-[96dvh] max-w-[98vw] sm:h-[92vh] sm:max-w-[96vw]' : 'max-w-4xl'}`}
                 initial={{ scale: 0.94, y: 18 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.94, y: 18 }}
@@ -1684,10 +1722,10 @@ function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose
             >
                 <div className="pointer-events-none absolute -left-8 top-24 h-20 w-20 rounded-full bg-sky-300/35" />
                 <div className="pointer-events-none absolute -right-7 bottom-16 h-24 w-24 rounded-full bg-pink-300/35" />
-                <div className="flex items-center justify-between bg-gradient-to-r from-sky-400 via-fuchsia-400 to-orange-300 px-6 py-5 text-white">
+                <div className="flex items-center justify-between bg-gradient-to-r from-sky-400 via-fuchsia-400 to-orange-300 px-4 py-4 text-white sm:px-6 sm:py-5">
                     <div className="min-w-0">
                         <div className="mb-1 inline-flex rounded-full bg-white/25 px-3 py-1 text-xs font-black">Tác phẩm của em</div>
-                        <h2 className="truncate text-2xl font-black leading-tight">{frame.title || frame.label}</h2>
+                        <h2 className="truncate text-xl font-black leading-tight sm:text-2xl">{frame.title || frame.label}</h2>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
                         <button
@@ -1701,15 +1739,15 @@ function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose
                         <button type="button" onClick={onClose} className="rounded-2xl bg-white/25 p-2 text-white hover:bg-white/35"><X size={22} /></button>
                     </div>
                 </div>
-                <div className={`grid gap-5 p-5 md:grid-cols-[1.2fr_0.8fr] ${isExpanded ? 'h-[calc(92vh-112px)]' : ''}`}>
-                    <div className="relative flex min-h-[320px] items-center justify-center rounded-[28px] bg-white p-4 shadow-inner">
+                <div className={`grid gap-3 overflow-y-auto p-3 sm:gap-5 sm:p-5 md:grid-cols-[1.2fr_0.8fr] ${isExpanded ? 'h-[calc(96dvh-96px)] sm:h-[calc(92vh-112px)]' : 'max-h-[calc(96dvh-92px)]'}`}>
+                    <div className="relative flex min-h-[220px] items-center justify-center rounded-[24px] bg-white p-3 shadow-inner sm:min-h-[320px] sm:rounded-[28px] sm:p-4">
                         <span className="absolute left-5 top-5 h-4 w-4 rounded-full bg-pink-400" />
                         <span className="absolute right-5 top-5 h-4 w-4 rounded-full bg-yellow-300" />
                         <span className="absolute bottom-5 left-5 h-4 w-4 rounded-full bg-sky-400" />
                         <span className="absolute bottom-5 right-5 h-4 w-4 rounded-full bg-emerald-400" />
                         {frame.imageUrl ? (
                             <div className="relative rounded-[24px] border-8 border-[#fff1c7] bg-white p-2 shadow-xl">
-                                <img src={frame.imageUrl} alt={frame.title || frame.label} className={`w-full rounded-2xl object-contain ${isExpanded ? 'max-h-[calc(92vh-190px)]' : 'max-h-[62vh]'}`} />
+                                <img src={frame.imageUrl} alt={frame.title || frame.label} className={`w-full rounded-2xl object-contain ${isExpanded ? 'max-h-[calc(96dvh-180px)] sm:max-h-[calc(92vh-190px)]' : 'max-h-[46dvh] sm:max-h-[62vh]'}`} />
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-3 rounded-3xl border-4 border-dashed border-sky-200 bg-sky-50 px-10 py-12 text-sky-400">
