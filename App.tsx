@@ -59,6 +59,7 @@ import SolarSystemSimulation from './components/SolarSystemSimulation';
 import KeoCoTriTueApp from './keo-co-tri-tue/App';
 import GameTuyChinh from './components/GameTuyChinh';
 import DinhDocLap3D from './components/DinhDocLap3D';
+import PhongTranh3D from './components/PhongTranh3D';
 import ThuMoiTuongTac from './components/ThuMoiTuongTac';
 import KyYeuTuyChinh from './components/KyYeuTuyChinh';
 import ThiepMoiOnline from './components/ThiepMoiOnline';
@@ -258,6 +259,7 @@ function App() {
       else if (pathname === '/terms') defaultView = 'TERMS' as ViewState;
       else if (pathname === '/contact') defaultView = 'CONTACT' as ViewState;
       else if (pathname === '/dinh-doc-lap-3d') defaultView = 'DINH_DOC_LAP_3D' as ViewState;
+      else if (pathname.startsWith('/share/phong-tranh-3d/') || pathname.startsWith('/share/panorama/')) defaultView = 'PHONG_TRANH_3D' as ViewState;
       else if (pathname === '/ky-yeu-cuoi-nam') defaultView = 'KY_YEU_CUOI_NAM' as ViewState;
       else if (pathname === '/thiep-moi-online') {
         defaultView = 'THIEP_MOI_ONLINE' as ViewState;
@@ -298,6 +300,9 @@ function App() {
             break;
           case 'thiep_moi_online':
             defaultView = 'THIEP_MOI_ONLINE';
+            break;
+          case 'phong_tranh_3d':
+            defaultView = 'PHONG_TRANH_3D';
             break;
           // Có thể thêm case cho các app khác ở đây sau
         }
@@ -740,6 +745,7 @@ function App() {
                   onKeoCoTriTue={() => requireLogin(() => setView('KEO_CO_TRI_TUE'))}
                   onGameTuyChinh={() => setView('GAME_TUY_CHINH')}
                   onDinhDocLap3D={() => requireLogin(() => setView('DINH_DOC_LAP_3D'))}
+                  onPhongTranh3D={() => requireLogin(() => setView('PHONG_TRANH_3D'))}
                   onThuMoiHopPH={() => setView('THU_MOI_TUONG_TAC')}
                   onThuMoiTuongTac={() => setView('THU_MOI_TUONG_TAC')}
                   onThiepMoiOnline={() => requireLogin(() => { setSharedThiepMoiId(null); setView('THIEP_MOI_ONLINE'); })}
@@ -974,6 +980,14 @@ function App() {
 
           {view === 'DINH_DOC_LAP_3D' && (
             <DinhDocLap3D onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'PHONG_TRANH_3D' && (
+            <PhongTranh3D
+              user={user ? { email: user.email || '', name: user.name || '' } : null}
+              onRequireLogin={() => setShowLoginModal(true)}
+              onBack={() => setView('DASHBOARD')}
+            />
           )}
 
           {view === 'THU_MOI_TUONG_TAC' && (

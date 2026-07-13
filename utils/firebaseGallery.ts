@@ -1,24 +1,40 @@
-/**
- * Firebase utilities cho Phòng Tranh 3D
- */
 import { database } from './firebaseConfig';
-import { ref, push, set, get, update, remove, query, orderByChild, equalTo } from 'firebase/database';
+import { ref, push, set, get, update, remove } from 'firebase/database';
 
 const GALLERIES_REF = 'galleries';
-const MAX_GALLERIES_PER_USER = 5;
+export const MAX_GALLERIES_PER_USER = 3;
+
+export const createGalleryShareId = (galleryId: string): string => {
+    const shortId = galleryId.length <= 10 ? galleryId : galleryId.slice(-8);
+    return shortId.startsWith('room_') ? shortId : `room_${shortId}`;
+};
+
+const normalizeGalleryLookupId = (galleryId: string): string => {
+    return galleryId.startsWith('room_') ? galleryId.slice(5) : galleryId;
+};
+
+export type GalleryTemplate = 'technology' | 'nature' | 'history' | 'classroom';
 
 export interface GalleryPainting {
     id: string;
-    imageUrl: string;
-    title: string;
-    description: string;
-    position: number; // Vị trí trên tường (0-based index)
+    label: string;
+    yaw: number;
+    pitch: number;
+    imageUrl?: string;
+    youtubeUrl?: string;
+    title?: string;
+    description?: string;
+    position?: number;
+    x?: number;
+    y?: number;
+    z?: number;
 }
 
 export interface Gallery {
     id: string;
     title: string;
-    template: 'classic' | 'modern' | 'space' | 'royal' | 'minimal' | 'art';
+    template: GalleryTemplate;
+    panoramaUrl: string;
     ownerEmail: string;
     ownerName: string;
     paintings: GalleryPainting[];
@@ -26,14 +42,14 @@ export interface Gallery {
     updatedAt: number;
 }
 
-// Tạo phòng tranh mới
 export const createGallery = async (gallery: Omit<Gallery, 'id' | 'createdAt' | 'updatedAt'>): Promise<string | null> => {
     try {
-        // Kiểm tra giới hạn
         const userGalleries = await getUserGalleries(gallery.ownerEmail);
         if (userGalleries.length >= MAX_GALLERIES_PER_USER) {
-            alert(`Bạn đã đạt giới hạn ${MAX_GALLERIES_PER_USER} phòng tranh. Vui lòng xóa bớt để tạo mới.`);
-            return null;
+            const galleriesToRemove = userGalleries.slice(MAX_GALLERIES_PER_USER - 1);
+            await Promise.all(
+                galleriesToRemove.map(item => remove(ref(database, `${GALLERIES_REF}/${item.id}`)))
+            );
         }
 
         const galleriesRef = ref(database, GALLERIES_REF);
@@ -52,59 +68,65 @@ export const createGallery = async (gallery: Omit<Gallery, 'id' | 'createdAt' | 
     }
 };
 
-// Lấy phòng tranh theo ID
 export const getGallery = async (galleryId: string): Promise<Gallery | null> => {
     try {
         const galleryRef = ref(database, `${GALLERIES_REF}/${galleryId}`);
         const snapshot = await get(galleryRef);
-        if (snapshot.exists()) {
-            return { ...snapshot.val(), id: galleryId };
-        }
-        return null;
+        if (snapshot.exists()) return { ...snapshot.val(), id: galleryId };
+        const lookupId = normalizeGalleryLookupId(galleryId);
+
+        const galleriesRef = ref(database, GALLERIES_REF);
+        const allSnapshot = await get(galleriesRef);
+        if (!allSnapshot.exists()) return null;
+
+        const data = allSnapshot.val();
+        const matchedKey = Object.keys(data).find(key => (
+            createGalleryShareId(key) === galleryId ||
+            createGalleryShareId(key) === `room_${lookupId}` ||
+            key.endsWith(lookupId)
+        ));
+        if (!matchedKey) return null;
+
+        return { ...data[matchedKey], id: matchedKey };
     } catch (error) {
         console.error('Error getting gallery:', error);
         return null;
     }
 };
 
-// Lấy tất cả phòng tranh của user
 export const getUserGalleries = async (email: string): Promise<Gallery[]> => {
     try {
         const galleriesRef = ref(database, GALLERIES_REF);
         const snapshot = await get(galleriesRef);
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            return Object.keys(data)
-                .map(key => ({ ...data[key], id: key }))
-                .filter(g => g.ownerEmail === email)
-                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        }
-        return [];
+        if (!snapshot.exists()) return [];
+
+        const data = snapshot.val();
+        return Object.keys(data)
+            .map(key => ({ ...data[key], id: key }))
+            .filter(g => g.ownerEmail === email)
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     } catch (error) {
         console.error('Error getting user galleries:', error);
         return [];
     }
 };
 
-// Lấy tất cả phòng tranh (cho admin)
 export const getAllGalleries = async (): Promise<Gallery[]> => {
     try {
         const galleriesRef = ref(database, GALLERIES_REF);
         const snapshot = await get(galleriesRef);
-        if (snapshot.exists()) {
-            const data = snapshot.val();
-            return Object.keys(data)
-                .map(key => ({ ...data[key], id: key }))
-                .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
-        }
-        return [];
+        if (!snapshot.exists()) return [];
+
+        const data = snapshot.val();
+        return Object.keys(data)
+            .map(key => ({ ...data[key], id: key }))
+            .sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
     } catch (error) {
         console.error('Error getting all galleries:', error);
         return [];
     }
 };
 
-// Cập nhật phòng tranh
 export const updateGallery = async (galleryId: string, updates: Partial<Gallery>): Promise<boolean> => {
     try {
         const galleryRef = ref(database, `${GALLERIES_REF}/${galleryId}`);
@@ -116,7 +138,24 @@ export const updateGallery = async (galleryId: string, updates: Partial<Gallery>
     }
 };
 
-// Xóa phòng tranh
+export const updateGalleryPainting = async (
+    galleryId: string,
+    paintingIndex: number,
+    painting: GalleryPainting
+): Promise<boolean> => {
+    try {
+        const galleryRef = ref(database, `${GALLERIES_REF}/${galleryId}`);
+        await update(galleryRef, {
+            [`paintings/${paintingIndex}`]: painting,
+            updatedAt: Date.now()
+        });
+        return true;
+    } catch (error) {
+        console.error('Error updating gallery painting:', error);
+        return false;
+    }
+};
+
 export const deleteGallery = async (galleryId: string): Promise<boolean> => {
     try {
         const galleryRef = ref(database, `${GALLERIES_REF}/${galleryId}`);

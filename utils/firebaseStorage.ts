@@ -1,7 +1,7 @@
 /**
  * Firebase Storage utilities for image upload
  */
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { ref, uploadBytes, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { storage } from './firebaseConfig';
 
 /**
@@ -26,6 +26,42 @@ export const uploadImage = async (file: File, folder: string = 'video-thumbnails
         return downloadURL;
     } catch (error) {
         console.error('Error uploading image:', error);
+        return null;
+    }
+};
+
+export const uploadImageWithProgress = async (
+    file: File,
+    folder: string = 'video-thumbnails',
+    onProgress?: (progress: number) => void
+): Promise<string | null> => {
+    try {
+        const timestamp = Date.now();
+        const safeName = file.name.replace(/[^\w.\-]+/g, '_');
+        const fileName = `${folder}/${timestamp}_${safeName}`;
+        const storageRef = ref(storage, fileName);
+        const uploadTask = uploadBytesResumable(storageRef, file);
+
+        return await new Promise((resolve, reject) => {
+            uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                    const progress = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+                    onProgress?.(progress);
+                },
+                reject,
+                async () => {
+                    try {
+                        const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
+                        resolve(downloadURL);
+                    } catch (error) {
+                        reject(error);
+                    }
+                }
+            );
+        });
+    } catch (error) {
+        console.error('Error uploading image with progress:', error);
         return null;
     }
 };
@@ -116,6 +152,43 @@ export const compressImageForUpload = async (
     } catch (error) {
         console.error('Error compressing image:', error);
         return file;
+    }
+};
+
+export const compressImageToDataUrl = async (
+    file: File,
+    {
+        maxWidth = 640,
+        maxHeight = 640,
+        quality = 0.6,
+        outputType = 'image/webp'
+    }: CompressImageOptions = {}
+): Promise<string | null> => {
+    try {
+        const image = await loadImageFile(file);
+        const widthRatio = maxWidth / (image.naturalWidth || maxWidth);
+        const heightRatio = maxHeight / (image.naturalHeight || maxHeight);
+        const ratio = Math.min(1, widthRatio, heightRatio);
+        const width = Math.max(1, Math.round((image.naturalWidth || maxWidth) * ratio));
+        const height = Math.max(1, Math.round((image.naturalHeight || maxHeight) * ratio));
+
+        const canvas = document.createElement('canvas');
+        canvas.width = width;
+        canvas.height = height;
+
+        const context = canvas.getContext('2d');
+        if (!context) return null;
+
+        context.drawImage(image, 0, 0, width, height);
+
+        try {
+            return canvas.toDataURL(outputType, quality);
+        } catch {
+            return canvas.toDataURL('image/jpeg', quality);
+        }
+    } catch (error) {
+        console.error('Error compressing image to data URL:', error);
+        return null;
     }
 };
 
