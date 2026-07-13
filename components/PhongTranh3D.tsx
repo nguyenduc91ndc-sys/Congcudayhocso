@@ -1714,40 +1714,40 @@ function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose
     return (
         <motion.div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/70 p-2 backdrop-blur-sm sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
             <motion.div
-                className={`relative max-h-[96dvh] w-full overflow-hidden rounded-[26px] border-4 border-white bg-[#fff8ec] text-slate-900 shadow-2xl sm:rounded-[34px] ${isExpanded ? 'h-[96dvh] max-w-[98vw] sm:h-[92vh] sm:max-w-[96vw]' : 'max-w-4xl'}`}
+                className={`relative w-full overflow-hidden rounded-[24px] border-4 border-white bg-[#fff8ec] text-slate-900 shadow-2xl sm:rounded-[34px] ${isExpanded ? 'h-[94dvh] max-h-[94dvh] max-w-[98vw] sm:h-[92vh] sm:max-h-[92vh] sm:max-w-[96vw]' : 'max-h-[88dvh] max-w-4xl'}`}
                 initial={{ scale: 0.94, y: 18 }}
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.94, y: 18 }}
                 onClick={event => event.stopPropagation()}
             >
-                <div className="pointer-events-none absolute -left-8 top-24 h-20 w-20 rounded-full bg-sky-300/35" />
-                <div className="pointer-events-none absolute -right-7 bottom-16 h-24 w-24 rounded-full bg-pink-300/35" />
-                <div className="flex items-center justify-between bg-gradient-to-r from-sky-400 via-fuchsia-400 to-orange-300 px-4 py-4 text-white sm:px-6 sm:py-5">
+                <div className="pointer-events-none absolute -left-8 top-24 hidden h-20 w-20 rounded-full bg-sky-300/35 sm:block" />
+                <div className="pointer-events-none absolute -right-7 bottom-16 hidden h-24 w-24 rounded-full bg-pink-300/35 sm:block" />
+                <div className="flex items-center justify-between bg-gradient-to-r from-sky-400 via-fuchsia-400 to-orange-300 px-4 py-3 text-white sm:px-6 sm:py-5">
                     <div className="min-w-0">
-                        <div className="mb-1 inline-flex rounded-full bg-white/25 px-3 py-1 text-xs font-black">Tác phẩm của em</div>
+                        <div className="mb-1 hidden rounded-full bg-white/25 px-3 py-1 text-xs font-black sm:inline-flex">Tác phẩm của em</div>
                         <h2 className="truncate text-xl font-black leading-tight sm:text-2xl">{frame.title || frame.label}</h2>
                     </div>
                     <div className="ml-4 flex items-center gap-2">
                         <button
                             type="button"
                             onClick={() => setIsExpanded(value => !value)}
-                            className="rounded-2xl bg-white/25 p-2 text-white hover:bg-white/35"
+                            className="rounded-xl bg-white/25 p-1.5 text-white hover:bg-white/35 sm:rounded-2xl sm:p-2"
                             title={isExpanded ? 'Thu nhỏ khung' : 'Phóng to khung'}
                         >
-                            <Fullscreen size={22} />
+                            <Fullscreen size={20} />
                         </button>
-                        <button type="button" onClick={onClose} className="rounded-2xl bg-white/25 p-2 text-white hover:bg-white/35"><X size={22} /></button>
+                        <button type="button" onClick={onClose} className="rounded-xl bg-white/25 p-1.5 text-white hover:bg-white/35 sm:rounded-2xl sm:p-2"><X size={20} /></button>
                     </div>
                 </div>
-                <div className={`grid gap-3 overflow-y-auto p-3 sm:gap-5 sm:p-5 md:grid-cols-[1.2fr_0.8fr] ${isExpanded ? 'h-[calc(96dvh-96px)] sm:h-[calc(92vh-112px)]' : 'max-h-[calc(96dvh-92px)]'}`}>
-                    <div className="relative flex min-h-[220px] items-center justify-center rounded-[24px] bg-white p-3 shadow-inner sm:min-h-[320px] sm:rounded-[28px] sm:p-4">
-                        <span className="absolute left-5 top-5 h-4 w-4 rounded-full bg-pink-400" />
-                        <span className="absolute right-5 top-5 h-4 w-4 rounded-full bg-yellow-300" />
-                        <span className="absolute bottom-5 left-5 h-4 w-4 rounded-full bg-sky-400" />
-                        <span className="absolute bottom-5 right-5 h-4 w-4 rounded-full bg-emerald-400" />
+                <div className={`grid gap-3 overflow-y-auto p-3 sm:gap-5 sm:p-5 md:grid-cols-[1.2fr_0.8fr] ${isExpanded ? 'h-[calc(94dvh-76px)] sm:h-[calc(92vh-112px)]' : 'max-h-[calc(88dvh-64px)]'}`}>
+                    <div className="relative flex min-h-0 items-center justify-center rounded-[22px] bg-white p-2 shadow-inner sm:min-h-[320px] sm:rounded-[28px] sm:p-4">
+                        <span className="absolute left-5 top-5 hidden h-4 w-4 rounded-full bg-pink-400 sm:block" />
+                        <span className="absolute right-5 top-5 hidden h-4 w-4 rounded-full bg-yellow-300 sm:block" />
+                        <span className="absolute bottom-5 left-5 hidden h-4 w-4 rounded-full bg-sky-400 sm:block" />
+                        <span className="absolute bottom-5 right-5 hidden h-4 w-4 rounded-full bg-emerald-400 sm:block" />
                         {frame.imageUrl ? (
-                            <div className="relative rounded-[24px] border-8 border-[#fff1c7] bg-white p-2 shadow-xl">
-                                <img src={frame.imageUrl} alt={frame.title || frame.label} className={`w-full rounded-2xl object-contain ${isExpanded ? 'max-h-[calc(96dvh-180px)] sm:max-h-[calc(92vh-190px)]' : 'max-h-[46dvh] sm:max-h-[62vh]'}`} />
+                            <div className="relative rounded-[18px] border-4 border-[#fff1c7] bg-white p-1.5 shadow-xl sm:rounded-[24px] sm:border-8 sm:p-2">
+                                <img src={frame.imageUrl} alt={frame.title || frame.label} className={`w-full rounded-xl object-contain sm:rounded-2xl ${isExpanded ? 'max-h-[calc(94dvh-150px)] sm:max-h-[calc(92vh-190px)]' : 'max-h-[34dvh] sm:max-h-[62vh]'}`} />
                             </div>
                         ) : (
                             <div className="flex flex-col items-center gap-3 rounded-3xl border-4 border-dashed border-sky-200 bg-sky-50 px-10 py-12 text-sky-400">
@@ -1756,13 +1756,13 @@ function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose
                             </div>
                         )}
                     </div>
-                    <div className="flex min-h-0 flex-col gap-4 overflow-y-auto">
-                        <div className="rounded-[26px] bg-white p-5 shadow-lg">
-                            <div className="mb-3 inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700">Lời giới thiệu</div>
+                    <div className="flex min-h-0 flex-col gap-3 overflow-visible md:gap-4 md:overflow-y-auto">
+                        <div className="max-h-[24dvh] overflow-y-auto rounded-[22px] bg-white p-4 shadow-lg sm:max-h-none sm:rounded-[26px] sm:p-5">
+                            <div className="mb-2 inline-flex items-center rounded-full bg-emerald-100 px-3 py-1 text-xs font-black text-emerald-700 sm:mb-3">Lời giới thiệu</div>
                             {frame.description ? (
-                                <p className="whitespace-pre-wrap text-base font-bold leading-relaxed text-slate-700">{frame.description}</p>
+                                <p className="whitespace-pre-wrap text-sm font-bold leading-relaxed text-slate-700 sm:text-base">{frame.description}</p>
                             ) : (
-                                <p className="text-base font-bold leading-relaxed text-slate-400">Chưa có mô tả cho tác phẩm này.</p>
+                                <p className="text-sm font-bold leading-relaxed text-slate-400 sm:text-base">Chưa có mô tả cho tác phẩm này.</p>
                             )}
                         </div>
                         {frame.youtubeUrl && (
