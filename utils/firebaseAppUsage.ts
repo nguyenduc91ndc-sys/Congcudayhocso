@@ -25,6 +25,15 @@ export interface AppUsageSummary {
     last7Days: number;
     uniqueUsers: number;
     lastUsedAt?: number;
+    recentUsers?: AppUsageRecentUser[];
+}
+
+export interface AppUsageRecentUser {
+    userName: string;
+    userEmail: string;
+    userId: string;
+    lastUsedAt: number;
+    device: string;
 }
 
 const getDeviceInfo = (): string => {
@@ -83,6 +92,7 @@ export const getAppUsageSummaries = async (): Promise<AppUsageSummary[]> => {
                 last7Days: 0,
                 uniqueUsers: 0,
                 lastUsedAt: undefined,
+                recentUsers: [],
                 users: new Set<string>(),
             });
         });
@@ -105,6 +115,7 @@ export const getAppUsageSummaries = async (): Promise<AppUsageSummary[]> => {
                     last7Days: 0,
                     uniqueUsers: 0,
                     lastUsedAt: undefined,
+                    recentUsers: [],
                     users: new Set<string>(),
                 };
 
@@ -114,12 +125,35 @@ export const getAppUsageSummaries = async (): Promise<AppUsageSummary[]> => {
                 if (timestamp >= sevenDaysAgo) current.last7Days += 1;
                 if (!current.lastUsedAt || timestamp > current.lastUsedAt) current.lastUsedAt = timestamp;
                 current.users.add(log.userEmail || log.userId || log.userName);
+                current.recentUsers = [
+                    ...(current.recentUsers || []),
+                    {
+                        userName: log.userName || 'Khách',
+                        userEmail: log.userEmail || '',
+                        userId: log.userId || 'guest',
+                        lastUsedAt: timestamp,
+                        device: log.device || 'Unknown',
+                    }
+                ];
                 summaryMap.set(appId, current);
             });
         }
 
         return Array.from(summaryMap.values())
-            .map(({ users, ...item }) => ({ ...item, uniqueUsers: users.size }))
+            .map(({ users, ...item }) => {
+                const seen = new Set<string>();
+                const recentUsers = (item.recentUsers || [])
+                    .sort((a, b) => b.lastUsedAt - a.lastUsedAt)
+                    .filter(user => {
+                        const key = user.userEmail || user.userId || user.userName;
+                        if (seen.has(key)) return false;
+                        seen.add(key);
+                        return true;
+                    })
+                    .slice(0, 3);
+
+                return { ...item, uniqueUsers: users.size, recentUsers };
+            })
             .sort((a, b) => b.total - a.total);
     } catch (error) {
         console.error('Error getting app usage summaries:', error);

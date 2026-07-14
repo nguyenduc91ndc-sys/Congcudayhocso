@@ -90,12 +90,14 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   VIDEO_STORE: 'videoStore',
   INTERACTIVE_VIDEO: 'interactiveVideo',
   AI_COURSE_STORE: 'aiCourseStore',
+  SOAN_GIAO_AN_NANG_LUC_SO: 'soanGiaoAnNangLucSo',
   QR_GENERATOR: 'qrGenerator',
   CANVA_BASICS: 'canvaBasics',
   COMMUNITY_RESOURCES: 'communityResources',
   DEN_HUNG_3D: 'denHung3D',
   HEART_SYSTEM_3D: 'heartSystem3D',
   VIETNAM_MAP: 'vietnamMap',
+  PHONG_TRANH_3D: 'phongTranh3D',
   CHUC_TET: 'chucTet',
   PUZZLE_GAME: 'puzzleGame',
   TREASURE_HUNT: 'treasureHunt',
@@ -727,7 +729,10 @@ function App() {
                   onVietnamMap={() => requireLogin(() => setView('VIETNAM_MAP'))}
                   onChucTet={() => requireLogin(() => setView('CHUC_TET'))}
                   onPuzzleGame={() => requireLogin(() => setView('PUZZLE_GAME'))}
-                  onNgheNghiep={() => requireLogin(() => window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank'))}
+                  onNgheNghiep={() => requireLogin(() => {
+                    logAppUsage('ngheNghiep', user);
+                    window.open('https://aistudio.google.com/apps/drive/19wuAJ5tA9JuALlQ-STS6sTuKwA1P07eZ', '_blank');
+                  })}
                   onTreasureHunt={() => requireLogin(() => setView('TREASURE_HUNT'))}
                   onVirtualExperiment={() => requireLogin(() => setView('VIRTUAL_EXPERIMENT'))}
                   onSensesExplorer={() => requireLogin(() => setView('SENSES_EXPLORER'))}

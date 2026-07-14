@@ -82,6 +82,18 @@ const formatKyYeuDateTime = (value?: string): string => {
     return date.toLocaleString('vi-VN');
 };
 
+const formatAppUsageDateTime = (value?: number): string => {
+    if (!value) return '';
+    const date = new Date(value);
+    if (Number.isNaN(date.getTime())) return '';
+    return date.toLocaleString('vi-VN', {
+        day: '2-digit',
+        month: '2-digit',
+        hour: '2-digit',
+        minute: '2-digit',
+    });
+};
+
 const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders' | 'apps'>('analytics');
     const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
@@ -863,6 +875,23 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                                     <div className="mt-2 h-2 rounded-full bg-white overflow-hidden">
                                                         <div className="h-full rounded-full bg-gradient-to-r from-purple-500 to-pink-500" style={{ width: `${width}%` }} />
                                                     </div>
+                                                    {item.recentUsers && item.recentUsers.length > 0 && (
+                                                        <div className="mt-2 flex flex-wrap gap-1.5">
+                                                            <span className="rounded-full bg-purple-100 px-2 py-0.5 text-[10px] font-bold text-purple-700">
+                                                                Gần nhất
+                                                            </span>
+                                                            {item.recentUsers.map((recentUser, recentIndex) => (
+                                                                <span
+                                                                    key={`${item.appId}-${recentUser.userEmail || recentUser.userId || recentUser.userName}-${recentIndex}`}
+                                                                    className="max-w-full truncate rounded-full bg-white px-2 py-0.5 text-[10px] font-semibold text-gray-600 ring-1 ring-gray-200"
+                                                                    title={`${recentUser.userName || 'Khách'}${recentUser.userEmail ? ` - ${recentUser.userEmail}` : ''}${recentUser.device ? ` - ${recentUser.device}` : ''}`}
+                                                                >
+                                                                    {recentUser.userEmail || recentUser.userName || 'Khách'}
+                                                                    {recentUser.lastUsedAt ? ` • ${formatAppUsageDateTime(recentUser.lastUsedAt)}` : ''}
+                                                                </span>
+                                                            ))}
+                                                        </div>
+                                                    )}
                                                 </div>
                                             );
                                         })
