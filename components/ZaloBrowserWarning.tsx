@@ -18,11 +18,14 @@ const isMobile = (): boolean => {
 
 const isInvitationFlow = (): boolean => {
     const urlParams = new URLSearchParams(window.location.search);
-    const app = urlParams.get('app');
+    const app = urlParams.get('app')?.toLowerCase();
     const pathname = window.location.pathname.toLowerCase().replace(/\/$/, '');
 
     return app === 'thu_moi_tuong_tac' ||
+        app === 'thu_moi_dau_nam' ||
         app === 'thiep_moi_online' ||
+        pathname === '/thu-moi-dau-nam' ||
+        pathname.startsWith('/thumoiphdaunam') ||
         pathname === '/thiep-moi-online';
 };
 
