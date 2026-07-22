@@ -28,6 +28,8 @@ import {
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
 import { getAppUsageSummaries, AppUsageSummary } from '../utils/firebaseAppUsage';
 
+const START_YEAR_MEETING_APP_ID = 'thuMoiDauNam' as const;
+
 interface AdminPanelProps {
     onBack: () => void;
 }
@@ -98,7 +100,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders' | 'apps'>('analytics');
     const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
     const [editMaintenanceMsg, setEditMaintenanceMsg] = useState('');
-    const [expandedSections, setExpandedSections] = useState<string[]>([]);
+    const [expandedSections, setExpandedSections] = useState<string[]>([APP_INFO[START_YEAR_MEETING_APP_ID].section]);
     const [keys, setKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [beeKeys, setBeeKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
     const [skknKeys, setSkknKeys] = useState<{ key: string; createdAt: string; note: string; usedBy?: string }[]>([]);
@@ -114,6 +116,9 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [analytics, setAnalytics] = useState<Analytics>({ totalVisits: 0, uniqueVisitors: 0, todayVisits: 0, recentVisitors: [] });
     const [appUsageStats, setAppUsageStats] = useState<AppUsageSummary[]>([]);
     const [showAppUsageStats, setShowAppUsageStats] = useState(false);
+    const startYearMeetingInfo = APP_INFO[START_YEAR_MEETING_APP_ID];
+    const startYearMeetingStats = appUsageStats.find(item => item.appId === START_YEAR_MEETING_APP_ID);
+    const isStartYearMeetingVisible = appVisibility.apps[START_YEAR_MEETING_APP_ID] !== false;
 
     // Feedback states
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -846,6 +851,30 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 <p className={`text-xs text-gray-500 mb-3 ${showAppUsageStats ? 'block' : 'hidden'}`}>
                                     Dữ liệu cũ trước đây chỉ có lượt truy cập/đăng nhập. Lượt mở từng công cụ bắt đầu ghi nhận từ lúc bật tracking này.
                                 </p>
+                                {showAppUsageStats && (
+                                    <div className="mb-3 rounded-xl border border-emerald-100 bg-gradient-to-r from-emerald-50 to-cyan-50 p-3">
+                                        <div className="flex items-center gap-3">
+                                            <span className="grid h-10 w-10 place-items-center rounded-full bg-white text-xl shadow-sm">
+                                                {startYearMeetingInfo.icon}
+                                            </span>
+                                            <div className="min-w-0 flex-1">
+                                                <div className="truncate text-sm font-black text-emerald-900">{startYearMeetingInfo.name}</div>
+                                                <div className="text-[11px] font-semibold text-emerald-700">
+                                                    {startYearMeetingStats?.today || 0} hôm nay • {startYearMeetingStats?.last7Days || 0} trong 7 ngày • {startYearMeetingStats?.uniqueUsers || 0} người dùng
+                                                </div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-lg font-black text-emerald-800">{startYearMeetingStats?.total || 0}</div>
+                                                <button
+                                                    onClick={() => setAppVisible(START_YEAR_MEETING_APP_ID, !isStartYearMeetingVisible)}
+                                                    className={`mt-1 rounded-full px-3 py-1 text-[11px] font-black transition-colors ${isStartYearMeetingVisible ? 'bg-green-100 text-green-700 hover:bg-red-100 hover:text-red-700' : 'bg-red-100 text-red-700 hover:bg-green-100 hover:text-green-700'}`}
+                                                >
+                                                    {isStartYearMeetingVisible ? 'Đang bật' : 'Đã tắt'}
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
                                 <div className={`space-y-2 max-h-56 overflow-y-auto pr-1 custom-scrollbar ${showAppUsageStats ? 'block' : 'hidden'}`}>
                                     {appUsageStats.length === 0 ? (
                                         <div className="text-center text-gray-500 py-4 text-sm">Chưa có dữ liệu mở công cụ.</div>
