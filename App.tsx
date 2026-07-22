@@ -61,6 +61,7 @@ import GameTuyChinh from './components/GameTuyChinh';
 import DinhDocLap3D from './components/DinhDocLap3D';
 import PhongTranh3D from './components/PhongTranh3D';
 import ThuMoiTuongTac from './components/ThuMoiTuongTac';
+import ThuMoiDauNam from './components/ThuMoiDauNam';
 import KyYeuTuyChinh from './components/KyYeuTuyChinh';
 import ThiepMoiOnline from './components/ThiepMoiOnline';
 import SoanGiaoAnNangLucSo from './components/SoanGiaoAnNangLucSo';
@@ -118,6 +119,7 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   GAME_TUY_CHINH: 'gameTuyChinh',
   DINH_DOC_LAP_3D: 'dinhDocLap3D',
   THU_MOI_TUONG_TAC: 'thuMoiTuongTac',
+  THU_MOI_DAU_NAM: 'thuMoiDauNam',
   KY_YEU_CUOI_NAM: 'kyYeuCuoiNam',
   THIEP_MOI_ONLINE: 'thiepMoiOnline',
 };
@@ -141,6 +143,7 @@ function App() {
   const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
   const [appVisibilityLoaded, setAppVisibilityLoaded] = useState(false);
   const [sharedThuMoiId, setSharedThuMoiId] = useState<string | null>(() => getInitialSharedAppId('thu_moi_tuong_tac'));
+  const [sharedThuMoiDauNamId, setSharedThuMoiDauNamId] = useState<string | null>(() => getInitialSharedAppId('thu_moi_dau_nam'));
   const [sharedThiepMoiId, setSharedThiepMoiId] = useState<string | null>(() => getInitialSharedAppId('thiep_moi_online'));
   const [showVideoTrialModal, setShowVideoTrialModal] = useState(false);
   const [videoTrialCode, setVideoTrialCode] = useState('');
@@ -172,14 +175,16 @@ function App() {
   const isAdminUser = user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false;
   const currentAppId = VIEW_APP_IDS[view];
   const isPublicSharedThuMoiView = view === 'THU_MOI_TUONG_TAC' && Boolean(sharedThuMoiId);
+  const isPublicSharedThuMoiDauNamView = view === 'THU_MOI_DAU_NAM' && Boolean(sharedThuMoiDauNamId);
+  const isPublicSharedMeetingView = isPublicSharedThuMoiView || isPublicSharedThuMoiDauNamView;
   const isFreeKyYeuView = view === 'KY_YEU_CUOI_NAM';
-  const isCheckingAppVisibility = !appVisibilityLoaded && Boolean(currentAppId) && !isAdminUser && !isPublicSharedThuMoiView && !isFreeKyYeuView;
+  const isCheckingAppVisibility = !appVisibilityLoaded && Boolean(currentAppId) && !isAdminUser && !isPublicSharedMeetingView && !isFreeKyYeuView;
   const isCurrentAppDisabled =
     appVisibilityLoaded &&
     Boolean(currentAppId) &&
     appVisibility.apps[currentAppId as AppId] === false &&
     !isAdminUser &&
-    !isPublicSharedThuMoiView &&
+    !isPublicSharedMeetingView &&
     !isFreeKyYeuView;
 
   // Subscribe to app visibility
@@ -192,17 +197,18 @@ function App() {
   }, []);
 
   useEffect(() => {
-    if (!appVisibilityLoaded || isAdminUser || !currentAppId || isPublicSharedThuMoiView || isFreeKyYeuView) return;
+    if (!appVisibilityLoaded || isAdminUser || !currentAppId || isPublicSharedMeetingView || isFreeKyYeuView) return;
     if (appVisibility.apps[currentAppId] !== false) return;
 
     setCurrentLesson(null);
     setSharedThuMoiId(null);
+    setSharedThuMoiDauNamId(null);
     setSharedThiepMoiId(null);
     setView('DASHBOARD');
     if (window.location.pathname !== '/' || window.location.search) {
       window.history.replaceState({}, document.title, '/');
     }
-  }, [appVisibility.apps, appVisibilityLoaded, currentAppId, isAdminUser, isPublicSharedThuMoiView, isFreeKyYeuView]);
+  }, [appVisibility.apps, appVisibilityLoaded, currentAppId, isAdminUser, isPublicSharedMeetingView, isFreeKyYeuView]);
 
   useEffect(() => {
     if (!currentAppId || view === 'DASHBOARD' || view === 'ADMIN') return;
@@ -263,6 +269,11 @@ function App() {
       else if (pathname === '/dinh-doc-lap-3d') defaultView = 'DINH_DOC_LAP_3D' as ViewState;
       else if (pathname.startsWith('/share/phong-tranh-3d/') || pathname.startsWith('/share/panorama/')) defaultView = 'PHONG_TRANH_3D' as ViewState;
       else if (pathname === '/ky-yeu-cuoi-nam') defaultView = 'KY_YEU_CUOI_NAM' as ViewState;
+      else if (pathname === '/thu-moi-dau-nam') {
+        defaultView = 'THU_MOI_DAU_NAM' as ViewState;
+        const idParam = urlParams.get('id');
+        if (idParam) setSharedThuMoiDauNamId(idParam);
+      }
       else if (pathname === '/thiep-moi-online') {
         defaultView = 'THIEP_MOI_ONLINE' as ViewState;
         const idParam = urlParams.get('id');
@@ -297,6 +308,9 @@ function App() {
           case 'thu_moi_tuong_tac':
             defaultView = 'THU_MOI_TUONG_TAC';
             break;
+          case 'thu_moi_dau_nam':
+            defaultView = 'THU_MOI_DAU_NAM';
+            break;
           case 'ky_yeu_cuoi_nam':
             defaultView = 'KY_YEU_CUOI_NAM';
             break;
@@ -315,6 +329,8 @@ function App() {
           cleanUrl += `&id=${idParam}`;
           if (appParam.toLowerCase() === 'thu_moi_tuong_tac') {
             setSharedThuMoiId(idParam);
+          } else if (appParam.toLowerCase() === 'thu_moi_dau_nam') {
+            setSharedThuMoiDauNamId(idParam);
           } else if (appParam.toLowerCase() === 'thiep_moi_online') {
             setSharedThiepMoiId(idParam);
           }
@@ -753,6 +769,7 @@ function App() {
                   onPhongTranh3D={() => requireLogin(() => setView('PHONG_TRANH_3D'))}
                   onThuMoiHopPH={() => setView('THU_MOI_TUONG_TAC')}
                   onThuMoiTuongTac={() => setView('THU_MOI_TUONG_TAC')}
+                  onThuMoiDauNam={() => { setSharedThuMoiDauNamId(null); setView('THU_MOI_DAU_NAM'); }}
                   onThiepMoiOnline={() => requireLogin(() => { setSharedThiepMoiId(null); setView('THIEP_MOI_ONLINE'); })}
                   onQrGenerator={() => requireLogin(() => setView('QR_GENERATOR'))}
                   onKyYeuCuoiNam={() => setView('KY_YEU_CUOI_NAM')}
@@ -1001,6 +1018,15 @@ function App() {
               onRequireLogin={() => setShowLoginModal(true)}
               onBack={() => setView('DASHBOARD')} 
               sharedId={sharedThuMoiId} 
+            />
+          )}
+
+          {view === 'THU_MOI_DAU_NAM' && (
+            <ThuMoiDauNam
+              user={user ? { email: user.email || '', name: user.name || '' } : null}
+              onRequireLogin={() => setShowLoginModal(true)}
+              onBack={() => setView('DASHBOARD')}
+              sharedId={sharedThuMoiDauNamId}
             />
           )}
 

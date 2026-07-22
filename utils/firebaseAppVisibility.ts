@@ -16,6 +16,7 @@ export const ALL_APP_IDS = [
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
     'nhanXetTT27', // Nhận Xét TT27
     'thuMoiTuongTac', // Thư Mời Tương Tác
+    'thuMoiDauNam', // Thư Mời Họp Phụ Huynh Đầu Năm
 ] as const;
 
 export type AppId = typeof ALL_APP_IDS[number];
@@ -67,6 +68,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     sangKienKinhNghiem: { name: 'Viết SKKN & Báo Cáo', icon: '✍️', section: 'Khóa học & AI' },
     nhanXetTT27: { name: 'Nhận Xét TT27', icon: '📝', section: 'Khóa học & AI' },
     thuMoiTuongTac: { name: 'Thư Mời Họp Phụ Huynh', icon: '✉️', section: 'Học liệu tương tác' },
+    thuMoiDauNam: { name: 'Thư Mời Họp Phụ Huynh Đầu Năm', icon: '🏫', section: 'Học liệu tương tác' },
     sensesExplorer: { name: 'Biệt đội 5 giác quan', icon: '👁️', section: 'Mô phỏng khoa học' },
 };
 
