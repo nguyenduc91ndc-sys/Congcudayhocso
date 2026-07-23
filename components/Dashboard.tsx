@@ -1048,7 +1048,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                     description={item.description}
                                                     icon={<span className="text-2xl">{item.icon}</span>}
                                                     accentColor={item.accentColor}
-                                                    onClick={() => window.location.assign(item.url)}
+                                                    onClick={() => setActiveExternalResource({
+                                                        title: item.title,
+                                                        url: item.url,
+                                                        sourceName: item.sourceName,
+                                                        audience: item.audience,
+                                                    })}
                                                     badge={item.badge}
                                                     sourceName={item.sourceName}
                                                     audience={item.audience}
