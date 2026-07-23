@@ -100,7 +100,7 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
         },
         {
             name: 'Facebook',
-            href: 'https://www.facebook.com/share/g/1BtnwVgAfX/?mibextid=wwXIfr',
+            href: 'https://www.facebook.com/duc.the3?locale=vi_VN',
             bgColor: 'from-[#1877F2] to-[#0d65d9]',
             hoverColor: 'hover:shadow-blue-600/50',
             icon: (
