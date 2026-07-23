@@ -82,7 +82,7 @@ interface DashboardProps {
 export const DASHBOARD_TABS = [
     { key: 'all', label: 'Tất cả', emoji: '🏠' },
     { key: 'teaching', label: 'Công cụ dạy học', emoji: '⚡' },
-    { key: 'science', label: 'Mô phỏng khoa học', emoji: '🧪' },
+    { key: 'science', label: 'Mô phỏng & Thí nghiệm', emoji: '🧪' },
     { key: 'ai', label: 'Khóa học & AI', emoji: '🎓' },
     { key: '3d', label: 'Ứng dụng 3D', emoji: '📦' },
     { key: 'interactive', label: 'Học liệu tương tác', emoji: '📚' },
@@ -90,6 +90,140 @@ export const DASHBOARD_TABS = [
 ];
 
 const MAX_TRIAL_COUNT = 3;
+
+const VR360_DISCOVERY_LINKS = [
+    {
+        id: 'hue360',
+        title: 'VR360 Cố đô Huế',
+        description: 'Tham quan Kinh thành Huế và lăng Minh Mạng qua không gian 360°',
+        icon: '🏯',
+        accentColor: 'bg-gradient-to-br from-rose-600 to-amber-700',
+        url: 'https://vietnam.travel/sites/default/files/360Tour/Hue/index.htm',
+        sourceName: 'Vietnam.travel - Cục Du lịch Quốc gia Việt Nam',
+        audience: 'Tiểu học, THCS, THPT; Lịch sử, Địa lí, Hoạt động trải nghiệm',
+        badge: 'VR360',
+    },
+    {
+        id: 'hoiAn360',
+        title: 'VR360 Phố cổ Hội An',
+        description: 'Khám phá Chùa Cầu, phố cổ và không gian di sản Hội An',
+        icon: '🏮',
+        accentColor: 'bg-gradient-to-br from-orange-500 to-yellow-600',
+        url: 'https://vietnam.travel/sites/default/files/360Tour/HoiAn/index.htm',
+        sourceName: 'Vietnam.travel - Cục Du lịch Quốc gia Việt Nam',
+        audience: 'Tiểu học, THCS, THPT; Lịch sử, Địa lí, Mĩ thuật, Hoạt động trải nghiệm',
+        badge: 'Di sản',
+    },
+    {
+        id: 'phongNha360',
+        title: 'VR360 Phong Nha',
+        description: 'Vào hang động, ngắm thạch nhũ và cảnh quan Phong Nha - Kẻ Bàng',
+        icon: '⛰️',
+        accentColor: 'bg-gradient-to-br from-sky-600 to-emerald-700',
+        url: 'https://vietnam.travel/sites/default/files/360Tour/PhongNha/index.htm',
+        sourceName: 'Vietnam.travel - Cục Du lịch Quốc gia Việt Nam',
+        audience: 'Tiểu học, THCS, THPT; Địa lí, Khoa học tự nhiên, Hoạt động trải nghiệm',
+        badge: 'Thiên nhiên',
+    },
+    {
+        id: 'haLong360',
+        title: 'VR360 Vịnh Hạ Long',
+        description: 'Trải nghiệm toàn cảnh vịnh, đảo đá vôi và làng chài trên biển',
+        icon: '🌊',
+        accentColor: 'bg-gradient-to-br from-cyan-500 to-blue-700',
+        url: 'https://vietnam.travel/sites/default/files/360Tour/HaLong/index.htm',
+        sourceName: 'Vietnam.travel - Cục Du lịch Quốc gia Việt Nam',
+        audience: 'Tiểu học, THCS, THPT; Địa lí, Môi trường, Hoạt động trải nghiệm',
+        badge: 'UNESCO',
+    },
+    {
+        id: 'ninhBinh360',
+        title: 'VR360 Ninh Bình',
+        description: 'Khám phá Tràng An, Tam Cốc, Hang Múa và Bái Đính qua ảnh 360°',
+        icon: '🛶',
+        accentColor: 'bg-gradient-to-br from-lime-600 to-teal-700',
+        url: 'https://vietnam.travel/sites/default/files/360Tour/NinhBinh/index.htm',
+        sourceName: 'Vietnam.travel - Cục Du lịch Quốc gia Việt Nam',
+        audience: 'Tiểu học, THCS, THPT; Lịch sử, Địa lí, Hoạt động trải nghiệm',
+        badge: 'VR360',
+    },
+    {
+        id: 'kimLien360',
+        title: 'VR360 Làng Kim Liên',
+        description: 'Tham quan quê Bác tại Nam Đàn, Nghệ An với tour thực tế ảo',
+        icon: '🌾',
+        accentColor: 'bg-gradient-to-br from-green-600 to-yellow-700',
+        url: 'https://vr360.com.vn/projects/ditich-langkimlien-vr360/',
+        sourceName: 'VR360 Việt Nam',
+        audience: 'Tiểu học, THCS, THPT; Lịch sử, Đạo đức, Hoạt động trải nghiệm',
+        badge: 'Lịch sử',
+    },
+] as const;
+
+const PHET_SIMULATION_LINKS = [
+    {
+        id: 'phetForcesMotion',
+        title: 'PhET - Lực và chuyển động',
+        description: 'Thử kéo, đẩy, ma sát và quan sát chuyển động của vật',
+        icon: '🧲',
+        accentColor: 'bg-gradient-to-br from-blue-600 to-cyan-600',
+        url: 'https://phet.colorado.edu/vi/simulations/forces-and-motion-basics',
+        audience: 'Tiểu học lớp 4-5, THCS lớp 6-8',
+        badge: 'PhET',
+    },
+    {
+        id: 'phetCircuitDc',
+        title: 'PhET - Mạch điện DC',
+        description: 'Lắp pin, bóng đèn, công tắc và kiểm tra mạch nối tiếp, song song',
+        icon: '💡',
+        accentColor: 'bg-gradient-to-br from-yellow-500 to-orange-600',
+        url: 'https://phet.colorado.edu/vi/simulations/circuit-construction-kit-dc-virtual-lab',
+        audience: 'Tiểu học lớp 5, THCS lớp 7-9',
+        badge: 'PhET',
+    },
+    {
+        id: 'phetStaticElectricity',
+        title: 'PhET - Tĩnh điện',
+        description: 'Khám phá điện tích qua bóng bay, áo len và lực hút tĩnh điện',
+        icon: '⚡',
+        accentColor: 'bg-gradient-to-br from-violet-600 to-fuchsia-600',
+        url: 'https://phet.colorado.edu/vi/simulations/balloons-and-static-electricity',
+        audience: 'Tiểu học lớp 5, THCS lớp 7-9',
+        badge: 'PhET',
+    },
+    {
+        id: 'phetMatterStates',
+        title: 'PhET - Trạng thái vật chất',
+        description: 'Quan sát chất rắn, lỏng, khí khi thay đổi nhiệt độ và áp suất',
+        icon: '🧊',
+        accentColor: 'bg-gradient-to-br from-sky-500 to-indigo-600',
+        url: 'https://phet.colorado.edu/vi/simulations/states-of-matter-basics',
+        audience: 'Tiểu học lớp 3-5, THCS lớp 6',
+        badge: 'PhET',
+    },
+    {
+        id: 'phetDensity',
+        title: 'PhET - Khối lượng riêng',
+        description: 'So sánh khối lượng, thể tích và hiện tượng nổi chìm của vật',
+        icon: '⚖️',
+        accentColor: 'bg-gradient-to-br from-teal-600 to-emerald-700',
+        url: 'https://phet.colorado.edu/vi/simulations/density',
+        audience: 'Tiểu học lớp 5, THCS lớp 6-8',
+        badge: 'PhET',
+    },
+    {
+        id: 'phetBuildAtom',
+        title: 'PhET - Tạo nguyên tử',
+        description: 'Lắp proton, neutron, electron để hiểu cấu tạo nguyên tử',
+        icon: '⚛️',
+        accentColor: 'bg-gradient-to-br from-pink-600 to-red-600',
+        url: 'https://phet.colorado.edu/vi/simulations/build-an-atom',
+        audience: 'THCS lớp 8-9, THPT',
+        badge: 'PhET',
+    },
+] as const;
+
+const PHET_SOURCE_NAME = 'PhET Interactive Simulations, University of Colorado Boulder - phet.colorado.edu';
 
 // Professional Tool Card Component
 interface ToolCardProps {
@@ -99,11 +233,13 @@ interface ToolCardProps {
     accentColor: string;
     onClick: () => void;
     badge?: string;
+    sourceName?: string;
+    audience?: string;
     disabled?: boolean;
 }
 
 const ToolCard: React.FC<ToolCardProps> = ({
-    title, description, icon, accentColor, onClick, badge, disabled
+    title, description, icon, accentColor, onClick, badge, sourceName, audience, disabled
 }) => {
     const [rotateX, setRotateX] = React.useState(0);
     const [rotateY, setRotateY] = React.useState(0);
@@ -188,6 +324,20 @@ const ToolCard: React.FC<ToolCardProps> = ({
             <div style={{ transform: 'translateZ(20px)' }}>
                 <h3 className="text-lg font-bold text-white mb-1 drop-shadow-sm">{title}</h3>
                 <p className="text-sm text-white/70 leading-relaxed">{description}</p>
+                {audience && (
+                    <p className="mt-2 text-[11px] font-semibold text-white/60">
+                        Đối tượng: {audience}
+                    </p>
+                )}
+                {sourceName && (
+                    <div className="mt-3 space-y-1 text-[11px] font-semibold text-white/55">
+                        <p className="flex items-center gap-1.5">
+                            <ExternalLink size={12} className="text-white/45" />
+                            Nguồn sưu tầm: {sourceName}
+                        </p>
+                        <p>Tài nguyên mở tại website nguồn; không sao chép/lưu trữ nội dung trên hệ thống.</p>
+                    </div>
+                )}
             </div>
 
             {/* Arrow indicator with animation */}
@@ -819,11 +969,26 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('denHung3D') && <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" />}
                                         {!hiddenApps.includes('thatLuong3D') && <ToolCard title="Mô hình 3D - Thạt Luổng" description="Khám phá kiến trúc Thạt Luổng với mô hình 3D tương tác" icon={<span className="text-2xl">🕍</span>} accentColor="bg-gradient-to-br from-yellow-600 to-amber-700" onClick={onThatLuong3D} badge="Mới" />}
                                         {!hiddenApps.includes('dinhDocLap3D') && <ToolCard title="Khám phá Dinh Độc Lập 3D" description="Tham quan Dinh Độc Lập lịch sử qua mô hình 3D tương tác · 30/4" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-yellow-700 to-red-800" onClick={onDinhDocLap3D} badge="30/4" />}
+                                        {VR360_DISCOVERY_LINKS.map(item => (
+                                            !hiddenApps.includes(item.id) && (
+                                                <ToolCard
+                                                    key={item.id}
+                                                    title={item.title}
+                                                    description={item.description}
+                                                    icon={<span className="text-2xl">{item.icon}</span>}
+                                                    accentColor={item.accentColor}
+                                                    onClick={() => window.location.assign(item.url)}
+                                                    badge={item.badge}
+                                                    sourceName={item.sourceName}
+                                                    audience={item.audience}
+                                                />
+                                            )
+                                        ))}
                                     </div>
                                 </section>
                             )}
 
-                            {/* ─── SECTION: MÔ PHỎNG KHOA HỌC ─── */}
+                            {/* ─── SECTION: MÔ PHỎNG & THÍ NGHIỆM ─── */}
                             {(activeTab === 'all' || activeTab === 'science') && (
                                 <section className="mb-10">
                                     {activeTab === 'all' && (
@@ -832,7 +997,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                 <span className="text-xl">🧪</span>
                                             </div>
                                             <div>
-                                                <h2 className="text-xl font-bold text-white">Mô phỏng khoa học</h2>
+                                                <h2 className="text-xl font-bold text-white">Mô phỏng & Thí nghiệm</h2>
                                                 <p className="text-xs text-white/50">Thí nghiệm ảo và mô phỏng tương tác</p>
                                             </div>
                                         </div>
@@ -843,6 +1008,21 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('clockExperiment') && <ToolCard title="Xem Giờ Trên Đồng Hồ" description="Học cách xem giờ trên đồng hồ kim và đồng hồ số" icon={<span className="text-2xl">⏰</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onClockExperiment} badge="Mới" />}
                                         {!hiddenApps.includes('yogurtExperiment') && <ToolCard title="Thí nghiệm làm Sữa chua" description="Mô phỏng thí nghiệm làm sữa chua với vi khuẩn lactic" icon={<span className="text-2xl">🥛</span>} accentColor="bg-gradient-to-br from-pink-500 to-purple-600" onClick={onYogurtExperiment} badge="Mới" />}
                                         {!hiddenApps.includes('earthSeasons') && <ToolCard title="Chuyển động Trái Đất & Các Mùa" description="Mô phỏng quỹ đạo Trái Đất, trục nghiêng và sự hình thành 4 mùa" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-blue-600" onClick={onEarthSeasons} badge="Mới" />}
+                                        {PHET_SIMULATION_LINKS.map(item => (
+                                            !hiddenApps.includes(item.id) && (
+                                                <ToolCard
+                                                    key={item.id}
+                                                    title={item.title}
+                                                    description={item.description}
+                                                    icon={<span className="text-2xl">{item.icon}</span>}
+                                                    accentColor={item.accentColor}
+                                                    onClick={() => window.location.assign(item.url)}
+                                                    badge={item.badge}
+                                                    sourceName={PHET_SOURCE_NAME}
+                                                    audience={item.audience}
+                                                />
+                                            )
+                                        ))}
                                     </div>
                                 </section>
                             )}

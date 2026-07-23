@@ -7,9 +7,10 @@ export const ALL_APP_IDS = [
     'vongQuay', 'luckyWheel', 'starWheel',
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
     'clockExperiment', 'sensesExplorer', 'yogurtExperiment', 'earthSeasons',
+    'phetForcesMotion', 'phetCircuitDc', 'phetStaticElectricity', 'phetMatterStates', 'phetDensity', 'phetBuildAtom',
     'aiCourseStore', 'soanGiaoAnNangLucSo', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'phongTranh3D', 'chucTet', 'denHung3D', 'thatLuong3D',
-    'dinhDocLap3D', 'solarSystem',
+    'dinhDocLap3D', 'solarSystem', 'hue360', 'hoiAn360', 'phongNha360', 'haLong360', 'ninhBinh360', 'kimLien360',
     'bangCuuChuong', 'gameTuongTac', 'gameTuyChinh', 'kyYeuCuoiNam', 'thiepMoiOnline',
     'qrGenerator',
     'nhayBaoBo', 'keoCoTriTue',
@@ -38,11 +39,17 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     puzzleGame: { name: 'Giải Mã Bức Tranh', icon: '🧩', section: 'Công cụ dạy học' },
     treasureHunt: { name: 'Truy Tìm Kho Báu', icon: '🏴‍☠️', section: 'Công cụ dạy học' },
     videoStore: { name: 'Kho Video AI', icon: '🎬', section: 'Công cụ dạy học' },
-    // ── Mô phỏng khoa học ──
-    virtualExperiment: { name: 'Thí nghiệm ảo tách muối', icon: '🧪', section: 'Mô phỏng khoa học' },
-    clockExperiment: { name: 'Xem Giờ Trên Đồng Hồ', icon: '⏰', section: 'Mô phỏng khoa học' },
-    yogurtExperiment: { name: 'Thí nghiệm làm Sữa chua', icon: '🧫', section: 'Mô phỏng khoa học' },
-    earthSeasons: { name: 'Chuyển động Trái Đất', icon: '🌍', section: 'Mô phỏng khoa học' },
+    // ── Mô phỏng & Thí nghiệm ──
+    virtualExperiment: { name: 'Thí nghiệm ảo tách muối', icon: '🧪', section: 'Mô phỏng & Thí nghiệm' },
+    clockExperiment: { name: 'Xem Giờ Trên Đồng Hồ', icon: '⏰', section: 'Mô phỏng & Thí nghiệm' },
+    yogurtExperiment: { name: 'Thí nghiệm làm Sữa chua', icon: '🧫', section: 'Mô phỏng & Thí nghiệm' },
+    earthSeasons: { name: 'Chuyển động Trái Đất', icon: '🌍', section: 'Mô phỏng & Thí nghiệm' },
+    phetForcesMotion: { name: 'PhET - Lực và chuyển động', icon: '🧲', section: 'Mô phỏng & Thí nghiệm' },
+    phetCircuitDc: { name: 'PhET - Mạch điện DC', icon: '💡', section: 'Mô phỏng & Thí nghiệm' },
+    phetStaticElectricity: { name: 'PhET - Tĩnh điện', icon: '⚡', section: 'Mô phỏng & Thí nghiệm' },
+    phetMatterStates: { name: 'PhET - Trạng thái vật chất', icon: '🧊', section: 'Mô phỏng & Thí nghiệm' },
+    phetDensity: { name: 'PhET - Khối lượng riêng', icon: '⚖️', section: 'Mô phỏng & Thí nghiệm' },
+    phetBuildAtom: { name: 'PhET - Tạo nguyên tử', icon: '⚛️', section: 'Mô phỏng & Thí nghiệm' },
     // ── Khóa học & AI ──
     aiCourseStore: { name: 'Kho Khóa học AI', icon: '🎓', section: 'Khóa học & AI' },
     soanGiaoAnNangLucSo: { name: 'Soạn giáo án Năng lực số - AI', icon: '✨', section: 'Khóa học & AI' },
@@ -59,6 +66,12 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     denHung3D: { name: 'Phòng Tranh 3D - Đền Hùng', icon: '🏛️', section: 'Ứng dụng 3D & VR' },
     thatLuong3D: { name: 'Mô hình 3D - Thạt Luổng', icon: '🕍', section: 'Ứng dụng 3D & VR' },
     dinhDocLap3D: { name: 'Khám phá Dinh Độc Lập 3D', icon: '🏛️', section: 'Ứng dụng 3D & VR' },
+    hue360: { name: 'VR360 Cố đô Huế', icon: '🏯', section: 'Ứng dụng 3D & VR' },
+    hoiAn360: { name: 'VR360 Phố cổ Hội An', icon: '🏮', section: 'Ứng dụng 3D & VR' },
+    phongNha360: { name: 'VR360 Phong Nha', icon: '⛰️', section: 'Ứng dụng 3D & VR' },
+    haLong360: { name: 'VR360 Vịnh Hạ Long', icon: '🌊', section: 'Ứng dụng 3D & VR' },
+    ninhBinh360: { name: 'VR360 Ninh Bình', icon: '🛶', section: 'Ứng dụng 3D & VR' },
+    kimLien360: { name: 'VR360 Làng Kim Liên', icon: '🌾', section: 'Ứng dụng 3D & VR' },
     // ── Học liệu tương tác ──
     bangCuuChuong: { name: 'Bảng Cửu Chương Số', icon: '🔢', section: 'Học liệu tương tác' },
     gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
@@ -69,7 +82,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     nhanXetTT27: { name: 'Nhận Xét TT27', icon: '📝', section: 'Khóa học & AI' },
     thuMoiTuongTac: { name: 'Thư Mời Họp Phụ Huynh', icon: '✉️', section: 'Học liệu tương tác' },
     thuMoiDauNam: { name: 'Thư Mời Họp Phụ Huynh Đầu Năm', icon: '🏫', section: 'Học liệu tương tác' },
-    sensesExplorer: { name: 'Biệt đội 5 giác quan', icon: '👁️', section: 'Mô phỏng khoa học' },
+    sensesExplorer: { name: 'Biệt đội 5 giác quan', icon: '👁️', section: 'Mô phỏng & Thí nghiệm' },
 };
 
 

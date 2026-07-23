@@ -1967,14 +1967,14 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
 
                         {/* App List - Accordion */}
                         <div className="flex-1 overflow-y-auto pr-1 space-y-1.5">
-                            {(['Công cụ dạy học', 'Khóa học & AI', 'Ứng dụng 3D & VR', 'Mô phỏng khoa học', 'Học liệu tương tác', 'Công cụ viết'] as const).map(section => {
+                            {(['Công cụ dạy học', 'Khóa học & AI', 'Ứng dụng 3D & VR', 'Mô phỏng & Thí nghiệm', 'Học liệu tương tác', 'Công cụ viết'] as const).map(section => {
                                 const sectionApps = ALL_APP_IDS.filter(id => APP_INFO[id].section === section);
                                 if (sectionApps.length === 0) return null;
                                 const enabledCount = sectionApps.filter(id => appVisibility.apps[id] !== false).length;
                                 const allOn = enabledCount === sectionApps.length;
                                 const isExpanded = expandedSections.includes(section);
                                 const sectionIcons: Record<string, string> = {
-                                    'Công cụ dạy học': '⚡', 'Mô phỏng khoa học': '🧪',
+                                    'Công cụ dạy học': '⚡', 'Mô phỏng & Thí nghiệm': '🧪',
                                     'Khóa học & AI': '🧠', 'Ứng dụng 3D & VR': '📦', 'Học liệu tương tác': '📚', 'Công cụ viết': '✍️'
                                 };
                                 return (
