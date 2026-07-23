@@ -225,6 +225,13 @@ const PHET_SIMULATION_LINKS = [
 
 const PHET_SOURCE_NAME = 'PhET Interactive Simulations, University of Colorado Boulder - phet.colorado.edu';
 
+type ExternalResource = {
+    title: string;
+    url: string;
+    sourceName: string;
+    audience?: string;
+};
+
 // Professional Tool Card Component
 interface ToolCardProps {
     title: string;
@@ -352,6 +359,60 @@ const ToolCard: React.FC<ToolCardProps> = ({
     );
 };
 
+const ExternalResourceViewer: React.FC<{
+    resource: ExternalResource;
+    onBack: () => void;
+}> = ({ resource, onBack }) => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 z-[120] flex flex-col bg-slate-950 text-white"
+    >
+        <header className="flex flex-col gap-3 border-b border-white/10 bg-slate-950/95 px-4 py-3 backdrop-blur-xl md:flex-row md:items-center md:justify-between">
+            <div className="flex min-w-0 items-center gap-3">
+                <button
+                    onClick={onBack}
+                    className="flex-shrink-0 rounded-xl bg-emerald-500 px-4 py-2 text-sm font-extrabold text-white shadow-lg shadow-emerald-500/20 transition hover:bg-emerald-400"
+                >
+                    ← Quay lại GIAOVIENCN
+                </button>
+                <div className="min-w-0">
+                    <h2 className="truncate text-base font-extrabold md:text-lg">{resource.title}</h2>
+                    <p className="truncate text-xs font-semibold text-white/55">Nguồn sưu tầm: {resource.sourceName}</p>
+                </div>
+            </div>
+            <div className="flex items-center gap-2 text-xs font-semibold text-white/60">
+                {resource.audience && <span className="hidden rounded-full border border-white/10 px-3 py-1 md:inline">Đối tượng: {resource.audience}</span>}
+                <button
+                    onClick={() => window.location.assign(resource.url)}
+                    className="inline-flex items-center gap-1.5 rounded-xl border border-white/15 px-3 py-2 text-white/80 transition hover:bg-white/10 hover:text-white"
+                >
+                    <ExternalLink size={14} />
+                    Mở website nguồn
+                </button>
+                <button
+                    onClick={onBack}
+                    className="grid h-9 w-9 place-items-center rounded-xl border border-white/15 text-white/70 transition hover:bg-white/10 hover:text-white"
+                    aria-label="Đóng trình xem tài nguyên"
+                >
+                    <X size={18} />
+                </button>
+            </div>
+        </header>
+        <div className="bg-slate-900 px-4 py-2 text-[11px] font-semibold leading-relaxed text-white/55">
+            Tài nguyên mở trực tiếp từ website nguồn; hệ thống chỉ tạo khung điều hướng để quay lại trang GIAOVIENCN, không sao chép/lưu trữ nội dung.
+        </div>
+        <iframe
+            src={resource.url}
+            title={resource.title}
+            className="min-h-0 flex-1 border-0 bg-white"
+            allow="fullscreen; autoplay; encrypted-media; clipboard-write"
+            allowFullScreen
+        />
+    </motion.div>
+);
+
 // Video List Item
 const VideoItem: React.FC<{
     lesson: VideoLesson;
@@ -453,6 +514,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const [isVerifying, setIsVerifying] = useState(false);
     const [showDonateModal, setShowDonateModal] = useState(false);
     const [showZaloModal, setShowZaloModal] = useState(false);
+    const [activeExternalResource, setActiveExternalResource] = useState<ExternalResource | null>(null);
     const [activeTab, setActiveTab] = useState('all');
     const [showUpdateBanner, setShowUpdateBanner] = useState(() => {
         return !sessionStorage.getItem('skkn_update_dismissed');
@@ -566,6 +628,15 @@ const Dashboard: React.FC<DashboardProps> = ({
             />
             {/* Overlay for readability */}
             <div className="fixed inset-0 bg-black/30 -z-10" />
+
+            <AnimatePresence>
+                {activeExternalResource && (
+                    <ExternalResourceViewer
+                        resource={activeExternalResource}
+                        onBack={() => setActiveExternalResource(null)}
+                    />
+                )}
+            </AnimatePresence>
 
             {/* Header */}
             <header className="border-b border-white/10 sticky top-0 z-50 bg-black/20 backdrop-blur-xl">
@@ -1016,7 +1087,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                                                     description={item.description}
                                                     icon={<span className="text-2xl">{item.icon}</span>}
                                                     accentColor={item.accentColor}
-                                                    onClick={() => window.location.assign(item.url)}
+                                                    onClick={() => setActiveExternalResource({
+                                                        title: item.title,
+                                                        url: item.url,
+                                                        sourceName: PHET_SOURCE_NAME,
+                                                        audience: item.audience,
+                                                    })}
                                                     badge={item.badge}
                                                     sourceName={PHET_SOURCE_NAME}
                                                     audience={item.audience}
