@@ -197,10 +197,11 @@ const ThuMoiDauNam: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin 
     loadUserList();
   };
 
-  const handleCreateNew = () => {
+  const handleCreateNew = (audience: 'general' | 'preschool' = 'general') => {
     setEditingShortId(null);
     setIframeLoadError('');
-    setIframeSrc('/thumoiphdaunam/thumoiphdaunam/index.html');
+    const audienceQuery = audience === 'preschool' ? '?audience=preschool' : '';
+    setIframeSrc(`/thumoiphdaunam/thumoiphdaunam/index.html${audienceQuery}`);
     setView('IFRAME');
   };
 
@@ -287,18 +288,27 @@ const ThuMoiDauNam: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin 
       {view === 'DASHBOARD' && (
         <div className="flex-1 overflow-y-auto p-4 md:p-8">
           <div className="max-w-5xl mx-auto">
-            <div className="flex items-center justify-between mb-8">
+            <div className="flex flex-col gap-4 mb-8 md:flex-row md:items-center md:justify-between">
               <div>
                 <h2 className="text-2xl font-bold text-white mb-2">Thư mời của bạn</h2>
                 <p className="text-white/60">Quản lý thư mời đầu năm và xem danh sách phụ huynh xác nhận.</p>
               </div>
-              <button
-                onClick={handleCreateNew}
-                className="flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-amber-400 hover:from-emerald-400 hover:via-teal-400 hover:to-amber-300 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/25"
-              >
-                <Plus className="w-5 h-5" />
-                Tạo thư mời đầu năm
-              </button>
+              <div className="flex flex-wrap items-center justify-end gap-3">
+                <button
+                  onClick={() => handleCreateNew('general')}
+                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-amber-400 hover:from-emerald-400 hover:via-teal-400 hover:to-amber-300 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/25"
+                >
+                  <Plus className="w-5 h-5" />
+                  Tiểu học - phổ thông
+                </button>
+                <button
+                  onClick={() => handleCreateNew('preschool')}
+                  className="flex items-center gap-2 px-5 py-3 bg-gradient-to-r from-amber-300 via-pink-500 to-sky-400 hover:from-amber-200 hover:via-pink-400 hover:to-sky-300 text-white font-semibold rounded-xl transition-all shadow-lg shadow-pink-500/25"
+                >
+                  <Plus className="w-5 h-5" />
+                  Mầm non
+                </button>
+              </div>
             </div>
 
             {isLoading ? (
@@ -320,7 +330,7 @@ const ThuMoiDauNam: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin 
                     Tải lại danh sách
                   </button>
                   <button
-                    onClick={handleCreateNew}
+                    onClick={() => handleCreateNew('general')}
                     className="px-6 py-3 bg-gradient-to-r from-emerald-500 via-teal-500 to-amber-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-emerald-500/25"
                   >
                     Tạo thư mời đầu năm
@@ -334,12 +344,20 @@ const ThuMoiDauNam: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin 
                 </div>
                 <h3 className="text-xl font-bold text-white mb-2">Chưa có thư mời nào</h3>
                 <p className="text-white/50 mb-6">Bạn chưa tạo thư mời họp phụ huynh đầu năm nào. Hãy bắt đầu tạo ngay nhé!</p>
-                <button
-                  onClick={handleCreateNew}
-                  className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all border border-white/10"
-                >
-                  Tạo thư mời đầu năm đầu tiên
-                </button>
+                <div className="flex flex-wrap items-center justify-center gap-3">
+                  <button
+                    onClick={() => handleCreateNew('general')}
+                    className="px-6 py-3 bg-white/10 hover:bg-white/20 text-white font-medium rounded-xl transition-all border border-white/10"
+                  >
+                    Tạo thư mời đầu năm đầu tiên
+                  </button>
+                  <button
+                    onClick={() => handleCreateNew('preschool')}
+                    className="px-6 py-3 bg-gradient-to-r from-amber-300 via-pink-500 to-sky-400 text-white font-semibold rounded-xl transition-all shadow-lg shadow-pink-500/25"
+                  >
+                    Tạo thư mời mầm non
+                  </button>
+                </div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -347,6 +365,9 @@ const ThuMoiDauNam: React.FC<Props> = ({ onBack, sharedId, user, onRequireLogin 
                   <div key={item.shortId} className="bg-slate-800 border border-slate-700 rounded-2xl p-6 hover:border-emerald-400/50 transition-colors group">
                     <div className="flex justify-between items-start mb-4">
                       <div>
+                        <span className={`mb-2 inline-flex rounded-full px-2.5 py-1 text-xs font-bold ${item.config?.audience === 'preschool' ? 'bg-pink-500/15 text-pink-200' : 'bg-teal-500/15 text-teal-200'}`}>
+                          {item.config?.audience === 'preschool' ? 'Mầm non' : 'Tiểu học - phổ thông'}
+                        </span>
                         <h3 className="text-xl font-bold text-white mb-1">Lớp {item.config?.className || 'Chưa rõ'}</h3>
                         <p className="text-white/50 text-sm flex items-center gap-1"><Calendar className="w-4 h-4"/> {new Date(item.createdAt).toLocaleDateString('vi-VN')}</p>
                       </div>

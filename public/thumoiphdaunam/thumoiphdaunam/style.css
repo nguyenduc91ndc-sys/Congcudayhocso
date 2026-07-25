@@ -116,6 +116,156 @@ body.theme-lavender {
     --img-filter-strong: sepia(0.2) saturate(1.4) hue-rotate(240deg) brightness(1.1);
 }
 
+body.theme-preschool {
+    --bg-main: #fff7ed;
+    --bg-card: #ffffff;
+    --bg-paper: #fffaf0;
+    --accent: #f97316;
+    --accent-light: #22c55e;
+    --accent-gradient: linear-gradient(135deg, #f97316, #ec4899 46%, #22c55e);
+    --text-primary: #3f2d20;
+    --text-secondary: #6b4930;
+    --text-muted: #8a6f5c;
+    --env-back: #fed7aa;
+    --env-front: #fff7ad;
+    --env-front-bottom: rgba(254,240,138,0.88), rgba(187,247,208,0.9);
+    --env-seal-bg: radial-gradient(circle, #ec4899 26%, #f97316 62%, #22c55e);
+    --env-seal-border: #fb7185;
+    --env-seal-shadow: rgba(236, 72, 153, 0.32);
+    --border-light: #fed7aa;
+    --border-input: #fdba74;
+    --border-input-focus: #f97316;
+    --input-bg: #fffaf0;
+    --petal-color-1: #fb7185;
+    --petal-color-2: #facc15;
+    --letter-info-bg: rgba(255,247,237,0.76);
+    --letter-info-border: #fb7185;
+    --letter-greeting: #ec4899;
+    --sch-icon-bg: linear-gradient(135deg, #fef08a, #bbf7d0 52%, #bfdbfe);
+    --sch-icon-border: #fdba74;
+    --sch-line-gradient: linear-gradient(180deg, #fb7185, #facc15, #22c55e, #60a5fa);
+    --choice-bg: #fff7ed;
+    --choice-color: #9a3412;
+    --choice-border: #fed7aa;
+    --note-bg: #ecfeff;
+    --note-border: #67e8f9;
+    --cover-overlay: rgba(255, 247, 237, 0.56);
+    --fab-pulse: rgba(249, 115, 22, 0.3);
+    --img-filter: saturate(1.18) brightness(1.04);
+    --img-filter-strong: saturate(1.22) brightness(1.05);
+}
+
+body.audience-preschool .letter-paper::before,
+body.audience-preschool .env-letter::before {
+    border-color: rgba(236, 72, 153, 0.28);
+}
+
+body.audience-preschool .animated-env-wrapper {
+    filter: drop-shadow(0 18px 34px rgba(236, 72, 153, 0.22));
+}
+
+body.audience-preschool .env-back {
+    background:
+        radial-gradient(circle at 18% 18%, rgba(125, 211, 252, 0.8), transparent 28%),
+        radial-gradient(circle at 84% 22%, rgba(251, 113, 133, 0.72), transparent 30%),
+        linear-gradient(135deg, #fde68a, #fbcfe8 48%, #bbf7d0);
+    box-shadow: 0 14px 36px rgba(249, 115, 22, 0.2);
+}
+
+body.audience-preschool .env-letter {
+    background:
+        radial-gradient(circle at 18% 16%, rgba(251, 207, 232, 0.72), transparent 28%),
+        radial-gradient(circle at 82% 18%, rgba(191, 219, 254, 0.72), transparent 28%),
+        radial-gradient(circle at 50% 82%, rgba(254, 240, 138, 0.7), transparent 34%),
+        linear-gradient(135deg, rgba(255,255,255,0.96), rgba(236,253,245,0.92)),
+        var(--bg-paper);
+    border: 2px solid rgba(251, 113, 133, 0.35);
+}
+
+body.audience-preschool .sch-content {
+    border-width: 2px;
+}
+
+body.audience-preschool .env-letter::before {
+    background:
+        url('images/preschool_letter_bg_3d.png?v=20260723-vietnam3d2') center/cover no-repeat,
+        linear-gradient(135deg, rgba(255,255,255,0.7), rgba(255,247,237,0.7));
+    opacity: 0.19;
+}
+
+body.audience-preschool .env-letter::after {
+    background:
+        linear-gradient(90deg, rgba(236,72,153,0.18), transparent 30%, transparent 70%, rgba(34,197,94,0.16)),
+        linear-gradient(180deg, rgba(250,204,21,0.16), transparent 30%, transparent 76%, rgba(96,165,250,0.14));
+    opacity: 0.82;
+}
+
+body.audience-preschool .env-letter-top {
+    color: #ec4899;
+    text-shadow: 0 2px 0 rgba(255,255,255,0.9), 0 8px 18px rgba(236,72,153,0.18);
+}
+
+body.audience-preschool .env-letter-title {
+    color: #134e4a;
+}
+
+body.audience-preschool .env-letter-year {
+    color: #0f766e;
+}
+
+body.audience-preschool .env-letter-stamp {
+    color: #0f766e;
+    border-color: rgba(20, 184, 166, 0.62);
+    background: rgba(236, 253, 245, 0.82);
+    box-shadow: 0 4px 12px rgba(20, 184, 166, 0.14);
+}
+
+body.audience-preschool .env-front-left {
+    background:
+        linear-gradient(155deg, rgba(255, 255, 255, 0.24), transparent 34%),
+        linear-gradient(135deg, #fde68a, #fbcfe8 70%);
+}
+
+body.audience-preschool .env-front-right {
+    background:
+        linear-gradient(205deg, rgba(255, 255, 255, 0.26), transparent 34%),
+        linear-gradient(225deg, #bae6fd, #bbf7d0 70%);
+}
+
+body.audience-preschool .env-front-bottom {
+    background:
+        radial-gradient(circle at 18% 82%, rgba(96,165,250,0.2), transparent 24%),
+        radial-gradient(circle at 84% 80%, rgba(236,72,153,0.22), transparent 24%),
+        linear-gradient(135deg, rgba(254,240,138,0.96), rgba(251,207,232,0.94) 50%, rgba(187,247,208,0.92)),
+        repeating-linear-gradient(135deg, rgba(255,255,255,0.22) 0 2px, transparent 2px 18px);
+}
+
+body.audience-preschool .env-flap {
+    background:
+        radial-gradient(circle at 22% 18%, rgba(251,113,133,0.22), transparent 30%),
+        radial-gradient(circle at 80% 18%, rgba(96,165,250,0.22), transparent 30%),
+        linear-gradient(135deg, rgba(251,207,232,0.96), rgba(254,240,138,0.94) 50%, rgba(187,247,208,0.92));
+}
+
+body.audience-preschool .env-wax-seal {
+    background: radial-gradient(circle at 34% 30%, #fef08a 0 18%, #fb7185 42%, #f97316 68%, #14b8a6 100%);
+    border: 3px solid rgba(255,255,255,0.9);
+    color: #fff;
+    box-shadow:
+        0 0 0 4px rgba(251, 113, 133, 0.22),
+        0 8px 18px rgba(236, 72, 153, 0.34),
+        inset 0 2px 5px rgba(255,255,255,0.38);
+}
+
+body.audience-preschool .thankyou-card::before {
+    content: '✦';
+    position: absolute;
+    top: 14px;
+    left: 18px;
+    color: #facc15;
+    font-size: 1.4rem;
+}
+
 /* ===== RESET & BASE ===== */
 *, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
 html { scroll-behavior: smooth; }
@@ -726,6 +876,67 @@ body {
     font-size: 0.75rem; color: var(--text-muted); margin-top: 4px;
     font-style: italic;
 }
+.audience-picker {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+.audience-option {
+    cursor: pointer;
+}
+.audience-option input {
+    display: none;
+}
+.audience-card {
+    min-height: 122px;
+    border-radius: 12px;
+    border: 3px solid transparent;
+    padding: 14px 12px;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 6px;
+    transition: transform 0.25s ease, box-shadow 0.25s ease, border-color 0.25s ease;
+}
+.audience-card-icon {
+    font-size: 1.65rem;
+}
+.audience-card-title {
+    color: inherit;
+    font-size: 0.92rem;
+    font-weight: 800;
+    line-height: 1.25;
+}
+.audience-card-desc {
+    color: currentColor;
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.35;
+    opacity: 0.72;
+}
+.audience-general {
+    background: linear-gradient(135deg, #f3fbf7, #fff8db);
+    color: #0f766e;
+    border-color: #bee3d4;
+}
+.audience-preschool-card {
+    background:
+        radial-gradient(circle at 18% 16%, rgba(250,204,21,0.48), transparent 34%),
+        radial-gradient(circle at 86% 22%, rgba(236,72,153,0.24), transparent 34%),
+        linear-gradient(135deg, #fff7ed, #ecfeff 56%, #fdf2f8);
+    color: #9a3412;
+    border-color: #fdba74;
+}
+.audience-option input:checked + .audience-card {
+    transform: scale(1.03);
+    box-shadow: 0 6px 18px rgba(15, 23, 42, 0.14);
+}
+.audience-option input:checked + .audience-general {
+    border-color: #0f766e;
+}
+.audience-option input:checked + .audience-preschool-card {
+    border-color: #ec4899;
+}
 .share-link-box {
     margin-top: 20px; padding: 16px; background: #f0fdf4;
     border-radius: 12px; border: 2px solid #27ae60;
@@ -819,7 +1030,7 @@ body {
 
 /* ===== THEME PICKER ===== */
 .theme-picker {
-    display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px;
+    display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px;
     margin-top: 8px;
 }
 .theme-option { cursor: pointer; }
@@ -846,6 +1057,11 @@ body {
     background: #f5f0ff; color: #6c3483;
     border-color: #d7bde2;
 }
+.theme-preview-preschool {
+    background: linear-gradient(135deg, #fef08a, #fb7185 52%, #7dd3fc);
+    color: #7c2d12;
+    border-color: #fdba74;
+}
 .theme-option input:checked + .theme-preview-classic {
     border-color: #0f766e; box-shadow: 0 4px 16px rgba(15,118,110,0.25);
     transform: scale(1.04);
@@ -856,6 +1072,10 @@ body {
 }
 .theme-option input:checked + .theme-preview-lavender {
     border-color: #6c3483; box-shadow: 0 4px 16px rgba(108,52,131,0.25);
+    transform: scale(1.04);
+}
+.theme-option input:checked + .theme-preview-preschool {
+    border-color: #ec4899; box-shadow: 0 4px 16px rgba(236,72,153,0.24);
     transform: scale(1.04);
 }
 
@@ -885,6 +1105,8 @@ body {
     }
     .fab-icon { font-size: 1.2rem; }
     .fab-text { font-size: 0.85rem; }
+    .audience-picker { grid-template-columns: 1fr; }
+    .theme-picker { grid-template-columns: repeat(2, 1fr); }
     
     .music-toggle { bottom: 16px; left: 16px; width: 40px; height: 40px; font-size: 1rem; }
 }

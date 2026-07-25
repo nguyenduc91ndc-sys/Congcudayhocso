@@ -8,7 +8,7 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@400;500;600;700&family=Great+Vibes&family=Quicksand:wght@400;500;600;700&family=Playfair+Display:ital,wght@0,400;0,700;1,400&display=swap" rel="stylesheet">
-    <link rel="stylesheet" href="style.css?v=20260722-clear-vietnamese">
+    <link rel="stylesheet" href="style.css?v=20260723-envelope-color">
 <body>
     <div class="petals-container" id="petals"></div>
 
@@ -34,6 +34,28 @@
             <p class="settings-desc">Nhập thông tin bên dưới, sau đó copy link chia sẻ cho phụ huynh.</p>
             <a href="https://youtu.be/2DRyEOnaAk0" target="_blank" rel="noopener" class="btn-video-guide" id="btnVideoGuide">📺 Xem video hướng dẫn sử dụng</a>
             <form id="settingsForm">
+                <div class="form-group">
+                    <label>🎒 Đối tượng thư mời</label>
+                    <p class="input-hint" style="margin-bottom: 8px;">Chọn nhóm phù hợp, nội dung và màu sắc sẽ tự điều chỉnh.</p>
+                    <div class="audience-picker">
+                        <label class="audience-option">
+                            <input type="radio" name="cfgAudience" value="general" checked>
+                            <div class="audience-card audience-general">
+                                <span class="audience-card-icon">🏫</span>
+                                <span class="audience-card-title">Tiểu học - phổ thông</span>
+                                <span class="audience-card-desc">Giữ mẫu đầu năm hiện tại</span>
+                            </div>
+                        </label>
+                        <label class="audience-option">
+                            <input type="radio" name="cfgAudience" value="preschool">
+                            <div class="audience-card audience-preschool-card">
+                                <span class="audience-card-icon">🧸</span>
+                                <span class="audience-card-title">Mầm non</span>
+                                <span class="audience-card-desc">Màu sắc, thân thiện cho ba mẹ và bé</span>
+                            </div>
+                        </label>
+                    </div>
+                </div>
                 <div class="form-group">
                     <label for="cfgTeacher">👩‍🏫 Tên giáo viên chủ nhiệm</label>
                     <input type="text" id="cfgTeacher" placeholder="Ví dụ: Thầy/Cô Nguyễn Văn A" required>
@@ -87,6 +109,13 @@
                             <div class="theme-card theme-preview-lavender">
                                 <span class="theme-card-icon">🌸</span>
                                 <span class="theme-card-name">Lavender</span>
+                            </div>
+                        </label>
+                        <label class="theme-option">
+                            <input type="radio" name="cfgTheme" value="preschool">
+                            <div class="theme-card theme-preview-preschool">
+                                <span class="theme-card-icon">🧸</span>
+                                <span class="theme-card-name">Mầm non</span>
                             </div>
                         </label>
                     </div>
@@ -264,6 +293,6 @@
 
     <!-- QR Code Styling Library -->
     <script src="https://cdn.jsdelivr.net/npm/qr-code-styling@1.5.0/lib/qr-code-styling.js"></script>
-    <script src="script.js?v=20260722-education-bg"></script>
+    <script src="script.js?v=20260723-preschool3d"></script>
 </body>
 </html>

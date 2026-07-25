@@ -4,7 +4,30 @@ document.addEventListener('DOMContentLoaded', () => {
     // ║  Phan hoi phu huynh duoc luu tren trang thu moi/Firebase ║
     // ╚══════════════════════════════════════════════════════════╝
 
+    const AUDIENCE_GENERAL = 'general';
+    const AUDIENCE_PRESCHOOL = 'preschool';
+
+    const DEFAULT_TIMELINES = {
+        general: [
+            { time: "07:30 - 08:00", title: "ĐÓN TIẾP PHỤ HUYNH", desc: "Ổn định tổ chức, điểm danh và gửi tài liệu đầu năm." },
+            { time: "08:00 - 08:15", title: "KHAI MẠC & LÀM QUEN", desc: "Giáo viên chủ nhiệm chào mừng phụ huynh, giới thiệu định hướng chung của lớp." },
+            { time: "08:15 - 08:45", title: "THỐNG NHẤT KẾ HOẠCH NĂM HỌC", desc: "Trao đổi mục tiêu học tập, nề nếp lớp, lịch học và các hoạt động trọng tâm." },
+            { time: "08:45 - 09:15", title: "PHỐI HỢP GIA ĐÌNH - NHÀ TRƯỜNG", desc: "Thống nhất cách theo dõi, hỗ trợ học sinh và kênh liên lạc trong năm học." },
+            { time: "09:15 - 09:45", title: "TRAO ĐỔI & GIẢI ĐÁP", desc: "Lắng nghe ý kiến, nguyện vọng và những thông tin cần lưu ý từ phụ huynh." },
+            { time: "09:45 - 10:00", title: "CAM KẾT ĐỒNG HÀNH", desc: "Tổng hợp nội dung thống nhất, cảm ơn phụ huynh và kết thúc buổi họp." }
+        ],
+        preschool: [
+            { time: "07:30 - 08:00", title: "ĐÓN BA MẸ & CÁC BÉ", desc: "Cô giáo chào đón gia đình, ổn định chỗ ngồi và làm quen không gian lớp." },
+            { time: "08:00 - 08:20", title: "CÂU CHUYỆN ĐẦU NĂM", desc: "Chia sẻ nhịp sinh hoạt, thói quen ăn ngủ, vui chơi và học tập của bé tại lớp." },
+            { time: "08:20 - 08:45", title: "KẾ HOẠCH CHĂM SÓC - GIÁO DỤC", desc: "Trao đổi mục tiêu phát triển ngôn ngữ, vận động, cảm xúc và kỹ năng tự phục vụ." },
+            { time: "08:45 - 09:10", title: "PHỐI HỢP CÙNG GIA ĐÌNH", desc: "Thống nhất cách trao đổi sức khỏe, đồ dùng cá nhân, giờ đón trả và kênh liên hệ." },
+            { time: "09:10 - 09:30", title: "LẮNG NGHE BA MẸ", desc: "Ghi nhận mong muốn, lưu ý riêng của từng bé để cô chăm sóc phù hợp hơn." },
+            { time: "09:30 - 09:45", title: "CÙNG BÉ KHỞI ĐỘNG NĂM HỌC", desc: "Chụp ảnh lưu niệm, gửi lời chúc và kết thúc buổi gặp mặt trong không khí vui tươi." }
+        ]
+    };
+
     let CONFIG = {
+        audience: AUDIENCE_GENERAL,
         teacher: '',
         school: '',
         className: '',
@@ -13,14 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
         deadline: '',
         email: '',
         theme: 'classic',
-        timeline: [
-            { time: "07:30 - 08:00", title: "ĐÓN TIẾP PHỤ HUYNH", desc: "Ổn định tổ chức, điểm danh và gửi tài liệu đầu năm." },
-            { time: "08:00 - 08:15", title: "KHAI MẠC & LÀM QUEN", desc: "Giáo viên chủ nhiệm chào mừng phụ huynh, giới thiệu định hướng chung của lớp." },
-            { time: "08:15 - 08:45", title: "THỐNG NHẤT KẾ HOẠCH NĂM HỌC", desc: "Trao đổi mục tiêu học tập, nề nếp lớp, lịch học và các hoạt động trọng tâm." },
-            { time: "08:45 - 09:15", title: "PHỐI HỢP GIA ĐÌNH - NHÀ TRƯỜNG", desc: "Thống nhất cách theo dõi, hỗ trợ học sinh và kênh liên lạc trong năm học." },
-            { time: "09:15 - 09:45", title: "TRAO ĐỔI & GIẢI ĐÁP", desc: "Lắng nghe ý kiến, nguyện vọng và những thông tin cần lưu ý từ phụ huynh." },
-            { time: "09:45 - 10:00", title: "CAM KẾT ĐỒNG HÀNH", desc: "Tổng hợp nội dung thống nhất, cảm ơn phụ huynh và kết thúc buổi họp." }
-        ]
+        timeline: [...DEFAULT_TIMELINES.general]
     };
 
     const FIREBASE_DB_URL = 'https://giaoviencongnghe-3c2a9-default-rtdb.asia-southeast1.firebasedatabase.app';
@@ -82,15 +98,181 @@ document.addEventListener('DOMContentLoaded', () => {
             const hash = window.location.hash.slice(1);
             if (hash) {
                 const decoded = decodeURIComponent(atob(hash));
-                CONFIG = JSON.parse(decoded);
+                CONFIG = { ...CONFIG, ...JSON.parse(decoded) };
                 return true;
             }
         } catch (e) { console.log('Không có config trong URL'); }
         return false;
     }
 
+    function getAudience() {
+        return CONFIG.audience === AUDIENCE_PRESCHOOL ? AUDIENCE_PRESCHOOL : AUDIENCE_GENERAL;
+    }
+
+    function getAudienceCopy() {
+        if (getAudience() === AUDIENCE_PRESCHOOL) {
+            return {
+                title: 'HỌP BA MẸ\nĐẦU NĂM',
+                year: '✦ NĂM HỌC 2026 - 2027 ✦',
+                greeting: 'Kính gửi Ba Mẹ của bé,',
+                intro: 'Năm học mới của các bé bắt đầu với thật nhiều sắc màu, nụ cười và những trải nghiệm đầu đời đáng nhớ.',
+                body: 'Nhà trường và giáo viên chủ nhiệm trân trọng kính mời Ba Mẹ tham dự buổi <strong>gặp mặt phụ huynh đầu năm</strong> để cùng trao đổi về nề nếp sinh hoạt, chăm sóc sức khỏe, vui chơi, học tập và cách phối hợp giúp bé đến lớp vui vẻ, an toàn mỗi ngày.',
+                closing: 'Sự đồng hành của Ba Mẹ sẽ giúp bé tự tin hơn trong những ngày đầu năm học và tạo nên một môi trường lớp học ấm áp, nhiều yêu thương.',
+                sign: 'Thân mến kính mời!',
+                scheduleSubtitle: 'BUỔI GẶP MẶT BA MẸ',
+                rsvpTitle: 'Xác nhận tham dự',
+                rsvpDesc: 'Để cô chuẩn bị đón tiếp chu đáo, kính mong Ba Mẹ xác nhận tham dự bên dưới.',
+                parentLabel: 'Ba/Mẹ của bé:',
+                studentLabel: 'Tên bé:',
+                studentPlaceholder: 'Ví dụ: Bé Bông',
+                classLabel: 'Lớp mầm non:',
+                classPlaceholder: 'Ví dụ: Mầm 1 / Chồi 2 / Lá 3',
+                noteTitle: 'Thông tin xác nhận',
+                noteText: 'Ba Mẹ vui lòng xác nhận trước ngày <span id="dispDeadline">03/09/2026</span> qua biểu mẫu hoặc liên hệ giáo viên chủ nhiệm.',
+                thankTitle: 'Lời nhắn yêu thương',
+                thanks: [
+                    'Cảm ơn Ba Mẹ đã tin tưởng, phối hợp và cùng cô chuẩn bị cho hành trình đến lớp thật vui của các bé.',
+                    'Sự quan tâm của gia đình sẽ giúp cô hiểu bé hơn, chăm sóc phù hợp hơn và tạo cho bé cảm giác an toàn khi ở lớp.',
+                    'Thân mến kính mời Ba Mẹ<br>tham dự buổi gặp mặt đầu năm học.',
+                    '<em>Hẹn gặp Ba Mẹ trong buổi gặp gỡ đầu năm!</em>'
+                ]
+            };
+        }
+
+        return {
+            title: 'HỌP PHỤ HUYNH\nĐẦU NĂM',
+            year: '✦ NĂM HỌC 2026 - 2027 ✦',
+            greeting: 'Kính gửi Quý Phụ Huynh,',
+            intro: 'Năm học mới đang bắt đầu với nhiều mục tiêu, kỳ vọng và cơ hội trưởng thành dành cho các con.',
+            body: 'Nhà trường và giáo viên chủ nhiệm trân trọng kính mời Quý phụ huynh tham dự buổi <strong>họp phụ huynh đầu năm học</strong> để cùng thống nhất kế hoạch, nề nếp, phương hướng phối hợp và các nội dung quan trọng trong năm học mới.',
+            closing: 'Sự hiện diện và đồng hành của Quý phụ huynh sẽ góp phần tạo nên một năm học chủ động, kỷ luật và yêu thương cho các con.',
+            sign: 'Trân trọng kính mời!',
+            scheduleSubtitle: 'BUỔI HỌP PHỤ HUYNH',
+            rsvpTitle: 'Xác nhận tham dự',
+            rsvpDesc: 'Để công tác tổ chức được chu đáo, kính mong Quý phụ huynh xác nhận tham dự bên dưới.',
+            parentLabel: 'Phụ huynh học sinh:',
+            studentLabel: 'Học sinh:',
+            studentPlaceholder: 'Ví dụ: Nguyễn Văn A',
+            classLabel: 'Lớp:',
+            classPlaceholder: 'Ví dụ: 5A1',
+            noteTitle: 'Thông tin xác nhận',
+            noteText: 'Quý phụ huynh vui lòng xác nhận trước ngày <span id="dispDeadline">03/09/2026</span> qua biểu mẫu hoặc liên hệ giáo viên chủ nhiệm.',
+            thankTitle: 'Lời đồng hành',
+            thanks: [
+                'Cảm ơn Quý phụ huynh đã tin tưởng, phối hợp và cùng GVCN chuẩn bị cho hành trình học tập mới của các con.',
+                'Sự quan tâm, thống nhất và đồng hành từ gia đình sẽ giúp các con bắt đầu năm học với tâm thế tự tin, nề nếp và nhiều động lực.',
+                'Trân trọng kính mời Quý phụ huynh<br>tham dự buổi họp đầu năm học.',
+                '<em>Hẹn gặp Quý phụ huynh trong buổi gặp gỡ đầu năm!</em>'
+            ]
+        };
+    }
+
+    function setImageSource(selector, src) {
+        const image = document.querySelector(selector);
+        if (image) image.src = src;
+    }
+
+    function applyAudienceAssets() {
+        const isPreschool = getAudience() === AUDIENCE_PRESCHOOL;
+        const assets = isPreschool
+            ? {
+                header: 'images/preschool_header_3d.png?v=20260723-vietnam3d2',
+                letter: 'images/preschool_letter_bg_3d.png?v=20260723-vietnam3d2',
+                program: 'images/preschool_letter_bg_3d.png?v=20260723-vietnam3d2',
+                thankyou: 'images/preschool_thankyou_3d.png?v=20260723-vietnam3d2'
+            }
+            : {
+                header: 'images/school_header.png?v=20260722-education-bg',
+                letter: 'images/letter_bg.png?v=20260722-education-bg',
+                program: 'images/program_banner.png?v=20260722-education-bg',
+                thankyou: 'images/thankyou.png?v=20260722-co-teachers'
+            };
+
+        setImageSource('.header-school-img', assets.header);
+        setImageSource('.letter-bg-img', assets.letter);
+        setImageSource('.program-banner-img', assets.program);
+        setImageSource('.thankyou-img', assets.thankyou);
+
+        const coverBg = document.querySelector('.cover-bg-blur');
+        if (coverBg) {
+            coverBg.style.backgroundImage = `url("${assets.header}")`;
+        }
+    }
+
+    function initializeAudienceFromRequest(hasConfig) {
+        const params = new URLSearchParams(window.location.search);
+        const requestedAudience = params.get('audience');
+        if (!hasConfig && requestedAudience === AUDIENCE_PRESCHOOL) {
+            CONFIG.audience = AUDIENCE_PRESCHOOL;
+            CONFIG.theme = 'preschool';
+            CONFIG.timeline = DEFAULT_TIMELINES.preschool.map(item => ({ ...item }));
+            return;
+        }
+        CONFIG.audience = getAudience();
+        if (!Array.isArray(CONFIG.timeline) || CONFIG.timeline.length === 0) {
+            CONFIG.timeline = DEFAULT_TIMELINES[getAudience()].map(item => ({ ...item }));
+        }
+        if (getAudience() === AUDIENCE_PRESCHOOL && (!CONFIG.theme || CONFIG.theme === 'classic')) {
+            CONFIG.theme = 'preschool';
+        }
+    }
+
+    function applyAudienceCopy() {
+        const copy = getAudienceCopy();
+        document.body.classList.toggle('audience-preschool', getAudience() === AUDIENCE_PRESCHOOL);
+        applyAudienceAssets();
+
+        document.querySelectorAll('.env-letter-title, .inv-subtitle').forEach(el => {
+            el.innerHTML = escapeHTML(copy.title).replace(/\n/g, '<br>');
+        });
+        document.querySelectorAll('.env-letter-year, .inv-year').forEach(el => {
+            el.textContent = copy.year;
+        });
+
+        const letterParagraphs = document.querySelectorAll('.letter-text-content > p:not(.letter-greeting):not(.letter-closing):not(.letter-sign)');
+        if (letterParagraphs[0]) letterParagraphs[0].textContent = copy.intro;
+        if (letterParagraphs[1]) letterParagraphs[1].innerHTML = copy.body;
+
+        const greeting = document.querySelector('.letter-greeting');
+        if (greeting) greeting.textContent = copy.greeting;
+        const closing = document.querySelector('.letter-closing');
+        if (closing) closing.textContent = copy.closing;
+        const sign = document.querySelector('.letter-sign');
+        if (sign) sign.textContent = copy.sign;
+        const scheduleSubtitle = document.querySelector('.schedule-subtitle');
+        if (scheduleSubtitle) scheduleSubtitle.textContent = copy.scheduleSubtitle;
+        const rsvpTitle = document.querySelector('.rsvp-title');
+        if (rsvpTitle) rsvpTitle.textContent = copy.rsvpTitle;
+        const rsvpDesc = document.querySelector('.rsvp-desc');
+        if (rsvpDesc) rsvpDesc.textContent = copy.rsvpDesc;
+
+        const parentLabel = document.querySelector('label[for="parentName"]');
+        if (parentLabel) parentLabel.textContent = copy.parentLabel;
+        const studentLabel = document.querySelector('label[for="studentName"]');
+        if (studentLabel) studentLabel.textContent = copy.studentLabel;
+        const studentInput = document.getElementById('studentName');
+        if (studentInput) studentInput.placeholder = copy.studentPlaceholder;
+        const classLabel = document.querySelector('label[for="className"]');
+        if (classLabel) classLabel.textContent = copy.classLabel;
+        const classInput = document.getElementById('className');
+        if (classInput) classInput.placeholder = copy.classPlaceholder;
+
+        const formNoteTitle = document.querySelector('.form-note strong');
+        if (formNoteTitle) formNoteTitle.textContent = copy.noteTitle;
+        const formNoteText = document.querySelector('.form-note p');
+        if (formNoteText) formNoteText.innerHTML = copy.noteText;
+
+        const thankTitle = document.querySelector('.thankyou-title');
+        if (thankTitle) thankTitle.textContent = copy.thankTitle;
+        const thankTexts = document.querySelectorAll('.thankyou-text p:not(.thankyou-sign)');
+        copy.thanks.forEach((value, index) => {
+            if (thankTexts[index]) thankTexts[index].innerHTML = value;
+        });
+    }
+
     // --- Áp dụng config vào giao diện ---
     function applyConfig() {
+        applyAudienceCopy();
         if (CONFIG.date) document.getElementById('dispDate').textContent = CONFIG.date;
         if (CONFIG.location && CONFIG.school) {
             document.getElementById('dispLocation').textContent = CONFIG.location;
@@ -104,7 +286,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const classInput = document.getElementById('className');
             classInput.value = CONFIG.className;
             classInput.readOnly = true;
-            classInput.style.background = '#f0e8dc';
+            classInput.style.background = 'var(--input-bg)';
         }
 
         renderTimelineDisplay();
@@ -127,7 +309,9 @@ document.addEventListener('DOMContentLoaded', () => {
         const container = document.querySelector('.schedule-timeline');
         if (!container) return;
         container.innerHTML = '';
-        const icons = ['🏫', '🌱', '📚', '🤝', '💬', '🌟', '🔔', '📝', '✅'];
+        const icons = getAudience() === AUDIENCE_PRESCHOOL
+            ? ['🧸', '🌈', '🎨', '🤝', '💬', '⭐', '🎒', '🧩', '✅']
+            : ['🏫', '🌱', '📚', '🤝', '💬', '🌟', '🔔', '📝', '✅'];
         
         const items = CONFIG.timeline && CONFIG.timeline.length > 0 ? CONFIG.timeline : [];
         items.forEach((item, index) => {
@@ -211,12 +395,10 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     const hasConfig = loadConfigFromURL();
-    
-    // Luôn render timeline mặc định nếu chưa có
-    if (!hasConfig) renderTimelineDisplay();
+    initializeAudienceFromRequest(hasConfig);
+    applyConfig();
 
     if (hasConfig) {
-        applyConfig();
         // Kiểm tra: nếu PH mở link chia sẻ (?id=xxx) → ẩn hoàn toàn nút settings
         const isSharedLink = new URLSearchParams(window.location.search).has('id');
         if (isSharedLink) {
@@ -239,15 +421,35 @@ document.addEventListener('DOMContentLoaded', () => {
         if (CONFIG.location) document.getElementById('cfgLocation').value = CONFIG.location;
         if (CONFIG.deadline) document.getElementById('cfgDeadline').value = CONFIG.deadline;
         if (CONFIG.email) document.getElementById('cfgEmail').value = CONFIG.email;
+
+        const audienceRadio = document.querySelector(`input[name="cfgAudience"][value="${getAudience()}"]`);
+        if (audienceRadio) audienceRadio.checked = true;
         
         // Pre-fill theme radio
         const themeVal = CONFIG.theme || 'classic';
         const themeRadio = document.querySelector(`input[name="cfgTheme"][value="${themeVal}"]`);
         if (themeRadio) themeRadio.checked = true;
 
+        document.querySelectorAll('input[name="cfgAudience"]').forEach(radio => {
+            radio.addEventListener('change', () => {
+                CONFIG.audience = radio.value === AUDIENCE_PRESCHOOL ? AUDIENCE_PRESCHOOL : AUDIENCE_GENERAL;
+                CONFIG.timeline = DEFAULT_TIMELINES[getAudience()].map(item => ({ ...item }));
+                if (getAudience() === AUDIENCE_PRESCHOOL) {
+                    CONFIG.theme = 'preschool';
+                } else if ((CONFIG.theme || 'classic') === 'preschool') {
+                    CONFIG.theme = 'classic';
+                }
+                const selectedTheme = document.querySelector(`input[name="cfgTheme"][value="${CONFIG.theme}"]`);
+                if (selectedTheme) selectedTheme.checked = true;
+                applyConfig();
+                renderTimelineEditor();
+            });
+        });
+
         // Live preview: apply theme immediately when GV clicks a theme card
         document.querySelectorAll('input[name="cfgTheme"]').forEach(radio => {
             radio.addEventListener('change', () => {
+                CONFIG.theme = radio.value;
                 applyTheme(radio.value);
             });
         });
@@ -307,6 +509,8 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     function saveConfigFromForm() {
+        const audienceRadio = document.querySelector('input[name="cfgAudience"]:checked');
+        CONFIG.audience = audienceRadio && audienceRadio.value === AUDIENCE_PRESCHOOL ? AUDIENCE_PRESCHOOL : AUDIENCE_GENERAL;
         CONFIG.teacher = document.getElementById('cfgTeacher').value.trim();
         CONFIG.school = document.getElementById('cfgSchool').value.trim();
         CONFIG.className = document.getElementById('cfgClass').value.trim();
@@ -681,12 +885,16 @@ document.addEventListener('DOMContentLoaded', () => {
             const modalEmoji = document.querySelector('#successModal .modal-emoji');
             if (modalTitle) modalTitle.innerHTML = 'Cảm ơn bạn!';
             if (modalEmoji) modalEmoji.innerHTML = '🎊';
+            const isPreschool = getAudience() === AUDIENCE_PRESCHOOL;
+            const parentNoun = isPreschool ? 'Ba/Mẹ' : 'Phụ huynh';
+            const childNoun = isPreschool ? 'Bé' : 'Học sinh';
+            const meetingNoun = isPreschool ? 'buổi gặp mặt đầu năm của lớp' : 'buổi họp phụ huynh';
 
             if (isAttend) {
-                modalMsg.innerHTML = `Phụ huynh <strong>${parent}</strong> đã xác nhận <span style="color:#27ae60;font-weight:700">THAM DỰ</span> buổi họp phụ huynh.<br><br>Học sinh: <strong>${student}</strong> — Lớp <strong>${cls}</strong><br><br>Hẹn gặp Quý Phụ Huynh tại buổi họp! 🎉`;
+                modalMsg.innerHTML = `${parentNoun} <strong>${escapeHTML(parent)}</strong> đã xác nhận <span style="color:#27ae60;font-weight:700">THAM DỰ</span> ${meetingNoun}.<br><br>${childNoun}: <strong>${escapeHTML(student)}</strong> — Lớp <strong>${escapeHTML(cls)}</strong><br><br>${isPreschool ? 'Hẹn gặp Ba Mẹ và bé trong buổi gặp mặt!' : 'Hẹn gặp Quý Phụ Huynh tại buổi họp!'} 🎉`;
                 playSuccessSound();
             } else {
-                modalMsg.innerHTML = `Phụ huynh <strong>${parent}</strong> đã xác nhận <span style="color:#c0392b;font-weight:700">XIN PHÉP VẮNG MẶT</span>.<br><br>Học sinh: <strong>${student}</strong> — Lớp <strong>${cls}</strong><br><br>Nhà trường ghi nhận. Cảm ơn phản hồi! 🙏`;
+                modalMsg.innerHTML = `${parentNoun} <strong>${escapeHTML(parent)}</strong> đã xác nhận <span style="color:#c0392b;font-weight:700">XIN PHÉP VẮNG MẶT</span>.<br><br>${childNoun}: <strong>${escapeHTML(student)}</strong> — Lớp <strong>${escapeHTML(cls)}</strong><br><br>Nhà trường ghi nhận. Cảm ơn phản hồi! 🙏`;
                 playNeutralSound();
             }
 
