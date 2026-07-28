@@ -19,6 +19,7 @@ import EarthSeasonsSimulation from './components/EarthSeasonsSimulation';
 import ClockExperiment from './components/ClockExperiment';
 import ThatLuong3D from './components/ThatLuong3D';
 import BangCuuChuong from './components/BangCuuChuong';
+import SoSanhSo from './components/SoSanhSo';
 import GameTuongTac from './components/GameTuongTac';
 import YogurtExperiment from './components/YogurtExperiment';
 import KiemTraDaoVan from './components/KiemTraDaoVan';
@@ -106,6 +107,7 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   SENSES_EXPLORER: 'sensesExplorer',
   CLOCK_EXPERIMENT: 'clockExperiment',
   BANG_CUU_CHUONG: 'bangCuuChuong',
+  SO_SANH_SO: 'soSanhSo',
   GAME_TUONG_TAC: 'gameTuongTac',
   YOGURT_EXPERIMENT: 'yogurtExperiment',
   KIEM_TRA_DAO_VAN: 'kiemTraDaoVan',
@@ -289,6 +291,10 @@ function App() {
             break;
           case 'bang_cuu_chuong':
             defaultView = 'BANG_CUU_CHUONG';
+            break;
+          case 'so_sanh_so':
+          case 'be_so_sanh_so':
+            defaultView = 'SO_SANH_SO';
             break;
           case 'he_mat_troi':
             defaultView = 'SOLAR_SYSTEM';
@@ -754,6 +760,7 @@ function App() {
                   onSensesExplorer={() => requireLogin(() => setView('SENSES_EXPLORER'))}
                   onClockExperiment={() => requireLogin(() => setView('CLOCK_EXPERIMENT'))}
                   onBangCuuChuong={() => requireLogin(() => setView('BANG_CUU_CHUONG'))}
+                  onSoSanhSo={() => requireLogin(() => setView('SO_SANH_SO'))}
                   onGameTuongTac={() => requireLogin(() => setView('GAME_TUONG_TAC'))}
                   onYogurtExperiment={() => requireLogin(() => setView('YOGURT_EXPERIMENT'))}
                   onKiemTraDaoVan={() => requireLogin(() => setView('KIEM_TRA_DAO_VAN'))}
@@ -943,6 +950,10 @@ function App() {
 
           {view === 'BANG_CUU_CHUONG' && (
             <BangCuuChuong onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'SO_SANH_SO' && (
+            <SoSanhSo onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'GAME_TUONG_TAC' && (

@@ -11,7 +11,7 @@ export const ALL_APP_IDS = [
     'aiCourseStore', 'soanGiaoAnNangLucSo', 'canvaBasics', 'communityResources', 'kiemTraDaoVan',
     'heartSystem3D', 'geometry3DTools', 'vietnamMap', 'phongTranh3D', 'chucTet', 'denHung3D', 'thatLuong3D',
     'dinhDocLap3D', 'solarSystem', 'hue360', 'hoiAn360', 'phongNha360', 'haLong360', 'ninhBinh360', 'kimLien360',
-    'bangCuuChuong', 'gameTuongTac', 'gameTuyChinh', 'kyYeuCuoiNam', 'thiepMoiOnline',
+    'bangCuuChuong', 'soSanhSo', 'gameTuongTac', 'gameTuyChinh', 'kyYeuCuoiNam', 'thiepMoiOnline',
     'qrGenerator',
     'nhayBaoBo', 'keoCoTriTue',
     'sangKienKinhNghiem', // Viết SKKN & Báo Cáo
@@ -74,6 +74,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     kimLien360: { name: 'VR360 Làng Kim Liên', icon: '🌾', section: 'Ứng dụng 3D & VR' },
     // ── Học liệu tương tác ──
     bangCuuChuong: { name: 'Bảng Cửu Chương Số', icon: '🔢', section: 'Học liệu tương tác' },
+    soSanhSo: { name: 'Bé So Sánh Số', icon: '🔢', section: 'Học liệu tương tác' },
     gameTuongTac: { name: 'Game Tương Tác', icon: '🎮', section: 'Học liệu tương tác' },
     gameTuyChinh: { name: 'Game Tùy Chỉnh', icon: '🎮', section: 'Công cụ dạy học' },
     kyYeuCuoiNam: { name: 'Kỷ Yếu Cuối Năm', icon: '🎓', section: 'Học liệu tương tác' },
