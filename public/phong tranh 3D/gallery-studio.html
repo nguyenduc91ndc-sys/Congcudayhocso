@@ -1328,6 +1328,7 @@
         function destroyViewer() {
             if (!viewer3D) return;
             cancelAnimationFrame(viewer3D.animId);
+            viewer3D.cleanup?.();
             viewer3D.renderer.dispose();
             viewer3D.orbitCtrl?.dispose();
             if (viewer3D.fpsCtrl?.isLocked) viewer3D.fpsCtrl.unlock();
@@ -1457,6 +1458,7 @@
 
             // Back wall traversing both main hall and wing (faces Forward, +Z)
             walls.push(createWall(mainW + wingW, minX + (mainW + wingW) / 2, minZ, 0));
+            walls.forEach((wall, index) => { wall.id = `wall-${index}`; });
 
             // 4. Pillars
             const pGeo = new THREE.CylinderGeometry(0.2, 0.25, wallH, 12);
@@ -1484,6 +1486,60 @@
             // === PAINTINGS DISTRIBUTION ===
             const paintMap = new Map();
             const places = [];
+            const dragPlane = new THREE.Plane();
+            const dragHit = new THREE.Vector3();
+            let activeDrag = null;
+            let suppressClick = false;
+
+            const clampValue = (value, min, max) => Math.max(min, Math.min(max, value));
+            const roundCoord = (value) => Math.round(value * 1000) / 1000;
+            const getWallById = (wallId) => walls.find(wall => wall.id === wallId);
+            const getPointerMouse = (event, target = new THREE.Vector2()) => {
+                const rect = renderer.domElement.getBoundingClientRect();
+                target.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+                target.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+                return target;
+            };
+            const saveImageLayout = (img, wall, along, y) => {
+                img.layout = {
+                    wallId: wall.id,
+                    along: roundCoord(along),
+                    y: roundCoord(y)
+                };
+            };
+            const setPaintingTransform = (record, along, y, persist = false) => {
+                const w = record.wall;
+                const safeAlong = clampValue(along, -w.len / 2 + 1.3, w.len / 2 - 1.3);
+                const safeY = clampValue(y, 1.6, wallH - 1.25);
+                const wallX = w.cx + w.vx * safeAlong;
+                const wallZ = w.cz + w.vz * safeAlong;
+                const frameX = wallX + w.nx * 0.05;
+                const frameZ = wallZ + w.nz * 0.05;
+
+                record.frame.position.set(frameX, safeY, frameZ);
+                record.frame.rotation.y = w.ry;
+                if (record.imageMesh) {
+                    record.imageMesh.position.set(frameX + w.nx * 0.045, safeY, frameZ + w.nz * 0.045);
+                    record.imageMesh.rotation.y = w.ry;
+                }
+                if (record.labelMesh) {
+                    record.labelMesh.position.set(frameX, safeY - 1.15, frameZ);
+                    record.labelMesh.rotation.y = w.ry;
+                }
+                if (record.light) record.light.position.set(frameX + w.nx * 2.5, wallH - 0.5, frameZ + w.nz * 2.5);
+                if (record.lightTarget) record.lightTarget.position.set(frameX, safeY, frameZ);
+
+                record.place.x = frameX;
+                record.place.y = safeY;
+                record.place.z = frameZ;
+                record.along = safeAlong;
+                record.y = safeY;
+                if (persist) saveImageLayout(record.img, w, safeAlong, safeY);
+            };
+            const pointToWallCoords = (point, wall) => ({
+                along: (point.x - wall.cx) * wall.vx + (point.z - wall.cz) * wall.vz,
+                y: point.y
+            });
 
             // Sort walls by length (longest walls get paintings first)
             const availableWalls = [...walls].sort((a, b) => b.len - a.len);
@@ -1507,26 +1563,31 @@
 
                 const spacing = w.len / (countOnWall + 1);
 
-                // Calculate start edge point (left side when facing the wall)
-                const startX = w.cx - w.vx * w.len / 2;
-                const startZ = w.cz - w.vz * w.len / 2;
-
                 for (let i = 0; i < countOnWall; i++) {
                     const img = imgs[imgCursor++];
+                    const savedWall = img.layout ? getWallById(img.layout.wallId) : null;
+                    const paintWall = savedWall || w;
 
                     // Center of this painting on the wall
-                    const px = startX + w.vx * spacing * (i + 1);
-                    const pz = startZ + w.vz * spacing * (i + 1);
+                    const defaultAlong = -w.len / 2 + spacing * (i + 1);
+                    const savedAlong = Number(img.layout?.along);
+                    const savedY = Number(img.layout?.y);
+                    const along = savedWall && Number.isFinite(savedAlong) ? savedAlong : defaultAlong;
+                    const paintY = Number.isFinite(savedY) ? savedY : paintWall.y;
+                    const px = paintWall.cx + paintWall.vx * along;
+                    const pz = paintWall.cz + paintWall.vz * along;
 
-                    const finalX = px + w.nx * 0.05;
-                    const finalZ = pz + w.nz * 0.05;
+                    const finalX = px + paintWall.nx * 0.05;
+                    const finalZ = pz + paintWall.nz * 0.05;
 
                     // Frame
                     const fGeo = new THREE.BoxGeometry(2.2, 1.8, 0.08);
                     const fMat = new THREE.MeshStandardMaterial({ color: 0x2a2a2a, roughness: 0.3, metalness: 0.5 });
                     const frame = new THREE.Mesh(fGeo, fMat);
-                    frame.position.set(finalX, w.y, finalZ); frame.rotation.y = w.ry; scene.add(frame);
-                    paintMap.set(frame, img); // Register frame for click
+                    frame.position.set(finalX, paintY, finalZ); frame.rotation.y = paintWall.ry; scene.add(frame);
+                    const place = { x: finalX, y: paintY, z: finalZ, img, nx: paintWall.nx, nz: paintWall.nz };
+                    const record = { img, wall: paintWall, frame, imageMesh: null, labelMesh: null, light: null, lightTarget: null, place, along, y: paintY };
+                    paintMap.set(frame, record); // Register frame for click and drag
 
                     // Image Texture via Canvas (reliable for data URLs)
                     try {
@@ -1550,9 +1611,10 @@
                             tex.needsUpdate = true;
                             const iMat = new THREE.MeshBasicMaterial({ map: tex });
                             const iMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.9, 1.5), iMat);
-                            iMesh.position.set(finalX + w.nx * 0.045, w.y, finalZ + w.nz * 0.045);
-                            iMesh.rotation.y = w.ry; scene.add(iMesh);
-                            paintMap.set(iMesh, img);
+                            record.imageMesh = iMesh;
+                            scene.add(iMesh);
+                            paintMap.set(iMesh, record);
+                            setPaintingTransform(record, record.along, record.y);
                         };
                         imgEl.onerror = () => console.warn('Failed to load image:', img.title);
                         imgEl.src = img.url;
@@ -1560,8 +1622,9 @@
 
                     // Spotlight
                     const sl = new THREE.SpotLight(0xfff5e6, 1.5, 8, Math.PI / 6, 0.5);
-                    sl.position.set(finalX + w.nx * 2.5, wallH - 0.5, finalZ + w.nz * 2.5);
-                    sl.target.position.set(finalX, w.y, finalZ); scene.add(sl); scene.add(sl.target);
+                    record.light = sl;
+                    record.lightTarget = sl.target;
+                    scene.add(sl); scene.add(sl.target);
 
                     // Label Plate
                     const lCanvas = document.createElement('canvas'); lCanvas.width = 512; lCanvas.height = 64;
@@ -1570,11 +1633,11 @@
                     lCtx.fillText(img.title || `Tác phẩm ${imgCursor}`, 256, 40);
                     const lTex = new THREE.CanvasTexture(lCanvas);
                     const lMesh = new THREE.Mesh(new THREE.PlaneGeometry(1.8, 0.22), new THREE.MeshBasicMaterial({ map: lTex, transparent: true }));
-                    lMesh.position.set(finalX + w.nx * 0.05, w.y - 1.15, finalZ + w.nz * 0.05);
-                    lMesh.rotation.y = w.ry;
+                    record.labelMesh = lMesh;
                     scene.add(lMesh);
+                    setPaintingTransform(record, along, paintY);
 
-                    places.push({ x: finalX, y: w.y, z: finalZ, img, nx: w.nx, nz: w.nz });
+                    places.push(place);
                 }
             });
 
@@ -1585,35 +1648,98 @@
             // Raycaster for click - works in both Orbit and FPS mode
             const raycaster = new THREE.Raycaster(), mouse = new THREE.Vector2();
             const onClick = (e) => {
+                if (suppressClick) {
+                    suppressClick = false;
+                    return;
+                }
                 let clickX, clickY;
                 if (isLocked) {
                     mouse.x = 0; mouse.y = 0;
                     clickX = W / 2; clickY = H / 2;
                 } else {
-                    mouse.x = (e.clientX / W) * 2 - 1; mouse.y = -(e.clientY / H) * 2 + 1;
+                    getPointerMouse(e, mouse);
                     clickX = e.clientX; clickY = e.clientY;
                 }
                 raycaster.setFromCamera(mouse, camera);
                 const hits = raycaster.intersectObjects(scene.children);
-                for (const h of hits) { const d = paintMap.get(h.object); if (d) { showPopup(d, clickX, clickY); return; } }
+                for (const h of hits) { const record = paintMap.get(h.object); if (record) { showPopup(record.img, clickX, clickY); return; } }
                 hidePopup();
             };
             renderer.domElement.addEventListener('click', onClick);
 
+            const onPointerDown = (e) => {
+                if (mode !== 'orbit' || isLocked || touring) return;
+                getPointerMouse(e, mouse);
+                raycaster.setFromCamera(mouse, camera);
+                const hits = raycaster.intersectObjects(scene.children);
+                let record = null;
+                for (const h of hits) {
+                    record = paintMap.get(h.object);
+                    if (record) break;
+                }
+                if (!record) return;
+
+                e.preventDefault();
+                e.stopPropagation();
+                hidePopup();
+                orbitCtrl.enabled = false;
+                renderer.domElement.setPointerCapture?.(e.pointerId);
+                const normal = new THREE.Vector3(record.wall.nx, 0, record.wall.nz).normalize();
+                dragPlane.setFromNormalAndCoplanarPoint(normal, record.frame.position);
+                activeDrag = {
+                    pointerId: e.pointerId,
+                    record,
+                    startX: e.clientX,
+                    startY: e.clientY,
+                    moved: false
+                };
+                renderer.domElement.style.cursor = 'grabbing';
+            };
+
+            const onPointerMove = (e) => {
+                if (!activeDrag || activeDrag.pointerId !== e.pointerId) return;
+                e.preventDefault();
+                e.stopPropagation();
+                getPointerMouse(e, mouse);
+                raycaster.setFromCamera(mouse, camera);
+                if (!raycaster.ray.intersectPlane(dragPlane, dragHit)) return;
+                const movedDistance = Math.hypot(e.clientX - activeDrag.startX, e.clientY - activeDrag.startY);
+                activeDrag.moved = activeDrag.moved || movedDistance > 3;
+                const next = pointToWallCoords(dragHit, activeDrag.record.wall);
+                setPaintingTransform(activeDrag.record, next.along, next.y, true);
+            };
+
+            const onPointerUp = (e) => {
+                if (!activeDrag || activeDrag.pointerId !== e.pointerId) return;
+                e.preventDefault();
+                e.stopPropagation();
+                suppressClick = activeDrag.moved;
+                renderer.domElement.releasePointerCapture?.(e.pointerId);
+                activeDrag = null;
+                orbitCtrl.enabled = mode === 'orbit';
+                renderer.domElement.style.cursor = suppressClick ? 'grab' : 'pointer';
+            };
+
+            renderer.domElement.addEventListener('pointerdown', onPointerDown, true);
+            renderer.domElement.addEventListener('pointermove', onPointerMove, true);
+            renderer.domElement.addEventListener('pointerup', onPointerUp, true);
+            renderer.domElement.addEventListener('pointercancel', onPointerUp, true);
+
             // Hover cursor: show pointer hand when hovering over a painting
             const hoverMouse = new THREE.Vector2();
-            renderer.domElement.addEventListener('mousemove', (e) => {
+            const onHoverMove = (e) => {
                 if (isLocked) return; // Skip in FPS mode (cursor is hidden anyway)
-                hoverMouse.x = (e.clientX / W) * 2 - 1;
-                hoverMouse.y = -(e.clientY / H) * 2 + 1;
+                if (activeDrag) return;
+                getPointerMouse(e, hoverMouse);
                 raycaster.setFromCamera(hoverMouse, camera);
                 const hits = raycaster.intersectObjects(scene.children);
                 let found = false;
                 for (const h of hits) {
                     if (paintMap.has(h.object)) { found = true; break; }
                 }
-                renderer.domElement.style.cursor = found ? 'pointer' : 'default';
-            });
+                renderer.domElement.style.cursor = found && mode === 'orbit' ? 'grab' : found ? 'pointer' : 'default';
+            };
+            renderer.domElement.addEventListener('mousemove', onHoverMove);
 
             // Popup with image preview - appears at click position
             let popupTimer = null;
@@ -1688,19 +1814,20 @@
             };
 
             // Pointer Lock Event Listeners
-            document.addEventListener('pointerlockchange', () => {
+            const onPointerLockChange = () => {
                 isLocked = document.pointerLockElement === document.body;
                 if (mode === 'fps') clickStartEl.style.display = isLocked ? 'none' : 'block';
                 const ch = document.getElementById('fpsCrosshair');
                 if (ch) ch.style.display = isLocked ? 'block' : 'none';
-            });
+            };
+            document.addEventListener('pointerlockchange', onPointerLockChange);
 
             window.lockPointer = () => {
                 if (mode === 'fps') document.body.requestPointerLock();
             };
 
             // Mouse Move Event for Looking Around
-            document.addEventListener('mousemove', (event) => {
+            const onDocumentMouseMove = (event) => {
                 if (isLocked && mode === 'fps') {
                     const movementX = event.movementX || event.mozMovementX || event.webkitMovementX || 0;
                     const movementY = event.movementY || event.mozMovementY || event.webkitMovementY || 0;
@@ -1714,43 +1841,48 @@
 
                     camera.quaternion.setFromEuler(euler);
                 }
-            });
+            };
+            document.addEventListener('mousemove', onDocumentMouseMove);
 
             // Tour path calculation
             let tourTarget = null, tourLookAt = null, tourIdx = 0, tourTimer = 0, touring = false;
 
             // Build a smart queue of waypoints for the tour
-            const tourWaypoints = [];
+            let tourWaypoints = [];
             // Add a junction waypoint if traversing into the wing
             const junctionPt = new THREE.Vector3(mainW / 2 - 2, 2.5, minZ + wingD / 2);
 
-            places.forEach((p, index) => {
-                let sx = p.x + p.nx * 2.5, sz = p.z + p.nz * 2.5;
-                // Clamp stand position inside walkable area
-                if (!inBounds(sx, sz)) {
-                    sx = Math.max(minX + 1.5, Math.min(maxX - 1.5, sx));
-                    sz = Math.max(minZ + 1.5, Math.min(maxZ - 1.5, sz));
-                }
-                const standPos = new THREE.Vector3(sx, 2.5, sz);
-                const lookPos = new THREE.Vector3(p.x, p.y, p.z);
-
-                // If crossing between main hall and wing, add junction waypoint
-                if (index > 0) {
-                    const prevP = places[index - 1];
-                    const prevInWing = prevP.x > mainW / 2;
-                    const currInWing = p.x > mainW / 2;
-                    if (prevInWing !== currInWing) {
-                        tourWaypoints.push({
-                            target: junctionPt.clone(),
-                            lookAt: lookPos
-                        });
+            const rebuildTourWaypoints = () => {
+                tourWaypoints = [];
+                places.forEach((p, index) => {
+                    let sx = p.x + p.nx * 2.5, sz = p.z + p.nz * 2.5;
+                    // Clamp stand position inside walkable area
+                    if (!inBounds(sx, sz)) {
+                        sx = Math.max(minX + 1.5, Math.min(maxX - 1.5, sx));
+                        sz = Math.max(minZ + 1.5, Math.min(maxZ - 1.5, sz));
                     }
-                }
+                    const standPos = new THREE.Vector3(sx, 2.5, sz);
+                    const lookPos = new THREE.Vector3(p.x, p.y, p.z);
 
-                tourWaypoints.push({ target: standPos, lookAt: lookPos });
-            });
+                    // If crossing between main hall and wing, add junction waypoint
+                    if (index > 0) {
+                        const prevP = places[index - 1];
+                        const prevInWing = prevP.x > mainW / 2;
+                        const currInWing = p.x > mainW / 2;
+                        if (prevInWing !== currInWing) {
+                            tourWaypoints.push({
+                                target: junctionPt.clone(),
+                                lookAt: lookPos
+                            });
+                        }
+                    }
+
+                    tourWaypoints.push({ target: standPos, lookAt: lookPos });
+                });
+            };
 
             window.startTour = () => {
+                rebuildTourWaypoints();
                 if (!tourWaypoints.length) return;
                 touring = true; tourIdx = 0; orbitCtrl.enabled = false;
                 if (isLocked) document.exitPointerLock();
@@ -1855,7 +1987,22 @@
             }
             animate();
 
-            viewer3D = { scene, camera, renderer, orbitCtrl, fpsCtrl, animId };
+            const cleanup = () => {
+                renderer.domElement.removeEventListener('click', onClick);
+                renderer.domElement.removeEventListener('pointerdown', onPointerDown, true);
+                renderer.domElement.removeEventListener('pointermove', onPointerMove, true);
+                renderer.domElement.removeEventListener('pointerup', onPointerUp, true);
+                renderer.domElement.removeEventListener('pointercancel', onPointerUp, true);
+                renderer.domElement.removeEventListener('mousemove', onHoverMove);
+                document.removeEventListener('keydown', onKeyDown);
+                document.removeEventListener('keyup', onKeyUp);
+                document.removeEventListener('pointerlockchange', onPointerLockChange);
+                document.removeEventListener('mousemove', onDocumentMouseMove);
+                window.removeEventListener('resize', onResize);
+                if (popupTimer) clearTimeout(popupTimer);
+            };
+
+            viewer3D = { scene, camera, renderer, orbitCtrl, fpsCtrl, animId, cleanup };
         }
 
         // ============ INIT ============

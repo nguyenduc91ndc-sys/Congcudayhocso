@@ -98,6 +98,44 @@ const getBalancedFramePosition = (index: number, total = DEFAULT_FRAME_COUNT): [
 
 const getYawForWallPoint = (x: number, z: number) => z > 4 ? 180 : x > 6 ? 90 : x < -6 ? -90 : 0;
 
+const clampFramePointToRoom = (point: THREE.Vector3) => {
+    const isLeft = point.x < -6.2;
+    const isRight = point.x > 6.2;
+    const isBack = point.z > 4.2;
+    return new THREE.Vector3(
+        isLeft ? -6.84 : isRight ? 6.84 : Math.max(-5.7, Math.min(5.7, point.x)),
+        Math.max(-1.05, Math.min(2.45, point.y)),
+        isLeft || isRight ? Math.max(-4.65, Math.min(4.55, point.z)) : isBack ? 4.94 : -5.84
+    );
+};
+
+const applyFramePoint = (frame: GalleryPainting, point: THREE.Vector3): GalleryPainting => {
+    const clamped = clampFramePointToRoom(point);
+    return {
+        ...frame,
+        x: clamped.x,
+        y: clamped.y,
+        z: clamped.z,
+        yaw: degToRad(getYawForWallPoint(clamped.x, clamped.z)),
+        pitch: 0
+    };
+};
+
+const getFrameWallNormal = (frame: GalleryPainting) => {
+    const point = getFrameWorldPosition(frame);
+    if (point.x < -6.2) return new THREE.Vector3(1, 0, 0);
+    if (point.x > 6.2) return new THREE.Vector3(-1, 0, 0);
+    if (point.z > 4.2) return new THREE.Vector3(0, 0, -1);
+    return new THREE.Vector3(0, 0, 1);
+};
+
+const getFrameWallRotation = (point: THREE.Vector3) => {
+    if (point.x < -6) return Math.PI / 2;
+    if (point.x > 6) return -Math.PI / 2;
+    if (point.z > 4) return Math.PI;
+    return 0;
+};
+
 const createDefaultPaintings = (): GalleryPainting[] => Array.from({ length: DEFAULT_FRAME_COUNT }, (_, index) => {
     const [x, y, z] = getBalancedFramePosition(index, DEFAULT_FRAME_COUNT);
     const yaw = getYawForWallPoint(x, z);
@@ -321,16 +359,38 @@ function GalleryCanvas({
     gallery,
     selectedFrameId,
     readOnly,
-    onSelectFrame
+    onSelectFrame,
+    onMoveFrame
 }: {
     gallery: Gallery;
     selectedFrameId?: string;
     readOnly: boolean;
     onSelectFrame: (frame: GalleryPainting) => void;
+    onMoveFrame?: (frame: GalleryPainting) => void | Promise<void>;
 }) {
     const paintings = useMemo(() => normalizePaintings(gallery.paintings), [gallery.paintings]);
     const mountRef = useRef<HTMLDivElement>(null);
     const hotspotRefs = useRef<Record<string, HTMLButtonElement | null>>({});
+    const canvasApiRef = useRef<{
+        getFramePointFromPointer: (frame: GalleryPainting, event: PointerEvent | React.PointerEvent) => THREE.Vector3 | null;
+        moveFrameVisual: (frame: GalleryPainting) => void;
+        setDraggingFrameId: (frameId: string | null) => void;
+    } | null>(null);
+    const onSelectFrameRef = useRef(onSelectFrame);
+    const onMoveFrameRef = useRef(onMoveFrame);
+    const overlayDragRef = useRef<{
+        frame: GalleryPainting;
+        pointerId: number;
+        startX: number;
+        startY: number;
+        moved: boolean;
+    } | null>(null);
+    const suppressOverlayClickRef = useRef(false);
+
+    useEffect(() => {
+        onSelectFrameRef.current = onSelectFrame;
+        onMoveFrameRef.current = onMoveFrame;
+    }, [onSelectFrame, onMoveFrame]);
 
     useEffect(() => {
         const mount = mountRef.current;
@@ -360,10 +420,25 @@ function GalleryCanvas({
         const colors = themeColors[gallery.template] || themeColors.classroom;
         const created: Array<{ dispose?: () => void }> = [];
         const clickablePaintings: THREE.Object3D[] = [];
+        const frameGroups = new Map<string, THREE.Group>();
+        const liveFramePositions = new Map<string, THREE.Vector3>();
+        let draggingFrameId: string | null = null;
         const addMesh = (mesh: THREE.Mesh) => {
             scene.add(mesh);
             created.push(mesh.geometry, mesh.material as THREE.Material);
             return mesh;
+        };
+        const setGroupWallRotation = (group: THREE.Group, point: THREE.Vector3) => {
+            group.rotation.y = getFrameWallRotation(point);
+        };
+        const moveFrameVisual = (frame: GalleryPainting) => {
+            const point = getFrameWorldPosition(frame);
+            liveFramePositions.set(frame.id, point.clone());
+            const group = frameGroups.get(frame.id);
+            if (group) {
+                group.position.copy(point);
+                setGroupWallRotation(group, point);
+            }
         };
 
         const floorTexture = new THREE.CanvasTexture(createFloorTexture(colors.floor, colors.accent));
@@ -555,12 +630,12 @@ function GalleryCanvas({
             if (!hasFrameContent(frame)) return;
 
             const point = getFrameWorldPosition(frame);
+            liveFramePositions.set(frame.id, point.clone());
             const frameColor = KID_FRAME_COLORS[index % KID_FRAME_COLORS.length];
             const group = new THREE.Group();
             group.position.copy(point);
-            if (point.x < -6) group.rotation.y = Math.PI / 2;
-            else if (point.x > 6) group.rotation.y = -Math.PI / 2;
-            else if (point.z > 4) group.rotation.y = Math.PI;
+            setGroupWallRotation(group, point);
+            frameGroups.set(frame.id, group);
             scene.add(group);
 
             if (frame.imageUrl) {
@@ -632,6 +707,9 @@ function GalleryCanvas({
                 created.push(texture, material, mesh.geometry);
             }
         };
+        paintings.forEach(frame => {
+            if (!liveFramePositions.has(frame.id)) liveFramePositions.set(frame.id, getFrameWorldPosition(frame));
+        });
         paintings.forEach(addPaintingSurface);
 
         const addWallDot = (x: number, y: number, color: string) => {
@@ -669,6 +747,8 @@ function GalleryCanvas({
         let startY = 0;
         let startYaw = 0;
         let startPitch = 0;
+        let draggedFrame: GalleryPainting | null = null;
+        let frameDragMoved = false;
         let frameId = 0;
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
@@ -683,9 +763,30 @@ function GalleryCanvas({
             raycaster.setFromCamera(pointer, camera);
             return raycaster.intersectObjects(clickablePaintings, false)[0] || null;
         };
+        const getFramePointFromPointer = (frame: GalleryPainting, event: PointerEvent | React.PointerEvent) => {
+            const rect = renderer.domElement.getBoundingClientRect();
+            pointer.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+            pointer.y = -(((event.clientY - rect.top) / rect.height) * 2 - 1);
+            raycaster.setFromCamera(pointer, camera);
+
+            const point = liveFramePositions.get(frame.id) || getFrameWorldPosition(frame);
+            const plane = new THREE.Plane().setFromNormalAndCoplanarPoint(getFrameWallNormal(frame), point);
+            const hit = new THREE.Vector3();
+            if (!raycaster.ray.intersectPlane(plane, hit)) return null;
+            return clampFramePointToRoom(hit);
+        };
+
+        canvasApiRef.current = {
+            getFramePointFromPointer,
+            moveFrameVisual,
+            setDraggingFrameId: (frameId) => {
+                draggingFrameId = frameId;
+                renderer.domElement.style.cursor = frameId ? 'grabbing' : 'grab';
+            }
+        };
 
         const updateCanvasCursor = (event?: PointerEvent) => {
-            if (isDragging) {
+            if (isDragging || draggingFrameId) {
                 renderer.domElement.style.cursor = 'grabbing';
                 return;
             }
@@ -750,7 +851,7 @@ function GalleryCanvas({
                 const element = hotspotRefs.current[frame.id];
                 if (!element) return;
 
-                const point = getFrameWorldPosition(frame);
+                const point = liveFramePositions.get(frame.id)?.clone() || getFrameWorldPosition(frame);
                 const cameraDirection = new THREE.Vector3();
                 camera.getWorldDirection(cameraDirection);
                 const visible = point.clone().sub(camera.position).normalize().dot(cameraDirection) > 0.05;
@@ -774,6 +875,21 @@ function GalleryCanvas({
         };
 
         const onPointerDown = (event: PointerEvent) => {
+            const hit = !readOnly ? getHoveredPainting(event) : null;
+            const hitFrameId = hit?.object.userData.frameId;
+            const hitFrame = paintings.find(item => item.id === hitFrameId);
+            if (hitFrame) {
+                draggedFrame = hitFrame;
+                frameDragMoved = false;
+                draggingFrameId = hitFrame.id;
+                startX = event.clientX;
+                startY = event.clientY;
+                renderer.domElement.style.cursor = 'grabbing';
+                renderer.domElement.setPointerCapture?.(event.pointerId);
+                event.preventDefault();
+                return;
+            }
+
             isDragging = true;
             renderer.domElement.style.cursor = 'grabbing';
             startX = event.clientX;
@@ -784,6 +900,17 @@ function GalleryCanvas({
         };
 
         const onPointerMove = (event: PointerEvent) => {
+            if (draggedFrame) {
+                event.preventDefault();
+                const point = getFramePointFromPointer(draggedFrame, event);
+                if (!point) return;
+                frameDragMoved = frameDragMoved || Math.hypot(event.clientX - startX, event.clientY - startY) > 4;
+                const nextFrame = applyFramePoint(draggedFrame, point);
+                draggedFrame = nextFrame;
+                moveFrameVisual(nextFrame);
+                return;
+            }
+
             if (isDragging) {
                 yaw = startYaw - (event.clientX - startX) * 0.0032;
                 pitch = startPitch + (event.clientY - startY) * 0.0032;
@@ -794,6 +921,19 @@ function GalleryCanvas({
         };
 
         const onPointerUp = (event: PointerEvent) => {
+            if (draggedFrame) {
+                renderer.domElement.releasePointerCapture?.(event.pointerId);
+                const nextFrame = draggedFrame;
+                const moved = frameDragMoved;
+                draggedFrame = null;
+                draggingFrameId = null;
+                frameDragMoved = false;
+                updateCanvasCursor(event);
+                if (moved) onMoveFrameRef.current?.(nextFrame);
+                else onSelectFrameRef.current(nextFrame);
+                return;
+            }
+
             const moved = Math.hypot(event.clientX - startX, event.clientY - startY);
             isDragging = false;
             renderer.domElement.releasePointerCapture?.(event.pointerId);
@@ -804,11 +944,11 @@ function GalleryCanvas({
             const hit = getHoveredPainting(event);
             const frameId = hit?.object.userData.frameId;
             const frame = paintings.find(item => item.id === frameId);
-            if (frame) onSelectFrame(frame);
+            if (frame) onSelectFrameRef.current(frame);
         };
 
         const onPointerLeave = () => {
-            if (!isDragging) renderer.domElement.style.cursor = 'grab';
+            if (!isDragging && !draggedFrame) renderer.domElement.style.cursor = 'grab';
         };
 
         const onWheel = (event: WheelEvent) => {
@@ -833,6 +973,7 @@ function GalleryCanvas({
 
         return () => {
             disposed = true;
+            if (canvasApiRef.current?.moveFrameVisual === moveFrameVisual) canvasApiRef.current = null;
             window.cancelAnimationFrame(frameId);
             observer.disconnect();
             renderer.domElement.removeEventListener('pointerdown', onPointerDown);
@@ -845,7 +986,54 @@ function GalleryCanvas({
             renderer.dispose();
             renderer.domElement.remove();
         };
-    }, [gallery.panoramaUrl, gallery.template, paintings]);
+    }, [gallery.panoramaUrl, gallery.template, paintings, readOnly]);
+
+    const handleHotspotPointerDown = (frame: GalleryPainting, event: React.PointerEvent<HTMLButtonElement>) => {
+        if (readOnly) return;
+        event.preventDefault();
+        event.stopPropagation();
+        overlayDragRef.current = {
+            frame,
+            pointerId: event.pointerId,
+            startX: event.clientX,
+            startY: event.clientY,
+            moved: false
+        };
+        canvasApiRef.current?.setDraggingFrameId(frame.id);
+        event.currentTarget.setPointerCapture?.(event.pointerId);
+    };
+
+    const handleHotspotPointerMove = (event: React.PointerEvent<HTMLButtonElement>) => {
+        const drag = overlayDragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        const point = canvasApiRef.current?.getFramePointFromPointer(drag.frame, event);
+        if (!point) return;
+
+        drag.moved = drag.moved || Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY) > 4;
+        const nextFrame = applyFramePoint(drag.frame, point);
+        overlayDragRef.current = { ...drag, frame: nextFrame };
+        canvasApiRef.current?.moveFrameVisual(nextFrame);
+    };
+
+    const finishHotspotDrag = (event: React.PointerEvent<HTMLButtonElement>) => {
+        const drag = overlayDragRef.current;
+        if (!drag || drag.pointerId !== event.pointerId) return;
+        event.preventDefault();
+        event.stopPropagation();
+
+        overlayDragRef.current = null;
+        canvasApiRef.current?.setDraggingFrameId(null);
+        event.currentTarget.releasePointerCapture?.(event.pointerId);
+        if (drag.moved) {
+            suppressOverlayClickRef.current = true;
+            onMoveFrameRef.current?.(drag.frame);
+        } else {
+            onSelectFrameRef.current(drag.frame);
+        }
+    };
 
     return (
         <div className="relative h-full w-full overflow-hidden bg-slate-950">
@@ -864,11 +1052,19 @@ function GalleryCanvas({
                                 key={frame.id}
                                 ref={(element) => { hotspotRefs.current[frame.id] = element; }}
                                 type="button"
+                                onPointerDown={(event) => handleHotspotPointerDown(frame, event)}
+                                onPointerMove={handleHotspotPointerMove}
+                                onPointerUp={finishHotspotDrag}
+                                onPointerCancel={finishHotspotDrag}
                                 onClick={(event) => {
                                     event.stopPropagation();
-                                    onSelectFrame(frame);
+                                    if (suppressOverlayClickRef.current) {
+                                        suppressOverlayClickRef.current = false;
+                                        return;
+                                    }
+                                    onSelectFrameRef.current(frame);
                                 }}
-                                className={`pointer-events-auto absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-lg shadow-sky-950/20 transition-[opacity,filter] hover:brightness-110 ${active ? 'ring-4 ring-yellow-300' : ''}`}
+                                className={`pointer-events-auto absolute left-0 top-0 flex h-8 w-8 items-center justify-center rounded-full border-2 border-white text-xs font-black text-white shadow-lg shadow-sky-950/20 transition-[opacity,filter] hover:brightness-110 ${readOnly ? 'cursor-pointer' : 'cursor-grab active:cursor-grabbing'} ${active ? 'ring-4 ring-yellow-300' : ''}`}
                                 style={{ background: frameColor }}
                                 title={`Thêm nội dung cho ${frame.label}`}
                             >
@@ -1112,14 +1308,23 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
         await updateGalleryPainting(currentGallery.id, paintingIndex, nextFrame);
     };
 
+    const applyFrameUpdate = async (nextFrame: GalleryPainting) => {
+        if (!currentGallery) return;
+
+        const currentPaintings = normalizePaintings(currentGallery.paintings);
+        const paintingIndex = currentPaintings.findIndex(frame => frame.id === nextFrame.id);
+        if (paintingIndex < 0) return;
+
+        const paintings = currentPaintings.map(frame => frame.id === nextFrame.id ? nextFrame : frame);
+        const updatedGallery = { ...currentGallery, paintings, updatedAt: Date.now() };
+        setCurrentGallery(updatedGallery);
+        setSelectedFrame(prev => prev?.id === nextFrame.id ? nextFrame : prev);
+        setGalleries(prev => prev.map(gallery => gallery.id === currentGallery.id ? updatedGallery : gallery));
+        await updateGalleryPainting(currentGallery.id, paintingIndex, nextFrame);
+    };
+
     const clampFrameToWall = (frame: GalleryPainting, point: THREE.Vector3): GalleryPainting => {
-        const isLeft = point.x < -6.2;
-        const isRight = point.x > 6.2;
-        const isBack = point.z > 4.2;
-        const x = isLeft ? -6.84 : isRight ? 6.84 : Math.max(-5.7, Math.min(5.7, point.x));
-        const z = isLeft || isRight ? Math.max(-4.65, Math.min(4.55, point.z)) : isBack ? 4.94 : -5.84;
-        const y = Math.max(-1.05, Math.min(2.45, point.y));
-        return { ...frame, x, y, z };
+        return applyFramePoint(frame, point);
     };
 
     const handleMoveSelectedFrame = async (direction: 'left' | 'right' | 'up' | 'down') => {
@@ -1377,6 +1582,9 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
                                 onSelectFrame={(frame) => {
                                     if (readOnly) setPreviewFrame(frame);
                                     else setSelectedFrame(frame);
+                                }}
+                                onMoveFrame={(frame) => {
+                                    if (!readOnly) void applyFrameUpdate(frame);
                                 }}
                             />
                             {!readOnly && (
