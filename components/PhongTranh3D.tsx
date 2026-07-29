@@ -1,9 +1,10 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
+import ReactPlayer from 'react-player/lazy';
 import {
     ArrowLeft, BookOpen, Check, Copy, Edit3, Eye, Fullscreen, Image as ImageIcon,
-    Loader2, Monitor, Mountain, Palette, Plus, Save, School, Sparkles, Trash2, Upload, X
+    Loader2, Monitor, Mountain, Palette, PlayCircle, Plus, Save, School, Sparkles, Trash2, Upload, X
 } from 'lucide-react';
 import {
     Gallery,
@@ -1225,14 +1226,6 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
         else document.exitFullscreen?.();
     };
 
-    const openFrameVideoInTab = (frame: GalleryPainting) => {
-        const videoUrl = getSafeExternalUrl(frame.youtubeUrl);
-        if (!videoUrl) return false;
-
-        window.open(videoUrl, '_blank', 'noopener,noreferrer');
-        return true;
-    };
-
     const handleSaveFrame = async (updates: Partial<GalleryPainting>, file?: File | null) => {
         if (!currentGallery || !selectedFrame) return;
         if (!userEmail || currentGallery.ownerEmail !== userEmail) return;
@@ -1601,11 +1594,8 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
                                 selectedFrameId={selectedFrame?.id}
                                 readOnly={readOnly}
                                 onSelectFrame={(frame) => {
-                                    if (readOnly) {
-                                        if (!openFrameVideoInTab(frame)) setPreviewFrame(frame);
-                                    } else {
-                                        setSelectedFrame(frame);
-                                    }
+                                    if (readOnly) setPreviewFrame(frame);
+                                    else setSelectedFrame(frame);
                                 }}
                                 onMoveFrame={(frame) => {
                                     if (!readOnly) void applyFrameUpdate(frame);
@@ -1941,8 +1931,14 @@ function FrameEditorModal({
 }
 
 function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose: () => void }) {
-    const [isExpanded, setIsExpanded] = useState(false);
     const safeYoutubeUrl = getSafeExternalUrl(frame.youtubeUrl);
+    const [isExpanded, setIsExpanded] = useState(false);
+    const [activeTab, setActiveTab] = useState<'image' | 'video'>(safeYoutubeUrl ? 'video' : 'image');
+    const isVideoActive = activeTab === 'video' && Boolean(safeYoutubeUrl);
+
+    useEffect(() => {
+        setActiveTab(safeYoutubeUrl ? 'video' : 'image');
+    }, [frame.id, safeYoutubeUrl]);
 
     return (
         <motion.div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/70 p-2 backdrop-blur-sm sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
@@ -1973,12 +1969,34 @@ function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose
                     </div>
                 </div>
                 <div className={`grid gap-3 overflow-y-auto p-3 sm:gap-5 sm:p-5 md:grid-cols-[1.2fr_0.8fr] ${isExpanded ? 'h-[calc(94dvh-76px)] sm:h-[calc(92vh-112px)]' : 'max-h-[calc(88dvh-64px)]'}`}>
-                    <div className="relative flex min-h-0 items-center justify-center rounded-[22px] bg-white p-2 shadow-inner sm:min-h-[320px] sm:rounded-[28px] sm:p-4">
+                    <div className="relative flex min-h-0 flex-col items-center justify-center gap-3 rounded-[22px] bg-white p-2 shadow-inner sm:min-h-[320px] sm:rounded-[28px] sm:p-4">
                         <span className="absolute left-5 top-5 hidden h-4 w-4 rounded-full bg-pink-400 sm:block" />
                         <span className="absolute right-5 top-5 hidden h-4 w-4 rounded-full bg-yellow-300 sm:block" />
                         <span className="absolute bottom-5 left-5 hidden h-4 w-4 rounded-full bg-sky-400 sm:block" />
                         <span className="absolute bottom-5 right-5 hidden h-4 w-4 rounded-full bg-emerald-400 sm:block" />
-                        {frame.imageUrl ? (
+                        {safeYoutubeUrl && (
+                            <div className="relative z-10 grid w-full max-w-md grid-cols-2 rounded-2xl bg-slate-100 p-1 shadow-inner">
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('image')}
+                                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black ${activeTab === 'image' ? 'bg-sky-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'}`}
+                                >
+                                    <ImageIcon size={16} /> Ảnh
+                                </button>
+                                <button
+                                    type="button"
+                                    onClick={() => setActiveTab('video')}
+                                    className={`inline-flex items-center justify-center gap-2 rounded-xl px-3 py-2 text-sm font-black ${activeTab === 'video' ? 'bg-red-500 text-white shadow-md' : 'text-slate-500 hover:bg-white'}`}
+                                >
+                                    <PlayCircle size={16} /> Video
+                                </button>
+                            </div>
+                        )}
+                        {isVideoActive ? (
+                            <div className={`relative z-10 w-full overflow-hidden rounded-[18px] bg-black shadow-xl sm:rounded-[24px] ${isExpanded ? 'aspect-video max-h-[calc(94dvh-150px)] sm:max-h-[calc(92vh-190px)]' : 'aspect-video'}`}>
+                                <ReactPlayer url={safeYoutubeUrl} controls width="100%" height="100%" />
+                            </div>
+                        ) : frame.imageUrl ? (
                             <div className="relative rounded-[18px] border-4 border-[#fff1c7] bg-white p-1.5 shadow-xl sm:rounded-[24px] sm:border-8 sm:p-2">
                                 <img src={frame.imageUrl} alt={frame.title || frame.label} className={`w-full rounded-xl object-contain sm:rounded-2xl ${isExpanded ? 'max-h-[calc(94dvh-150px)] sm:max-h-[calc(92vh-190px)]' : 'max-h-[34dvh] sm:max-h-[62vh]'}`} />
                             </div>
@@ -1999,9 +2017,9 @@ function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose
                             )}
                         </div>
                         {safeYoutubeUrl && (
-                            <a href={safeYoutubeUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-red-500 to-orange-400 px-5 py-4 font-black text-white shadow-lg">
+                            <button type="button" onClick={() => setActiveTab('video')} className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-red-500 to-orange-400 px-5 py-4 font-black text-white shadow-lg">
                                 Mở video YouTube
-                            </a>
+                            </button>
                         )}
                     </div>
                 </div>
