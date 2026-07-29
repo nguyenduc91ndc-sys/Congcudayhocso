@@ -190,6 +190,19 @@ const getFilledCount = (gallery: Gallery) => normalizePaintings(gallery.painting
 
 const getShareUrl = (galleryId: string) => `${window.location.origin}/share/panorama/${createGalleryShareId(galleryId)}`;
 
+const getSafeExternalUrl = (value?: string) => {
+    const rawValue = value?.trim();
+    if (!rawValue) return '';
+
+    const candidate = /^https?:\/\//i.test(rawValue) ? rawValue : `https://${rawValue}`;
+    try {
+        const url = new URL(candidate);
+        return url.protocol === 'http:' || url.protocol === 'https:' ? url.toString() : '';
+    } catch {
+        return '';
+    }
+};
+
 const KID_FRAME_COLORS = ['#fb7185', '#38bdf8', '#facc15', '#34d399', '#a78bfa', '#fb923c'];
 
 const getFrameWorldPosition = (frame: GalleryPainting) => {
@@ -1212,6 +1225,14 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
         else document.exitFullscreen?.();
     };
 
+    const openFrameVideoInTab = (frame: GalleryPainting) => {
+        const videoUrl = getSafeExternalUrl(frame.youtubeUrl);
+        if (!videoUrl) return false;
+
+        window.open(videoUrl, '_blank', 'noopener,noreferrer');
+        return true;
+    };
+
     const handleSaveFrame = async (updates: Partial<GalleryPainting>, file?: File | null) => {
         if (!currentGallery || !selectedFrame) return;
         if (!userEmail || currentGallery.ownerEmail !== userEmail) return;
@@ -1580,8 +1601,11 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
                                 selectedFrameId={selectedFrame?.id}
                                 readOnly={readOnly}
                                 onSelectFrame={(frame) => {
-                                    if (readOnly) setPreviewFrame(frame);
-                                    else setSelectedFrame(frame);
+                                    if (readOnly) {
+                                        if (!openFrameVideoInTab(frame)) setPreviewFrame(frame);
+                                    } else {
+                                        setSelectedFrame(frame);
+                                    }
                                 }}
                                 onMoveFrame={(frame) => {
                                     if (!readOnly) void applyFrameUpdate(frame);
@@ -1918,6 +1942,7 @@ function FrameEditorModal({
 
 function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose: () => void }) {
     const [isExpanded, setIsExpanded] = useState(false);
+    const safeYoutubeUrl = getSafeExternalUrl(frame.youtubeUrl);
 
     return (
         <motion.div className="fixed inset-0 z-[220] flex items-center justify-center bg-slate-950/70 p-2 backdrop-blur-sm sm:p-4" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={onClose}>
@@ -1973,8 +1998,8 @@ function FramePreviewModal({ frame, onClose }: { frame: GalleryPainting; onClose
                                 <p className="text-sm font-bold leading-relaxed text-slate-400 sm:text-base">Chưa có mô tả cho tác phẩm này.</p>
                             )}
                         </div>
-                        {frame.youtubeUrl && (
-                            <a href={frame.youtubeUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-red-500 to-orange-400 px-5 py-4 font-black text-white shadow-lg">
+                        {safeYoutubeUrl && (
+                            <a href={safeYoutubeUrl} target="_blank" rel="noreferrer" className="inline-flex items-center justify-center rounded-2xl bg-gradient-to-r from-red-500 to-orange-400 px-5 py-4 font-black text-white shadow-lg">
                                 Mở video YouTube
                             </a>
                         )}
