@@ -54,6 +54,7 @@ interface DashboardProps {
     onBangCuuChuong: () => void;
     onSoSanhSo: () => void;
     onGameTuongTac: () => void;
+    onKeoThaPhanLoai: () => void;
     onThuMoiHopPH: () => void;
     onThuMoiTuongTac: () => void;
     onThuMoiDauNam: () => void;
@@ -439,7 +440,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onSensesExplorer, onClockExperiment, onBangCuuChuong, onSoSanhSo, onGameTuongTac, onThuMoiHopPH, onThuMoiTuongTac, onThuMoiDauNam, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onPhongTranh3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onSensesExplorer, onClockExperiment, onBangCuuChuong, onSoSanhSo, onGameTuongTac, onKeoThaPhanLoai, onThuMoiHopPH, onThuMoiTuongTac, onThuMoiDauNam, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onPhongTranh3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -1046,6 +1047,7 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         {!hiddenApps.includes('qrGenerator') && <ToolCard title="Tạo mã QR" description="Tạo QR tĩnh, QR động và tải mẫu QR dễ thương" icon={<QrCode size={24} className="text-white" />} accentColor="bg-gradient-to-br from-sky-500 to-indigo-600" onClick={onQrGenerator} badge="Mới" />}
                                         {!hiddenApps.includes('bangCuuChuong') && <ToolCard title="Bảng Cửu Chương Số" description="Học liệu tương tác bảng cửu chương" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onBangCuuChuong} badge="Mới" />}
                                         {!hiddenApps.includes('soSanhSo') && <ToolCard title="Bé So Sánh Số" description="Luyện lớn hơn, bé hơn, bằng nhau bằng hình ảnh vui nhộn" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-amber-400 via-pink-400 to-sky-500" onClick={onSoSanhSo} badge="Mới" />}
+                                        {!hiddenApps.includes('keoThaPhanLoai') && <ToolCard title="Kéo - Thả Phân Loại" description="Game mầm non kéo thả phân loại hình ảnh, có âm thanh đúng sai và chúc mừng" icon={<span className="text-2xl">🧸</span>} accentColor="bg-gradient-to-br from-sky-400 via-pink-400 to-amber-300" onClick={onKeoThaPhanLoai} badge="Mầm non" />}
                                         {!hiddenApps.includes('gameTuongTac') && <ToolCard title="Game Tương Tác" description="Học liệu tương tác dạng game vui nhộn" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={onGameTuongTac} badge="Mới" />}
                                         {!hiddenApps.includes('thuMoiTuongTac') && <ToolCard title="Thư Mời Họp Phụ Huynh" description="Tạo thư mời tương tác đẹp, nhận xác nhận phụ huynh qua email" icon={<span className="text-2xl">✉️</span>} accentColor="bg-gradient-to-br from-rose-500 to-pink-600" onClick={onThuMoiTuongTac} badge="Mới" />}
                                         {!hiddenApps.includes('thuMoiDauNam') && <ToolCard title="Họp Phụ Huynh Online Đầu Năm" description="Tạo thư mời đầu năm, gửi link/QR và nhận xác nhận phụ huynh" icon={<span className="text-2xl">🏫</span>} accentColor="bg-gradient-to-br from-emerald-500 via-teal-500 to-amber-400" onClick={onThuMoiDauNam} badge="Mới" />}

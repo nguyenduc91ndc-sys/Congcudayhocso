@@ -21,6 +21,7 @@ import ThatLuong3D from './components/ThatLuong3D';
 import BangCuuChuong from './components/BangCuuChuong';
 import SoSanhSo from './components/SoSanhSo';
 import GameTuongTac from './components/GameTuongTac';
+import KeoThaPhanLoai from './components/KeoThaPhanLoai';
 import YogurtExperiment from './components/YogurtExperiment';
 import KiemTraDaoVan from './components/KiemTraDaoVan';
 import SangKienKinhNghiem from './components/SangKienKinhNghiem';
@@ -109,6 +110,7 @@ const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   BANG_CUU_CHUONG: 'bangCuuChuong',
   SO_SANH_SO: 'soSanhSo',
   GAME_TUONG_TAC: 'gameTuongTac',
+  KEO_THA_PHAN_LOAI: 'keoThaPhanLoai',
   YOGURT_EXPERIMENT: 'yogurtExperiment',
   KIEM_TRA_DAO_VAN: 'kiemTraDaoVan',
   SANG_KIEN_KN: 'sangKienKinhNghiem',
@@ -762,6 +764,7 @@ function App() {
                   onBangCuuChuong={() => requireLogin(() => setView('BANG_CUU_CHUONG'))}
                   onSoSanhSo={() => requireLogin(() => setView('SO_SANH_SO'))}
                   onGameTuongTac={() => requireLogin(() => setView('GAME_TUONG_TAC'))}
+                  onKeoThaPhanLoai={() => requireLogin(() => setView('KEO_THA_PHAN_LOAI'))}
                   onYogurtExperiment={() => requireLogin(() => setView('YOGURT_EXPERIMENT'))}
                   onKiemTraDaoVan={() => requireLogin(() => setView('KIEM_TRA_DAO_VAN'))}
                   onSangKienKN={() => requireLogin(() => setView('SANG_KIEN_KN'))}
@@ -958,6 +961,10 @@ function App() {
 
           {view === 'GAME_TUONG_TAC' && (
             <GameTuongTac onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'KEO_THA_PHAN_LOAI' && (
+            <KeoThaPhanLoai onBack={() => setView('DASHBOARD')} />
           )}
 
           {view === 'YOGURT_EXPERIMENT' && (

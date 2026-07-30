@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="vi">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>Trò chơi kéo - thả phân loại</title>
+    <link rel="stylesheet" href="style.css">
+  </head>
+  <body>
+    <main class="game-shell" aria-live="polite">
+      <section class="sky-decor" aria-hidden="true">
+        <div class="rainbow"></div>
+        <div class="cloud cloud-left">☁</div>
+        <div class="cloud cloud-small">☁</div>
+        <div class="sun">☀</div>
+        <div class="balloon">◍</div>
+      </section>
+
+      <header class="top-bar">
+        <div>
+          <h1>KÉO - THẢ PHÂN LOẠI</h1>
+          <p id="missionText">Bé hãy kéo con vật vào đúng nơi sống nhé!</p>
+        </div>
+        <div class="controls" aria-label="Điều khiển trò chơi">
+          <button class="icon-button" id="prevTheme" type="button" title="Chủ đề trước">‹</button>
+          <button class="theme-pill" id="themeButton" type="button">Động vật</button>
+          <button class="icon-button" id="nextTheme" type="button" title="Chủ đề sau">›</button>
+          <button class="icon-button" id="guideButton" type="button" title="Nghe hướng dẫn">?</button>
+          <button class="icon-button" id="soundButton" type="button" title="Bật tắt âm thanh">🔊</button>
+          <button class="icon-button" id="fullscreenButton" type="button" title="Phóng toàn màn hình">⛶</button>
+          <button class="icon-button" id="resetButton" type="button" title="Chơi lại">↻</button>
+        </div>
+      </header>
+
+      <section class="score-row">
+        <div class="score-card">
+          <span>⭐</span>
+          <strong>Điểm: <span id="scoreValue">0</span></strong>
+        </div>
+        <div class="score-card">
+          <span>🏆</span>
+          <strong>Đúng: <span id="correctValue">0</span>/<span id="totalValue">0</span></strong>
+        </div>
+        <div class="feedback" id="feedback">Sẵn sàng chơi nào!</div>
+      </section>
+
+      <section class="play-area" id="playArea">
+        <div class="zones" id="zones"></div>
+        <aside class="side-panel">
+          <h2>Cách chơi</h2>
+          <ol>
+            <li>Quan sát hình ở khay dưới.</li>
+            <li>Kéo hình vào đúng nhóm.</li>
+            <li>Thả đúng để được cộng điểm.</li>
+            <li>Hoàn thành để nhận sao thưởng.</li>
+          </ol>
+          <h2>Lợi ích</h2>
+          <ul>
+            <li>Rèn quan sát</li>
+            <li>Phân loại đồ vật</li>
+            <li>Phối hợp tay - mắt</li>
+          </ul>
+        </aside>
+      </section>
+
+      <section class="tray-panel">
+        <div class="tray-label">Khay hình kéo thả</div>
+        <div class="items-tray" id="itemsTray"></div>
+      </section>
+
+      <div class="grass" aria-hidden="true">
+        <span>🌼</span><span>🌷</span><span>🌻</span><span>🌸</span><span>🌼</span><span>🌺</span>
+      </div>
+    </main>
+
+    <div class="start-overlay" id="startOverlay">
+      <div class="start-scene" aria-label="Màn bắt đầu trò chơi">
+        <div class="start-hotair" aria-hidden="true">
+          <div class="start-balloon-top"></div>
+          <div class="start-boy">●</div>
+          <div class="start-basket"></div>
+        </div>
+        <div class="start-sun" aria-hidden="true">☀</div>
+        <div class="start-cloud cloud-a" aria-hidden="true"></div>
+        <div class="start-cloud cloud-b" aria-hidden="true"></div>
+        <div class="start-cloud cloud-c" aria-hidden="true"></div>
+        <div class="start-spark spark-a" aria-hidden="true">✦</div>
+        <div class="start-spark spark-b" aria-hidden="true">✦</div>
+        <div class="start-spark spark-c" aria-hidden="true">✦</div>
+
+        <section class="start-content">
+          <h2 class="start-title">KÉO - THẢ PHÂN LOẠI</h2>
+          <div class="start-ribbon">Bé hãy kéo phương tiện vào đúng nhóm nhé!</div>
+
+          <div class="start-stats">
+            <div class="start-stat"><span>⭐</span><strong>Điểm: 0</strong></div>
+            <div class="start-stat"><span>🏆</span><strong>Đúng: 0/8</strong></div>
+          </div>
+
+          <button id="startButton" class="mega-start" type="button">
+            <span>BẮT ĐẦU</span>
+            <span class="play-dot">▶</span>
+          </button>
+
+          <div class="start-tip">
+            <span>📣</span>
+            <p id="startTipText">Quan sát kỹ và kéo thả phương tiện vào đúng nhóm. Hoàn thành để nhận phần thưởng nhé!</p>
+          </div>
+
+          <div class="start-actions" aria-label="Tùy chọn trước khi chơi">
+            <button class="round-action action-guide" id="startGuideButton" type="button">
+              <span>📖</span>
+              <strong>HƯỚNG DẪN</strong>
+            </button>
+            <button class="round-action action-sound" id="startSoundButton" type="button">
+              <span>🔊</span>
+              <strong>ÂM THANH</strong>
+            </button>
+            <button class="round-action action-fullscreen" id="startFullscreenButton" type="button">
+              <span>⛶</span>
+              <strong>MÀN HÌNH</strong>
+            </button>
+            <button class="round-action action-award" id="startAchievementButton" type="button">
+              <span>🏅</span>
+              <strong>THÀNH TÍCH</strong>
+            </button>
+          </div>
+        </section>
+
+        <div class="start-ground" aria-hidden="true"></div>
+      </div>
+    </div>
+
+    <div class="celebration" id="celebration" hidden>
+      <div class="celebration-card">
+        <div class="big-star">⭐</div>
+        <h2>Con làm rất tốt!</h2>
+        <p id="finalScore">Bé đã hoàn thành màn chơi.</p>
+        <button id="nextRoundButton" type="button">Chơi chủ đề tiếp theo</button>
+      </div>
+    </div>
+
+    <script src="app.js"></script>
+  </body>
+</html>
