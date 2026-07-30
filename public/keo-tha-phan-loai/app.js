@@ -1,3 +1,16 @@
+if (window.self === window.top && !localStorage.getItem("ntd_user")) {
+  document.body.innerHTML = `
+    <main style="min-height:100vh;display:grid;place-items:center;padding:24px;font-family:Arial,sans-serif;background:linear-gradient(#20b8f0,#fff0bf);color:#18406b;text-align:center">
+      <section style="max-width:560px;background:rgba(255,255,255,.92);border:4px solid #fff;border-radius:24px;padding:28px;box-shadow:0 18px 40px rgba(25,80,120,.22)">
+        <h1 style="margin:0 0 12px;font-size:28px">Hoc lieu thuoc GIAOVIENCN</h1>
+        <p style="margin:0 0 20px;font-weight:700;line-height:1.5">Vui long dang nhap GIAOVIENCN de mo game Keo - Tha Phan Loai.</p>
+        <a href="/?app=keo_tha_phan_loai" style="display:inline-block;padding:12px 20px;border-radius:14px;background:#1697df;color:#fff;text-decoration:none;font-weight:900">Mo trong GIAOVIENCN</a>
+      </section>
+    </main>
+  `;
+  throw new Error("GIAOVIENCN login required");
+}
+
 const themes = [
   {
     name: "Động vật",

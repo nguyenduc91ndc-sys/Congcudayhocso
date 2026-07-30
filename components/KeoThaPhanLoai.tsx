@@ -7,13 +7,14 @@ interface KeoThaPhanLoaiProps {
 }
 
 const GAME_PATH = '/keo-tha-phan-loai/index.html';
+const SHARE_PATH = '/?app=keo_tha_phan_loai';
 
 const KeoThaPhanLoai: React.FC<KeoThaPhanLoaiProps> = ({ onBack }) => {
     const frameWrapRef = useRef<HTMLDivElement | null>(null);
     const [copySuccess, setCopySuccess] = useState(false);
     const [isShortening, setIsShortening] = useState(false);
 
-    const getShareUrl = () => `${window.location.origin}${GAME_PATH}`;
+    const getShareUrl = () => `${window.location.origin}${SHARE_PATH}`;
 
     const handleCopyLink = async () => {
         if (isShortening) return;

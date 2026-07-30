@@ -310,6 +310,10 @@ function App() {
           case 'game_tuy_chinh':
             defaultView = 'GAME_TUY_CHINH';
             break;
+          case 'keo_tha_phan_loai':
+          case 'keo-tha-phan-loai':
+            defaultView = 'KEO_THA_PHAN_LOAI';
+            break;
           case 'dinh_doc_lap':
             defaultView = 'DINH_DOC_LAP_3D';
             break;
@@ -375,10 +379,12 @@ function App() {
 
       const hasSharedAppId = Boolean(urlParams.get('id'));
       const isDirectThiepCreator = defaultView === 'THIEP_MOI_ONLINE' && !hasSharedAppId;
+      const isDirectKeoThaPhanLoai = defaultView === 'KEO_THA_PHAN_LOAI';
       const shouldRequireDirectLogin =
         !savedUser &&
         (
-          isDirectThiepCreator
+          isDirectThiepCreator ||
+          isDirectKeoThaPhanLoai
         );
 
       if (shouldRequireDirectLogin) {
