@@ -16,7 +16,7 @@ import { createShareUrl, shortenUrl, createShortShareUrl } from '../utils/shareU
 import { verifyAdminPassword, isAdminAuthenticated, setAdminAuthenticated } from '../utils/adminAuth';
 import { canUseVideoTrialByDevice, useVideoTrialByDevice, getDeviceTrialStatus } from '../utils/firebaseDeviceTrial';
 import ScrollButtons from './ScrollButtons';
-import { BlogSection } from './BlogSection';
+import { BlogSection, blogPosts } from './BlogSection';
 
 interface DashboardProps {
     user: User;
@@ -226,6 +226,13 @@ const PHET_SIMULATION_LINKS = [
 ] as const;
 
 const PHET_SOURCE_NAME = 'PhET Interactive Simulations, University of Colorado Boulder - phet.colorado.edu';
+
+type DashboardTabKey = typeof DASHBOARD_TABS[number]['key'];
+
+interface DashboardToolItem {
+    id: string;
+    render: () => React.ReactNode;
+}
 
 // Professional Tool Card Component
 interface ToolCardProps {
@@ -455,7 +462,7 @@ const Dashboard: React.FC<DashboardProps> = ({
     const [isVerifying, setIsVerifying] = useState(false);
     const [showDonateModal, setShowDonateModal] = useState(false);
     const [showZaloModal, setShowZaloModal] = useState(false);
-    const [activeTab, setActiveTab] = useState('all');
+    const [activeTab, setActiveTab] = useState<DashboardTabKey>('all');
     const [showUpdateBanner, setShowUpdateBanner] = useState(() => {
         return !sessionStorage.getItem('skkn_update_dismissed');
     });
@@ -555,6 +562,107 @@ const Dashboard: React.FC<DashboardProps> = ({
         } finally {
             setIsVerifying(false);
         }
+    };
+
+    const getVisibleTools = (items: DashboardToolItem[]) => items.filter(item => !hiddenApps.includes(item.id));
+
+    const teachingTools: DashboardToolItem[] = [
+        {
+            id: 'interactiveVideo',
+            render: () => (
+                <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onMouseEnter={() => playHoverSound()}
+                    onClick={onInteractiveVideo}
+                    className="relative group text-left p-6 rounded-2xl border transition-all duration-200 bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl"
+                >
+                    <span className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10">
+                        {lessons.length} video
+                    </span>
+                    <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 group-hover:shadow-xl transition-shadow">
+                        <Video size={24} className="text-white" />
+                    </div>
+                    <h3 className="text-lg font-bold text-white mb-1">Video tương tác</h3>
+                    <p className="text-sm text-white/70">Dán link YouTube hoặc tải video lên, chèn câu hỏi tương tác ngay trong bài học</p>
+                    <ChevronRight size={20} className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300" />
+                </motion.div>
+            ),
+        },
+        { id: 'beeGame', render: () => <ToolCard title="Ong về Tổ" description="Game ong về tổ demo sản phẩm" icon={<span className="text-2xl">🐝</span>} accentColor="bg-amber-500" onClick={onBeeGame} /> },
+        { id: 'beeGameEditable', render: () => <ToolCard title="Ong về Tổ (Tự soạn)" description="Tự tạo câu hỏi và chia sẻ cho học sinh" icon={<span className="text-2xl">🐝📝</span>} accentColor="bg-orange-500" onClick={onBeeGameEditable} badge="Mới" /> },
+        { id: 'bacteriaGame', render: () => <ToolCard title="Vi Khuẩn Phiêu Lưu" description="Game vi khuẩn tìm đường về hũ sữa chua" icon={<span className="text-2xl">🦠</span>} accentColor="bg-green-500" onClick={onBacteriaGame} badge="Mới" /> },
+        { id: 'vongQuay', render: () => <ToolCard title="Vòng quay" description="Vòng tròn gọi tên học sinh" icon={<RotateCcw size={24} className="text-white" />} accentColor="bg-pink-500" onClick={onVongQuay} /> },
+        { id: 'luckyWheel', render: () => <ToolCard title="Vòng quay may mắn" description="Bánh xe quay chọn người may mắn" icon={<span className="text-2xl">🎡</span>} accentColor="bg-rose-500" onClick={onLuckyWheel} /> },
+        { id: 'starWheel', render: () => <ToolCard title="Vòng Xoay Ngôi Sao" description="Vòng quay ngôi sao may mắn" icon={<span className="text-2xl">⭐</span>} accentColor="bg-indigo-500" onClick={onStarWheel} /> },
+        { id: 'puzzleGame', render: () => <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" /> },
+        { id: 'treasureHunt', render: () => <ToolCard title="Truy Tìm Kho Báu" description="Game phiêu lưu khám phá, tự soạn câu hỏi" icon={<span className="text-2xl">🏴‍☠️</span>} accentColor="bg-gradient-to-br from-orange-500 to-amber-500" onClick={onTreasureHunt} badge="Mới" /> },
+        { id: 'nhayBaoBo', render: () => <ToolCard title="Nhảy Bao Bố" description="Hai đội thi đấu song song với ngân hàng câu hỏi" icon={<span className="text-2xl">🏁</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-500" onClick={onNhayBaoBo} badge="Mới" /> },
+        { id: 'keoCoTriTue', render: () => <ToolCard title="Kéo Co Trí Tuệ" description="Game kéo co, nhận diện cử chỉ tay (AI)" icon={<span className="text-2xl">✊🖐️</span>} accentColor="bg-gradient-to-br from-red-500 to-blue-500" onClick={onKeoCoTriTue} badge="Mới" /> },
+        { id: 'gameTuyChinh', render: () => <ToolCard title="Game Tùy Chỉnh" description="Game tùy biến câu hỏi, nhận diện cử chỉ (AI)" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-red-400 to-orange-500" onClick={onGameTuyChinh} badge="Cực Hot" /> },
+        { id: 'videoStore', render: () => <ToolCard title="Kho Video AI" description="Video AI giáo dục chất lượng cao" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-blue-500 to-purple-600" onClick={onVideoStore} badge="Mới" /> },
+    ];
+
+    const aiTools: DashboardToolItem[] = [
+        { id: 'soanGiaoAnNangLucSo', render: () => <ToolCard title="Soạn giáo án tích hợp Năng lực số - AI vào kế hoạch bài dạy" description="Mở công cụ soạn giáo án tích hợp năng lực số và AI" icon={<Sparkles size={24} className="text-white" />} accentColor="bg-gradient-to-br from-fuchsia-500 to-indigo-600" onClick={onSoanGiaoAnNangLucSo} badge="AI" /> },
+        { id: 'aiCourseStore', render: () => <ToolCard title="Kho Khóa học AI" description="Xem demo các khóa học AI cho giáo viên" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-cyan-500 to-blue-600" onClick={onAICourseStore} badge="Mới" /> },
+        { id: 'ngheNghiep', render: () => <ToolCard title="Nghề Nghiệp Tương Lai" description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI" icon={<span className="text-2xl">👨‍🚀</span>} accentColor="bg-gradient-to-br from-orange-400 to-amber-500" onClick={onNgheNghiep} badge="AI Studio" /> },
+        { id: 'canvaBasics', render: () => <ToolCard title="Canva cơ bản" description="Video hướng dẫn sử dụng Canva từ cộng đồng" icon={<span className="text-2xl">🎨</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onCanvaBasics} badge="Mới" /> },
+        { id: 'chucTet', render: () => <ToolCard title="Mẫu Chúc Tết" description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ" icon={<span className="text-2xl">🎊</span>} accentColor="bg-gradient-to-br from-red-600 to-yellow-500" onClick={onChucTet} badge="Mới" /> },
+        { id: 'communityResources', render: () => <ToolCard title="Kho tài nguyên cộng đồng" description="Game PPT, mẫu slide, 3D, video AI và tài nguyên miễn phí cho thầy cô" icon={<Users size={24} className="text-white" />} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onCommunityResources} badge="Miễn phí" /> },
+        { id: 'kiemTraDaoVan', render: () => <ToolCard title="Thẩm Văn AI" description="Kiểm tra đạo văn & phát hiện nội dung AI thông minh" icon={<span className="text-2xl">🔍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onKiemTraDaoVan} badge="Mới" /> },
+        { id: 'sangKienKinhNghiem', render: () => <ToolCard title="Viết SKKN & Báo Cáo" description="2 trong 1: AI viết + quét & sửa để vượt trình kiểm tra AI. Cá nhân hóa như người thật viết" icon={<span className="text-2xl">✍️</span>} accentColor="bg-gradient-to-br from-emerald-500 to-teal-600" onClick={onSangKienKN} badge="Mới" /> },
+        { id: 'nhanXetTT27', render: () => <ToolCard title="Nhận Xét TT27" description="Tự động sinh nhận xét học sinh chuẩn Thông tư 27, hỗ trợ file từ Cơ sở dữ liệu" icon={<span className="text-2xl">📝</span>} accentColor="bg-gradient-to-br from-violet-500 to-purple-600" onClick={onNhanXetTT27} badge="Mới" /> },
+    ];
+
+    const threeDTools: DashboardToolItem[] = [
+        { id: 'solarSystem', render: () => <ToolCard title="Hệ Mặt Trời" description="Khám phá và thực hành mô phỏng 2D ấn tượng" icon={<span className="text-2xl">🪐</span>} accentColor="bg-gradient-to-br from-cyan-600 to-blue-800" onClick={onSolarSystem} badge="Mới" /> },
+        { id: 'earthSeasons', render: () => <ToolCard title="Trái đất & Bốn mùa" description="Mô phỏng ngày đêm và 4 mùa 3D" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-blue-500 to-cyan-500" onClick={onEarthSeasons} /> },
+        { id: 'heartSystem3D', render: () => <ToolCard title="Hệ tuần hoàn 3D" description="Mô hình tim và hệ tuần hoàn 3D sống động" icon={<Heart size={24} className="text-white" />} accentColor="bg-red-600" onClick={onHeartSystem3D} badge="Mới" /> },
+        { id: 'geometry3DTools', render: () => <ToolCard title="Bộ công cụ Hình học 3D" description="Lập phương, hộp, chóp, cầu, trụ tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-indigo-600" onClick={onGeometry3D} badge="Mới" /> },
+        { id: 'vietnamMap', render: () => <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" /> },
+        { id: 'phongTranh3D', render: () => <ToolCard title="Phòng tranh 3D tùy chỉnh" description="Tạo phòng triển lãm 3D, gắn ảnh, video và chia sẻ link cho học sinh" icon={<Palette size={24} className="text-white" />} accentColor="bg-gradient-to-br from-pink-500 via-orange-400 to-yellow-400" onClick={onPhongTranh3D} badge="Mới" /> },
+        { id: 'denHung3D', render: () => <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" /> },
+        { id: 'thatLuong3D', render: () => <ToolCard title="Mô hình 3D - Thạt Luổng" description="Khám phá kiến trúc Thạt Luổng với mô hình 3D tương tác" icon={<span className="text-2xl">🕍</span>} accentColor="bg-gradient-to-br from-yellow-600 to-amber-700" onClick={onThatLuong3D} badge="Mới" /> },
+        { id: 'dinhDocLap3D', render: () => <ToolCard title="Khám phá Dinh Độc Lập 3D" description="Tham quan Dinh Độc Lập lịch sử qua mô hình 3D tương tác · 30/4" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-yellow-700 to-red-800" onClick={onDinhDocLap3D} badge="30/4" /> },
+        ...VR360_DISCOVERY_LINKS.map(item => ({ id: item.id, render: () => <ToolCard title={item.title} description={item.description} icon={<span className="text-2xl">{item.icon}</span>} accentColor={item.accentColor} onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')} badge={item.badge} sourceName={item.sourceName} audience={item.audience} /> })),
+    ];
+
+    const scienceTools: DashboardToolItem[] = [
+        { id: 'virtualExperiment', render: () => <ToolCard title="Thí nghiệm ảo tách muối ra khỏi dung dịch" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" /> },
+        { id: 'sensesExplorer', render: () => <ToolCard title="Biệt đội 5 giác quan" description="Mô phỏng TNXH lớp 1: khám phá, phân loại và bảo vệ các giác quan" icon={<span className="text-2xl">👁️</span>} accentColor="bg-gradient-to-br from-cyan-500 to-emerald-500" onClick={onSensesExplorer} badge="Mới" /> },
+        { id: 'clockExperiment', render: () => <ToolCard title="Xem Giờ Trên Đồng Hồ" description="Học cách xem giờ trên đồng hồ kim và đồng hồ số" icon={<span className="text-2xl">⏰</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onClockExperiment} badge="Mới" /> },
+        { id: 'yogurtExperiment', render: () => <ToolCard title="Thí nghiệm làm Sữa chua" description="Mô phỏng thí nghiệm làm sữa chua với vi khuẩn lactic" icon={<span className="text-2xl">🥛</span>} accentColor="bg-gradient-to-br from-pink-500 to-purple-600" onClick={onYogurtExperiment} badge="Mới" /> },
+        { id: 'earthSeasons', render: () => <ToolCard title="Chuyển động Trái Đất & Các Mùa" description="Mô phỏng quỹ đạo Trái Đất, trục nghiêng và sự hình thành 4 mùa" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-blue-600" onClick={onEarthSeasons} badge="Mới" /> },
+        ...PHET_SIMULATION_LINKS.map(item => ({ id: item.id, render: () => <ToolCard title={item.title} description={item.description} icon={<span className="text-2xl">{item.icon}</span>} accentColor={item.accentColor} onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')} badge={item.badge} sourceName={PHET_SOURCE_NAME} audience={item.audience} /> })),
+    ];
+
+    const interactiveTools: DashboardToolItem[] = [
+        { id: 'qrGenerator', render: () => <ToolCard title="Tạo mã QR" description="Tạo QR tĩnh, QR động và tải mẫu QR dễ thương" icon={<QrCode size={24} className="text-white" />} accentColor="bg-gradient-to-br from-sky-500 to-indigo-600" onClick={onQrGenerator} badge="Mới" /> },
+        { id: 'bangCuuChuong', render: () => <ToolCard title="Bảng Cửu Chương Số" description="Học liệu tương tác bảng cửu chương" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onBangCuuChuong} badge="Mới" /> },
+        { id: 'soSanhSo', render: () => <ToolCard title="Bé So Sánh Số" description="Luyện lớn hơn, bé hơn, bằng nhau bằng hình ảnh vui nhộn" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-amber-400 via-pink-400 to-sky-500" onClick={onSoSanhSo} badge="Mới" /> },
+        { id: 'keoThaPhanLoai', render: () => <ToolCard title="Kéo - Thả Phân Loại" description="Game mầm non kéo thả phân loại hình ảnh, có âm thanh đúng sai và chúc mừng" icon={<span className="text-2xl">🧸</span>} accentColor="bg-gradient-to-br from-sky-400 via-pink-400 to-amber-300" onClick={onKeoThaPhanLoai} badge="Mầm non" /> },
+        { id: 'gameTuongTac', render: () => <ToolCard title="Game Tương Tác" description="Học liệu tương tác dạng game vui nhộn" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={onGameTuongTac} badge="Mới" /> },
+        { id: 'thuMoiTuongTac', render: () => <ToolCard title="Thư Mời Họp Phụ Huynh" description="Tạo thư mời tương tác đẹp, nhận xác nhận phụ huynh qua email" icon={<span className="text-2xl">✉️</span>} accentColor="bg-gradient-to-br from-rose-500 to-pink-600" onClick={onThuMoiTuongTac} badge="Mới" /> },
+        { id: 'thuMoiDauNam', render: () => <ToolCard title="Họp Phụ Huynh Online Đầu Năm" description="Tạo thư mời đầu năm, gửi link/QR và nhận xác nhận phụ huynh" icon={<span className="text-2xl">🏫</span>} accentColor="bg-gradient-to-br from-emerald-500 via-teal-500 to-amber-400" onClick={onThuMoiDauNam} badge="Mới" /> },
+        { id: 'thiepMoiOnline', render: () => <ToolCard title="Thiệp Mời Online" description="Tạo thiệp đẹp cho thôi nôi, cưới hỏi, tốt nghiệp, tân gia và mọi loại tiệc" icon={<span className="text-2xl">💌</span>} accentColor="bg-gradient-to-br from-fuchsia-500 via-rose-500 to-orange-400" onClick={onThiepMoiOnline} badge="Mới" /> },
+        { id: 'kyYeuCuoiNam', render: () => <ToolCard title="Kỷ Yếu Cuối Năm" description="Tạo kỷ yếu lớp, lưu giữ ảnh/video và xuất file chia sẻ" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-pink-500 to-rose-600" onClick={onKyYeuCuoiNam} badge="Mới" /> },
+    ];
+
+    const visibleTeachingTools = getVisibleTools(teachingTools);
+    const visibleAiTools = getVisibleTools(aiTools);
+    const visibleThreeDTools = getVisibleTools(threeDTools);
+    const visibleScienceTools = getVisibleTools(scienceTools);
+    const visibleInteractiveTools = getVisibleTools(interactiveTools);
+
+    const tabToolCounts: Record<DashboardTabKey, number> = {
+        all: visibleTeachingTools.length + visibleAiTools.length + visibleThreeDTools.length + visibleScienceTools.length + visibleInteractiveTools.length + blogPosts.length,
+        teaching: visibleTeachingTools.length,
+        science: visibleScienceTools.length,
+        ai: visibleAiTools.length,
+        '3d': visibleThreeDTools.length,
+        interactive: visibleInteractiveTools.length,
+        blog: blogPosts.length,
     };
 
     return (
@@ -708,6 +816,12 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         >
                                             <span className="text-sm sm:text-base">{tab.emoji}</span>
                                             <span className="inline drop-shadow-sm">{tab.label}</span>
+                                            <span
+                                                className={`ml-0.5 inline-flex h-5 min-w-[1.25rem] items-center justify-center rounded-full px-1.5 text-[11px] font-black leading-none tabular-nums shadow-sm transition-colors ${activeTab === tab.key ? 'bg-white text-blue-700' : 'bg-white/15 text-white/90 ring-1 ring-white/15'}`}
+                                                aria-label={`${tabToolCounts[tab.key]} mục`}
+                                            >
+                                                {tabToolCounts[tab.key]}
+                                            </span>
                                         </button>
                                     ))}
                                 </div>
@@ -885,36 +999,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {!hiddenApps.includes('interactiveVideo') && <motion.div
-                                            whileHover={{ scale: 1.02 }}
-                                            whileTap={{ scale: 0.98 }}
-                                            onMouseEnter={() => playHoverSound()}
-                                            onClick={onInteractiveVideo}
-                                            className="relative group text-left p-6 rounded-2xl border transition-all duration-200 bg-white/10 border-white/20 hover:border-white/40 hover:bg-white/20 cursor-pointer hover:shadow-2xl"
-                                        >
-                                            <span className="absolute top-4 right-4 px-2 py-1 text-[10px] font-bold rounded-full bg-black/30 text-white/80 backdrop-blur-sm border border-white/10">
-                                                {lessons.length} video
-                                            </span>
-                                            <div className="w-14 h-14 rounded-xl bg-blue-600 flex items-center justify-center mb-4 shadow-lg shadow-blue-500/20 group-hover:shadow-xl transition-shadow">
-                                                <Video size={24} className="text-white" />
-                                            </div>
-                                            <h3 className="text-lg font-bold text-white mb-1">Video tương tác</h3>
-                                            <p className="text-sm text-white/70">Dán link YouTube hoặc tải video lên, chèn câu hỏi tương tác ngay trong bài học</p>
-                                            <ChevronRight size={20} className="absolute bottom-6 right-6 text-white/40 group-hover:text-white/80 group-hover:translate-x-2 transition-all duration-300" />
-                                        </motion.div>}
-
-                                        {!hiddenApps.includes('beeGame') && <ToolCard title="Ong về Tổ" description="Game ong về tổ demo sản phẩm" icon={<span className="text-2xl">🐝</span>} accentColor="bg-amber-500" onClick={onBeeGame} />}
-                                        {!hiddenApps.includes('beeGameEditable') && <ToolCard title="Ong về Tổ (Tự soạn)" description="Tự tạo câu hỏi và chia sẻ cho học sinh" icon={<span className="text-2xl">🐝📝</span>} accentColor="bg-orange-500" onClick={onBeeGameEditable} badge="Mới" />}
-                                        {!hiddenApps.includes('bacteriaGame') && <ToolCard title="Vi Khuẩn Phiêu Lưu" description="Game vi khuẩn tìm đường về hũ sữa chua" icon={<span className="text-2xl">🦠</span>} accentColor="bg-green-500" onClick={onBacteriaGame} badge="Mới" />}
-                                        {!hiddenApps.includes('vongQuay') && <ToolCard title="Vòng quay" description="Vòng tròn gọi tên học sinh" icon={<RotateCcw size={24} className="text-white" />} accentColor="bg-pink-500" onClick={onVongQuay} />}
-                                        {!hiddenApps.includes('luckyWheel') && <ToolCard title="Vòng quay may mắn" description="Bánh xe quay chọn người may mắn" icon={<span className="text-2xl">🎡</span>} accentColor="bg-rose-500" onClick={onLuckyWheel} />}
-                                        {!hiddenApps.includes('starWheel') && <ToolCard title="Vòng Xoay Ngôi Sao" description="Vòng quay ngôi sao may mắn" icon={<span className="text-2xl">⭐</span>} accentColor="bg-indigo-500" onClick={onStarWheel} />}
-                                        {!hiddenApps.includes('puzzleGame') && <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" />}
-                                        {!hiddenApps.includes('treasureHunt') && <ToolCard title="Truy Tìm Kho Báu" description="Game phiêu lưu khám phá, tự soạn câu hỏi" icon={<span className="text-2xl">🏴‍☠️</span>} accentColor="bg-gradient-to-br from-orange-500 to-amber-500" onClick={onTreasureHunt} badge="Mới" />}
-                                        {!hiddenApps.includes('nhayBaoBo') && <ToolCard title="Nhảy Bao Bố" description="Hai đội thi đấu song song với ngân hàng câu hỏi" icon={<span className="text-2xl">🏁</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-500" onClick={onNhayBaoBo} badge="Mới" />}
-                                        {!hiddenApps.includes('keoCoTriTue') && <ToolCard title="Kéo Co Trí Tuệ" description="Game kéo co, nhận diện cử chỉ tay (AI)" icon={<span className="text-2xl">✊🖐️</span>} accentColor="bg-gradient-to-br from-red-500 to-blue-500" onClick={onKeoCoTriTue} badge="Mới" />}
-                                        {!hiddenApps.includes('gameTuyChinh') && <ToolCard title="Game Tùy Chỉnh" description="Game tùy biến câu hỏi, nhận diện cử chỉ (AI)" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-red-400 to-orange-500" onClick={onGameTuyChinh} badge="Cực Hot" />}
-                                        {!hiddenApps.includes('videoStore') && <ToolCard title="Kho Video AI" description="Video AI giáo dục chất lượng cao" icon={<span className="text-2xl">🎬</span>} accentColor="bg-gradient-to-br from-blue-500 to-purple-600" onClick={onVideoStore} badge="Mới" />}
+                                        {visibleTeachingTools.map(item => (
+                                            <React.Fragment key={item.id}>{item.render()}</React.Fragment>
+                                        ))}
                                     </div>
                                 </section>
                             )}
@@ -934,15 +1021,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {!hiddenApps.includes('soanGiaoAnNangLucSo') && <ToolCard title="Soạn giáo án tích hợp Năng lực số - AI vào kế hoạch bài dạy" description="Mở công cụ soạn giáo án tích hợp năng lực số và AI" icon={<Sparkles size={24} className="text-white" />} accentColor="bg-gradient-to-br from-fuchsia-500 to-indigo-600" onClick={onSoanGiaoAnNangLucSo} badge="AI" />}
-                                        {!hiddenApps.includes('aiCourseStore') && <ToolCard title="Kho Khóa học AI" description="Xem demo các khóa học AI cho giáo viên" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-cyan-500 to-blue-600" onClick={onAICourseStore} badge="Mới" />}
-                                        {!hiddenApps.includes('ngheNghiep') && <ToolCard title="Nghề Nghiệp Tương Lai" description="Tạo ảnh chibi theo nghề nghiệp ước mơ với AI" icon={<span className="text-2xl">👨‍🚀</span>} accentColor="bg-gradient-to-br from-orange-400 to-amber-500" onClick={onNgheNghiep} badge="AI Studio" />}
-                                        {!hiddenApps.includes('canvaBasics') && <ToolCard title="Canva cơ bản" description="Video hướng dẫn sử dụng Canva từ cộng đồng" icon={<span className="text-2xl">🎨</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onCanvaBasics} badge="Mới" />}
-                                        {!hiddenApps.includes('chucTet') && <ToolCard title="Mẫu Chúc Tết" description="Tạo thiệp chúc Tết đẹp, xuất PNG/PDF và chia sẻ" icon={<span className="text-2xl">🎊</span>} accentColor="bg-gradient-to-br from-red-600 to-yellow-500" onClick={onChucTet} badge="Mới" />}
-                                        {!hiddenApps.includes('communityResources') && <ToolCard title="Kho tài nguyên cộng đồng" description="Game PPT, mẫu slide, 3D, video AI và tài nguyên miễn phí cho thầy cô" icon={<Users size={24} className="text-white" />} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onCommunityResources} badge="Miễn phí" />}
-                                        {!hiddenApps.includes('kiemTraDaoVan') && <ToolCard title="Thẩm Văn AI" description="Kiểm tra đạo văn & phát hiện nội dung AI thông minh" icon={<span className="text-2xl">🔍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onKiemTraDaoVan} badge="Mới" />}
-                                        {!hiddenApps.includes('sangKienKinhNghiem') && <ToolCard title="Viết SKKN & Báo Cáo" description="2 trong 1: AI viết + quét & sửa để vượt trình kiểm tra AI. Cá nhân hóa như người thật viết" icon={<span className="text-2xl">✍️</span>} accentColor="bg-gradient-to-br from-emerald-500 to-teal-600" onClick={onSangKienKN} badge="Mới" />}
-                                        {!hiddenApps.includes('nhanXetTT27') && <ToolCard title="Nhận Xét TT27" description="Tự động sinh nhận xét học sinh chuẩn Thông tư 27, hỗ trợ file từ Cơ sở dữ liệu" icon={<span className="text-2xl">📝</span>} accentColor="bg-gradient-to-br from-violet-500 to-purple-600" onClick={onNhanXetTT27} badge="Mới" />}
+                                        {visibleAiTools.map(item => (
+                                            <React.Fragment key={item.id}>{item.render()}</React.Fragment>
+                                        ))}
                                     </div>
                                 </section>
                             )}
@@ -962,29 +1043,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {!hiddenApps.includes('solarSystem') && <ToolCard title="Hệ Mặt Trời" description="Khám phá và thực hành mô phỏng 2D ấn tượng" icon={<span className="text-2xl">🪐</span>} accentColor="bg-gradient-to-br from-cyan-600 to-blue-800" onClick={onSolarSystem} badge="Mới" />}
-                                        {!hiddenApps.includes('earthSeasons') && <ToolCard title="Trái đất & Bốn mùa" description="Mô phỏng ngày đêm và 4 mùa 3D" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-blue-500 to-cyan-500" onClick={onEarthSeasons} />}
-                                        {!hiddenApps.includes('heartSystem3D') && <ToolCard title="Hệ tuần hoàn 3D" description="Mô hình tim và hệ tuần hoàn 3D sống động" icon={<Heart size={24} className="text-white" />} accentColor="bg-red-600" onClick={onHeartSystem3D} badge="Mới" />}
-                                        {!hiddenApps.includes('geometry3DTools') && <ToolCard title="Bộ công cụ Hình học 3D" description="Lập phương, hộp, chóp, cầu, trụ tương tác" icon={<Box size={24} className="text-white" />} accentColor="bg-indigo-600" onClick={onGeometry3D} badge="Mới" />}
-                                        {!hiddenApps.includes('vietnamMap') && <ToolCard title="Bản đồ Việt Nam" description="Khám phá 34 tỉnh thành với bản đồ tương tác" icon={<span className="text-2xl">🗺️</span>} accentColor="bg-emerald-600" onClick={onVietnamMap} badge="Mới" />}
-                                        {!hiddenApps.includes('phongTranh3D') && <ToolCard title="Phòng tranh 3D tùy chỉnh" description="Tạo phòng triển lãm 3D, gắn ảnh, video và chia sẻ link cho học sinh" icon={<Palette size={24} className="text-white" />} accentColor="bg-gradient-to-br from-pink-500 via-orange-400 to-yellow-400" onClick={onPhongTranh3D} badge="Mới" />}
-                                        {!hiddenApps.includes('denHung3D') && <ToolCard title="Phòng Tranh 3D - Đền Hùng" description="Dã ngoại ảo tham quan Đền Hùng với VR 360°" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-amber-600 to-red-700" onClick={onDenHung3D} badge="Mới" />}
-                                        {!hiddenApps.includes('thatLuong3D') && <ToolCard title="Mô hình 3D - Thạt Luổng" description="Khám phá kiến trúc Thạt Luổng với mô hình 3D tương tác" icon={<span className="text-2xl">🕍</span>} accentColor="bg-gradient-to-br from-yellow-600 to-amber-700" onClick={onThatLuong3D} badge="Mới" />}
-                                        {!hiddenApps.includes('dinhDocLap3D') && <ToolCard title="Khám phá Dinh Độc Lập 3D" description="Tham quan Dinh Độc Lập lịch sử qua mô hình 3D tương tác · 30/4" icon={<span className="text-2xl">🏛️</span>} accentColor="bg-gradient-to-br from-yellow-700 to-red-800" onClick={onDinhDocLap3D} badge="30/4" />}
-                                        {VR360_DISCOVERY_LINKS.map(item => (
-                                            !hiddenApps.includes(item.id) && (
-                                                <ToolCard
-                                                    key={item.id}
-                                                    title={item.title}
-                                                    description={item.description}
-                                                    icon={<span className="text-2xl">{item.icon}</span>}
-                                                    accentColor={item.accentColor}
-                                                    onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
-                                                    badge={item.badge}
-                                                    sourceName={item.sourceName}
-                                                    audience={item.audience}
-                                                />
-                                            )
+                                        {visibleThreeDTools.map(item => (
+                                            <React.Fragment key={item.id}>{item.render()}</React.Fragment>
                                         ))}
                                     </div>
                                 </section>
@@ -1005,25 +1065,8 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {!hiddenApps.includes('virtualExperiment') && <ToolCard title="Thí nghiệm ảo tách muối ra khỏi dung dịch" description="Mô phỏng thí nghiệm Khoa học tương tác" icon={<span className="text-2xl">🧪</span>} accentColor="bg-gradient-to-br from-teal-500 to-cyan-600" onClick={onVirtualExperiment} badge="Mới" />}
-                                        {!hiddenApps.includes('sensesExplorer') && <ToolCard title="Biệt đội 5 giác quan" description="Mô phỏng TNXH lớp 1: khám phá, phân loại và bảo vệ các giác quan" icon={<span className="text-2xl">👁️</span>} accentColor="bg-gradient-to-br from-cyan-500 to-emerald-500" onClick={onSensesExplorer} badge="Mới" />}
-                                        {!hiddenApps.includes('clockExperiment') && <ToolCard title="Xem Giờ Trên Đồng Hồ" description="Học cách xem giờ trên đồng hồ kim và đồng hồ số" icon={<span className="text-2xl">⏰</span>} accentColor="bg-gradient-to-br from-indigo-500 to-purple-600" onClick={onClockExperiment} badge="Mới" />}
-                                        {!hiddenApps.includes('yogurtExperiment') && <ToolCard title="Thí nghiệm làm Sữa chua" description="Mô phỏng thí nghiệm làm sữa chua với vi khuẩn lactic" icon={<span className="text-2xl">🥛</span>} accentColor="bg-gradient-to-br from-pink-500 to-purple-600" onClick={onYogurtExperiment} badge="Mới" />}
-                                        {!hiddenApps.includes('earthSeasons') && <ToolCard title="Chuyển động Trái Đất & Các Mùa" description="Mô phỏng quỹ đạo Trái Đất, trục nghiêng và sự hình thành 4 mùa" icon={<span className="text-2xl">🌍</span>} accentColor="bg-gradient-to-br from-indigo-500 to-blue-600" onClick={onEarthSeasons} badge="Mới" />}
-                                        {PHET_SIMULATION_LINKS.map(item => (
-                                            !hiddenApps.includes(item.id) && (
-                                                <ToolCard
-                                                    key={item.id}
-                                                    title={item.title}
-                                                    description={item.description}
-                                                    icon={<span className="text-2xl">{item.icon}</span>}
-                                                    accentColor={item.accentColor}
-                                                    onClick={() => window.open(item.url, '_blank', 'noopener,noreferrer')}
-                                                    badge={item.badge}
-                                                    sourceName={PHET_SOURCE_NAME}
-                                                    audience={item.audience}
-                                                />
-                                            )
+                                        {visibleScienceTools.map(item => (
+                                            <React.Fragment key={item.id}>{item.render()}</React.Fragment>
                                         ))}
                                     </div>
                                 </section>
@@ -1044,15 +1087,9 @@ const Dashboard: React.FC<DashboardProps> = ({
                                         </div>
                                     )}
                                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                                        {!hiddenApps.includes('qrGenerator') && <ToolCard title="Tạo mã QR" description="Tạo QR tĩnh, QR động và tải mẫu QR dễ thương" icon={<QrCode size={24} className="text-white" />} accentColor="bg-gradient-to-br from-sky-500 to-indigo-600" onClick={onQrGenerator} badge="Mới" />}
-                                        {!hiddenApps.includes('bangCuuChuong') && <ToolCard title="Bảng Cửu Chương Số" description="Học liệu tương tác bảng cửu chương" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-600" onClick={onBangCuuChuong} badge="Mới" />}
-                                        {!hiddenApps.includes('soSanhSo') && <ToolCard title="Bé So Sánh Số" description="Luyện lớn hơn, bé hơn, bằng nhau bằng hình ảnh vui nhộn" icon={<span className="text-2xl">🔢</span>} accentColor="bg-gradient-to-br from-amber-400 via-pink-400 to-sky-500" onClick={onSoSanhSo} badge="Mới" />}
-                                        {!hiddenApps.includes('keoThaPhanLoai') && <ToolCard title="Kéo - Thả Phân Loại" description="Game mầm non kéo thả phân loại hình ảnh, có âm thanh đúng sai và chúc mừng" icon={<span className="text-2xl">🧸</span>} accentColor="bg-gradient-to-br from-sky-400 via-pink-400 to-amber-300" onClick={onKeoThaPhanLoai} badge="Mầm non" />}
-                                        {!hiddenApps.includes('gameTuongTac') && <ToolCard title="Game Tương Tác" description="Học liệu tương tác dạng game vui nhộn" icon={<span className="text-2xl">🎮</span>} accentColor="bg-gradient-to-br from-purple-500 to-pink-600" onClick={onGameTuongTac} badge="Mới" />}
-                                        {!hiddenApps.includes('thuMoiTuongTac') && <ToolCard title="Thư Mời Họp Phụ Huynh" description="Tạo thư mời tương tác đẹp, nhận xác nhận phụ huynh qua email" icon={<span className="text-2xl">✉️</span>} accentColor="bg-gradient-to-br from-rose-500 to-pink-600" onClick={onThuMoiTuongTac} badge="Mới" />}
-                                        {!hiddenApps.includes('thuMoiDauNam') && <ToolCard title="Họp Phụ Huynh Online Đầu Năm" description="Tạo thư mời đầu năm, gửi link/QR và nhận xác nhận phụ huynh" icon={<span className="text-2xl">🏫</span>} accentColor="bg-gradient-to-br from-emerald-500 via-teal-500 to-amber-400" onClick={onThuMoiDauNam} badge="Mới" />}
-                                        {!hiddenApps.includes('thiepMoiOnline') && <ToolCard title="Thiệp Mời Online" description="Tạo thiệp đẹp cho thôi nôi, cưới hỏi, tốt nghiệp, tân gia và mọi loại tiệc" icon={<span className="text-2xl">💌</span>} accentColor="bg-gradient-to-br from-fuchsia-500 via-rose-500 to-orange-400" onClick={onThiepMoiOnline} badge="Mới" />}
-                                        {!hiddenApps.includes('kyYeuCuoiNam') && <ToolCard title="Kỷ Yếu Cuối Năm" description="Tạo kỷ yếu lớp, lưu giữ ảnh/video và xuất file chia sẻ" icon={<span className="text-2xl">🎓</span>} accentColor="bg-gradient-to-br from-pink-500 to-rose-600" onClick={onKyYeuCuoiNam} badge="Mới" />}
+                                        {visibleInteractiveTools.map(item => (
+                                            <React.Fragment key={item.id}>{item.render()}</React.Fragment>
+                                        ))}
                                     </div>
                                 </section>
                             )}
