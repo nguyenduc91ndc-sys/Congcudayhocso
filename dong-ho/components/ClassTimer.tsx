@@ -2,6 +2,8 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
     BellRing,
     Hourglass,
+    Maximize2,
+    Minimize2,
     Pause,
     Play,
     RotateCcw,
@@ -47,7 +49,9 @@ const ClassTimer: React.FC = () => {
     const [secondSound, setSecondSound] = useState(true);
     const [finishSound, setFinishSound] = useState(true);
     const [accent, setAccent] = useState(ACCENTS[0].value);
+    const [isFullscreen, setIsFullscreen] = useState(false);
 
+    const timerRef = useRef<HTMLElement>(null);
     const startAtRef = useRef(0);
     const endAtRef = useRef(0);
     const baseElapsedRef = useRef(0);
@@ -59,6 +63,15 @@ const ClassTimer: React.FC = () => {
     const secondsValue = duration % 60;
     const countdownFinished = mode === 'countdown' && remaining === 0 && !isRunning;
     const isUrgent = mode === 'countdown' && isRunning && remaining <= 10;
+
+    useEffect(() => {
+        const handleFullscreenChange = () => {
+            setIsFullscreen(document.fullscreenElement === timerRef.current);
+        };
+
+        document.addEventListener('fullscreenchange', handleFullscreenChange);
+        return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
+    }, []);
 
     const progress = useMemo(() => {
         if (mode === 'stopwatch') {
@@ -182,12 +195,30 @@ const ClassTimer: React.FC = () => {
         finishedRef.current = false;
     };
 
+    const toggleFullscreen = async () => {
+        playClick();
+
+        try {
+            if (document.fullscreenElement === timerRef.current) {
+                await document.exitFullscreen();
+            } else {
+                await timerRef.current?.requestFullscreen();
+            }
+        } catch {
+            setIsFullscreen(false);
+        }
+    };
+
     const radius = 58;
     const circumference = 2 * Math.PI * radius;
     const strokeOffset = circumference * (1 - progress);
 
     return (
-        <section className="class-timer" style={{ '--timer-accent': accent } as React.CSSProperties}>
+        <section
+            ref={timerRef}
+            className={`class-timer ${isFullscreen ? 'is-fullscreen' : ''}`}
+            style={{ '--timer-accent': accent } as React.CSSProperties}
+        >
             <div className="timer-header">
                 <div>
                     <div className="timer-eyebrow">
@@ -196,14 +227,24 @@ const ClassTimer: React.FC = () => {
                     </div>
                     <h2>{mode === 'countdown' ? 'Đếm ngược sinh động' : 'Bấm giờ sinh động'}</h2>
                 </div>
-                <button
-                    className={`timer-sound-btn ${secondSound ? 'active' : ''}`}
-                    onClick={() => setSecondSound((value) => !value)}
-                    title={secondSound ? 'Tắt âm báo từng giây' : 'Bật âm báo từng giây'}
-                    type="button"
-                >
-                    {secondSound ? <Volume2 size={18} /> : <VolumeX size={18} />}
-                </button>
+                <div className="timer-header-actions">
+                    <button
+                        className={`timer-sound-btn ${secondSound ? 'active' : ''}`}
+                        onClick={() => setSecondSound((value) => !value)}
+                        title={secondSound ? 'Tắt âm báo từng giây' : 'Bật âm báo từng giây'}
+                        type="button"
+                    >
+                        {secondSound ? <Volume2 size={18} /> : <VolumeX size={18} />}
+                    </button>
+                    <button
+                        className="timer-expand-btn"
+                        onClick={toggleFullscreen}
+                        title={isFullscreen ? 'Thu nhỏ' : 'Phóng to toàn màn hình'}
+                        type="button"
+                    >
+                        {isFullscreen ? <Minimize2 size={18} /> : <Maximize2 size={18} />}
+                    </button>
+                </div>
             </div>
 
             <div className="timer-mode-switch" role="tablist" aria-label="Chế độ bấm giờ">

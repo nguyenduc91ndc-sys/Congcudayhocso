@@ -731,6 +731,12 @@ body {
     margin-bottom: 14px;
 }
 
+.timer-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
 .timer-eyebrow {
     display: inline-flex;
     align-items: center;
@@ -748,6 +754,7 @@ body {
 }
 
 .timer-sound-btn,
+.timer-expand-btn,
 .timer-reset-btn {
     width: 42px;
     height: 42px;
@@ -763,6 +770,7 @@ body {
 }
 
 .timer-sound-btn.active,
+.timer-expand-btn:hover,
 .timer-reset-btn:hover {
     color: var(--timer-accent);
     border-color: color-mix(in srgb, var(--timer-accent) 70%, white);
@@ -1015,6 +1023,114 @@ body {
     outline-offset: 2px;
 }
 
+.class-timer.is-fullscreen {
+    width: 100vw;
+    height: 100vh;
+    max-width: none;
+    padding: clamp(24px, 4vmin, 56px);
+    border: 0;
+    border-radius: 0;
+    box-sizing: border-box;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    overflow: auto;
+    background:
+        radial-gradient(circle at 50% 45%, color-mix(in srgb, var(--timer-accent) 18%, transparent), transparent 46%),
+        #10152d;
+}
+
+.class-timer.is-fullscreen .timer-header,
+.class-timer.is-fullscreen .timer-mode-switch,
+.class-timer.is-fullscreen .timer-body {
+    width: min(1180px, 100%);
+    margin-left: auto;
+    margin-right: auto;
+}
+
+.class-timer.is-fullscreen .timer-header {
+    margin-bottom: clamp(18px, 3vmin, 32px);
+}
+
+.class-timer.is-fullscreen .timer-header h2 {
+    font-size: clamp(1.45rem, 3vmin, 2.3rem);
+}
+
+.class-timer.is-fullscreen .timer-eyebrow {
+    font-size: clamp(0.9rem, 1.6vmin, 1.15rem);
+}
+
+.class-timer.is-fullscreen .timer-sound-btn,
+.class-timer.is-fullscreen .timer-expand-btn {
+    width: clamp(48px, 6vmin, 64px);
+    height: clamp(48px, 6vmin, 64px);
+}
+
+.class-timer.is-fullscreen .timer-mode-switch {
+    max-width: 720px;
+    margin-bottom: clamp(24px, 4vmin, 42px);
+}
+
+.class-timer.is-fullscreen .timer-mode-switch button {
+    min-height: clamp(48px, 6vmin, 66px);
+    font-size: clamp(0.95rem, 1.8vmin, 1.3rem);
+}
+
+.class-timer.is-fullscreen .timer-body {
+    justify-content: center;
+    gap: clamp(36px, 7vw, 100px);
+}
+
+.class-timer.is-fullscreen .timer-ring {
+    width: clamp(260px, 42vmin, 460px);
+    height: clamp(260px, 42vmin, 460px);
+    flex-basis: clamp(260px, 42vmin, 460px);
+}
+
+.class-timer.is-fullscreen .timer-time {
+    width: clamp(184px, 30vmin, 330px);
+    height: clamp(184px, 30vmin, 330px);
+}
+
+.class-timer.is-fullscreen .timer-time strong {
+    font-size: clamp(3rem, 7vmin, 6rem);
+}
+
+.class-timer.is-fullscreen .timer-time span {
+    margin-top: 14px;
+    font-size: clamp(0.95rem, 2vmin, 1.4rem);
+}
+
+.class-timer.is-fullscreen .timer-controls {
+    max-width: 540px;
+}
+
+.class-timer.is-fullscreen .timer-inputs label {
+    font-size: 1rem;
+}
+
+.class-timer.is-fullscreen .timer-inputs input {
+    height: 62px;
+    font-size: 1.35rem;
+}
+
+.class-timer.is-fullscreen .timer-presets button,
+.class-timer.is-fullscreen .timer-options button {
+    min-height: 42px;
+    padding: 9px 14px;
+    font-size: 0.95rem;
+}
+
+.class-timer.is-fullscreen .timer-main-btn {
+    min-height: 64px;
+    font-size: 1.25rem;
+}
+
+.class-timer.is-fullscreen .timer-reset-btn {
+    width: 64px;
+    height: 64px;
+}
+
 @keyframes timerBreath {
     0%,
     100% {
@@ -1044,6 +1160,14 @@ body {
     .intro-tool-row {
         flex-direction: column;
         gap: 18px;
+    }
+
+    .class-timer.is-fullscreen {
+        justify-content: flex-start;
+    }
+
+    .class-timer.is-fullscreen .timer-body {
+        gap: 24px;
     }
 
     .timer-body {
@@ -1086,6 +1210,27 @@ body {
         width: calc(100vw - 40px) !important;
         max-width: calc(100vw - 40px) !important;
         padding: 14px;
+    }
+
+    .class-timer.is-fullscreen {
+        width: 100vw !important;
+        max-width: none !important;
+        padding: 18px;
+    }
+
+    .class-timer.is-fullscreen .timer-ring {
+        width: 240px;
+        height: 240px;
+        flex-basis: 240px;
+    }
+
+    .class-timer.is-fullscreen .timer-time {
+        width: 170px;
+        height: 170px;
+    }
+
+    .class-timer.is-fullscreen .timer-time strong {
+        font-size: 2.7rem;
     }
 
     .timer-header {
