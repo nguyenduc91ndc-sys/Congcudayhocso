@@ -821,7 +821,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                     className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white text-center shadow-lg transition-all"
                                 >
                                     <div className="text-3xl sm:text-4xl font-black leading-none">{analytics.totalVisits.toLocaleString('vi-VN')}</div>
-                                    <div className="text-xs sm:text-sm opacity-80">Tổng lượt truy cập</div>
+                                    <div className="text-xs sm:text-sm opacity-80">Tổng lượt truy cập Firebase</div>
                                 </motion.div>
                                 <motion.div
                                     whileHover={{ scale: 1.05 }}
