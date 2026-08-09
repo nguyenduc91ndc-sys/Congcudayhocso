@@ -79,6 +79,18 @@ import {
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
+const LOCAL_PREVIEW_ADMIN_EMAIL = 'dev-preview@giaovien.local';
+
+const isLocalPreviewHost = () => (
+  import.meta.env.DEV ||
+  (typeof window !== 'undefined' && ['localhost', '127.0.0.1'].includes(window.location.hostname))
+);
+
+const canAccessAdmin = (email?: string) => {
+  const normalizedEmail = email?.toLowerCase() || '';
+  return ADMIN_EMAILS.includes(normalizedEmail) ||
+    (isLocalPreviewHost() && normalizedEmail === LOCAL_PREVIEW_ADMIN_EMAIL);
+};
 
 const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   CREATE_EDIT: 'interactiveVideo',
@@ -176,7 +188,7 @@ function App() {
     return `ntd_lessons_${userEmail.toLowerCase().trim()}`;
   };
 
-  const isAdminUser = user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false;
+  const isAdminUser = user ? canAccessAdmin(user.email) : false;
   const currentAppId = VIEW_APP_IDS[view];
   const isPublicSharedThuMoiView = view === 'THU_MOI_TUONG_TAC' && Boolean(sharedThuMoiId);
   const isPublicSharedThuMoiDauNamView = view === 'THU_MOI_DAU_NAM' && Boolean(sharedThuMoiDauNamId);
@@ -789,7 +801,7 @@ function App() {
                   onThiepMoiOnline={() => requireLogin(() => { setSharedThiepMoiId(null); setView('THIEP_MOI_ONLINE'); })}
                   onQrGenerator={() => requireLogin(() => setView('QR_GENERATOR'))}
                   onKyYeuCuoiNam={() => setView('KY_YEU_CUOI_NAM')}
-                  isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
+                  isAdmin={isAdminUser}
                   isGuest={!user}
                   hiddenApps={Object.entries(appVisibility.apps).filter(([_, v]) => v === false).map(([k]) => k)}
                   maintenanceMode={appVisibility.maintenanceMode}
@@ -879,7 +891,7 @@ function App() {
           {view === 'AI_COURSE_STORE' && (
             <AICourseStore
               onBack={() => setView('DASHBOARD')}
-              isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
+              isAdmin={isAdminUser}
               isLoggedIn={!!user}
               onRequireLogin={() => setShowLoginModal(true)}
             />
@@ -898,7 +910,7 @@ function App() {
           {view === 'CANVA_BASICS' && (
             <CanvaBasics
               onBack={() => setView('DASHBOARD')}
-              isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
+              isAdmin={isAdminUser}
               isLoggedIn={!!user}
               onRequireLogin={() => setShowLoginModal(true)}
             />
@@ -907,7 +919,7 @@ function App() {
           {view === 'COMMUNITY_RESOURCES' && (
             <CommunityResourceStore
               onBack={() => setView('DASHBOARD')}
-              isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
+              isAdmin={isAdminUser}
               isLoggedIn={!!user}
               onRequireLogin={() => setShowLoginModal(true)}
             />
@@ -984,7 +996,7 @@ function App() {
           {view === 'SANG_KIEN_KN' && (
             <SangKienKinhNghiem
               onBack={() => setView('DASHBOARD')}
-              isAdmin={user ? ADMIN_EMAILS.includes(user.email?.toLowerCase() || '') : false}
+              isAdmin={isAdminUser}
               userEmail={user?.email || undefined}
               userName={(user as any)?.displayName || undefined}
             />

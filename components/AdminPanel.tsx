@@ -29,6 +29,7 @@ import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, se
 import { getAppUsageSummaries, AppUsageSummary } from '../utils/firebaseAppUsage';
 
 const START_YEAR_MEETING_APP_ID = 'thuMoiDauNam' as const;
+const DEMO_USER_COUNT_KEY = 'giaoviencn_demo_user_count';
 
 interface AdminPanelProps {
     onBack: () => void;
@@ -116,9 +117,17 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     const [analytics, setAnalytics] = useState<Analytics>({ totalVisits: 0, uniqueVisitors: 0, todayVisits: 0, recentVisitors: [] });
     const [appUsageStats, setAppUsageStats] = useState<AppUsageSummary[]>([]);
     const [showAppUsageStats, setShowAppUsageStats] = useState(false);
+    const [demoUserCount, setDemoUserCount] = useState(() => {
+        if (typeof window === 'undefined') return '';
+        return window.localStorage.getItem(DEMO_USER_COUNT_KEY) || '';
+    });
+    const [showDemoUserCountEditor, setShowDemoUserCountEditor] = useState(false);
     const startYearMeetingInfo = APP_INFO[START_YEAR_MEETING_APP_ID];
     const startYearMeetingStats = appUsageStats.find(item => item.appId === START_YEAR_MEETING_APP_ID);
     const isStartYearMeetingVisible = appVisibility.apps[START_YEAR_MEETING_APP_ID] !== false;
+    const parsedDemoUserCount = Number.parseInt(demoUserCount, 10);
+    const hasDemoUserCount = Number.isFinite(parsedDemoUserCount) && parsedDemoUserCount >= 0;
+    const visibleUserCount = hasDemoUserCount ? parsedDemoUserCount : analytics.uniqueVisitors;
 
     // Feedback states
     const [feedbacks, setFeedbacks] = useState<Feedback[]>([]);
@@ -341,6 +350,21 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             ...prev,
             totalVisits: count
         }));
+    };
+
+    const handleSaveDemoUserCount = () => {
+        const count = parseInt(demoUserCount, 10);
+        if (isNaN(count) || count < 0) return;
+        const normalizedCount = count.toString();
+        setDemoUserCount(normalizedCount);
+        setShowDemoUserCountEditor(false);
+        window.localStorage.setItem(DEMO_USER_COUNT_KEY, normalizedCount);
+    };
+
+    const handleResetDemoUserCount = () => {
+        setDemoUserCount('');
+        setShowDemoUserCountEditor(false);
+        window.localStorage.removeItem(DEMO_USER_COUNT_KEY);
     };
 
     const loadFirebaseVisitors = async () => {
@@ -788,10 +812,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                     <div className="text-2xl sm:text-3xl font-bold">{analytics.totalVisits}</div>
                                     <div className="text-xs sm:text-sm opacity-80">Tổng lượt truy cập</div>
                                 </div>
-                                <div className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white text-center shadow-lg">
-                                    <div className="text-2xl sm:text-3xl font-bold">{analytics.uniqueVisitors}</div>
+                                <motion.div
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={(event) => {
+                                        if (event.ctrlKey || event.metaKey) {
+                                            setShowDemoUserCountEditor(true);
+                                        }
+                                    }}
+                                    className="bg-gradient-to-br from-purple-500 to-pink-500 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white text-center shadow-lg transition-all"
+                                >
+                                    <div className="text-3xl sm:text-4xl font-black leading-none">{visibleUserCount.toLocaleString('vi-VN')}</div>
                                     <div className="text-xs sm:text-sm opacity-80">Người dùng</div>
-                                </div>
+                                </motion.div>
                                 <motion.div
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
@@ -806,6 +839,62 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                     </div>
                                 </motion.div>
                             </div>
+
+                            <AnimatePresence>
+                                {showDemoUserCountEditor && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4"
+                                        onClick={() => setShowDemoUserCountEditor(false)}
+                                    >
+                                        <motion.div
+                                            initial={{ scale: 0.96, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.96, opacity: 0 }}
+                                            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+                                            onClick={(event) => event.stopPropagation()}
+                                        >
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-black text-purple-800">Cập nhật số hiển thị</h3>
+                                                <button
+                                                    onClick={() => setShowDemoUserCountEditor(false)}
+                                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={demoUserCount}
+                                                onChange={(e) => setDemoUserCount(e.target.value)}
+                                                placeholder={analytics.uniqueVisitors.toString()}
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-purple-200 text-center text-2xl font-black text-purple-700 focus:outline-none focus:border-purple-500"
+                                                min="0"
+                                                autoFocus
+                                            />
+                                            <p className="mt-2 text-center text-xs text-slate-500">
+                                                Số thật hiện tại: {analytics.uniqueVisitors.toLocaleString('vi-VN')}
+                                            </p>
+                                            <div className="flex gap-2 mt-4">
+                                                <button
+                                                    onClick={handleSaveDemoUserCount}
+                                                    className="flex-1 px-4 py-3 bg-purple-600 text-white font-bold rounded-xl hover:bg-purple-700 transition-colors flex items-center justify-center gap-2"
+                                                >
+                                                    <Save size={16} /> Lưu
+                                                </button>
+                                                <button
+                                                    onClick={handleResetDemoUserCount}
+                                                    className="px-4 py-3 bg-slate-100 text-slate-700 font-bold rounded-xl hover:bg-slate-200 transition-colors"
+                                                >
+                                                    Dùng số thật
+                                                </button>
+                                            </div>
+                                        </motion.div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* Global Visit Count Control */}
                             <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-4 mb-4 shadow-lg">
