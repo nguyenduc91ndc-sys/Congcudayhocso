@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Clock, Monitor, MessageCircle, Star, XCircle, Check, X, Edit2, Save, Eye, ShoppingBag, Film, Package, Flame, Link, ExternalLink, Upload, ImageIcon, Loader2, Search, History, Mail, ChevronDown } from 'lucide-react';
+import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Clock, Monitor, MessageCircle, Star, XCircle, Check, X, Edit2, Save, ShoppingBag, Film, Package, Flame, Link, ExternalLink, Upload, ImageIcon, Loader2, Search, History, Mail, ChevronDown } from 'lucide-react';
 import { getAnalytics, Analytics, VisitorLog } from '../utils/analyticsUtils';
 import { getAllFeedbacks, getPendingFeedbacks, getApprovedFeedbacks, approveFeedback, rejectFeedback, deleteFeedback, updateFeedback, Feedback } from '../utils/feedbackUtils';
 import { getVisitStats, setVisitCount } from '../utils/visitCounter';
@@ -139,6 +139,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
     // Visit count states
     const [globalVisitCount, setGlobalVisitCount] = useState(0);
     const [newVisitCount, setNewVisitCount] = useState('');
+    const [showVisitCountEditor, setShowVisitCountEditor] = useState(false);
 
     // Firebase visitors
     const [firebaseVisitors, setFirebaseVisitors] = useState<FirebaseVisitor[]>([]);
@@ -350,6 +351,7 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
             ...prev,
             totalVisits: count
         }));
+        setShowVisitCountEditor(false);
     };
 
     const handleSaveDemoUserCount = () => {
@@ -808,10 +810,19 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                         <div className="h-full flex flex-col">
                             {/* Stats Cards */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-4 mb-4 sm:mb-6">
-                                <div className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white text-center shadow-lg">
-                                    <div className="text-2xl sm:text-3xl font-bold">{analytics.totalVisits}</div>
+                                <motion.div
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={(event) => {
+                                        if (event.ctrlKey || event.metaKey) {
+                                            setShowVisitCountEditor(true);
+                                        }
+                                    }}
+                                    className="bg-gradient-to-br from-blue-500 to-cyan-500 rounded-xl sm:rounded-2xl p-3 sm:p-4 text-white text-center shadow-lg transition-all"
+                                >
+                                    <div className="text-3xl sm:text-4xl font-black leading-none">{analytics.totalVisits.toLocaleString('vi-VN')}</div>
                                     <div className="text-xs sm:text-sm opacity-80">Tổng lượt truy cập</div>
-                                </div>
+                                </motion.div>
                                 <motion.div
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
@@ -896,29 +907,52 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                                 )}
                             </AnimatePresence>
 
-                            {/* Global Visit Count Control */}
-                            <div className="bg-gradient-to-r from-emerald-600 to-teal-600 rounded-xl p-4 mb-4 shadow-lg">
-                                <div className="flex items-center gap-2 mb-3">
-                                    <Eye size={18} className="text-white" />
-                                    <span className="text-white font-bold">Lượt truy cập toàn cầu (Firebase)</span>
-                                </div>
-                                <div className="flex gap-2">
-                                    <input
-                                        type="number"
-                                        value={newVisitCount}
-                                        onChange={(e) => setNewVisitCount(e.target.value)}
-                                        className="flex-1 px-4 py-2 rounded-lg bg-white/20 border border-white/30 text-white font-bold text-center text-lg focus:outline-none focus:border-white/60"
-                                        min="0"
-                                    />
-                                    <button
-                                        onClick={handleSetVisitCount}
-                                        className="px-4 py-2 bg-white text-emerald-600 font-bold rounded-lg hover:bg-emerald-100 transition-colors flex items-center gap-2"
+                            <AnimatePresence>
+                                {showVisitCountEditor && (
+                                    <motion.div
+                                        initial={{ opacity: 0 }}
+                                        animate={{ opacity: 1 }}
+                                        exit={{ opacity: 0 }}
+                                        className="fixed inset-0 bg-black/40 backdrop-blur-sm z-[120] flex items-center justify-center p-4"
+                                        onClick={() => setShowVisitCountEditor(false)}
                                     >
-                                        <Save size={16} /> Lưu
-                                    </button>
-                                </div>
-                                <p className="text-white/70 text-xs mt-2">Hiện tại: {globalVisitCount.toLocaleString('vi-VN')} lượt (hiển thị ở Footer)</p>
-                            </div>
+                                        <motion.div
+                                            initial={{ scale: 0.96, opacity: 0 }}
+                                            animate={{ scale: 1, opacity: 1 }}
+                                            exit={{ scale: 0.96, opacity: 0 }}
+                                            className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl"
+                                            onClick={(event) => event.stopPropagation()}
+                                        >
+                                            <div className="flex items-center justify-between mb-4">
+                                                <h3 className="font-black text-blue-800">Cập nhật lượt truy cập</h3>
+                                                <button
+                                                    onClick={() => setShowVisitCountEditor(false)}
+                                                    className="p-2 rounded-lg hover:bg-slate-100 text-slate-500"
+                                                >
+                                                    <X size={18} />
+                                                </button>
+                                            </div>
+                                            <input
+                                                type="number"
+                                                value={newVisitCount}
+                                                onChange={(e) => setNewVisitCount(e.target.value)}
+                                                className="w-full px-4 py-3 rounded-xl border-2 border-blue-200 text-center text-2xl font-black text-blue-700 focus:outline-none focus:border-blue-500"
+                                                min="0"
+                                                autoFocus
+                                            />
+                                            <p className="mt-2 text-center text-xs text-slate-500">
+                                                Số Firebase hiện tại: {globalVisitCount.toLocaleString('vi-VN')} lượt
+                                            </p>
+                                            <button
+                                                onClick={handleSetVisitCount}
+                                                className="mt-4 w-full px-4 py-3 bg-blue-600 text-white font-bold rounded-xl hover:bg-blue-700 transition-colors flex items-center justify-center gap-2"
+                                            >
+                                                <Save size={16} /> Lưu
+                                            </button>
+                                        </motion.div>
+                                    </motion.div>
+                                )}
+                            </AnimatePresence>
 
                             {/* App Usage Statistics */}
                             <div className="bg-white rounded-xl border border-purple-100 p-4 mb-4 shadow-sm">
