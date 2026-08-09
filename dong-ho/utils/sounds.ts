@@ -41,6 +41,19 @@ export function playTick(): void {
     playTone(800, 0.05, 'square', 0.08);
 }
 
+/** Clear per-second timer beep */
+export function playSecondBeep(): void {
+    playTone(920, 0.045, 'triangle', 0.11);
+}
+
+/** Timer completion alert */
+export function playTimerFinish(): void {
+    playTone(660, 0.16, 'sine', 0.24, 0);
+    playTone(880, 0.16, 'sine', 0.24, 0.16);
+    playTone(1108, 0.22, 'sine', 0.22, 0.32);
+    playTone(523, 0.42, 'triangle', 0.16, 0.58);
+}
+
 /** Click UI feedback */
 export function playClick(): void {
     playTone(600, 0.08, 'sine', 0.15);

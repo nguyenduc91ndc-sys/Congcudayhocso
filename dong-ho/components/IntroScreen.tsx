@@ -1,6 +1,7 @@
 import React from 'react';
 import { Screen } from '../types';
 import { playClick, playWhoosh } from '../utils/sounds';
+import ClassTimer from './ClassTimer';
 
 interface IntroScreenProps {
     onSelectMode: (mode: Screen) => void;
@@ -43,7 +44,7 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onSelectMode }) => {
     return (
         <div className="flex-col flex-center" style={{ minHeight: '100vh', padding: '40px 20px', gap: '40px' }}>
             {/* Title */}
-            <div className="text-center" style={{ maxWidth: '600px' }}>
+            <div className="text-center intro-hero" style={{ maxWidth: '600px' }}>
                 <div style={{ fontSize: '4rem', marginBottom: '12px' }}>⏰</div>
                 <h1 className="title-xl" style={{ marginBottom: '12px' }}>
                     Xem Giờ Trên Đồng Hồ
@@ -53,44 +54,48 @@ const IntroScreen: React.FC<IntroScreenProps> = ({ onSelectMode }) => {
                 </p>
             </div>
 
-            {/* Clock animation preview */}
-            <div style={{
-                width: '120px',
-                height: '120px',
-                borderRadius: '50%',
-                background: 'rgba(30, 41, 59, 0.85)',
-                border: '3px solid #334155',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-                position: 'relative',
-                boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
-            }}>
-                <svg viewBox="0 0 100 100" width="100" height="100">
-                    {/* Simple clock preview */}
-                    {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => {
-                        const a = (n * 30 - 90) * (Math.PI / 180);
-                        const x = 50 + 36 * Math.cos(a);
-                        const y = 50 + 36 * Math.sin(a);
-                        return (
-                            <text key={n} x={x} y={y} textAnchor="middle" dominantBaseline="central"
-                                fill="#94A3B8" fontSize="8" fontWeight="600" fontFamily="Quicksand">
-                                {n}
-                            </text>
-                        );
-                    })}
-                    {/* Hour hand */}
-                    <line x1="50" y1="50" x2="50" y2="26" stroke="#FF6B6B" strokeWidth="3" strokeLinecap="round">
-                        <animateTransform attributeName="transform" type="rotate"
-                            from="0 50 50" to="360 50 50" dur="43200s" repeatCount="indefinite" />
-                    </line>
-                    {/* Minute hand */}
-                    <line x1="50" y1="50" x2="50" y2="18" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round">
-                        <animateTransform attributeName="transform" type="rotate"
-                            from="0 50 50" to="360 50 50" dur="3600s" repeatCount="indefinite" />
-                    </line>
-                    <circle cx="50" cy="50" r="3" fill="#F1F5F9" />
-                </svg>
+            <div className="intro-tool-row">
+                {/* Clock animation preview */}
+                <div className="intro-clock-preview" style={{
+                    width: '120px',
+                    height: '120px',
+                    borderRadius: '50%',
+                    background: 'rgba(30, 41, 59, 0.85)',
+                    border: '3px solid #334155',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    position: 'relative',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.3)',
+                }}>
+                    <svg viewBox="0 0 100 100" width="100" height="100">
+                        {/* Simple clock preview */}
+                        {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12].map(n => {
+                            const a = (n * 30 - 90) * (Math.PI / 180);
+                            const x = 50 + 36 * Math.cos(a);
+                            const y = 50 + 36 * Math.sin(a);
+                            return (
+                                <text key={n} x={x} y={y} textAnchor="middle" dominantBaseline="central"
+                                    fill="#94A3B8" fontSize="8" fontWeight="600" fontFamily="Quicksand">
+                                    {n}
+                                </text>
+                            );
+                        })}
+                        {/* Hour hand */}
+                        <line x1="50" y1="50" x2="50" y2="26" stroke="#FF6B6B" strokeWidth="3" strokeLinecap="round">
+                            <animateTransform attributeName="transform" type="rotate"
+                                from="0 50 50" to="360 50 50" dur="43200s" repeatCount="indefinite" />
+                        </line>
+                        {/* Minute hand */}
+                        <line x1="50" y1="50" x2="50" y2="18" stroke="#38BDF8" strokeWidth="2" strokeLinecap="round">
+                            <animateTransform attributeName="transform" type="rotate"
+                                from="0 50 50" to="360 50 50" dur="3600s" repeatCount="indefinite" />
+                        </line>
+                        <circle cx="50" cy="50" r="3" fill="#F1F5F9" />
+                    </svg>
+                </div>
+
+                <ClassTimer />
             </div>
 
             {/* Mode selection cards */}
