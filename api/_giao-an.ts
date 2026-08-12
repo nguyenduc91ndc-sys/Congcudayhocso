@@ -3,7 +3,6 @@ import fs from 'node:fs';
 import path from 'node:path';
 import Busboy from 'busboy';
 import mammoth from 'mammoth';
-import { GoogleGenAI } from '@google/genai';
 
 export type Provider = 'gemini' | 'groq';
 
@@ -27,7 +26,13 @@ export interface MultipartPayload {
     files: Record<string, UploadedFile[]>;
 }
 
+type GeminiInputPart =
+    | { type: 'text'; text: string }
+    | { type: 'image' | 'audio' | 'video' | 'document'; data: string; mime_type: string };
+
 const DATA_DIR = path.join(process.cwd(), 'public', 'xdkhbdcv3439', 'xdkhbdcv3439', 'data');
+const GEMINI_INTERACTIONS_URL = 'https://generativelanguage.googleapis.com/v1beta/interactions';
+const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_TEXT_MODEL = 'openai/gpt-oss-120b';
 const GROQ_VISION_MODEL = 'qwen/qwen3.6-27b';
@@ -228,13 +233,69 @@ export async function callGroq(apiKey: string, parts: AiPart[], hasImages = fals
 }
 
 export async function callGemini(apiKey: string, parts: AiPart[]): Promise<string> {
-    const ai = new GoogleGenAI({ apiKey });
-    const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
-        contents: [{ role: 'user', parts }],
+    const response = await fetch(GEMINI_INTERACTIONS_URL, {
+        method: 'POST',
+        headers: {
+            'x-goog-api-key': apiKey,
+            'Content-Type': 'application/json',
+            'Api-Revision': '2026-05-20',
+        },
+        body: JSON.stringify({
+            model: GEMINI_MODEL,
+            store: false,
+            input: partsToGeminiInput(parts),
+        }),
     });
 
-    return response?.candidates?.[0]?.content?.parts?.[0]?.text || '';
+    const data = await response.json().catch(() => ({}));
+    if (!response.ok) {
+        throw new Error(data.error?.message || `Gemini API error ${response.status}`);
+    }
+
+    return extractGeminiOutputText(data);
+}
+
+function partsToGeminiInput(parts: AiPart[]): GeminiInputPart[] {
+    const input: GeminiInputPart[] = [];
+
+    for (const part of parts) {
+        if (part.text) {
+            input.push({ type: 'text', text: part.text });
+            continue;
+        }
+
+        if (!part.inlineData) continue;
+
+        const mimeType = part.inlineData.mimeType;
+        const type = mimeType.startsWith('image/')
+            ? 'image'
+            : mimeType.startsWith('audio/')
+                ? 'audio'
+                : mimeType.startsWith('video/')
+                    ? 'video'
+                    : 'document';
+
+        input.push({
+            type,
+            data: part.inlineData.data,
+            mime_type: mimeType,
+        });
+    }
+
+    return input;
+}
+
+function extractGeminiOutputText(data: any): string {
+    if (typeof data.output_text === 'string') return data.output_text;
+    if (typeof data.outputText === 'string') return data.outputText;
+
+    return (data.steps || [])
+        .filter((step: any) => step.type === 'model_output')
+        .flatMap((step: any) => step.content || [])
+        .filter((content: any) => content.type === 'text' && typeof content.text === 'string')
+        .map((content: any) => content.text)
+        .join('\n')
+        .trim();
 }
 
 export function baseLessonPrompt(subject: string, grade: string, userNote = ''): string {

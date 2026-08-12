@@ -4,11 +4,12 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const mammoth = require("mammoth");
-const { GoogleGenAI } = require("@google/genai");
 const sharp = require("sharp");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+const GEMINI_INTERACTIONS_URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
+const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
 const GROQ_VISION_MODEL = "qwen/qwen3.6-27b";
@@ -144,6 +145,66 @@ async function callGroq(apiKey, parts, hasImages = false) {
   return data.choices?.[0]?.message?.content || "";
 }
 
+function partsToGeminiInput(parts) {
+  return parts.flatMap((part) => {
+    if (part.text) return [{ type: "text", text: part.text }];
+    if (!part.inlineData) return [];
+
+    const mimeType = part.inlineData.mimeType;
+    const type = mimeType.startsWith("image/")
+      ? "image"
+      : mimeType.startsWith("audio/")
+        ? "audio"
+        : mimeType.startsWith("video/")
+          ? "video"
+          : "document";
+
+    return [
+      {
+        type,
+        data: part.inlineData.data,
+        mime_type: mimeType,
+      },
+    ];
+  });
+}
+
+function extractGeminiOutputText(data) {
+  if (typeof data.output_text === "string") return data.output_text;
+  if (typeof data.outputText === "string") return data.outputText;
+
+  return (data.steps || [])
+    .filter((step) => step.type === "model_output")
+    .flatMap((step) => step.content || [])
+    .filter((content) => content.type === "text" && typeof content.text === "string")
+    .map((content) => content.text)
+    .join("\n")
+    .trim();
+}
+
+async function callGemini(apiKey, parts) {
+  const response = await fetch(GEMINI_INTERACTIONS_URL, {
+    method: "POST",
+    headers: {
+      "x-goog-api-key": apiKey,
+      "Content-Type": "application/json",
+      "Api-Revision": "2026-05-20",
+    },
+    body: JSON.stringify({
+      model: GEMINI_MODEL,
+      store: false,
+      input: partsToGeminiInput(parts),
+    }),
+  });
+
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok) {
+    throw new Error(data.error?.message || `Gemini API error ${response.status}`);
+  }
+
+  return extractGeminiOutputText(data);
+}
+
 // --- API: Test API Key ---
 app.post("/api/test-key", express.json(), async (req, res) => {
   try {
@@ -159,12 +220,7 @@ app.post("/api/test-key", express.json(), async (req, res) => {
     if (provider === "groq") {
       reply = await callGroq(apiKey, [{ text: "Trả lời đúng 1 từ: Xin chào" }], false);
     } else {
-      const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts: [{ text: "Trả lời đúng 1 từ: Xin chào" }] }],
-      });
-      reply = response?.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      reply = await callGemini(apiKey, [{ text: "Reply with exactly one Vietnamese greeting word." }]);
     }
 
     console.log("✅ API Key hợp lệ! Phản hồi:", reply.trim());
@@ -204,8 +260,6 @@ app.post(
               : "Vui lòng nhập API Key của Gemini trên giao diện hoặc cấu hình trong file .env",
         });
       }
-
-      const ai = provider === "gemini" ? new GoogleGenAI({ apiKey }) : null;
 
       // Get optional fields
       const userNote = req.body.userNote || "";
@@ -362,14 +416,7 @@ LƯU Ý QUAN TRỌNG: Mục 4 và 5 CHỈ được hiển thị mã chỉ báo v
       }
 
       // Call Gemini
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts }],
-      });
-
-      const resultText =
-        response?.candidates?.[0]?.content?.parts?.[0]?.text ||
-        "Không nhận được phản hồi từ Gemini.";
+      const resultText = await callGemini(apiKey, parts);
 
       console.log("✅ Đã nhận phản hồi từ Gemini.");
 
@@ -420,7 +467,6 @@ app.post(
         });
       }
 
-      const ai = provider === "gemini" ? new GoogleGenAI({ apiKey }) : null;
       const userNote = req.body.userNote || "";
       const subject = req.body.subject || "";
       const grade = req.body.grade || "";
@@ -518,12 +564,7 @@ LƯU Ý QUAN TRỌNG: Mục 4 và 5 CHỈ được hiển thị mã chỉ báo v
         return res.json({ result: resultText || "Không nhận được phản hồi từ Groq." });
       }
 
-      const response = await ai.models.generateContent({
-        model: "gemini-2.5-flash",
-        contents: [{ role: "user", parts }],
-      });
-
-      const resultText = response?.candidates?.[0]?.content?.parts?.[0]?.text || "Không nhận được phản hồi từ Gemini.";
+      const resultText = await callGemini(apiKey, parts);
       console.log("✅ Đã nhận phản hồi Enhance từ Gemini.");
 
       res.json({ result: resultText });
