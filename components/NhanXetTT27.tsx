@@ -32,6 +32,7 @@ const NhanXetTT27: React.FC<Props> = ({ onBack }) => {
         src="/nhan-xet-tt27/index.html"
         className="flex-1 w-full border-0"
         title="TT27 Auto Nhận Xét"
+        allow="downloads; clipboard-read; clipboard-write"
       />
     </div>
   );

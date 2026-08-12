@@ -6,8 +6,8 @@
   <title>TT27 Auto Nhận Xét</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet" />
-  <script type="module" crossorigin src="/nhan-xet-tt27/assets/index-Cb4bsNwe.js"></script>
-  <link rel="stylesheet" crossorigin href="/nhan-xet-tt27/assets/index-Cf5Ld88S.css">
+  <script type="module" crossorigin src="/nhan-xet-tt27/assets/index-rwe6eSkG.js"></script>
+  <link rel="stylesheet" crossorigin href="/nhan-xet-tt27/assets/index-EnYL9A1T.css">
 </head>
 <body>
   <div id="app">
@@ -87,8 +87,8 @@
           <div class="upload-icon">📂</div>
           <h2>Kéo thả file Excel vào đây</h2>
           <p>Thầy cô tải file mẫu kèm dữ liệu trên Cơ sở dữ liệu về (.xlsx)</p>
-          <button class="btn-primary" id="browseBtn">Chọn File</button>
-          <input type="file" id="fileInput" accept=".xlsx,.xls" hidden />
+          <label class="btn-primary file-picker-label" id="browseBtn" for="fileInput" role="button" tabindex="0">Chọn File</label>
+          <input type="file" id="fileInput" accept=".xlsx,.xls" class="file-input" />
         </div>
 
         <!-- Nội dung upload: File đơn môn (ẩn mặc định) -->
@@ -141,8 +141,8 @@
             <h2>Kéo thả file Excel đơn môn vào đây</h2>
             <p>Thầy cô tải file mẫu kèm dữ liệu trên Cơ sở dữ liệu về (.xlsx)</p>
             <p style="font-size: 0.8rem; color: #94a3b8; margin-top: 0.3rem;">File cần có cột <strong>Mức đánh giá</strong> (T/H/C hoặc Điểm số) và cột <strong>Nhận xét</strong> (trống)</p>
-            <button class="btn-primary" id="browseBtnSingle">Chọn File</button>
-            <input type="file" id="fileInputSingle" accept=".xlsx,.xls" hidden />
+            <label class="btn-primary file-picker-label" id="browseBtnSingle" for="fileInputSingle" role="button" tabindex="0">Chọn File</label>
+            <input type="file" id="fileInputSingle" accept=".xlsx,.xls" class="file-input" />
           </div>
         </div>
       </div>

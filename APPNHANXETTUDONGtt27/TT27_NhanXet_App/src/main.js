@@ -70,11 +70,9 @@ guideModal.addEventListener('click', (e) => {
   if (e.target === guideModal) guideModal.classList.remove('active');
 });
 
-// ===== MODE SWITCH =====
-modeSwitch.addEventListener('click', e => {
-  const btn = e.target.closest('.mode-btn');
+function setMode(btn) {
   if (!btn) return;
-  currentMode = btn.dataset.mode;
+  currentMode = btn.dataset.mode || 'bank';
   document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
   btn.classList.add('active');
   
@@ -85,13 +83,17 @@ modeSwitch.addEventListener('click', e => {
     if (currentMode === 'ai') modeGuide.classList.add('hidden');
     else modeGuide.classList.remove('hidden');
   }
+}
+
+// ===== MODE SWITCH =====
+document.querySelectorAll('.mode-btn').forEach(btn => {
+  btn.addEventListener('click', () => setMode(btn));
 });
 
 // ===== UPLOAD TYPE TABS =====
-uploadTypeTabs.addEventListener('click', e => {
-  const tab = e.target.closest('.upload-tab');
+function setUploadType(tab) {
   if (!tab) return;
-  uploadType = tab.dataset.type;
+  uploadType = tab.dataset.type || 'multi';
   document.querySelectorAll('.upload-tab').forEach(t => t.classList.remove('active'));
   tab.classList.add('active');
 
@@ -102,6 +104,10 @@ uploadTypeTabs.addEventListener('click', e => {
     uploadMulti.classList.add('hidden');
     uploadSingle.classList.remove('hidden');
   }
+}
+
+document.querySelectorAll('.upload-tab').forEach(tab => {
+  tab.addEventListener('click', () => setUploadType(tab));
 });
 
 // ===== SUBJECT / GRADE SELECT =====
@@ -134,9 +140,32 @@ function showAiStatus(msg, type) {
   aiStatus.className = `status-msg ${type}`;
 }
 
+function wireFilePicker(trigger, input) {
+  if (!trigger || !input) return;
+  trigger.addEventListener('click', e => {
+    e.preventDefault();
+    input.click();
+  });
+  trigger.addEventListener('keydown', e => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      input.click();
+    }
+  });
+}
+
+function clickedInteractiveElement(event) {
+  const target = event.target;
+  return target instanceof Element && Boolean(target.closest('button, label, input, select, textarea, a'));
+}
+
 // ===== UPLOAD (multi - bảng tổng hợp) =====
-browseBtn.addEventListener('click', () => fileInput.click());
+wireFilePicker(browseBtn, fileInput);
 fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+uploadMulti.addEventListener('click', e => {
+  if (clickedInteractiveElement(e)) return;
+  fileInput.click();
+});
 
 uploadZone.addEventListener('dragover', e => { e.preventDefault(); uploadZone.classList.add('drag-over'); });
 uploadZone.addEventListener('dragleave', () => uploadZone.classList.remove('drag-over'));
@@ -155,8 +184,12 @@ uploadZone.addEventListener('drop', e => {
 });
 
 // ===== UPLOAD (single - file đơn môn) =====
-browseBtnSingle.addEventListener('click', () => fileInputSingle.click());
+wireFilePicker(browseBtnSingle, fileInputSingle);
 fileInputSingle.addEventListener('change', e => { if (e.target.files[0]) handleFileSingle(e.target.files[0]); });
+singleDropArea.addEventListener('click', e => {
+  if (clickedInteractiveElement(e)) return;
+  fileInputSingle.click();
+});
 
 singleDropArea.addEventListener('dragover', e => { e.preventDefault(); singleDropArea.classList.add('drag-over'); });
 singleDropArea.addEventListener('dragleave', () => singleDropArea.classList.remove('drag-over'));
@@ -408,10 +441,11 @@ function triggerDownload() {
   const a = document.createElement('a');
   a.href = url;
   a.download = 'NhanXet_' + uploadedFileName;
+  a.rel = 'noopener';
   document.body.appendChild(a);
   a.click();
   document.body.removeChild(a);
-  URL.revokeObjectURL(url);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
 }
 
 downloadBtn.addEventListener('click', triggerDownload);
