@@ -4,11 +4,15 @@
  */
 
 function setupParentFeedback() {
-  const teacherEmail = 'THAY_EMAIL_GIAO_VIEN@gmail.com';
-  const portalId = ''; // Nên điền giá trị nằm sau ?parent= trong link phụ huynh.
+  const configuredTeacherEmail = '__TEACHER_EMAIL__';
+  const configuredPortalId = '__PORTAL_ID__';
+  const teacherEmail = configuredTeacherEmail === '__TEACHER_EMAIL__'
+    ? Session.getEffectiveUser().getEmail()
+    : configuredTeacherEmail;
+  const portalId = configuredPortalId === '__PORTAL_ID__' ? '' : configuredPortalId;
 
-  if (teacherEmail === 'THAY_EMAIL_GIAO_VIEN@gmail.com' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacherEmail)) {
-    throw new Error('Hãy thay THAY_EMAIL_GIAO_VIEN@gmail.com bằng Gmail thật trước khi chạy.');
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacherEmail)) {
+    throw new Error('Không xác định được Gmail chủ sở hữu. Hãy đăng nhập đúng tài khoản Google rồi chạy lại.');
   }
 
   PropertiesService.getScriptProperties().setProperties({
@@ -28,7 +32,7 @@ function doGet() {
 function doPost(event) {
   try {
     const properties = PropertiesService.getScriptProperties();
-    const teacherEmail = properties.getProperty('TEACHER_EMAIL');
+    const teacherEmail = properties.getProperty('TEACHER_EMAIL') || Session.getEffectiveUser().getEmail();
     const expectedPortalId = properties.getProperty('PORTAL_ID') || '';
     if (!teacherEmail) throw new Error('Script chưa được cấu hình. Hãy chạy setupParentFeedback trước.');
     if (MailApp.getRemainingDailyQuota() < 1) throw new Error('Đã hết hạn mức gửi email trong ngày.');
@@ -118,4 +122,3 @@ function jsonResponse_(content) {
   return ContentService.createTextOutput(JSON.stringify(content))
     .setMimeType(ContentService.MimeType.JSON);
 }
-
