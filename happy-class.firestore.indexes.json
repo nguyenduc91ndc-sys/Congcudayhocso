@@ -1,0 +1,15 @@
+{
+  "indexes": [],
+  "fieldOverrides": [
+    {
+      "collectionGroup": "students",
+      "fieldPath": "*",
+      "indexes": []
+    },
+    {
+      "collectionGroup": "parentPortals",
+      "fieldPath": "*",
+      "indexes": []
+    }
+  ]
+}

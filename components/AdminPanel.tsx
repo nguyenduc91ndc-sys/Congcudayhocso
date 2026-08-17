@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Clock, Monitor, MessageCircle, Star, XCircle, Check, X, Edit2, Save, ShoppingBag, Film, Package, Flame, Link, ExternalLink, Upload, ImageIcon, Loader2, Search, History, Mail, ChevronDown } from 'lucide-react';
+import { Key, Copy, Trash2, Plus, ArrowLeft, CheckCircle, Users, BarChart3, Clock, Monitor, MessageCircle, Star, XCircle, Check, X, Edit2, Save, ShoppingBag, Film, Package, Flame, Link, ExternalLink, Upload, ImageIcon, Loader2, Search, History, Mail, ChevronDown, HeartHandshake } from 'lucide-react';
 import { getAnalytics, Analytics, VisitorLog } from '../utils/analyticsUtils';
 import { getAllFeedbacks, getPendingFeedbacks, getApprovedFeedbacks, approveFeedback, rejectFeedback, deleteFeedback, updateFeedback, Feedback } from '../utils/feedbackUtils';
 import { getVisitStats, setVisitCount } from '../utils/visitCounter';
@@ -27,12 +27,14 @@ import {
 } from '../utils/firebaseInteractiveVideoTrial';
 import { AppVisibilityState, APP_INFO, ALL_APP_IDS, subscribeToAppVisibility, setAppVisible, setAllAppsVisible, setMaintenanceMode, setUpdateNotification } from '../utils/firebaseAppVisibility';
 import { getAppUsageSummaries, AppUsageSummary } from '../utils/firebaseAppUsage';
+import HappyClassAccessAdmin from './HappyClassAccessAdmin';
 
 const START_YEAR_MEETING_APP_ID = 'thuMoiDauNam' as const;
 const DEMO_USER_COUNT_KEY = 'giaoviencn_demo_user_count';
 
 interface AdminPanelProps {
     onBack: () => void;
+    adminEmail?: string;
 }
 
 // Tạo mã ngẫu nhiên
@@ -97,8 +99,8 @@ const formatAppUsageDateTime = (value?: number): string => {
     });
 };
 
-const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
-    const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders' | 'apps'>('analytics');
+const AdminPanel: React.FC<AdminPanelProps> = ({ onBack, adminEmail }) => {
+    const [activeTab, setActiveTab] = useState<'analytics' | 'keys' | 'feedbacks' | 'videos' | 'orders' | 'apps' | 'happyClass'>('analytics');
     const [appVisibility, setAppVisibility] = useState<AppVisibilityState>({ apps: {}, maintenanceMode: false, maintenanceMessage: '' });
     const [editMaintenanceMsg, setEditMaintenanceMsg] = useState('');
     const [expandedSections, setExpandedSections] = useState<string[]>([APP_INFO[START_YEAR_MEETING_APP_ID].section]);
@@ -802,10 +804,22 @@ const AdminPanel: React.FC<AdminPanelProps> = ({ onBack }) => {
                     >
                         📱 <span className="hidden sm:inline">Ứng dụng</span>
                     </button>
+                    <button
+                        onClick={() => setActiveTab('happyClass')}
+                        className={`flex-1 py-2 sm:py-3 px-2 sm:px-4 rounded-xl font-bold flex items-center justify-center gap-1 sm:gap-2 transition-all text-xs sm:text-base whitespace-nowrap ${activeTab === 'happyClass'
+                            ? 'bg-gradient-to-r from-violet-600 to-pink-600 text-white shadow-lg'
+                            : 'bg-white/50 text-fuchsia-700 hover:bg-white/80'
+                            }`}
+                    >
+                        <HeartHandshake size={18} /> <span className="hidden sm:inline">Lớp Hạnh Phúc</span>
+                    </button>
                 </div>
 
                 {/* Tab Content */}
                 <div className="flex-1 overflow-hidden">
+                    {activeTab === 'happyClass' && (
+                        <HappyClassAccessAdmin adminEmail={adminEmail} />
+                    )}
                     {activeTab === 'analytics' && (
                         <div className="h-full flex flex-col">
                             {/* Stats Cards */}

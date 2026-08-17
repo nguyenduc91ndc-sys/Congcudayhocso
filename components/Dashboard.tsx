@@ -34,6 +34,7 @@ interface DashboardProps {
     onVongQuay: () => void;
     onLuckyWheel: () => void;
     onStarWheel: () => void;
+    onHappyClass: () => void;
     onVideoStore: () => void;
     onInteractiveVideo: () => void;
     onAICourseStore: () => void;
@@ -447,7 +448,7 @@ const VideoItem: React.FC<{
 );
 
 const Dashboard: React.FC<DashboardProps> = ({
-    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onStarWheel, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onSensesExplorer, onClockExperiment, onBangCuuChuong, onSoSanhSo, onGameTuongTac, onKeoThaPhanLoai, onThuMoiHopPH, onThuMoiTuongTac, onThuMoiDauNam, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onPhongTranh3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
+    user, lessons, onCreateNew, onPlay, onEdit, onLogout, onDelete, onAdmin, onGeometry3D, onBeeGame, onBeeGameEditable, onBacteriaGame, onVongQuay, onLuckyWheel, onStarWheel, onHappyClass, onVideoStore, onInteractiveVideo, onAICourseStore, onSoanGiaoAnNangLucSo, onCanvaBasics, onCommunityResources, onNewYear, onDenHung3D, onHeartSystem3D, onVietnamMap, onChucTet, onPuzzleGame, onNgheNghiep, onTreasureHunt, onVirtualExperiment, onSensesExplorer, onClockExperiment, onBangCuuChuong, onSoSanhSo, onGameTuongTac, onKeoThaPhanLoai, onThuMoiHopPH, onThuMoiTuongTac, onThuMoiDauNam, onThiepMoiOnline, onQrGenerator, onYogurtExperiment, onKiemTraDaoVan, onSangKienKN, onNhanXetTT27, onEarthSeasons, onThatLuong3D, onNhayBaoBo, onSolarSystem, onKeoCoTriTue, onGameTuyChinh, onDinhDocLap3D, onPhongTranh3D, onKyYeuCuoiNam, isAdmin, isGuest, hiddenApps = [], maintenanceMode = false, maintenanceMessage = '', showUpdateNotification = false
 }) => {
     const { currentTheme } = useTheme();
     const [trialStatus, setTrialStatus] = useState(getTrialStatus());
@@ -526,6 +527,10 @@ const Dashboard: React.FC<DashboardProps> = ({
 
     // Admin access handler - kiểm tra session hoặc yêu cầu mật khẩu
     const handleAdminAccess = () => {
+        if (isAdmin) {
+            onAdmin();
+            return;
+        }
         if (isAdminAuthenticated()) {
             // Đã xác thực trong session
             onAdmin();
@@ -595,6 +600,7 @@ const Dashboard: React.FC<DashboardProps> = ({
         { id: 'vongQuay', render: () => <ToolCard title="Vòng quay" description="Vòng tròn gọi tên học sinh" icon={<RotateCcw size={24} className="text-white" />} accentColor="bg-pink-500" onClick={onVongQuay} /> },
         { id: 'luckyWheel', render: () => <ToolCard title="Vòng quay may mắn" description="Bánh xe quay chọn người may mắn" icon={<span className="text-2xl">🎡</span>} accentColor="bg-rose-500" onClick={onLuckyWheel} /> },
         { id: 'starWheel', render: () => <ToolCard title="Vòng Xoay Ngôi Sao" description="Vòng quay ngôi sao may mắn" icon={<span className="text-2xl">⭐</span>} accentColor="bg-indigo-500" onClick={onStarWheel} /> },
+        { id: 'happyClass', render: () => <ToolCard title="Lớp Hạnh Phúc" description="Quản lý điểm tốt, chuyên cần, thi đua và kết nối phụ huynh" icon={<span className="text-2xl">🌻</span>} accentColor="bg-gradient-to-br from-pink-500 via-fuchsia-500 to-orange-400" onClick={onHappyClass} badge="Mới" /> },
         { id: 'puzzleGame', render: () => <ToolCard title="Giải Mã Bức Tranh" description="Game khám phá hình ảnh bí ẩn, học qua câu hỏi" icon={<span className="text-2xl">🧩</span>} accentColor="bg-gradient-to-br from-purple-500 to-cyan-500" onClick={onPuzzleGame} badge="Mới" /> },
         { id: 'treasureHunt', render: () => <ToolCard title="Truy Tìm Kho Báu" description="Game phiêu lưu khám phá, tự soạn câu hỏi" icon={<span className="text-2xl">🏴‍☠️</span>} accentColor="bg-gradient-to-br from-orange-500 to-amber-500" onClick={onTreasureHunt} badge="Mới" /> },
         { id: 'nhayBaoBo', render: () => <ToolCard title="Nhảy Bao Bố" description="Hai đội thi đấu song song với ngân hàng câu hỏi" icon={<span className="text-2xl">🏁</span>} accentColor="bg-gradient-to-br from-green-500 to-emerald-500" onClick={onNhayBaoBo} badge="Mới" /> },

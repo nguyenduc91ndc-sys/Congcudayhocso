@@ -1,0 +1,6 @@
+{
+  "firestore": {
+    "rules": "happy-class.firestore.rules",
+    "indexes": "happy-class.firestore.indexes.json"
+  }
+}

@@ -1,0 +1,73 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isAdmin() {
+      return signedIn()
+        && request.auth.token.email in [
+          'ducnguyen.giaovien@gmail.com',
+          'nguyenduc91ndc@gmail.com'
+        ];
+    }
+
+    function ownsEmail(email) {
+      return signedIn() && request.auth.token.email == email;
+    }
+
+    function hasHappyClassAccess() {
+      return isAdmin()
+        || (signedIn()
+          && exists(/databases/$(database)/documents/happyClassAccess/$(request.auth.token.email))
+          && get(/databases/$(database)/documents/happyClassAccess/$(request.auth.token.email)).data.active == true);
+    }
+
+    function ownsRequest() {
+      return signedIn() && request.resource.data.ownerUid == request.auth.uid;
+    }
+
+    function ownsResource() {
+      return signedIn() && resource.data.ownerUid == request.auth.uid;
+    }
+
+    match /happyClassAccess/{email} {
+      allow get: if isAdmin() || ownsEmail(email);
+      allow list, create, delete: if isAdmin();
+      allow update: if isAdmin()
+        || (ownsEmail(email)
+          && resource.data.active == true
+          && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devices', 'lastAccessAt'])
+          && request.resource.data.devices.size() <= 2
+          && request.resource.data.devices.keys().hasAll(resource.data.devices.keys()));
+    }
+
+    match /teachers/{teacherId}/{document=**} {
+      allow read, write: if hasHappyClassAccess() && request.auth.uid == teacherId;
+    }
+
+    match /parentPortals/{portalId} {
+      allow get: if true;
+      allow list: if false;
+      allow create: if hasHappyClassAccess() && ownsRequest();
+      allow update: if hasHappyClassAccess() && ownsResource() && ownsRequest();
+      allow delete: if hasHappyClassAccess() && ownsResource();
+
+      match /students/{studentKey} {
+        allow get: if resource.data.active == true
+          && get(/databases/$(database)/documents/parentPortals/$(portalId)).data.enabled == true;
+        allow list: if false;
+        allow create: if hasHappyClassAccess() && ownsRequest()
+          && get(/databases/$(database)/documents/parentPortals/$(portalId)).data.ownerUid == request.auth.uid;
+        allow update: if hasHappyClassAccess() && ownsResource() && ownsRequest();
+        allow delete: if hasHappyClassAccess() && ownsResource();
+      }
+    }
+
+    match /{document=**} {
+      allow read, write: if false;
+    }
+  }
+}

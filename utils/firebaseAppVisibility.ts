@@ -4,7 +4,7 @@ import { database } from './firebaseConfig';
 // Danh sách tất cả app IDs
 export const ALL_APP_IDS = [
     'interactiveVideo', 'beeGame', 'beeGameEditable', 'bacteriaGame',
-    'vongQuay', 'luckyWheel', 'starWheel',
+    'vongQuay', 'luckyWheel', 'starWheel', 'happyClass',
     'videoStore', 'ngheNghiep', 'puzzleGame', 'treasureHunt', 'virtualExperiment',
     'clockExperiment', 'sensesExplorer', 'yogurtExperiment', 'earthSeasons',
     'phetForcesMotion', 'phetCircuitDc', 'phetStaticElectricity', 'phetMatterStates', 'phetDensity', 'phetBuildAtom',
@@ -36,6 +36,7 @@ export const APP_INFO: Record<AppId, { name: string; icon: string; section: stri
     vongQuay: { name: 'Vòng quay', icon: '🔄', section: 'Công cụ dạy học' },
     luckyWheel: { name: 'Vòng quay may mắn', icon: '🎡', section: 'Công cụ dạy học' },
     starWheel: { name: 'Vòng Xoay Ngôi Sao', icon: '⭐', section: 'Công cụ dạy học' },
+    happyClass: { name: 'Lớp Hạnh Phúc', icon: '🌻', section: 'Công cụ dạy học' },
     puzzleGame: { name: 'Giải Mã Bức Tranh', icon: '🧩', section: 'Công cụ dạy học' },
     treasureHunt: { name: 'Truy Tìm Kho Báu', icon: '🏴‍☠️', section: 'Công cụ dạy học' },
     videoStore: { name: 'Kho Video AI', icon: '🎬', section: 'Công cụ dạy học' },

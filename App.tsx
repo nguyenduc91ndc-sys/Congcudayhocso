@@ -76,10 +76,12 @@ import {
   INTERACTIVE_VIDEO_TRIAL_EXPORT_LIMIT,
   InteractiveVideoTrialStatus,
 } from './utils/firebaseInteractiveVideoTrial';
+import HappyClassAccessGate from './components/happy-class/HappyClassAccessGate';
+
+const HappyClassApp = lazy(() => import('./components/happy-class/HappyClassApp'));
 
 // Email admin được phép vào trang quản lý mã
 const ADMIN_EMAILS = ['ducnguyen.giaovien@gmail.com', 'nguyenduc91ndc@gmail.com'];
-const LOCAL_PREVIEW_ADMIN_EMAIL = 'dev-preview@giaovien.local';
 
 const isLocalPreviewHost = () => (
   import.meta.env.DEV ||
@@ -88,13 +90,13 @@ const isLocalPreviewHost = () => (
 
 const canAccessAdmin = (email?: string) => {
   const normalizedEmail = email?.toLowerCase() || '';
-  return ADMIN_EMAILS.includes(normalizedEmail) ||
-    (isLocalPreviewHost() && normalizedEmail === LOCAL_PREVIEW_ADMIN_EMAIL);
+  return ADMIN_EMAILS.includes(normalizedEmail) || isLocalPreviewHost();
 };
 
 const VIEW_APP_IDS: Partial<Record<ViewState, AppId>> = {
   CREATE_EDIT: 'interactiveVideo',
   PLAYER: 'interactiveVideo',
+  HAPPY_CLASS: 'happyClass',
   GEOMETRY_3D: 'geometry3DTools',
   BEE_GAME: 'beeGame',
   BEE_GAME_EDITABLE: 'beeGameEditable',
@@ -192,7 +194,8 @@ function App() {
   const currentAppId = VIEW_APP_IDS[view];
   const isPublicSharedThuMoiView = view === 'THU_MOI_TUONG_TAC' && Boolean(sharedThuMoiId);
   const isPublicSharedThuMoiDauNamView = view === 'THU_MOI_DAU_NAM' && Boolean(sharedThuMoiDauNamId);
-  const isPublicSharedMeetingView = isPublicSharedThuMoiView || isPublicSharedThuMoiDauNamView;
+  const isPublicHappyClassView = view === 'HAPPY_CLASS' && new URLSearchParams(window.location.search).has('parent');
+  const isPublicSharedMeetingView = isPublicSharedThuMoiView || isPublicSharedThuMoiDauNamView || isPublicHappyClassView;
   const isFreeKyYeuView = view === 'KY_YEU_CUOI_NAM';
   const isCheckingAppVisibility = !appVisibilityLoaded && Boolean(currentAppId) && !isAdminUser && !isPublicSharedMeetingView && !isFreeKyYeuView;
   const isCurrentAppDisabled =
@@ -282,6 +285,7 @@ function App() {
       else if (pathname === '/privacy') defaultView = 'PRIVACY' as ViewState;
       else if (pathname === '/terms') defaultView = 'TERMS' as ViewState;
       else if (pathname === '/contact') defaultView = 'CONTACT' as ViewState;
+      else if (pathname === '/lop-hanh-phuc') defaultView = 'HAPPY_CLASS' as ViewState;
       else if (pathname === '/dinh-doc-lap-3d') defaultView = 'DINH_DOC_LAP_3D' as ViewState;
       else if (pathname.startsWith('/share/phong-tranh-3d/') || pathname.startsWith('/share/panorama/')) defaultView = 'PHONG_TRANH_3D' as ViewState;
       else if (pathname === '/ky-yeu-cuoi-nam') defaultView = 'KY_YEU_CUOI_NAM' as ViewState;
@@ -392,11 +396,13 @@ function App() {
       const hasSharedAppId = Boolean(urlParams.get('id'));
       const isDirectThiepCreator = defaultView === 'THIEP_MOI_ONLINE' && !hasSharedAppId;
       const isDirectKeoThaPhanLoai = defaultView === 'KEO_THA_PHAN_LOAI';
+      const isDirectHappyClassCreator = defaultView === 'HAPPY_CLASS' && !urlParams.has('parent');
       const shouldRequireDirectLogin =
         !savedUser &&
         (
           isDirectThiepCreator ||
-          isDirectKeoThaPhanLoai
+          isDirectKeoThaPhanLoai ||
+          isDirectHappyClassCreator
         );
 
       if (shouldRequireDirectLogin) {
@@ -507,6 +513,9 @@ function App() {
   };
 
   const handleLogout = () => {
+    void import('./components/happy-class/firebase')
+      .then(({ signOutFirebaseTeacher }) => signOutFirebaseTeacher())
+      .catch(() => undefined);
     setUser(null);
     setLessons([]); // Clear lessons khi logout
     localStorage.removeItem('ntd_user');
@@ -756,6 +765,7 @@ function App() {
                   onVongQuay={() => requireLogin(() => setView('VONG_QUAY'))}
                   onLuckyWheel={() => requireLogin(() => setView('LUCKY_WHEEL'))}
                   onStarWheel={() => requireLogin(() => setView('STAR_WHEEL'))}
+                  onHappyClass={() => requireLogin(() => setView('HAPPY_CLASS'))}
                   onVideoStore={() => requireLogin(() => setView('VIDEO_STORE'))}
                   onInteractiveVideo={() => requireLogin(
                     () => { void handleOpenInteractiveVideo(); },
@@ -836,7 +846,7 @@ function App() {
           )}
 
           {view === 'ADMIN' && (
-            <AdminPanel onBack={() => setView('DASHBOARD')} />
+            <AdminPanel onBack={() => setView('DASHBOARD')} adminEmail={user?.email} />
           )}
 
           {view === 'GEOMETRY_3D' && (
@@ -865,6 +875,22 @@ function App() {
 
           {view === 'STAR_WHEEL' && (
             <StarWheel onBack={() => setView('DASHBOARD')} />
+          )}
+
+          {view === 'HAPPY_CLASS' && (
+            <Suspense fallback={<div className="min-h-screen grid place-items-center bg-rose-50 text-purple-800 font-bold">Đang mở Lớp Hạnh Phúc…</div>}>
+              {new URLSearchParams(window.location.search).has('parent') ? (
+                <HappyClassApp platformUser={null} />
+              ) : (
+                <HappyClassAccessGate
+                  platformUser={user}
+                  onBack={() => setView('DASHBOARD')}
+                  onSwitchAccount={handleLogout}
+                >
+                  <HappyClassApp platformUser={user} onBack={() => setView('DASHBOARD')} />
+                </HappyClassAccessGate>
+              )}
+            </Suspense>
           )}
 
           {view === 'VIDEO_STORE' && (

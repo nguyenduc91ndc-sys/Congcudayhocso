@@ -61,7 +61,7 @@ const Login: React.FC<LoginProps> = ({ onLogin, allowExpiredTrialLogin = false }
   };
 
   // Xử lý đăng nhập Google thành công
-  const handleGoogleSuccess = (credentialResponse: CredentialResponse) => {
+  const handleGoogleSuccess = async (credentialResponse: CredentialResponse) => {
     if (!credentialResponse.credential) {
       setError('Không thể lấy thông tin từ Google');
       return;
@@ -90,6 +90,15 @@ const Login: React.FC<LoginProps> = ({ onLogin, allowExpiredTrialLogin = false }
         avatar: avatar,
         email: googleEmail,
       };
+
+      // Dùng chính phiên Google hiện tại để xác minh với Firebase Lớp Hạnh Phúc.
+      // Nếu Firebase phụ chưa được cấu hình xong, đăng nhập GIAOVIENCN vẫn tiếp tục bình thường.
+      try {
+        const { signInFirebaseTeacherWithGoogleCredential } = await import('./happy-class/firebase');
+        await signInFirebaseTeacherWithGoogleCredential(credentialResponse.credential);
+      } catch (firebaseError) {
+        console.warn('Happy Class Firebase sign-in is not ready:', firebaseError);
+      }
 
       onLogin(userData);
     } catch (err) {
