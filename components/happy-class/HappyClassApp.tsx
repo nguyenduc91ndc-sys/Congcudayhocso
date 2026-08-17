@@ -2542,6 +2542,8 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
   const [configEmail, setConfigEmail] = useState(portal.teacherEmail ?? '');
   const [configEndpoint, setConfigEndpoint] = useState(portal.feedbackEndpoint ?? '');
   const [configError, setConfigError] = useState('');
+  const [configTesting, setConfigTesting] = useState(false);
+  const [configTestStatus, setConfigTestStatus] = useState<{ tone: 'success' | 'error'; message: string } | null>(null);
   const [feedbackCategory, setFeedbackCategory] = useState<ParentFeedbackCategory>('learning');
   const [feedbackSender, setFeedbackSender] = useState('');
   const [feedbackMessage, setFeedbackMessage] = useState('');
@@ -2722,6 +2724,50 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
     onSaveFeedbackConfig(email, endpoint);
   };
 
+  const testFeedbackConnection = async () => {
+    const email = configEmail.trim();
+    const endpoint = configEndpoint.trim();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      setConfigTestStatus({ tone: 'error', message: 'Hãy nhập đúng Gmail cần kiểm tra.' });
+      return;
+    }
+    try {
+      const url = new URL(endpoint);
+      if (url.protocol !== 'https:' || url.hostname !== 'script.google.com' || !url.pathname.endsWith('/exec')) throw new Error();
+    } catch {
+      setConfigTestStatus({ tone: 'error', message: 'Hãy nhập đúng URL Web app kết thúc bằng /exec.' });
+      return;
+    }
+    setConfigTesting(true);
+    setConfigTestStatus(null);
+    try {
+      await fetch(endpoint, {
+        method: 'POST',
+        mode: 'no-cors',
+        keepalive: true,
+        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+        body: JSON.stringify({
+          event: 'parent_feedback',
+          portalId: portal.publicId,
+          classCode,
+          studentId: 'connection-test',
+          studentName: 'Kiểm tra kết nối',
+          parentName: 'Giáo viên chủ nhiệm',
+          parentPhone: '',
+          category: 'thanks',
+          categoryLabel: 'Email kiểm tra kết nối',
+          message: 'Đây là email thử từ ứng dụng Lớp Hạnh Phúc. Nếu nhận được thư này, kênh phản hồi phụ huynh đã hoạt động.',
+          sentAt: new Date().toISOString(),
+        }),
+      });
+      setConfigTestStatus({ tone: 'success', message: `Đã chuyển email thử. Hãy kiểm tra Hộp thư đến và Spam của ${email}; nhận được thư nghĩa là kết nối đã hoạt động.` });
+    } catch {
+      setConfigTestStatus({ tone: 'error', message: 'Chưa thể gửi email thử. Hãy kiểm tra Internet và URL /exec rồi thử lại.' });
+    } finally {
+      setConfigTesting(false);
+    }
+  };
+
   const submitFeedback = async (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!result || feedbackSending) return;
@@ -2803,11 +2849,12 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
             <div><LayoutGrid size={22} /><p><strong>Chỉ lưu trên thiết bị giáo viên</strong><span>Vòng quay, âm thanh, kết quả gọi tên, cấu hình trò chơi, danh sách toàn lớp và lịch sử nội bộ chưa xuất bản.</span></p></div>
           </div>
           <form className="parent-feedback-config" onSubmit={saveFeedbackConfig}>
-            <div className="parent-feedback-config-copy"><span><Mail size={17} /> PHẢN HỒI VỀ GMAIL</span><strong>{portal.feedbackEndpoint ? 'Đang bật nhận lời nhắn từ phụ huynh' : 'Kết nối hộp thư giáo viên'}</strong><small>Không nhập mật khẩu Gmail vào ứng dụng. Hệ thống chỉ gọi Web app Google Apps Script do giáo viên sở hữu.</small><button type="button" className="parent-feedback-guide-button" onClick={() => { setFeedbackGuideCopyStatus(''); setShowFeedbackGuide(true); }}><HelpCircle size={17} /> Hướng dẫn lấy link Apps Script</button></div>
+            <div className="parent-feedback-config-copy"><span><Mail size={17} /> PHẢN HỒI VỀ GMAIL</span><strong>{portal.feedbackEndpoint ? 'Đã lưu kết nối – hãy gửi email thử' : 'Kết nối hộp thư giáo viên'}</strong><small>Không nhập mật khẩu Gmail vào ứng dụng. Hệ thống chỉ gọi Web app Google Apps Script do giáo viên sở hữu.</small><button type="button" className="parent-feedback-guide-button" onClick={() => { setFeedbackGuideCopyStatus(''); setShowFeedbackGuide(true); }}><HelpCircle size={17} /> Hướng dẫn lấy link Apps Script</button></div>
             <label><span>Gmail giáo viên nhận thư</span><input type="email" value={configEmail} onChange={(event) => setConfigEmail(event.target.value)} placeholder="giaovien@gmail.com" /></label>
             <label className="feedback-endpoint-field"><span>URL Web app Google Apps Script</span><input type="url" value={configEndpoint} onChange={(event) => setConfigEndpoint(event.target.value)} placeholder="https://script.google.com/macros/s/.../exec" /></label>
-            <button className="button button-primary" type="submit"><Check size={17} /> Lưu kết nối</button>
+            <div className="parent-feedback-config-actions"><button className="button button-soft" type="button" disabled={configTesting} onClick={() => void testFeedbackConnection()}><Send size={17} /> {configTesting ? 'Đang gửi…' : 'Gửi email thử'}</button><button className="button button-primary" type="submit"><Check size={17} /> Lưu kết nối</button></div>
             {configError && <p className="parent-feedback-config-error" role="alert">{configError}</p>}
+            {configTestStatus && <p className={`parent-feedback-config-status ${configTestStatus.tone === 'error' ? 'error' : ''}`} role="status">{configTestStatus.message}</p>}
           </form>
           <div className="parent-code-list">
             {students.map((student) => {

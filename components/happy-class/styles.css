@@ -2399,7 +2399,11 @@ body {
 .parent-feedback-config label > span { color: #644f63; font-size: 11px; font-weight: 850; }
 .parent-feedback-config input { width: 100%; min-height: 46px; padding: 0 12px; border: 2px solid #ddc7d8; border-radius: 14px; outline: 0; color: #4f3151; background: white; font-size: 13px; font-weight: 700; }
 .parent-feedback-config input:focus { border-color: #48ad8b; box-shadow: 0 0 0 4px rgba(72,173,139,.12); }
+.parent-feedback-config-actions { display: flex; align-items: flex-end; gap: 8px; }
+.parent-feedback-config-actions .button { min-height: 46px; white-space: nowrap; }
 .parent-feedback-config-error { grid-column: 2 / -1; margin: 0; color: #b33e54; font-size: 12px; font-weight: 800; }
+.parent-feedback-config-status { grid-column: 2 / -1; margin: 0; padding: 9px 11px; border: 2px solid #b9dfd0; border-radius: 12px; color: #226c55; background: #eaf8f2; font-size: 11px; font-weight: 800; line-height: 1.45; }
+.parent-feedback-config-status.error { color: #a83d51; border-color: #efbdc5; background: #fff0f2; }
 .parent-feedback-guide-button { width: fit-content; min-height: 34px; margin-top: 4px; padding: 0 10px; display: inline-flex; align-items: center; gap: 6px; border: 2px solid #c9b0df; border-radius: 12px; color: #763b82; background: #fff; box-shadow: 0 3px 0 #d4badc; font-size: 10.5px; font-weight: 900; }
 .parent-feedback-guide-button:hover { transform: translateY(-1px); color: white; border-color: #ffe278; background: linear-gradient(135deg,#9750d0,#dc529c); box-shadow: 0 5px 0 #6d2c83; }
 .parent-data-scope { margin: 14px 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
@@ -2470,12 +2474,12 @@ body {
 .parent-feedback-status.error { color: #a83d51; border-color: #efbdc5; background: #fff0f2; }
 
 @media (max-width: 1050px) {
-  .parent-feedback-config { grid-template-columns: 1fr 1fr; }.parent-feedback-config-copy { grid-column: 1 / -1; }.parent-feedback-config .feedback-endpoint-field { grid-column: 2; }.parent-feedback-config-error { grid-column: 1 / -1; }
+  .parent-feedback-config { grid-template-columns: 1fr 1fr; }.parent-feedback-config-copy { grid-column: 1 / -1; }.parent-feedback-config .feedback-endpoint-field { grid-column: 2; }.parent-feedback-config-actions,.parent-feedback-config-error,.parent-feedback-config-status { grid-column: 1 / -1; }
   .parent-feedback-categories { grid-template-columns: 1fr 1fr; }
 }
 @media (max-width: 680px) {
   .parent-sharing-switches { width: 100%; }
-  .parent-feedback-config { grid-template-columns: 1fr; }.parent-feedback-config .feedback-endpoint-field,.parent-feedback-config-copy { grid-column: auto; }
+  .parent-feedback-config { grid-template-columns: 1fr; }.parent-feedback-config .feedback-endpoint-field,.parent-feedback-config-copy { grid-column: auto; }.parent-feedback-config-actions { flex-direction: column; align-items: stretch; }.parent-feedback-config-actions .button { width: 100%; }
   .parent-data-scope,.feedback-guide-steps { grid-template-columns: 1fr; }.feedback-guide-backdrop { padding: 7px; }.feedback-guide-card { max-height: calc(100vh - 14px); border-radius: 20px; }.feedback-guide-head { padding: 14px; }.feedback-guide-head h2 { font-size: 18px; }.feedback-guide-body { padding: 12px; }.feedback-guide-code > div { align-items: stretch; flex-direction: column; }.feedback-guide-code button { justify-content: center; }.feedback-guide-actions { padding: 11px 12px 14px; display: grid; grid-template-columns: 1fr 1fr; }
   .parent-result-vibrant { padding: 14px!important; }.parent-result-vibrant::before,.parent-celebration { height: 210px; }
   .parent-welcome-head { min-height: 180px; grid-template-columns: auto 1fr; align-content: center; }.parent-welcome-head .icon-button { position: absolute; right: 0; top: 4px; }.parent-welcome-head h2 { font-size: 21px; }.parent-welcome-head p { font-size: 12px; }
