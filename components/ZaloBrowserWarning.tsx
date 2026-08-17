@@ -16,7 +16,7 @@ const isMobile = (): boolean => {
     return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
 };
 
-const isInvitationFlow = (): boolean => {
+const isZaloCompatibleFlow = (): boolean => {
     const urlParams = new URLSearchParams(window.location.search);
     const app = urlParams.get('app')?.toLowerCase();
     const pathname = window.location.pathname.toLowerCase().replace(/\/$/, '');
@@ -24,9 +24,13 @@ const isInvitationFlow = (): boolean => {
     return app === 'thu_moi_tuong_tac' ||
         app === 'thu_moi_dau_nam' ||
         app === 'thiep_moi_online' ||
+        app === 'happy_class' ||
+        app === 'lop_hanh_phuc' ||
         pathname === '/thu-moi-dau-nam' ||
         pathname.startsWith('/thumoiphdaunam') ||
-        pathname === '/thiep-moi-online';
+        pathname === '/thiep-moi-online' ||
+        pathname === '/lop-hanh-phuc' ||
+        pathname.startsWith('/lop-hanh-phuc/');
 };
 
 const ZaloBrowserWarning: React.FC<ZaloBrowserWarningProps> = ({ onClose }) => {
@@ -35,7 +39,7 @@ const ZaloBrowserWarning: React.FC<ZaloBrowserWarningProps> = ({ onClose }) => {
     useEffect(() => {
         // Không hiện cảnh báo Zalo đối với các luồng thư/thiệp mời.
         // Khách mời cần vào thẳng thiệp, còn người tạo thiệp sẽ thấy hộp đăng nhập trực tiếp.
-        if (isInvitationFlow()) {
+        if (isZaloCompatibleFlow()) {
             return;
         }
 
