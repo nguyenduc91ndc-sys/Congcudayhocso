@@ -2682,3 +2682,28 @@ body {
   .app-shell .facebook-follow-card strong { font-size: 10px; }
   .app-shell .facebook-follow-card small { font-size: 7.5px; }
 }
+/* Khoảng an toàn để nút gửi không bị thanh điều hướng Zalo/Safari che trên điện thoại. */
+@media (max-width: 680px) {
+  .parent-portal-shell {
+    margin-bottom: 0;
+    min-height: 100dvh;
+    padding: 0 0 calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .parent-portal-shell .parent-page.has-result {
+    padding-bottom: calc(24px + env(safe-area-inset-bottom));
+  }
+
+  .parent-portal-shell .parent-feedback {
+    padding-bottom: calc(96px + env(safe-area-inset-bottom));
+  }
+
+  .parent-portal-shell .parent-feedback-actions {
+    scroll-margin-bottom: calc(110px + env(safe-area-inset-bottom));
+  }
+
+  .parent-portal-shell .parent-feedback-actions button {
+    min-height: 56px;
+    font-size: 15px;
+  }
+}
