@@ -26,6 +26,7 @@ import {
   normalizeHappyClassEmail,
   removeHappyClassDevice,
   resetHappyClassDevices,
+  signInFirebaseTeacher,
   setHappyClassAccessActive,
   subscribeHappyClassAccess,
   watchFirebaseTeacher,
@@ -358,16 +359,47 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
     });
   };
 
+  const connectAdminFirebase = async () => {
+    if (!isHappyClassAdminEmail(normalizedAdminEmail)) {
+      setError('Tài khoản GIAOVIENCN hiện tại không thuộc danh sách Admin Lớp Hạnh Phúc.');
+      return;
+    }
+    setWorking('connect-admin');
+    setError('');
+    try {
+      const user = await signInFirebaseTeacher();
+      const connectedEmail = normalizeHappyClassEmail(user.email || '');
+      if (connectedEmail !== normalizedAdminEmail) {
+        setError(`Bạn vừa chọn ${connectedEmail || 'một tài khoản khác'}. Hãy kết nối lại bằng ${normalizedAdminEmail}.`);
+        return;
+      }
+      setFirebaseEmail(connectedEmail);
+      setNotice('Đã kết nối Firebase Lớp Hạnh Phúc.');
+    } catch (nextError) {
+      const message = nextError instanceof Error ? nextError.message : '';
+      if (message.includes('popup-closed-by-user')) setError('Bạn đã đóng cửa sổ Google trước khi hoàn tất. Hãy nhấn kết nối và thử lại.');
+      else if (message.includes('popup-blocked')) setError('Trình duyệt đang chặn cửa sổ Google. Hãy cho phép cửa sổ bật lên rồi thử lại.');
+      else if (message.includes('unauthorized-domain')) setError('Tên miền giaoviencn.io.vn chưa được Firebase cho phép đăng nhập.');
+      else setError('Chưa thể kết nối Firebase. Hãy kiểm tra Internet rồi thử lại.');
+    } finally {
+      setWorking('');
+    }
+  };
+
   if (!connected) {
     return (
       <div className="h-full overflow-y-auto rounded-2xl bg-gradient-to-br from-violet-50 via-white to-rose-50 p-4 sm:p-8">
         <div className="mx-auto max-w-xl rounded-[28px] border border-purple-100 bg-white p-6 text-center shadow-xl sm:p-9">
           <span className="mx-auto grid h-20 w-20 place-items-center rounded-3xl bg-gradient-to-br from-violet-600 to-pink-500 text-white shadow-lg"><ShieldCheck size={38} /></span>
           <h2 className="mt-5 text-2xl font-black text-purple-950">Phiên Admin chưa được đồng bộ</h2>
-          <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">Admin chỉ cần đăng nhập Google vào GIAOVIENCN một lần. Hệ thống sẽ tự dùng phiên đó cho Firebase Lớp Hạnh Phúc, không yêu cầu xác minh lần hai.</p>
+          <p className="mt-3 text-sm font-semibold leading-6 text-slate-600">GIAOVIENCN và Firebase Lớp Hạnh Phúc dùng hai kho xác thực riêng. Admin chỉ cần kết nối Gmail một lần trên trình duyệt này; những lần sau hệ thống sẽ tự ghi nhớ.</p>
           <div className="mt-5 rounded-2xl bg-purple-50 p-4 text-sm"><span className="block text-xs font-bold uppercase tracking-wider text-purple-500">Email GIAOVIENCN hiện tại</span><strong className="mt-1 block break-all text-purple-900">{normalizedAdminEmail || 'Chưa đăng nhập GIAOVIENCN'}</strong>{firebaseEmail && <small className="mt-2 block text-rose-600">Phiên Firebase cũ đang dùng: {firebaseEmail}</small>}</div>
           {error && <p className="mt-4 rounded-xl bg-red-50 p-3 text-sm font-bold text-red-700">{error}</p>}
-          <p className="mt-5 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-800">Hãy quay lại, đăng xuất rồi đăng nhập bằng Gmail Admin. Sau đó mở lại tab này và hệ thống sẽ vào thẳng.</p>
+          <button type="button" disabled={working === 'connect-admin'} onClick={() => void connectAdminFirebase()} className="mt-5 inline-flex min-h-12 w-full items-center justify-center gap-2 rounded-2xl bg-gradient-to-r from-violet-600 to-pink-600 px-5 py-3 text-sm font-black text-white shadow-[0_5px_0_#701b86,0_10px_24px_rgba(111,29,134,.22)] transition hover:-translate-y-0.5 disabled:cursor-wait disabled:opacity-70">
+            {working === 'connect-admin' ? <Loader2 className="animate-spin" size={19} /> : <ShieldCheck size={19} />}
+            {working === 'connect-admin' ? 'Đang kết nối…' : 'Kết nối một lần bằng Gmail Admin'}
+          </button>
+          <p className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 p-4 text-sm font-bold leading-6 text-amber-800">Chọn đúng Gmail <strong>{normalizedAdminEmail}</strong> trong cửa sổ Google. Không cần đăng xuất khỏi GIAOVIENCN.</p>
         </div>
       </div>
     );

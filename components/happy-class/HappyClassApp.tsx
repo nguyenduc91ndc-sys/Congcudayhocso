@@ -382,7 +382,7 @@ const navItems: NavItem[] = [
   { id: 'teams', label: 'Thi đua tổ', icon: BarChart3 },
   { id: 'rewards', label: 'Đổi thưởng', icon: Store },
   { id: 'random', label: 'Gọi tên vui', icon: Wand2 },
-  { id: 'attendance', label: 'Chuyên cần', icon: CalendarCheck2, badge: '2' },
+  { id: 'attendance', label: 'Chuyên cần', icon: CalendarCheck2 },
   { id: 'honors', label: 'Vinh danh', icon: Trophy },
   { id: 'parents', label: 'Cổng phụ huynh', icon: HeartHandshake },
 ];
