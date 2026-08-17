@@ -4,12 +4,8 @@
  */
 
 function setupParentFeedback() {
-  const configuredTeacherEmail = '__TEACHER_EMAIL__';
-  const configuredPortalId = '__PORTAL_ID__';
-  const teacherEmail = configuredTeacherEmail === '__TEACHER_EMAIL__'
-    ? Session.getEffectiveUser().getEmail()
-    : configuredTeacherEmail;
-  const portalId = configuredPortalId === '__PORTAL_ID__' ? '' : configuredPortalId;
+  const teacherEmail = Session.getEffectiveUser().getEmail();
+  const portalId = ''; // App tự chèn mã cổng khi dùng nút “Sao chép mã đã điền”.
 
   if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacherEmail)) {
     throw new Error('Không xác định được Gmail chủ sở hữu. Hãy đăng nhập đúng tài khoản Google rồi chạy lại.');

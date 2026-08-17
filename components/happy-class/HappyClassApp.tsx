@@ -2603,8 +2603,8 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
   const feedbackScriptReady = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackScriptEmail);
   const personalizedFeedbackAppsScriptCode = feedbackScriptReady
     ? parentFeedbackAppsScriptCode
-        .replace("const configuredTeacherEmail = '__TEACHER_EMAIL__';", `const configuredTeacherEmail = ${JSON.stringify(feedbackScriptEmail)};`)
-        .replace("const configuredPortalId = '__PORTAL_ID__';", `const configuredPortalId = ${JSON.stringify(portal.publicId.trim())};`)
+        .replace('const teacherEmail = Session.getEffectiveUser().getEmail();', `const teacherEmail = ${JSON.stringify(feedbackScriptEmail)};`)
+        .replace("const portalId = ''; // App tự chèn mã cổng khi dùng nút “Sao chép mã đã điền”.", `const portalId = ${JSON.stringify(portal.publicId.trim())};`)
     : '// Hãy nhập Gmail giáo viên ở khung “Phản hồi về Gmail” trước khi sao chép mã.';
   const requireAccessCode = viewPortal.requireAccessCode !== false;
   const activeStudents = students.filter((student) => student.parentAccessEnabled !== false && student.parentCode.trim());
