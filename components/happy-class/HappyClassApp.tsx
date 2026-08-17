@@ -1388,7 +1388,12 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
     <header className="topbar">
       <div className="topbar-left">
         <button className="icon-button mobile-menu" onClick={onOpenMenu} aria-label="Mở menu"><Menu size={22} /></button>
-        {onBack && <button className="icon-button happy-class-back" onClick={onBack} aria-label="Về GIAOVIENCN" title="Về GIAOVIENCN"><ChevronRight size={20} style={{ transform: 'rotate(180deg)' }} /></button>}
+        {onBack && (
+          <button className="happy-class-home" onClick={onBack} aria-label="Về trang chủ GIAOVIENCN" title="Về trang chủ GIAOVIENCN">
+            <Home size={19} strokeWidth={2.7} />
+            <span>Trang chủ</span>
+          </button>
+        )}
         <div><span className="topbar-breadcrumb">{classProfile.name} /</span><strong>{pageTitle}</strong></div>
       </div>
       <div className="topbar-actions">
