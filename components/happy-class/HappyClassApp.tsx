@@ -2599,6 +2599,13 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
   parentUrl.searchParams.delete('student');
   parentUrl.hash = 'parents';
   const parentLink = parentUrl.toString();
+  const feedbackScriptEmail = configEmail.trim();
+  const feedbackScriptReady = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(feedbackScriptEmail);
+  const personalizedFeedbackAppsScriptCode = feedbackScriptReady
+    ? parentFeedbackAppsScriptCode
+        .replace("const teacherEmail = 'THAY_EMAIL_GIAO_VIEN@gmail.com';", `const teacherEmail = ${JSON.stringify(feedbackScriptEmail)};`)
+        .replace("const portalId = '';", `const portalId = ${JSON.stringify(portal.publicId.trim())};`)
+    : '// Hãy nhập Gmail giáo viên ở khung “Phản hồi về Gmail” trước khi sao chép mã.';
   const requireAccessCode = viewPortal.requireAccessCode !== false;
   const activeStudents = students.filter((student) => student.parentAccessEnabled !== false && student.parentCode.trim());
   const openStudent = (student: Student, publishedActivities: Activity[] | null = null) => {
@@ -2630,11 +2637,15 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
     }
   };
   const copyFeedbackAppsScript = async () => {
+    if (!feedbackScriptReady) {
+      setFeedbackGuideCopyStatus('Hãy nhập đúng Gmail giáo viên ở khung “Phản hồi về Gmail” trước khi sao chép.');
+      return;
+    }
     try {
-      await navigator.clipboard.writeText(parentFeedbackAppsScriptCode);
-      setFeedbackGuideCopyStatus('Đã sao chép toàn bộ mã Apps Script.');
+      await navigator.clipboard.writeText(personalizedFeedbackAppsScriptCode);
+      setFeedbackGuideCopyStatus(`Đã sao chép mã có sẵn Gmail ${feedbackScriptEmail} và mã cổng ${portal.publicId}.`);
     } catch {
-      window.prompt('Sao chép toàn bộ mã bên dưới:', parentFeedbackAppsScriptCode);
+      window.prompt('Sao chép toàn bộ mã bên dưới:', personalizedFeedbackAppsScriptCode);
       setFeedbackGuideCopyStatus('Hãy sao chép mã trong cửa sổ vừa mở.');
     }
   };
@@ -2827,14 +2838,14 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
             <div className="feedback-guide-body">
               <div className="feedback-guide-free-note"><ShieldCheck size={22} /><p><strong>Không cần Firebase Functions</strong><span>Phụ huynh chỉ cần có Internet. Lời nhắn đi thẳng đến Web app Apps Script do giáo viên sở hữu và được chuyển về Gmail đã cấu hình.</span></p></div>
               <div className="feedback-guide-code">
-                <div><p><strong>Mã dùng chung cho mọi giáo viên</strong><span>Sao chép rồi dán thay toàn bộ mã mặc định trong tệp Code.gs.</span></p><button type="button" onClick={() => void copyFeedbackAppsScript()}><Copy size={17} /> Sao chép mã</button></div>
+                <div><p><strong>Mã tự điền Gmail và mã cổng</strong><span>{feedbackScriptReady ? `Đã chuẩn bị riêng cho ${feedbackScriptEmail}.` : 'Hãy nhập Gmail giáo viên ở khung cấu hình trước.'}</span></p><button type="button" disabled={!feedbackScriptReady} onClick={() => void copyFeedbackAppsScript()}><Copy size={17} /> Sao chép mã đã điền</button></div>
                 {feedbackGuideCopyStatus && <p className="feedback-guide-copy-status" role="status">{feedbackGuideCopyStatus}</p>}
-                <textarea readOnly value={parentFeedbackAppsScriptCode} aria-label="Mã Google Apps Script phản hồi phụ huynh" onFocus={(event) => event.currentTarget.select()} />
+                <textarea readOnly value={personalizedFeedbackAppsScriptCode} aria-label="Mã Google Apps Script phản hồi phụ huynh" onFocus={(event) => event.currentTarget.select()} />
               </div>
               <ol className="feedback-guide-steps">
                 <li><b>1</b><p><strong>Mở Google Apps Script</strong><span>Vào <a href="https://script.google.com" target="_blank" rel="noreferrer">script.google.com</a>, đăng nhập Gmail giáo viên và tạo dự án mới.</span></p></li>
                 <li><b>2</b><p><strong>Dán mã gửi phản hồi</strong><span>Xóa mã mặc định trong Code.gs, sau đó bấm “Sao chép mã” ở trên và dán vào.</span></p></li>
-                <li><b>3</b><p><strong>Điền Gmail và mã cổng</strong><span>Trong hàm setupParentFeedback, thay THAY_EMAIL_GIAO_VIEN@gmail.com; nên điền thêm mã nằm sau ?parent= trong link phụ huynh.</span></p></li>
+                <li><b>3</b><p><strong>Gmail và mã cổng đã được điền sẵn</strong><span>App tự lấy Gmail trong khung cấu hình và mã cổng hiện tại khi bạn bấm “Sao chép mã đã điền”; không cần sửa thủ công trong Code.gs.</span></p></li>
                 <li><b>4</b><p><strong>Chạy setupParentFeedback một lần</strong><span>Chọn hàm setupParentFeedback → Run, sau đó chấp nhận quyền gửi email mà Google yêu cầu.</span></p></li>
                 <li><b>5</b><p><strong>Triển khai Web app</strong><span>Chọn Deploy → New deployment → Web app; Execute as: Me và Who has access: Anyone.</span></p></li>
                 <li><b>6</b><p><strong>Sao chép đường dẫn /exec</strong><span>Dán Web app URL kết thúc bằng /exec cùng Gmail vào khung “Phản hồi về Gmail”, rồi bấm Lưu kết nối.</span></p></li>

@@ -7,7 +7,7 @@ function setupParentFeedback() {
   const teacherEmail = 'THAY_EMAIL_GIAO_VIEN@gmail.com';
   const portalId = ''; // Nên điền giá trị nằm sau ?parent= trong link phụ huynh.
 
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacherEmail)) {
+  if (teacherEmail === 'THAY_EMAIL_GIAO_VIEN@gmail.com' || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(teacherEmail)) {
     throw new Error('Hãy thay THAY_EMAIL_GIAO_VIEN@gmail.com bằng Gmail thật trước khi chạy.');
   }
 
@@ -118,5 +118,4 @@ function jsonResponse_(content) {
   return ContentService.createTextOutput(JSON.stringify(content))
     .setMimeType(ContentService.MimeType.JSON);
 }
-
 
