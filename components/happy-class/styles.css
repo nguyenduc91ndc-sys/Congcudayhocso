@@ -2712,43 +2712,41 @@ body {
   }
 }
 
-/* Quà tùy chỉnh: nhập nhanh tên quà và số điểm ngay tại khu đổi thưởng. */
-.app-shell .custom-reward {
-  margin-bottom: 15px;
-  padding: 17px 19px;
-  display: flex;
-  align-items: center;
-  gap: 20px;
-  border-color: #f0c4d8;
-  background: linear-gradient(135deg,#fffafd,#fff 58%,#fff8df);
-}
-.app-shell .custom-reward-heading { min-width: 260px; flex: .8; display: flex; align-items: center; gap: 12px; }
-.app-shell .custom-reward-heading > span { width: 48px; height: 48px; display: grid; place-items: center; flex: none; border-radius: 15px; color: #a33279; background: #ffe7f1; box-shadow: 0 5px 0 #efbfd4; }
-.app-shell .custom-reward-heading small { color: #a33279; font-size: 10px; font-weight: 900; letter-spacing: .9px; }
-.app-shell .custom-reward-heading h2 { margin: 3px 0 2px; color: var(--ink); font-size: 17px; }
-.app-shell .custom-reward-heading p { margin: 0; color: #554b58; font-size: 11px; font-weight: 700; line-height: 1.45; }
-.app-shell .custom-reward-fields { min-width: 0; flex: 1.35; display: grid; grid-template-columns: minmax(190px,1.5fr) minmax(115px,.65fr) auto; align-items: end; gap: 10px; }
-.app-shell .custom-reward-fields label { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
-.app-shell .custom-reward-fields label > span { color: #6d566b; font-size: 11px; font-weight: 850; }
-.app-shell .custom-reward-fields input { width: 100%; height: 46px; padding: 0 12px; border: 2px solid #e7c6da; border-radius: 13px; outline: 0; color: #5d315a; background: white; font: inherit; font-size: 13px; font-weight: 750; }
-.app-shell .custom-reward-fields input:focus { border-color: #c54a91; box-shadow: 0 0 0 4px rgba(197,74,145,.11); }
-.app-shell .custom-reward-cost > div { position: relative; color: #d98e25; }
-.app-shell .custom-reward-cost svg { position: absolute; z-index: 1; left: 11px; top: 50%; transform: translateY(-50%); pointer-events: none; }
-.app-shell .custom-reward-cost input { padding-left: 34px; font-weight: 900; }
-.app-shell .custom-reward-fields > button { min-height: 46px; padding: 0 15px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 2px solid #ffe06a; border-radius: 13px; color: white; background: linear-gradient(#d85cac,#9639a6); box-shadow: 0 4px 0 #692276; font-size: 12px; font-weight: 850; white-space: nowrap; }
-.app-shell .custom-reward-fields > button:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 6px 0 #692276; }
-.app-shell .custom-reward-fields > button:active { transform: translateY(3px); box-shadow: 0 1px 0 #692276; }
-.app-shell .custom-reward-fields > button:disabled { border-color: #e2e7e5; color: #928893; background: #edf1f0; box-shadow: 0 3px 0 #d7dcda; cursor: not-allowed; }
+/* Giáo viên tùy chỉnh và lưu danh mục phần thưởng. */
+.app-shell .reward-student-actions { display: flex; align-items: center; gap: 10px; }
+.app-shell .reward-settings-button { min-height: 43px; padding: 0 13px; display: inline-flex; align-items: center; gap: 7px; border: 2px solid #e7bdd8; border-radius: 14px; color: #8e3d83; background: linear-gradient(#fff,#fff0f8); box-shadow: 0 4px 0 #d5a5c3; font-size: 12px; font-weight: 900; }
+.app-shell .reward-settings-button:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #d5a5c3; }
+.app-shell .reward-empty { margin-top: 15px; padding: 30px; display: flex; flex-direction: column; align-items: center; gap: 7px; color: #805278; text-align: center; }
+.app-shell .reward-empty span { color: #655a66; font-size: 12px; }
+.app-shell .reward-settings-card { width: min(980px,calc(100vw - 32px)); max-height: min(820px,calc(100vh - 32px)); overflow: auto; border: 4px solid #ffe173; border-radius: 28px; color: #61325f; background: linear-gradient(145deg,#fff,#fff5fb); box-shadow: 0 11px 0 #6f2b85,0 28px 70px rgba(63,24,78,.34); }
+.app-shell .reward-settings-head { padding: 20px 22px; display: flex; align-items: flex-start; justify-content: space-between; gap: 14px; border-bottom: 2px solid #f0d5e5; background: linear-gradient(135deg,#fff8fc,#fff4dc); }
+.app-shell .reward-settings-head > div > span,.app-shell .reward-settings-form > span { color: #c1518a; font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+.app-shell .reward-settings-head h2 { margin: 4px 0; font-size: 21px; }.app-shell .reward-settings-head p { margin: 0; color: #655866; font-size: 12px; font-weight: 700; }
+.app-shell .reward-settings-head > button { width: 38px; height: 38px; display: grid; place-items: center; flex: none; border: 2px solid #e7c1d6; border-radius: 13px; color: #8c477f; background: white; }
+.app-shell .reward-settings-layout { display: grid; grid-template-columns: 1fr 1.05fr; }
+.app-shell .reward-settings-list { max-height: 560px; overflow: auto; padding: 18px; border-right: 2px solid #f0d5e5; }
+.app-shell .reward-settings-list-head { margin-bottom: 10px; display: flex; align-items: center; justify-content: space-between; }.app-shell .reward-settings-list-head strong { font-size: 13px; }.app-shell .reward-settings-list-head span { color: #906f8c; font-size: 10px; font-weight: 800; }
+.app-shell .reward-settings-row { min-height: 67px; display: grid; grid-template-columns: 48px minmax(0,1fr) 35px 35px; align-items: center; gap: 8px; padding: 8px 0; border-bottom: 2px solid #f5e1ec; }
+.app-shell .reward-settings-icon { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 15px; font-size: 23px; box-shadow: 0 4px 0 rgba(76,42,75,.13); }.app-shell .reward-settings-icon.mint { background: #e4f6f0; }.app-shell .reward-settings-icon.sun { background: #fff1d4; }.app-shell .reward-settings-icon.sky { background: #e7f4fc; }.app-shell .reward-settings-icon.coral { background: #ffebe6; }.app-shell .reward-settings-icon.lavender { background: #f0eaff; }.app-shell .reward-settings-icon.rose { background: #ffeaf1; }
+.app-shell .reward-settings-row > div { min-width: 0; display: flex; flex-direction: column; gap: 4px; }.app-shell .reward-settings-row > div strong { overflow: hidden; font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }.app-shell .reward-settings-row > div small { display: flex; align-items: center; color: #b37117; font-size: 10px; font-weight: 850; }
+.app-shell .reward-settings-row > button { width: 33px; height: 33px; display: grid; place-items: center; border: 2px solid #e5bfd5; border-radius: 11px; color: #8d3e83; background: #fff6fb; box-shadow: 0 3px 0 #d8aec7; }.app-shell .reward-settings-row > button:last-child { color: #c34b5c; border-color: #efc0c5; background: #fff2f3; box-shadow-color: #dfadb4; }
+.app-shell .reward-settings-empty { padding: 35px 10px; color: #8a7187; text-align: center; font-size: 11px; }
+.app-shell .reward-settings-form { padding: 20px; display: flex; flex-direction: column; gap: 11px; }.app-shell .reward-settings-form label { min-width: 0; display: flex; flex-direction: column; gap: 5px; }.app-shell .reward-settings-form label > span { color: #755b72; font-size: 11px; font-weight: 900; }
+.app-shell .reward-settings-form input,.app-shell .reward-settings-form select { width: 100%; min-height: 43px; padding: 0 11px; border: 2px solid #e7c5d9; border-radius: 13px; outline: 0; color: #61325f; background: white; font: inherit; font-size: 12px; font-weight: 800; }.app-shell .reward-settings-form input:focus,.app-shell .reward-settings-form select:focus { border-color: #b756ad; box-shadow: 0 0 0 3px #f5dff2; }
+.app-shell .reward-settings-form-grid { display: grid; grid-template-columns: .75fr .9fr 1.1fr; gap: 8px; }
+.app-shell .reward-icon-picker { display: grid; grid-template-columns: repeat(12,1fr); gap: 4px; }.app-shell .reward-icon-picker button { aspect-ratio: 1; min-width: 0; display: grid; place-items: center; border: 2px solid #ead0df; border-radius: 9px; background: white; font-size: 18px; }.app-shell .reward-icon-picker button.active { border-color: #b54bac; background: #f8e8f6; box-shadow: 0 0 0 2px #efd2ec; }
+.app-shell .reward-settings-preview { min-height: 67px; display: flex; align-items: center; gap: 11px; padding: 10px; border: 2px dashed #e3b4d0; border-radius: 17px; background: #fffafd; }.app-shell .reward-settings-preview > div { display: flex; flex-direction: column; gap: 4px; }.app-shell .reward-settings-preview strong { font-size: 12px; }.app-shell .reward-settings-preview small { color: #b37117; font-size: 10px; font-weight: 850; }
+.app-shell .reward-settings-error { margin: -3px 0 0; color: #c24758; font-size: 10px; font-weight: 800; }
+.app-shell .reward-settings-form-actions,.app-shell .reward-settings-actions { display: flex; justify-content: flex-end; gap: 8px; }.app-shell .reward-settings-form-actions { margin-top: auto; }.app-shell .reward-settings-actions { padding: 14px 18px; border-top: 2px solid #f0d5e5; }
+.app-shell .reward-settings-form-actions button,.app-shell .reward-settings-actions button { min-height: 41px; padding: 0 13px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border: 3px solid #ffe17b; border-radius: 15px; color: white; background: linear-gradient(#dc6fc4,#9140ad); box-shadow: 0 5px 0 #63267a; font-size: 11px; font-weight: 900; }.app-shell .reward-settings-form-actions button:first-child,.app-shell .reward-settings-actions button:first-child { color: #805477; border-color: #e9cada; background: #fff7fb; box-shadow-color: #d6b3c7; }
 
 @media (max-width: 920px) {
-  .app-shell .custom-reward { align-items: stretch; flex-direction: column; gap: 14px; }
-  .app-shell .custom-reward-heading { min-width: 0; }
-  .app-shell .custom-reward-fields { width: 100%; }
+  .app-shell .reward-settings-card { width: calc(100vw - 20px); max-height: calc(100vh - 20px); border-radius: 22px; }
+  .app-shell .reward-settings-layout { grid-template-columns: 1fr; }.app-shell .reward-settings-list { max-height: 300px; border-right: 0; border-bottom: 2px solid #f0d5e5; }
 }
-
 @media (max-width: 680px) {
-  .app-shell .custom-reward { padding: 15px; }
-  .app-shell .custom-reward-heading > span { width: 43px; height: 43px; }
-  .app-shell .custom-reward-fields { grid-template-columns: 1fr; }
-  .app-shell .custom-reward-fields > button { width: 100%; }
+  .app-shell .reward-student { align-items: stretch; flex-direction: column; gap: 10px; }.app-shell .reward-student-actions { justify-content: space-between; }.app-shell .reward-settings-button { flex: 1; justify-content: center; }
+  .app-shell .reward-settings-head { padding: 16px 14px; }.app-shell .reward-settings-head h2 { font-size: 18px; }.app-shell .reward-settings-head p { font-size: 10px; }
+  .app-shell .reward-settings-list,.app-shell .reward-settings-form { padding: 14px; }.app-shell .reward-settings-form-grid { grid-template-columns: 1fr 1fr; }.app-shell .reward-settings-form-grid label:last-child { grid-column: 1/-1; }
+  .app-shell .reward-icon-picker { grid-template-columns: repeat(6,1fr); }.app-shell .reward-settings-actions { flex-direction: column-reverse; }.app-shell .reward-settings-actions button { width: 100%; }
 }

@@ -56,8 +56,8 @@ import {
   X,
   Zap,
 } from 'lucide-react';
-import { initialActivities, initialStudents, pointReasons as initialPointReasons, rewards } from './data';
-import type { Activity, AttendanceStatus, PointReason, Student, WeekArchive, WeekPeriod, WeekState } from './types';
+import { initialActivities, initialStudents, pointReasons as initialPointReasons, rewards as initialRewards } from './data';
+import type { Activity, AttendanceStatus, PointReason, Reward, Student, WeekArchive, WeekPeriod, WeekState } from './types';
 import { downloadStudentTemplate, parseStudentWorkbook } from './excel';
 import type { ExcelImportResult } from './excel';
 import parentFeedbackAppsScriptCode from './google-apps-script-parent-feedback.gs?raw';
@@ -122,6 +122,7 @@ type ClassBackup = {
   students: Student[];
   activities: Activity[];
   pointReasons?: PointReason[];
+  rewards?: Reward[];
   parentPortal?: ParentPortalSettings;
   weekState?: WeekState;
   weeklyScoring?: WeeklyScoringSettings;
@@ -141,6 +142,7 @@ const isText = (value: unknown): value is string => typeof value === 'string';
 const isNumber = (value: unknown): value is number => typeof value === 'number' && Number.isFinite(value);
 const isPhoto = (value: unknown) => value === undefined || (typeof value === 'string' && /^data:image\/(?:jpeg|png|webp);base64,/i.test(value));
 const pointReasonTones: PointReason['tone'][] = ['green', 'blue', 'purple', 'orange', 'yellow', 'red'];
+const rewardColors = ['mint', 'sun', 'sky', 'coral', 'lavender', 'rose'] as const;
 
 function randomToken(length: number) {
   const alphabet = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
@@ -269,6 +271,15 @@ const isPointReason = (value: unknown): value is PointReason => isRecord(value)
   && isText(value.icon) && Boolean(value.icon.trim()) && value.icon.length <= 12
   && isText(value.tone) && pointReasonTones.includes(value.tone as PointReason['tone']);
 
+const isReward = (value: unknown): value is Reward => isRecord(value)
+  && isNumber(value.id) && Number.isInteger(value.id)
+  && isText(value.name) && Boolean(value.name.trim()) && value.name.length <= 80
+  && isText(value.description) && value.description.length <= 160
+  && isNumber(value.cost) && Number.isInteger(value.cost) && value.cost >= 1 && value.cost <= 9999
+  && isText(value.icon) && Boolean(value.icon.trim()) && value.icon.length <= 12
+  && isText(value.color) && rewardColors.includes(value.color as typeof rewardColors[number])
+  && (value.stock === null || (isNumber(value.stock) && Number.isInteger(value.stock) && value.stock >= 0 && value.stock <= 999));
+
 function parseClassBackup(content: string): ClassBackup {
   let value: unknown;
   try {
@@ -350,6 +361,13 @@ function parseClassBackup(content: string): ClassBackup {
     if (!Array.isArray(value.pointReasons) || value.pointReasons.length > 100 || !value.pointReasons.every(isPointReason)
       || new Set(value.pointReasons.map((item) => item.id)).size !== value.pointReasons.length) {
       throw new Error('Danh mục điểm cộng, điểm trừ trong bản sao không hợp lệ.');
+    }
+  }
+
+  if (value.rewards !== undefined) {
+    if (!Array.isArray(value.rewards) || value.rewards.length > 50 || !value.rewards.every(isReward)
+      || new Set(value.rewards.map((item) => item.id)).size !== value.rewards.length) {
+      throw new Error('Danh mục phần thưởng trong bản sao không hợp lệ.');
     }
   }
 
@@ -526,6 +544,20 @@ function readStoredPointReasons() {
   }
 }
 
+function readStoredRewards() {
+  try {
+    const stored = localStorage.getItem('happy-class-rewards');
+    if (!stored) return initialRewards;
+    const rewardItems: unknown = JSON.parse(stored);
+    return Array.isArray(rewardItems) && rewardItems.length <= 50 && rewardItems.every(isReward)
+      && new Set(rewardItems.map((reward) => reward.id)).size === rewardItems.length
+      ? rewardItems
+      : initialRewards;
+  } catch {
+    return initialRewards;
+  }
+}
+
 function readTeacherName() {
   return localStorage.getItem('happy-class-teacher-name')?.trim() || 'Thầy Đức';
 }
@@ -640,6 +672,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [weekState, setWeekState] = useState<WeekState>(readStoredWeekState);
   const [activities, setActivities] = useState<Activity[]>(() => readStoredActivities(weekState.current.id));
   const [pointReasons, setPointReasons] = useState<PointReason[]>(readStoredPointReasons);
+  const [rewardCatalog, setRewardCatalog] = useState<Reward[]>(readStoredRewards);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileId, setProfileId] = useState<number | null>(null);
   const [toast, setToast] = useState('');
@@ -681,6 +714,10 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   useEffect(() => {
     localStorage.setItem('happy-class-point-reasons', JSON.stringify(pointReasons));
   }, [pointReasons]);
+
+  useEffect(() => {
+    localStorage.setItem('happy-class-rewards', JSON.stringify(rewardCatalog));
+  }, [rewardCatalog]);
 
   useEffect(() => {
     localStorage.setItem('happy-class-parent-portal', JSON.stringify(parentPortal));
@@ -873,6 +910,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setWeekState(sampleWeekState);
     setActivities(initialActivities.map((activity) => ({ ...activity, createdAt: new Date().toISOString(), weekId: sampleWeekState.current.id })));
     setPointReasons(initialPointReasons);
+    setRewardCatalog(initialRewards);
     setWeeklyScoring(createWeeklyScoringSettings());
     setToast('Đã khôi phục dữ liệu mẫu');
   };
@@ -884,6 +922,15 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     }
     setPointReasons(reasons);
     setToast('Đã lưu danh mục điểm cộng, điểm trừ');
+  };
+
+  const saveRewards = (rewardItems: Reward[]) => {
+    if (!isTeacher) {
+      setToast('Chỉ tài khoản giáo viên mới được cấu hình phần thưởng.');
+      return;
+    }
+    setRewardCatalog(rewardItems);
+    setToast('Đã lưu danh mục phần thưởng');
   };
 
   const importBackup = async (file: File) => {
@@ -911,6 +958,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
         weekId: activity.weekId ?? restoredWeekState.current.id,
       })));
       setPointReasons(backup.pointReasons ?? initialPointReasons);
+      setRewardCatalog(backup.rewards ?? initialRewards);
       setParentPortal(backup.parentPortal ?? createParentPortalSettings());
       setWeeklyScoring(backup.weeklyScoring ?? createWeeklyScoringSettings());
       setTeacherName(backup.teacher.name.trim());
@@ -1014,13 +1062,19 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   };
 
   const redeemReward = (studentId: number, rewardId: number) => {
-    const reward = rewards.find((item) => item.id === rewardId);
+    const reward = rewardCatalog.find((item) => item.id === rewardId);
     if (!reward) return;
-    redeemNamedReward(studentId, reward.name, reward.cost);
+    if (reward.stock === 0) {
+      setToast(`Phần thưởng “${reward.name}” đã hết`);
+      return;
+    }
+    const redeemed = redeemNamedReward(studentId, reward.name, reward.cost);
+    if (redeemed && reward.stock !== null) {
+      setRewardCatalog((current) => current.map((item) => item.id === rewardId
+        ? { ...item, stock: Math.max(0, (item.stock ?? 0) - 1) }
+        : item));
+    }
   };
-
-  const redeemCustomReward = (studentId: number, rewardName: string, rewardCost: number) =>
-    redeemNamedReward(studentId, rewardName, rewardCost);
 
   const regenerateParentCode = (studentId: number) => {
     let nextCode = createParentCode();
@@ -1211,14 +1265,14 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'students' && <StudentsPage students={students} teamCount={classProfile.teamCount} canManageStudents={isTeacher} onOpenStudent={setProfileId} onAddStudent={() => navigate('management')} />}
           {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} onSaveReasons={savePointReasons} onAddPoints={addPoints} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} />}
-          {page === 'rewards' && <RewardsPage students={students} onRedeem={redeemReward} onRedeemCustom={redeemCustomReward} />}
+          {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} />}
           {page === 'attendance' && (
             <AttendancePage students={students} classCode={classProfile.code} onUpdate={updateAttendance} onToast={setToast} />
           )}
           {page === 'honors' && <HonorsPage students={students} week={weekState.current} scoring={weeklyScoring} />}
           {page === 'parents' && <ParentsPage students={students} activities={activities} classCode={classProfile.code} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} portal={parentPortal} publishing={cloudPublishing} onPublish={publishParentPortal} onTogglePortal={() => void toggleParentPortal()} onToggleRequireAccessCode={toggleParentAccessMode} onRegenerateCode={regenerateParentCode} onToggleAccess={toggleParentAccess} onSaveFeedbackConfig={saveParentFeedbackConfig} onToast={setToast} />}
-          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
+          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
         </div>
       </main>
 
@@ -1414,7 +1468,7 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
   );
 }
 
-function ManagementPage({ students, activities, pointReasons, parentPortal, weekState, weeklyScoring, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
+function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [backupImporting, setBackupImporting] = useState(false);
@@ -1426,7 +1480,7 @@ function ManagementPage({ students, activities, pointReasons, parentPortal, week
     parentName: '', parentPhone: '', strengths: [],
   });
   const exportData = () => {
-    const content = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), teacher: { name: teacherName, photo: teacherPhoto }, classProfile, students, activities, pointReasons, parentPortal, weekState, weeklyScoring }, null, 2);
+    const content = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), teacher: { name: teacherName, photo: teacherPhoto }, classProfile, students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring }, null, 2);
     const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
@@ -2300,56 +2354,159 @@ function TeamsPage({ students, teamCount, week }: { students: Student[]; teamCou
   );
 }
 
-function RewardsPage({ students, onRedeem, onRedeemCustom }: { students: Student[]; onRedeem: (studentId: number, rewardId: number) => void; onRedeemCustom: (studentId: number, rewardName: string, rewardCost: number) => boolean }) {
+function RewardsPage({ students, rewards, canConfigure, onRedeem, onSaveRewards }: { students: Student[]; rewards: Reward[]; canConfigure: boolean; onRedeem: (studentId: number, rewardId: number) => void; onSaveRewards: (rewards: Reward[]) => void }) {
   const [studentId, setStudentId] = useState(students[0]?.id ?? 0);
-  const [customRewardName, setCustomRewardName] = useState('');
-  const [customRewardCost, setCustomRewardCost] = useState('');
+  const [settingsVisible, setSettingsVisible] = useState(false);
   const selected = students.find((student) => student.id === studentId) ?? students[0];
-  const parsedCustomCost = Number(customRewardCost);
-  const customRewardIsValid = customRewardName.trim().length > 0
-    && Number.isInteger(parsedCustomCost)
-    && parsedCustomCost > 0;
-  const submitCustomReward = (event: FormEvent<HTMLFormElement>) => {
-    event.preventDefault();
-    if (!customRewardIsValid) return;
-    if (onRedeemCustom(studentId, customRewardName.trim(), parsedCustomCost)) {
-      setCustomRewardName('');
-      setCustomRewardCost('');
-    }
-  };
   if (!selected) return <><PageHeading eyebrow="CỬA HÀNG NIỀM VUI" title="Điểm tốt hóa thành món quà nhỏ" description="Mỗi phần thưởng là một lời cảm ơn cho sự cố gắng và tiến bộ mỗi ngày." icon="🎁" /><div className="panel page-empty-state"><Gift size={31} /><strong>Chưa có học sinh trong lớp</strong><span>Giáo viên hãy nhập danh sách lớp thật trước khi sử dụng đổi thưởng.</span></div></>;
   return (
     <>
       <PageHeading eyebrow="CỬA HÀNG NIỀM VUI" title="Điểm tốt hóa thành món quà nhỏ" description="Mỗi phần thưởng là một lời cảm ơn cho sự cố gắng và tiến bộ mỗi ngày." icon="🎁" />
       <section className="reward-student panel">
         <div className="reward-student-info"><Avatar initials={selected.initials} gradient={selected.gradient} photo={selected.photo} /><div><span>ĐANG ĐỔI THƯỞNG CHO</span><select value={studentId} onChange={(event) => setStudentId(Number(event.target.value))}>{students.map((student) => <option value={student.id} key={student.id}>{student.name}</option>)}</select></div></div>
-        <div className="wallet"><Coins size={21} /><div><strong>{selected.score}</strong><span>điểm hiện có</span></div></div>
+        <div className="reward-student-actions">
+          {canConfigure && <button className="reward-settings-button" onClick={() => setSettingsVisible(true)}><Settings size={17} /> Tùy chỉnh quà</button>}
+          <div className="wallet"><Coins size={21} /><div><strong>{selected.score}</strong><span>điểm hiện có</span></div></div>
+        </div>
       </section>
-      <form className="custom-reward panel" onSubmit={submitCustomReward}>
-        <div className="custom-reward-heading">
-          <span><Wand2 size={23} /></span>
-          <div><small>QUÀ TÙY CHỈNH</small><h2>Tự nhập phần thưởng</h2><p>Nhập loại quà và số điểm cần dùng cho học sinh đang chọn.</p></div>
-        </div>
-        <div className="custom-reward-fields">
-          <label><span>Loại quà</span><input name="customRewardName" value={customRewardName} onChange={(event) => setCustomRewardName(event.target.value)} maxLength={80} placeholder="Ví dụ: Một quyển vở mới" autoComplete="off" /></label>
-          <label className="custom-reward-cost"><span>Số điểm</span><div><Star size={16} fill="currentColor" /><input name="customRewardCost" type="number" min="1" step="1" inputMode="numeric" value={customRewardCost} onChange={(event) => setCustomRewardCost(event.target.value)} placeholder="20" /></div></label>
-          <button type="submit" disabled={!customRewardIsValid || selected.score < parsedCustomCost}><Gift size={17} />{customRewardIsValid && selected.score < parsedCustomCost ? 'Chưa đủ điểm' : 'Đổi quà này'}</button>
-        </div>
-      </form>
       <div className="reward-grid">
         {rewards.map((reward) => {
-          const affordable = selected.score >= reward.cost;
+          const inStock = reward.stock === null || reward.stock > 0;
+          const affordable = selected.score >= reward.cost && inStock;
           return (
             <article className="reward-card" key={reward.id}>
               <div className={`reward-icon ${reward.color}`}>{reward.icon}</div>
               <div className="reward-stock">{reward.stock === null ? 'Không giới hạn' : `Còn ${reward.stock}`}</div>
               <h3>{reward.name}</h3><p>{reward.description}</p>
-              <div className="reward-footer"><strong><Star size={16} fill="currentColor" />{reward.cost}</strong><button disabled={!affordable} onClick={() => onRedeem(studentId, reward.id)}>{affordable ? 'Đổi ngay' : 'Chưa đủ điểm'}</button></div>
+              <div className="reward-footer"><strong><Star size={16} fill="currentColor" />{reward.cost}</strong><button disabled={!affordable} onClick={() => onRedeem(studentId, reward.id)}>{!inStock ? 'Đã hết quà' : affordable ? 'Đổi ngay' : 'Chưa đủ điểm'}</button></div>
             </article>
           );
         })}
       </div>
+      {!rewards.length && <div className="panel reward-empty"><Gift size={27} /><strong>Chưa có phần thưởng</strong><span>Giáo viên hãy mở “Tùy chỉnh quà” để thêm món quà đầu tiên.</span></div>}
+      {settingsVisible && <RewardSettings rewards={rewards} onSave={onSaveRewards} onClose={() => setSettingsVisible(false)} />}
     </>
+  );
+}
+
+function RewardSettings({ rewards, onSave, onClose }: { rewards: Reward[]; onSave: (rewards: Reward[]) => void; onClose: () => void }) {
+  const [draft, setDraft] = useState<Reward[]>(rewards.map((reward) => ({ ...reward })));
+  const [editingId, setEditingId] = useState<number | null>(null);
+  const [name, setName] = useState('');
+  const [description, setDescription] = useState('');
+  const [cost, setCost] = useState('30');
+  const [icon, setIcon] = useState('🎁');
+  const [stock, setStock] = useState('');
+  const [color, setColor] = useState<typeof rewardColors[number]>('mint');
+  const [error, setError] = useState('');
+  const iconChoices = ['🎁', '⭐', '🏅', '🪑', '🎫', '📚', '✏️', '🎮', '👑', '🍭', '🏆', '💎'];
+  const colorLabels: Record<typeof rewardColors[number], string> = {
+    mint: 'Xanh bạc hà', sun: 'Vàng nắng', sky: 'Xanh trời', coral: 'Cam san hô', lavender: 'Tím nhạt', rose: 'Hồng',
+  };
+
+  const resetForm = () => {
+    setEditingId(null);
+    setName('');
+    setDescription('');
+    setCost('30');
+    setIcon('🎁');
+    setStock('');
+    setColor('mint');
+    setError('');
+  };
+
+  const editReward = (reward: Reward) => {
+    setEditingId(reward.id);
+    setName(reward.name);
+    setDescription(reward.description);
+    setCost(String(reward.cost));
+    setIcon(reward.icon);
+    setStock(reward.stock === null ? '' : String(reward.stock));
+    setColor(rewardColors.includes(reward.color as typeof rewardColors[number]) ? reward.color as typeof rewardColors[number] : 'mint');
+    setError('');
+  };
+
+  const submit = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    const nextName = name.trim();
+    const nextDescription = description.trim();
+    const nextIcon = icon.trim();
+    const pointValue = Number(cost);
+    const stockValue = stock.trim() === '' ? null : Number(stock);
+    if (!nextName) return setError('Vui lòng nhập tên phần thưởng.');
+    if (!Number.isInteger(pointValue) || pointValue < 1 || pointValue > 9999) return setError('Số điểm phải là số nguyên từ 1 đến 9.999.');
+    if (!nextIcon || nextIcon.length > 12) return setError('Biểu tượng không hợp lệ.');
+    if (stockValue !== null && (!Number.isInteger(stockValue) || stockValue < 0 || stockValue > 999)) return setError('Số lượng phải từ 0 đến 999 hoặc để trống nếu không giới hạn.');
+    if (editingId === null && draft.length >= 50) return setError('Danh mục chỉ lưu tối đa 50 phần thưởng.');
+    if (draft.some((reward) => reward.id !== editingId && reward.name.toLocaleLowerCase('vi-VN') === nextName.toLocaleLowerCase('vi-VN'))) {
+      return setError('Tên phần thưởng này đã có trong danh mục.');
+    }
+    const nextReward: Reward = {
+      id: editingId ?? Math.max(Date.now(), ...draft.map((reward) => reward.id + 1)),
+      name: nextName,
+      description: nextDescription,
+      cost: pointValue,
+      icon: nextIcon,
+      color,
+      stock: stockValue,
+    };
+    setDraft((current) => editingId === null
+      ? [...current, nextReward]
+      : current.map((reward) => reward.id === editingId ? nextReward : reward));
+    resetForm();
+  };
+
+  const removeReward = (reward: Reward) => {
+    if (!window.confirm(`Xóa phần thưởng “${reward.name}” khỏi danh mục?`)) return;
+    setDraft((current) => current.filter((item) => item.id !== reward.id));
+    if (editingId === reward.id) resetForm();
+  };
+
+  return (
+    <div className="settings-backdrop" role="presentation" onMouseDown={onClose}>
+      <section className="reward-settings-card" role="dialog" aria-modal="true" aria-labelledby="reward-settings-title" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="reward-settings-head">
+          <div><span>DÀNH CHO GIÁO VIÊN</span><h2 id="reward-settings-title">Tùy chỉnh danh mục quà</h2><p>Thay đổi tên, biểu tượng, số điểm và số lượng; hoặc thêm phần thưởng mới cho lớp.</p></div>
+          <button aria-label="Đóng tùy chỉnh phần thưởng" onClick={onClose}><X size={20} /></button>
+        </header>
+        <div className="reward-settings-layout">
+          <div className="reward-settings-list">
+            <div className="reward-settings-list-head"><strong>Danh mục hiện tại</strong><span>{draft.length}/50 món quà</span></div>
+            {draft.map((reward) => (
+              <div className="reward-settings-row" key={reward.id}>
+                <span className={`reward-settings-icon ${reward.color}`}>{reward.icon}</span>
+                <div><strong>{reward.name}</strong><small><Star size={12} fill="currentColor" /> {reward.cost} điểm · {reward.stock === null ? 'Không giới hạn' : `Còn ${reward.stock}`}</small></div>
+                <button aria-label={`Sửa ${reward.name}`} onClick={() => editReward(reward)}><Pencil size={15} /></button>
+                <button aria-label={`Xóa ${reward.name}`} onClick={() => removeReward(reward)}><Trash2 size={15} /></button>
+              </div>
+            ))}
+            {!draft.length && <p className="reward-settings-empty">Danh mục đang trống. Hãy thêm món quà mới.</p>}
+          </div>
+          <form className="reward-settings-form" onSubmit={submit}>
+            <span>{editingId === null ? 'THÊM PHẦN THƯỞNG MỚI' : 'CHỈNH SỬA PHẦN THƯỞNG'}</span>
+            <label><span>Tên phần thưởng *</span><input value={name} maxLength={80} onChange={(event) => setName(event.target.value)} placeholder="Ví dụ: Được chọn bài hát" /></label>
+            <label><span>Mô tả ngắn</span><input value={description} maxLength={160} onChange={(event) => setDescription(event.target.value)} placeholder="Quyền lợi học sinh sẽ nhận được" /></label>
+            <div className="reward-settings-form-grid">
+              <label><span>Số điểm *</span><input type="number" min="1" max="9999" step="1" value={cost} onChange={(event) => setCost(event.target.value)} /></label>
+              <label><span>Số lượng</span><input type="number" min="0" max="999" step="1" value={stock} onChange={(event) => setStock(event.target.value)} placeholder="Không giới hạn" /></label>
+              <label><span>Màu thẻ</span><select value={color} onChange={(event) => setColor(event.target.value as typeof rewardColors[number])}>{rewardColors.map((item) => <option value={item} key={item}>{colorLabels[item]}</option>)}</select></label>
+            </div>
+            <label><span>Biểu tượng / emoji *</span><input value={icon} maxLength={12} onChange={(event) => setIcon(event.target.value)} aria-label="Biểu tượng phần thưởng" /></label>
+            <div className="reward-icon-picker" aria-label="Gợi ý biểu tượng">{iconChoices.map((item) => <button type="button" className={icon === item ? 'active' : ''} key={item} onClick={() => setIcon(item)}>{item}</button>)}</div>
+            <div className="reward-settings-preview"><span className={`reward-icon ${color}`}>{icon.trim() || '🎁'}</span><div><strong>{name.trim() || 'Phần thưởng mới'}</strong><small>{cost || '0'} điểm · {stock.trim() === '' ? 'Không giới hạn' : `Còn ${stock}`}</small></div></div>
+            {error && <p className="reward-settings-error">{error}</p>}
+            <div className="reward-settings-form-actions">
+              {editingId !== null && <button type="button" onClick={resetForm}>Hủy sửa</button>}
+              <button type="submit"><Plus size={16} /> {editingId === null ? 'Thêm vào danh mục' : 'Cập nhật món quà'}</button>
+            </div>
+          </form>
+        </div>
+        <footer className="reward-settings-actions">
+          <button onClick={() => { setDraft(initialRewards.map((reward) => ({ ...reward }))); resetForm(); }}><RotateCcw size={16} /> Khôi phục mặc định</button>
+          <button onClick={() => { onSave(draft); onClose(); }}><Check size={17} /> Lưu danh mục</button>
+        </footer>
+      </section>
+    </div>
   );
 }
 
