@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   CheckCircle2,
   ChevronDown,
@@ -177,6 +177,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
   const [expandedEmail, setExpandedEmail] = useState('');
   const [singleOpen, setSingleOpen] = useState(true);
   const [bulkOpen, setBulkOpen] = useState(true);
+  const accessMailDraftRef = useRef<HTMLElement | null>(null);
 
   const normalizedAdminEmail = normalizeHappyClassEmail(adminEmail || '');
   const isLocalPreviewHost = import.meta.env.DEV || ['localhost', '127.0.0.1'].includes(window.location.hostname);
@@ -229,6 +230,12 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
     const timer = window.setTimeout(() => setNotice(''), 3200);
     return () => window.clearTimeout(timer);
   }, [notice]);
+
+  useEffect(() => {
+    if (!accessMailDraft) return;
+    const frame = window.requestAnimationFrame(() => accessMailDraftRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' }));
+    return () => window.cancelAnimationFrame(frame);
+  }, [accessMailDraft]);
 
   const submitSingle = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -561,7 +568,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
         {(error || notice) && <div role="status" className={`rounded-2xl border px-4 py-3 text-sm font-bold ${error ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{error || notice}</div>}
 
         {accessMailDraft && (
-          <section className="rounded-3xl border border-emerald-200 bg-white p-4 shadow-sm sm:p-5">
+          <section ref={accessMailDraftRef} className="rounded-3xl border border-emerald-200 bg-white p-4 shadow-sm ring-4 ring-emerald-100 sm:p-5">
             <div className="flex items-start justify-between gap-3">
               <div><h3 className="text-lg font-black text-purple-950">Thông báo quyền truy cập</h3><p className="mt-1 text-sm font-semibold text-slate-500">Đã soạn sẵn cho {accessMailDraft.recipients.length} người nhận. Admin có thể copy hoặc mở Gmail để tự gửi.</p></div>
               <div className="flex items-center gap-2"><span className="rounded-full bg-emerald-50 px-3 py-1.5 text-xs font-black text-emerald-700">Cấp quyền</span><button type="button" title="Đóng thông báo" onClick={() => setAccessMailDraft(null)} className="rounded-lg bg-slate-100 p-1.5 text-slate-500 hover:bg-slate-200"><X size={16} /></button></div>
@@ -628,6 +635,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
                     <div className="min-w-0"><div className="flex items-center gap-2"><strong className="truncate text-sm text-purple-950 sm:text-base">{record.name || 'Chưa nhập họ tên'}</strong><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${record.active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{record.active ? 'ĐANG CÓ QUYỀN' : 'ĐÃ THU HỒI'}</span></div><span className="mt-1 block break-all text-xs font-bold text-purple-600">{record.email}</span>{record.school && <span className="mt-1 block truncate text-xs text-slate-500">{record.school}</span>}</div>
                     <button onClick={() => setExpandedEmail(expanded ? '' : record.email)} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-left"><span><small className="block font-bold text-slate-400">THIẾT BỊ</small><strong className={devices.length >= 2 ? 'text-orange-600' : 'text-slate-700'}>{devices.length}/2 thiết bị</strong></span>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>
                     <div className="flex flex-wrap gap-2 lg:justify-end">
+                      {record.active && <button title="Soạn thông báo Gmail" onClick={() => { setAccessMailDraft(createAccessMailDraft([{ email: record.email, name: record.name, school: record.school }])); setError(''); setNotice(`Đã soạn thông báo Gmail cho ${record.email}.`); }} className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 hover:bg-emerald-100"><Mail size={17} /></button>}
                       <button title="Chỉnh sửa" onClick={() => startEdit(record)} className="rounded-xl bg-purple-50 p-2.5 text-purple-700 hover:bg-purple-100"><Edit3 size={17} /></button>
                       <button title={record.active ? 'Thu hồi quyền' : 'Cấp lại quyền'} disabled={working === `active:${record.email}`} onClick={() => { if (window.confirm(record.active ? `Thu hồi quyền của ${record.email}?` : `Cấp lại quyền cho ${record.email} và soạn thông báo Gmail?`)) void toggleRecordAccess(record); }} className={`rounded-xl p-2.5 ${record.active ? 'bg-amber-50 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{record.active ? <ShieldOff size={17} /> : <ShieldCheck size={17} />}</button>
                       <button title="Đặt lại thiết bị" disabled={!devices.length || working === `reset:${record.email}`} onClick={() => { if (window.confirm(`Xóa toàn bộ ${devices.length} thiết bị của ${record.email}?`)) void runRecordAction(`reset:${record.email}`, () => resetHappyClassDevices(record.email), 'Đã đặt lại danh sách thiết bị.', () => setRecords((current) => current.map((item) => item.email === record.email ? { ...item, devices: {}, updatedAt: new Date().toISOString() } : item))); }} className="rounded-xl bg-blue-50 p-2.5 text-blue-700 disabled:opacity-35"><RotateCcw size={17} /></button>
