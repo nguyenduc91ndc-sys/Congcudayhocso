@@ -719,7 +719,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       oscillator.frequency.setValueAtTime(720, startAt);
       oscillator.frequency.exponentialRampToValueAtTime(940, startAt + .055);
       gain.gain.setValueAtTime(.0001, startAt);
-      gain.gain.exponentialRampToValueAtTime(.035, startAt + .006);
+      gain.gain.exponentialRampToValueAtTime(.075, startAt + .006);
       gain.gain.exponentialRampToValueAtTime(.0001, startAt + .075);
       oscillator.connect(gain);
       gain.connect(context.destination);
