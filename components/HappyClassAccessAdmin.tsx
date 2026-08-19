@@ -7,6 +7,7 @@ import {
   Edit3,
   Laptop,
   Loader2,
+  Mail,
   RefreshCw,
   RotateCcw,
   Search,
@@ -22,6 +23,7 @@ import {
   editHappyClassAccess,
   grantHappyClassAccess,
   grantHappyClassAccessBulk,
+  getFirebaseTeacher,
   isHappyClassAdminEmail,
   normalizeHappyClassEmail,
   removeHappyClassDevice,
@@ -38,6 +40,35 @@ type Filter = 'all' | 'active' | 'revoked';
 
 const EMPTY_FORM: HappyClassAccessInput = { name: '', email: '', school: '', note: '' };
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/i;
+
+type AccessEmailResult = {
+  sent: number;
+  failed: Array<{ email: string; error?: string }>;
+};
+
+async function sendAccessEmails(recipients: HappyClassAccessInput[]): Promise<AccessEmailResult> {
+  const user = getFirebaseTeacher();
+  if (!user) throw new Error('ADMIN_TOKEN_REQUIRED');
+  const idToken = await user.getIdToken();
+  const totals: AccessEmailResult = { sent: 0, failed: [] };
+
+  for (let index = 0; index < recipients.length; index += 50) {
+    const response = await fetch('/api/send-happy-class-access-email', {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${idToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ recipients: recipients.slice(index, index + 50) }),
+    });
+    const result = await response.json().catch(() => ({})) as Partial<AccessEmailResult> & { error?: string };
+    if (!response.ok && !Array.isArray(result.failed)) throw new Error(result.error || 'Không gửi được email thông báo');
+    totals.sent += Number(result.sent || 0);
+    if (Array.isArray(result.failed)) totals.failed.push(...result.failed);
+  }
+
+  return totals;
+}
 
 function createPreviewRecords(): HappyClassAccessRecord[] {
   const now = Date.now();
@@ -246,7 +277,16 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
     try {
       await grantHappyClassAccess({ ...singleForm, email });
       setSingleForm(EMPTY_FORM);
-      setNotice(`Đã cấp quyền cho ${email}.`);
+      try {
+        const mailResult = await sendAccessEmails([{ ...singleForm, email }]);
+        if (mailResult.sent === 1) {
+          setNotice(`Đã cấp quyền và gửi email thông báo đến ${email}.`);
+        } else {
+          setError(`Đã cấp quyền cho ${email}, nhưng email thông báo chưa gửi được. Bạn có thể bấm cấp quyền lại để gửi lại.`);
+        }
+      } catch {
+        setError(`Đã cấp quyền cho ${email}, nhưng email thông báo chưa gửi được. Bạn có thể bấm cấp quyền lại để gửi lại.`);
+      }
     } catch (nextError) {
       setError(messageFromError(nextError));
     } finally {
@@ -293,8 +333,18 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
     setError('');
     try {
       await grantHappyClassAccessBulk(bulkPreview.entries);
+      const grantedEntries = [...bulkPreview.entries];
       setBulkText('');
-      setNotice(`Đã cấp hoặc cập nhật ${bulkPreview.entries.length} email.`);
+      try {
+        const mailResult = await sendAccessEmails(grantedEntries);
+        if (!mailResult.failed.length) {
+          setNotice(`Đã cấp quyền và gửi thông báo đến ${mailResult.sent} email.`);
+        } else {
+          setError(`Đã cấp quyền ${grantedEntries.length} email; gửi Gmail thành công ${mailResult.sent}, chưa gửi được ${mailResult.failed.length}.`);
+        }
+      } catch {
+        setError(`Đã cấp quyền ${grantedEntries.length} email, nhưng chưa gửi được Gmail thông báo.`);
+      }
     } catch (nextError) {
       setError(messageFromError(nextError));
     } finally {
@@ -328,6 +378,39 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
     try {
       await action();
       setNotice(success);
+    } catch (nextError) {
+      setError(messageFromError(nextError));
+    } finally {
+      setWorking('');
+    }
+  };
+
+  const toggleRecordAccess = async (record: HappyClassAccessRecord) => {
+    const nextActive = !record.active;
+    if (isDevPreview) {
+      setRecords((current) => current.map((item) => item.email === record.email
+        ? { ...item, active: nextActive, updatedAt: new Date().toISOString(), ...(nextActive ? { revokedAt: undefined } : { revokedAt: new Date().toISOString() }) }
+        : item));
+      setError('');
+      setNotice(nextActive ? 'Đã mô phỏng cấp lại quyền và gửi email thông báo.' : 'Đã thu hồi quyền. (mô phỏng)');
+      return;
+    }
+
+    setWorking(`active:${record.email}`);
+    setError('');
+    try {
+      await setHappyClassAccessActive(record.email, nextActive);
+      if (!nextActive) {
+        setNotice('Đã thu hồi quyền.');
+      } else {
+        try {
+          const mailResult = await sendAccessEmails([{ email: record.email, name: record.name, school: record.school }]);
+          if (mailResult.sent === 1) setNotice(`Đã cấp lại quyền và gửi email thông báo đến ${record.email}.`);
+          else setError(`Đã cấp lại quyền cho ${record.email}, nhưng email thông báo chưa gửi được.`);
+        } catch {
+          setError(`Đã cấp lại quyền cho ${record.email}, nhưng email thông báo chưa gửi được.`);
+        }
+      }
     } catch (nextError) {
       setError(messageFromError(nextError));
     } finally {
@@ -493,6 +576,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
               <input required type="email" value={singleForm.email} onChange={(event) => setSingleForm((value) => ({ ...value, email: event.target.value }))} placeholder="Email Google đăng nhập" className="rounded-xl border-2 border-slate-100 px-4 py-3 text-sm outline-none focus:border-purple-400" />
               <input value={singleForm.school || ''} onChange={(event) => setSingleForm((value) => ({ ...value, school: event.target.value }))} placeholder="Trường/đơn vị (không bắt buộc)" className="rounded-xl border-2 border-slate-100 px-4 py-3 text-sm outline-none focus:border-purple-400" />
               <input value={singleForm.note || ''} onChange={(event) => setSingleForm((value) => ({ ...value, note: event.target.value }))} placeholder="Ghi chú (không bắt buộc)" className="rounded-xl border-2 border-slate-100 px-4 py-3 text-sm outline-none focus:border-purple-400" />
+              <p className="flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700 sm:col-span-2"><Mail size={16} /> Sau khi cấp quyền, giáo viên sẽ tự động nhận email thông báo kèm nút mở Lớp Hạnh Phúc.</p>
               <button disabled={working === 'single'} className="inline-flex items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-emerald-600 to-teal-600 px-5 py-3 font-black text-white shadow sm:col-span-2 disabled:opacity-50">{working === 'single' ? <Loader2 className="animate-spin" size={18} /> : <UserPlus size={18} />} Cấp quyền email</button>
             </form>
           )}
@@ -506,6 +590,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
               <textarea value={bulkText} onChange={(event) => setBulkText(event.target.value)} rows={7} placeholder={'Nguyễn Văn A, nguyenvana@gmail.com, Trường Tiểu học A\nTrần Thị B\ttranthib@gmail.com\nleminhc@gmail.com'} className="w-full resize-y rounded-2xl border-2 border-slate-100 px-4 py-3 text-sm leading-6 outline-none focus:border-purple-400" />
               <div className="mt-3 flex flex-wrap gap-2 text-xs font-bold"><span className="rounded-full bg-emerald-100 px-3 py-1.5 text-emerald-700">{bulkPreview.entries.length} email hợp lệ</span><span className="rounded-full bg-blue-100 px-3 py-1.5 text-blue-700">{existingBulkCount} đã có</span><span className="rounded-full bg-amber-100 px-3 py-1.5 text-amber-700">{bulkPreview.duplicates} trùng trong nội dung</span><span className="rounded-full bg-red-100 px-3 py-1.5 text-red-700">{bulkPreview.errors.length} dòng lỗi</span></div>
               {bulkPreview.errors.length > 0 && <p className="mt-2 text-xs font-semibold text-red-600">Kiểm tra dòng: {bulkPreview.errors.slice(0, 6).map((item) => item.line).join(', ')}{bulkPreview.errors.length > 6 ? '…' : ''}</p>}
+              <p className="mt-3 flex items-center gap-2 rounded-xl bg-blue-50 px-3 py-2 text-xs font-bold text-blue-700"><Mail size={16} /> Mỗi giáo viên trong danh sách sẽ nhận một email thông báo cấp quyền.</p>
               <button disabled={working === 'bulk' || !bulkPreview.entries.length} onClick={() => void submitBulk()} className="mt-3 inline-flex w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-purple-700 to-fuchsia-600 px-5 py-3 font-black text-white shadow disabled:opacity-50">{working === 'bulk' ? <Loader2 className="animate-spin" size={18} /> : <Copy size={18} />} Xác nhận cấp quyền hàng loạt</button>
             </div>
           )}
@@ -533,7 +618,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
                     <button onClick={() => setExpandedEmail(expanded ? '' : record.email)} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-left"><span><small className="block font-bold text-slate-400">THIẾT BỊ</small><strong className={devices.length >= 2 ? 'text-orange-600' : 'text-slate-700'}>{devices.length}/2 thiết bị</strong></span>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>
                     <div className="flex flex-wrap gap-2 lg:justify-end">
                       <button title="Chỉnh sửa" onClick={() => startEdit(record)} className="rounded-xl bg-purple-50 p-2.5 text-purple-700 hover:bg-purple-100"><Edit3 size={17} /></button>
-                      <button title={record.active ? 'Thu hồi quyền' : 'Cấp lại quyền'} disabled={working === `active:${record.email}`} onClick={() => { if (window.confirm(record.active ? `Thu hồi quyền của ${record.email}?` : `Cấp lại quyền cho ${record.email}?`)) void runRecordAction(`active:${record.email}`, () => setHappyClassAccessActive(record.email, !record.active), record.active ? 'Đã thu hồi quyền.' : 'Đã cấp lại quyền.', () => setRecords((current) => current.map((item) => item.email === record.email ? { ...item, active: !record.active, updatedAt: new Date().toISOString(), ...(!record.active ? { revokedAt: undefined } : { revokedAt: new Date().toISOString() }) } : item))); }} className={`rounded-xl p-2.5 ${record.active ? 'bg-amber-50 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{record.active ? <ShieldOff size={17} /> : <ShieldCheck size={17} />}</button>
+                      <button title={record.active ? 'Thu hồi quyền' : 'Cấp lại quyền'} disabled={working === `active:${record.email}`} onClick={() => { if (window.confirm(record.active ? `Thu hồi quyền của ${record.email}?` : `Cấp lại quyền cho ${record.email} và gửi email thông báo?`)) void toggleRecordAccess(record); }} className={`rounded-xl p-2.5 ${record.active ? 'bg-amber-50 text-amber-700' : 'bg-emerald-100 text-emerald-700'}`}>{record.active ? <ShieldOff size={17} /> : <ShieldCheck size={17} />}</button>
                       <button title="Đặt lại thiết bị" disabled={!devices.length || working === `reset:${record.email}`} onClick={() => { if (window.confirm(`Xóa toàn bộ ${devices.length} thiết bị của ${record.email}?`)) void runRecordAction(`reset:${record.email}`, () => resetHappyClassDevices(record.email), 'Đã đặt lại danh sách thiết bị.', () => setRecords((current) => current.map((item) => item.email === record.email ? { ...item, devices: {}, updatedAt: new Date().toISOString() } : item))); }} className="rounded-xl bg-blue-50 p-2.5 text-blue-700 disabled:opacity-35"><RotateCcw size={17} /></button>
                       <button title="Xóa hoàn toàn" disabled={working === `delete:${record.email}`} onClick={() => { if (window.confirm(`Xóa hoàn toàn ${record.email}? Thao tác này không thể hoàn tác.`)) void runRecordAction(`delete:${record.email}`, () => deleteHappyClassAccess(record.email), 'Đã xóa tài khoản.', () => setRecords((current) => current.filter((item) => item.email !== record.email))); }} className="rounded-xl bg-red-50 p-2.5 text-red-600 hover:bg-red-100"><Trash2 size={17} /></button>
                     </div>
