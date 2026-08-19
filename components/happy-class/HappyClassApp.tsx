@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import type { CSSProperties, FormEvent } from 'react';
+import type { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { User as PlatformUser } from '../../types';
 import {
@@ -77,6 +77,7 @@ import {
 const spinWheelSound = '/sounds/Am_thanh_vong_quay_chiec_non_ky_dieu-www_tiengdong_com.mp3';
 const victorySound = '/sounds/Am_thanh_chuc_mung_chien_thang-www_tiengdong_com.mp3';
 const teacherFacebookUrl = 'https://www.facebook.com/duc.the3?locale=vi_VN';
+const tabHoverSelector = '.sidebar-nav button, .mobile-nav button, .filter-tabs button, .mode-switch button';
 
 type HappyClassAppProps = {
   platformUser?: PlatformUser | null;
@@ -686,6 +687,58 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [teacherAccessOpen, setTeacherAccessOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const [cloudPublishing, setCloudPublishing] = useState(false);
+  const tabHoverAudioContextRef = useRef<AudioContext | null>(null);
+  const lastTabHoverSoundAtRef = useRef(0);
+
+  const getTabHoverAudioContext = () => {
+    if (tabHoverAudioContextRef.current) return tabHoverAudioContextRef.current;
+    const AudioContextClass = window.AudioContext || (window as typeof window & { webkitAudioContext?: typeof AudioContext }).webkitAudioContext;
+    if (!AudioContextClass) return null;
+    tabHoverAudioContextRef.current = new AudioContextClass();
+    return tabHoverAudioContextRef.current;
+  };
+
+  const unlockTabHoverAudio = () => {
+    const context = getTabHoverAudioContext();
+    if (context?.state === 'suspended') void context.resume().catch(() => undefined);
+  };
+
+  const playTabHoverSound = () => {
+    const now = performance.now();
+    if (now - lastTabHoverSoundAtRef.current < 45) return;
+    lastTabHoverSoundAtRef.current = now;
+    const context = getTabHoverAudioContext();
+    if (!context) return;
+
+    const play = () => {
+      if (context.state !== 'running') return;
+      const startAt = context.currentTime;
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      oscillator.type = 'sine';
+      oscillator.frequency.setValueAtTime(720, startAt);
+      oscillator.frequency.exponentialRampToValueAtTime(940, startAt + .055);
+      gain.gain.setValueAtTime(.0001, startAt);
+      gain.gain.exponentialRampToValueAtTime(.035, startAt + .006);
+      gain.gain.exponentialRampToValueAtTime(.0001, startAt + .075);
+      oscillator.connect(gain);
+      gain.connect(context.destination);
+      oscillator.start(startAt);
+      oscillator.stop(startAt + .08);
+    };
+
+    if (context.state === 'suspended') void context.resume().then(play).catch(() => undefined);
+    else play();
+  };
+
+  const handleTabPointerOver = (event: ReactPointerEvent<HTMLDivElement>) => {
+    if (event.pointerType === 'touch') return;
+    const target = event.target instanceof Element ? event.target.closest<HTMLButtonElement>(tabHoverSelector) : null;
+    if (!target || target.disabled) return;
+    const previousTarget = event.relatedTarget;
+    if (previousTarget instanceof Node && target.contains(previousTarget)) return;
+    playTabHoverSound();
+  };
 
   useEffect(() => {
     const style = document.createElement('style');
@@ -693,6 +746,12 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     style.textContent = `${happyClassStyles}\nhtml, body { overflow-y: auto !important; }`;
     document.head.appendChild(style);
     return () => style.remove();
+  }, []);
+
+  useEffect(() => () => {
+    const context = tabHoverAudioContextRef.current;
+    tabHoverAudioContextRef.current = null;
+    if (context && context.state !== 'closed') void context.close().catch(() => undefined);
   }, []);
 
   useEffect(() => {
@@ -1243,7 +1302,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   }
 
   return (
-    <div className={`app-shell page-${page}`}>
+    <div className={`app-shell page-${page}`} onPointerDownCapture={unlockTabHoverAudio} onPointerOver={handleTabPointerOver}>
       {sidebarOpen && <button className="sidebar-scrim" aria-label="Đóng menu" onClick={() => setSidebarOpen(false)} />}
       <Sidebar page={page} open={sidebarOpen} teacherAccount={teacherAccount} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onTeacherLogin={() => setTeacherAccessOpen(true)} onTeacherLogout={logoutTeacher} onHelp={() => { setHelpOpen(true); setSidebarOpen(false); }} onNavigate={navigate} />
       <main className="main-shell">
