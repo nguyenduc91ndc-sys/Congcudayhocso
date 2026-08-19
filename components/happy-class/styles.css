@@ -227,6 +227,12 @@ button:disabled { cursor: not-allowed; }
 
 @media (prefers-reduced-motion: reduce) {
   *,*::before,*::after { scroll-behavior:auto!important;animation-duration:.01ms!important;animation-iteration-count:1!important;transition-duration:.01ms!important; }
+
+  /* Vòng quay là phản hồi chính của thao tác chọn học sinh, nên vẫn cần chuyển động.
+     Chỉ khôi phục ba lớp đồng bộ của bánh xe; các hiệu ứng khác vẫn được giảm. */
+  .page-random .student-wheel,
+  .page-random .wheel-person-card,
+  .page-random .wheel-center-core { transition-duration:4.3s!important; }
 }
 
 /* ─────────────────────────────────────────────────────────
