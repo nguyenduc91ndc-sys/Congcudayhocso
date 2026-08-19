@@ -985,24 +985,23 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setToast('Đã xóa ảnh học sinh');
   };
 
-  const redeemReward = (studentId: number, rewardId: number) => {
-    const reward = rewards.find((item) => item.id === rewardId);
+  const redeemNamedReward = (studentId: number, rewardName: string, rewardCost: number) => {
     const student = students.find((item) => item.id === studentId);
-    if (!reward || !student) return;
-    if (student.score < reward.cost) {
+    if (!student) return false;
+    if (student.score < rewardCost) {
       setToast(`${student.name} chưa đủ điểm để đổi phần thưởng này`);
-      return;
+      return false;
     }
     setStudents((current) =>
-      current.map((item) => (item.id === studentId ? { ...item, score: item.score - reward.cost } : item)),
+      current.map((item) => (item.id === studentId ? { ...item, score: item.score - rewardCost } : item)),
     );
     setActivities((current) => [
       {
         id: Date.now(),
         studentId,
-        title: `Đổi thưởng: ${reward.name}`,
-        detail: `Đã sử dụng ${reward.cost} điểm`,
-        points: -reward.cost,
+        title: `Đổi thưởng: ${rewardName}`,
+        detail: `Đã sử dụng ${rewardCost} điểm`,
+        points: -rewardCost,
         time: 'Vừa xong',
         tone: 'neutral',
         createdAt: new Date().toISOString(),
@@ -1010,8 +1009,18 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       },
       ...current,
     ]);
-    setToast(`${student.name} đã đổi “${reward.name}” thành công`);
+    setToast(`${student.name} đã đổi “${rewardName}” thành công`);
+    return true;
   };
+
+  const redeemReward = (studentId: number, rewardId: number) => {
+    const reward = rewards.find((item) => item.id === rewardId);
+    if (!reward) return;
+    redeemNamedReward(studentId, reward.name, reward.cost);
+  };
+
+  const redeemCustomReward = (studentId: number, rewardName: string, rewardCost: number) =>
+    redeemNamedReward(studentId, rewardName, rewardCost);
 
   const regenerateParentCode = (studentId: number) => {
     let nextCode = createParentCode();
@@ -1202,7 +1211,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'students' && <StudentsPage students={students} teamCount={classProfile.teamCount} canManageStudents={isTeacher} onOpenStudent={setProfileId} onAddStudent={() => navigate('management')} />}
           {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} onSaveReasons={savePointReasons} onAddPoints={addPoints} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} />}
-          {page === 'rewards' && <RewardsPage students={students} onRedeem={redeemReward} />}
+          {page === 'rewards' && <RewardsPage students={students} onRedeem={redeemReward} onRedeemCustom={redeemCustomReward} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} />}
           {page === 'attendance' && (
             <AttendancePage students={students} classCode={classProfile.code} onUpdate={updateAttendance} onToast={setToast} />
@@ -2291,9 +2300,23 @@ function TeamsPage({ students, teamCount, week }: { students: Student[]; teamCou
   );
 }
 
-function RewardsPage({ students, onRedeem }: { students: Student[]; onRedeem: (studentId: number, rewardId: number) => void }) {
+function RewardsPage({ students, onRedeem, onRedeemCustom }: { students: Student[]; onRedeem: (studentId: number, rewardId: number) => void; onRedeemCustom: (studentId: number, rewardName: string, rewardCost: number) => boolean }) {
   const [studentId, setStudentId] = useState(students[0]?.id ?? 0);
+  const [customRewardName, setCustomRewardName] = useState('');
+  const [customRewardCost, setCustomRewardCost] = useState('');
   const selected = students.find((student) => student.id === studentId) ?? students[0];
+  const parsedCustomCost = Number(customRewardCost);
+  const customRewardIsValid = customRewardName.trim().length > 0
+    && Number.isInteger(parsedCustomCost)
+    && parsedCustomCost > 0;
+  const submitCustomReward = (event: FormEvent<HTMLFormElement>) => {
+    event.preventDefault();
+    if (!customRewardIsValid) return;
+    if (onRedeemCustom(studentId, customRewardName.trim(), parsedCustomCost)) {
+      setCustomRewardName('');
+      setCustomRewardCost('');
+    }
+  };
   if (!selected) return <><PageHeading eyebrow="CỬA HÀNG NIỀM VUI" title="Điểm tốt hóa thành món quà nhỏ" description="Mỗi phần thưởng là một lời cảm ơn cho sự cố gắng và tiến bộ mỗi ngày." icon="🎁" /><div className="panel page-empty-state"><Gift size={31} /><strong>Chưa có học sinh trong lớp</strong><span>Giáo viên hãy nhập danh sách lớp thật trước khi sử dụng đổi thưởng.</span></div></>;
   return (
     <>
@@ -2302,6 +2325,17 @@ function RewardsPage({ students, onRedeem }: { students: Student[]; onRedeem: (s
         <div className="reward-student-info"><Avatar initials={selected.initials} gradient={selected.gradient} photo={selected.photo} /><div><span>ĐANG ĐỔI THƯỞNG CHO</span><select value={studentId} onChange={(event) => setStudentId(Number(event.target.value))}>{students.map((student) => <option value={student.id} key={student.id}>{student.name}</option>)}</select></div></div>
         <div className="wallet"><Coins size={21} /><div><strong>{selected.score}</strong><span>điểm hiện có</span></div></div>
       </section>
+      <form className="custom-reward panel" onSubmit={submitCustomReward}>
+        <div className="custom-reward-heading">
+          <span><Wand2 size={23} /></span>
+          <div><small>QUÀ TÙY CHỈNH</small><h2>Tự nhập phần thưởng</h2><p>Nhập loại quà và số điểm cần dùng cho học sinh đang chọn.</p></div>
+        </div>
+        <div className="custom-reward-fields">
+          <label><span>Loại quà</span><input name="customRewardName" value={customRewardName} onChange={(event) => setCustomRewardName(event.target.value)} maxLength={80} placeholder="Ví dụ: Một quyển vở mới" autoComplete="off" /></label>
+          <label className="custom-reward-cost"><span>Số điểm</span><div><Star size={16} fill="currentColor" /><input name="customRewardCost" type="number" min="1" step="1" inputMode="numeric" value={customRewardCost} onChange={(event) => setCustomRewardCost(event.target.value)} placeholder="20" /></div></label>
+          <button type="submit" disabled={!customRewardIsValid || selected.score < parsedCustomCost}><Gift size={17} />{customRewardIsValid && selected.score < parsedCustomCost ? 'Chưa đủ điểm' : 'Đổi quà này'}</button>
+        </div>
+      </form>
       <div className="reward-grid">
         {rewards.map((reward) => {
           const affordable = selected.score >= reward.cost;
