@@ -2415,7 +2415,14 @@ function PointReasonSettings({ reasons, onSave, onClose }: { reasons: PointReaso
             <div className="point-reason-form-grid">
               <label><span>Loại điểm</span><select value={kind} onChange={(event) => setKind(event.target.value as 'positive' | 'negative')}><option value="positive">Điểm cộng</option><option value="negative">Điểm trừ</option></select></label>
               <label><span>Số điểm</span><input type="number" min="1" max="100" step="1" value={points} onChange={(event) => setPoints(event.target.value)} /></label>
-              <label><span>Biểu tượng</span><input value={icon} maxLength={12} onChange={(event) => setIcon(event.target.value)} aria-label="Biểu tượng" /></label>
+              <label><span>Biểu tượng tự chọn</span><input value={icon} maxLength={12} onChange={(event) => setIcon(event.target.value)} placeholder="Dán hoặc gõ icon" aria-label="Biểu tượng" /></label>
+            </div>
+            <div className="point-reason-icon-picker">
+              {['⭐', '🤝', '🚀', '🌱', '🌟', '🏆', '🎨', '📖', '💡', '🧹', '🥇', '🏅', '🎒', '📝', '🔔', '⏰', '💬', '⚠️', '🚫', '❌'].map((emoji) => (
+                <button type="button" key={emoji} className={icon === emoji ? 'active' : ''} onClick={() => setIcon(emoji)}>
+                  {emoji}
+                </button>
+              ))}
             </div>
             <div className={`point-reason-preview ${kind}`}><span>{icon.trim() || '⭐'}</span><div><strong>{label.trim() || 'Nội dung mới'}</strong><small>{kind === 'positive' ? '+' : '−'}{points || '0'} điểm</small></div></div>
             {error && <p className="point-reason-error">{error}</p>}
