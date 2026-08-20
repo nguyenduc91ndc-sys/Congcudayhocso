@@ -3397,13 +3397,28 @@ function PanelHeader({ eyebrow, title, action, onAction }: { eyebrow: string; ti
   return <div className="panel-header"><div><span>{eyebrow}</span><h2>{title}</h2></div><button onClick={onAction}>{action}<ChevronRight size={16} /></button></div>;
 }
 
-function getTeamStats(students: Student[], teamCount = DEFAULT_TEAM_COUNT) {
+function getTeamStats(students: Student[], teamCount = DEFAULT_TEAM_COUNT, scoringMode: TeamScoringMode = 'average') {
   return getTeamNumbers(teamCount)
-    .map((team) => ({
-      team,
-      score: students.filter((student) => student.team === team).reduce((sum, student) => sum + student.score, 0),
-      weekly: students.filter((student) => student.team === team).reduce((sum, student) => sum + student.weeklyScore, 0),
-      members: students.filter((student) => student.team === team).length,
-    }))
-    .sort((a, b) => b.weekly - a.weekly || b.score - a.score);
+    .map((team) => {
+      const membersList = students.filter((student) => student.team === team);
+      const membersCount = membersList.length;
+      const score = membersList.reduce((sum, student) => sum + student.score, 0);
+      const weekly = membersList.reduce((sum, student) => sum + student.weeklyScore, 0);
+      const scoreAvg = membersCount > 0 ? Number((score / membersCount).toFixed(1)) : 0;
+      const weeklyAvg = membersCount > 0 ? Number((weekly / membersCount).toFixed(1)) : 0;
+      return {
+        team,
+        score,
+        weekly,
+        scoreAvg,
+        weeklyAvg,
+        members: membersCount,
+      };
+    })
+    .sort((a, b) => {
+      if (scoringMode === 'average') {
+        return b.weeklyAvg - a.weeklyAvg || b.weekly - a.weekly || b.scoreAvg - a.scoreAvg;
+      }
+      return b.weekly - a.weekly || b.score - a.score;
+    });
 }
