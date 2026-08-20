@@ -175,7 +175,7 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
                 transition={{ duration: 1.8, repeat: Infinity }}
                 className="relative mt-5 rounded-2xl border-[3px] border-[#ffe16b] bg-gradient-to-b from-[#fff8c8] to-[#ffe68d] px-4 py-3 text-sm font-black leading-5 text-purple-950 shadow-[0_5px_0_#a9545d]"
               >
-                Để truy cập ứng dụng, thầy/cô cần được Admin cấp quyền miễn phí.
+                Để truy cập ứng dụng, thầy/cô cần được Admin cấp quyền miễn phí bằng cách nhấn Form đăng ký hoặc vào nhóm hỗ trợ miễn phí.
               </motion.div>
             )}
 
