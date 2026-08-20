@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Award, BadgeCheck, BookOpen, CheckCircle2, ChevronDown, Download, Eye, GraduationCap, ImageIcon, LayoutTemplate, MessageCircle, MousePointerClick, Palette, PenLine, Play, Settings2, SlidersHorizontal, Sparkles, Type, Upload, UserRound, X } from 'lucide-react';
+import { Award, BadgeCheck, BookOpen, CheckCircle2, ChevronDown, Download, ExternalLink, Eye, GraduationCap, ImageIcon, LayoutTemplate, MessageCircle, MousePointerClick, Palette, PenLine, Play, Settings2, SlidersHorizontal, Sparkles, Type, Upload, UserRound, X } from 'lucide-react';
 import { VideoPlayerTheme, VideoPlayerLayout, VideoQuestionStyle, VideoSidebarCardStyle, normalizeVideoPlayerTheme } from '../types';
 
 interface PlayerThemeCustomizerProps {
@@ -1393,6 +1393,23 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
               </button>
             </div>
             <div className="space-y-4 p-5 text-sm font-semibold text-slate-600">
+              <div className="overflow-hidden rounded-2xl border border-indigo-200 bg-slate-900 text-white shadow-xl">
+                <div className="flex items-center justify-between bg-slate-800/90 px-4 py-2.5 text-xs font-black text-indigo-300">
+                  <span className="flex items-center gap-1.5"><Play size={13} fill="currentColor" className="text-rose-400" /> VIDEO HƯỚNG DẪN CHI TIẾT (1 PHÚT)</span>
+                  <a href="https://youtu.be/toZt4bLllJ4" target="_blank" rel="noreferrer" className="flex items-center gap-1 text-slate-300 hover:text-white">
+                    <ExternalLink size={13} /> YouTube
+                  </a>
+                </div>
+                <div className="relative aspect-video w-full">
+                  <iframe
+                    src="https://www.youtube-nocookie.com/embed/toZt4bLllJ4?rel=0"
+                    title="Video hướng dẫn lấy link Apps Script"
+                    className="absolute inset-0 h-full w-full border-0"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+              </div>
               <div className="rounded-2xl bg-emerald-50 p-4 text-emerald-800 ring-1 ring-emerald-100">
                 Học sinh không cần đăng nhập Gmail. File ZIP chỉ cần có internet và đã dán đúng link Web App.
               </div>

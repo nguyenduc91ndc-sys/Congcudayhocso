@@ -18,6 +18,7 @@ import {
   Coins,
   Copy,
   Download,
+  ExternalLink,
   Facebook,
   Flag,
   Gift,
@@ -36,6 +37,7 @@ import {
   MoreHorizontal,
   PartyPopper,
   Pencil,
+  Play,
   Plus,
   Search,
   Save,
@@ -52,6 +54,7 @@ import {
   UserRoundCheck,
   UserPlus,
   UsersRound,
+  Video,
   Wand2,
   X,
   Zap,
@@ -3099,7 +3102,7 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
             <div><LayoutGrid size={22} /><p><strong>Chỉ lưu trên thiết bị giáo viên</strong><span>Vòng quay, âm thanh, kết quả gọi tên, cấu hình trò chơi, danh sách toàn lớp và lịch sử nội bộ chưa xuất bản.</span></p></div>
           </div>
           <form className="parent-feedback-config" onSubmit={saveFeedbackConfig}>
-            <div className="parent-feedback-config-copy"><span><Mail size={17} /> PHẢN HỒI VỀ GMAIL</span><strong>{portal.feedbackEndpoint ? 'Đã lưu kết nối – hãy gửi email thử' : 'Kết nối hộp thư giáo viên'}</strong><small>Không nhập mật khẩu Gmail vào ứng dụng. Hệ thống chỉ gọi Web app Google Apps Script do giáo viên sở hữu.</small><button type="button" className="parent-feedback-guide-button" onClick={() => { setFeedbackGuideCopyStatus(''); setShowFeedbackGuide(true); }}><HelpCircle size={17} /> Hướng dẫn lấy link Apps Script</button></div>
+            <div className="parent-feedback-config-copy"><span><Mail size={17} /> PHẢN HỒI VỀ GMAIL</span><strong>{portal.feedbackEndpoint ? 'Đã lưu kết nối – hãy gửi email thử' : 'Kết nối hộp thư giáo viên'}</strong><small>Không nhập mật khẩu Gmail vào ứng dụng. Hệ thống chỉ gọi Web app Google Apps Script do giáo viên sở hữu.</small><button type="button" className="parent-feedback-guide-button highlight-video" onClick={() => { setFeedbackGuideCopyStatus(''); setShowFeedbackGuide(true); }}><Play size={15} fill="currentColor" /> 🎬 Xem Video & Hướng dẫn lấy link</button></div>
             <label><span>Gmail giáo viên nhận thư</span><input type="email" value={configEmail} onChange={(event) => setConfigEmail(event.target.value)} placeholder="giaovien@gmail.com" /></label>
             <label className="feedback-endpoint-field"><span>URL Web app Google Apps Script</span><input type="url" value={configEndpoint} onChange={(event) => setConfigEndpoint(event.target.value)} placeholder="https://script.google.com/macros/s/.../exec" /></label>
             <div className="parent-feedback-config-actions"><button className="button button-soft" type="button" disabled={configTesting} onClick={() => void testFeedbackConnection()}><Send size={17} /> {configTesting ? 'Đang gửi…' : 'Gửi email thử'}</button><button className="button button-primary" type="submit"><Check size={17} /> Lưu kết nối</button></div>
@@ -3134,6 +3137,33 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
               <button type="button" aria-label="Đóng hướng dẫn Apps Script" onClick={() => setShowFeedbackGuide(false)}><X size={20} /></button>
             </header>
             <div className="feedback-guide-body">
+              <div className="feedback-guide-video-card">
+                <div className="feedback-guide-video-header">
+                  <div className="video-tag">
+                    <Play size={13} fill="currentColor" />
+                    <span>VIDEO HƯỚNG DẪN CHI TIẾT</span>
+                  </div>
+                  <h3>Cách tạo & lấy link Google Apps Script về Gmail (Xem 1 phút làm được ngay)</h3>
+                </div>
+                <div className="feedback-guide-video-wrapper">
+                  <iframe
+                    src="https://www.youtube-nocookie.com/embed/toZt4bLllJ4?rel=0"
+                    title="Video hướng dẫn kết nối Google Apps Script với Gmail"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+                    allowFullScreen
+                  />
+                </div>
+                <div className="feedback-guide-video-footer">
+                  <a
+                    href="https://youtu.be/toZt4bLllJ4"
+                    target="_blank"
+                    rel="noreferrer"
+                    className="video-direct-link"
+                  >
+                    <ExternalLink size={14} /> Mở xem trực tiếp trên YouTube (youtu.be/toZt4bLllJ4)
+                  </a>
+                </div>
+              </div>
               <div className="feedback-guide-free-note"><ShieldCheck size={22} /><p><strong>Không cần Firebase Functions</strong><span>Phụ huynh chỉ cần có Internet. Lời nhắn đi thẳng đến Web app Apps Script do giáo viên sở hữu và được chuyển về Gmail đã cấu hình.</span></p></div>
               <div className="feedback-guide-code">
                 <div><p><strong>Mã tự điền Gmail và mã cổng</strong><span>{feedbackScriptReady ? `Đã chuẩn bị riêng cho ${feedbackScriptEmail}.` : 'Chưa nhập Gmail: Script sẽ tự dùng Gmail của tài khoản triển khai.'}</span></p><button type="button" onClick={() => void copyFeedbackAppsScript()}><Copy size={17} /> Sao chép mã đã điền</button></div>
