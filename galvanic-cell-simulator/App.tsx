@@ -136,7 +136,7 @@ export default function App() {
             <div className="flex items-center gap-2 font-black mb-1 text-neonGreen">
               <Info size={14} /> THÔNG TIN HỆ THỐNG
             </div>
-            Dòng điện chỉ sinh ra khi phản ứng tự diễn biến (E°pin > 0). Electron sẽ di chuyển từ Anode sang Cathode.
+            Dòng điện chỉ sinh ra khi phản ứng tự diễn biến (E°pin &gt; 0). Electron sẽ di chuyển từ Anode sang Cathode.
           </div>
 
         </aside>

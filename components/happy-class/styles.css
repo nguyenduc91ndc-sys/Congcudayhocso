@@ -2847,3 +2847,13 @@ body {
   .app-shell .reward-settings-list,.app-shell .reward-settings-form { padding: 14px; }.app-shell .reward-settings-form-grid { grid-template-columns: 1fr 1fr; }.app-shell .reward-settings-form-grid label:last-child { grid-column: 1/-1; }
   .app-shell .reward-icon-picker { grid-template-columns: repeat(6,1fr); }.app-shell .reward-settings-actions { flex-direction: column-reverse; }.app-shell .reward-settings-actions button { width: 100%; }
 }
+.scoring-mode-bar { display: flex; align-items: center; gap: 10px; margin-bottom: 15px; padding: 12px 18px; border-radius: 16px; background: white; border: 1px solid rgba(0,0,0,0.06); box-shadow: 0 4px 15px rgba(0,0,0,0.03); }
+.scoring-mode-bar span { font-size: 11px; font-weight: 800; color: var(--muted); letter-spacing: 0.5px; }
+.scoring-mode-btn { padding: 8px 16px; border: 1px solid #e2e8f0; border-radius: 12px; background: #f8fafc; color: #475569; font-size: 12px; font-weight: 700; cursor: pointer; transition: all 0.2s ease; display: inline-flex; align-items: center; gap: 6px; }
+.scoring-mode-btn small { color: #64748b; font-weight: 600; font-size: 11px; }
+.scoring-mode-btn.active { background: linear-gradient(135deg, #15927a, #08705d); color: white; border-color: #08705d; box-shadow: 0 4px 12px rgba(8,112,93,0.22); }
+.scoring-mode-btn.active small { color: rgba(255,255,255,0.85); }
+@media (max-width: 680px) {
+  .scoring-mode-bar { flex-direction: column; align-items: stretch; gap: 8px; }
+  .scoring-mode-btn { justify-content: center; }
+}

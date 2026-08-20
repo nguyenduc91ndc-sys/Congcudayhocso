@@ -100,7 +100,8 @@ type PageId =
   | 'management';
 
 type NavItem = { id: PageId; label: string; icon: LucideIcon; badge?: string };
-type ClassProfile = { name: string; code: string; schoolYear: string; teamCount: number };
+type TeamScoringMode = 'total' | 'average';
+type ClassProfile = { name: string; code: string; schoolYear: string; teamCount: number; teamScoringMode?: TeamScoringMode };
 type ParentPortalSettings = {
   enabled: boolean;
   publicId: string;
@@ -573,11 +574,11 @@ function readTeacherPhoto() {
 function readClassProfile(): ClassProfile {
   try {
     const stored = localStorage.getItem('happy-class-profile');
-    if (!stored) return { name: 'Lớp Hạnh Phúc', code: '5/4', schoolYear: '2026–2027', teamCount: DEFAULT_TEAM_COUNT };
+    if (!stored) return { name: 'Lớp Hạnh Phúc', code: '5/4', schoolYear: '2026–2027', teamCount: DEFAULT_TEAM_COUNT, teamScoringMode: 'average' };
     const profile = JSON.parse(stored) as Partial<ClassProfile>;
-    return { name: profile.name || 'Lớp Hạnh Phúc', code: profile.code || '5/4', schoolYear: profile.schoolYear || '2026–2027', teamCount: normalizeTeamCount(profile.teamCount) };
+    return { name: profile.name || 'Lớp Hạnh Phúc', code: profile.code || '5/4', schoolYear: profile.schoolYear || '2026–2027', teamCount: normalizeTeamCount(profile.teamCount), teamScoringMode: profile.teamScoringMode === 'total' ? 'total' : 'average' };
   } catch {
-    return { name: 'Lớp Hạnh Phúc', code: '5/4', schoolYear: '2026–2027', teamCount: DEFAULT_TEAM_COUNT };
+    return { name: 'Lớp Hạnh Phúc', code: '5/4', schoolYear: '2026–2027', teamCount: DEFAULT_TEAM_COUNT, teamScoringMode: 'average' };
   }
 }
 
@@ -911,6 +912,14 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     localStorage.setItem('happy-class-profile', JSON.stringify(nextProfile));
     setClassSettingsOpen(false);
     setToast(affectedStudents.length ? `Đã cập nhật lớp và chuyển ${affectedStudents.length} học sinh về Tổ ${nextProfile.teamCount}` : `Đã cập nhật lớp với ${nextProfile.teamCount} tổ`);
+  };
+
+  const toggleTeamScoringMode = () => {
+    const nextMode: TeamScoringMode = classProfile.teamScoringMode === 'total' ? 'average' : 'total';
+    const nextProfile: ClassProfile = { ...classProfile, teamScoringMode: nextMode };
+    setClassProfile(nextProfile);
+    localStorage.setItem('happy-class-profile', JSON.stringify(nextProfile));
+    setToast(nextMode === 'average' ? 'Đã chuyển sang tính Điểm trung bình / HS' : 'Đã chuyển sang tính Tổng điểm dồn của tổ');
   };
 
   const saveStudentProfile = (student: Student) => {
@@ -1319,6 +1328,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
               teacherName={teacherName}
               classCode={classProfile.code}
               teamCount={classProfile.teamCount}
+              teamScoringMode={classProfile.teamScoringMode ?? 'average'}
               week={weekState.current}
               onNavigate={navigate}
               onOpenStudent={setProfileId}
@@ -1326,7 +1336,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'students' && <StudentsPage students={students} teamCount={classProfile.teamCount} canManageStudents={isTeacher} onOpenStudent={setProfileId} onAddStudent={() => navigate('management')} />}
           {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} onSaveReasons={savePointReasons} onAddPoints={addPoints} />}
-          {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} />}
+          {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} onToggleScoringMode={toggleTeamScoringMode} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} />}
           {page === 'attendance' && (
@@ -2039,7 +2049,13 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
   const [draft, setDraft] = useState(classProfile);
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    const profile = { name: draft.name.trim(), code: draft.code.trim(), schoolYear: draft.schoolYear.trim(), teamCount: normalizeTeamCount(draft.teamCount) };
+    const profile: ClassProfile = {
+      name: draft.name.trim(),
+      code: draft.code.trim(),
+      schoolYear: draft.schoolYear.trim(),
+      teamCount: normalizeTeamCount(draft.teamCount),
+      teamScoringMode: draft.teamScoringMode === 'total' ? 'total' : 'average',
+    };
     if (profile.name && profile.code && profile.schoolYear) onSave(profile);
   };
   return (
@@ -2056,6 +2072,14 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
           <label><span>Mã lớp</span><input maxLength={20} value={draft.code} onChange={(event) => setDraft((current) => ({ ...current, code: event.target.value }))} placeholder="Ví dụ: 3/1 hoặc 4A" /></label>
           <label><span>Năm học</span><input maxLength={30} value={draft.schoolYear} onChange={(event) => setDraft((current) => ({ ...current, schoolYear: event.target.value }))} placeholder="Ví dụ: 2026–2027" /></label>
           <label><span>Số lượng tổ</span><select value={normalizeTeamCount(draft.teamCount)} onChange={(event) => setDraft((current) => ({ ...current, teamCount: Number(event.target.value) }))}>{getTeamNumbers(8).map((count) => <option key={count} value={count}>{count} tổ</option>)}</select><small>Cho phép từ 1 đến 8 tổ.</small></label>
+          <label>
+            <span>Cách tính điểm thi đua tổ</span>
+            <select value={draft.teamScoringMode || 'average'} onChange={(event) => setDraft((current) => ({ ...current, teamScoringMode: event.target.value as TeamScoringMode }))}>
+              <option value="average">Điểm trung bình / HS (Công bằng khi sĩ số tổ không đều: 12 &amp; 11 em)</option>
+              <option value="total">Tổng điểm cả tổ</option>
+            </select>
+            <small>Điểm trung bình giúp các tổ ít học sinh hơn không bị thiệt thòi khi so sánh.</small>
+          </label>
         </div>
         <div className="settings-actions"><button type="button" className="settings-cancel" onClick={onClose}>Hủy</button><button type="submit" className="settings-save" disabled={!draft.name.trim() || !draft.code.trim() || !draft.schoolYear.trim()}><Check size={18} /> Lưu thông tin lớp</button></div>
       </form>
@@ -2081,6 +2105,7 @@ function Dashboard({
   teacherName,
   classCode,
   teamCount,
+  teamScoringMode = 'average',
   week,
   onNavigate,
   onOpenStudent,
@@ -2090,6 +2115,7 @@ function Dashboard({
   teacherName: string;
   classCode: string;
   teamCount: number;
+  teamScoringMode?: TeamScoringMode;
   week: WeekPeriod;
   onNavigate: (page: PageId) => void;
   onOpenStudent: (id: number) => void;
@@ -2099,8 +2125,9 @@ function Dashboard({
   const present = students.filter((student) => student.attendance === 'present').length;
   const totalScore = students.reduce((sum, student) => sum + student.score, 0);
   const weeklyTotal = students.reduce((sum, student) => sum + student.weeklyScore, 0);
-  const teams = getTeamStats(students, teamCount);
+  const teams = getTeamStats(students, teamCount, teamScoringMode);
   const leaders = [...students].sort((a, b) => b.score - a.score).slice(0, 4);
+  const isAvg = teamScoringMode === 'average';
 
   return (
     <>
@@ -2138,16 +2165,34 @@ function Dashboard({
 
       <div className="dashboard-grid">
         <section className="panel team-progress-panel">
-          <PanelHeader eyebrow="THI ĐUA TUẦN NÀY" title={`Đường đua ${teamCount} tổ`} action="Xem chi tiết" onAction={() => onNavigate('teams')} />
+          <PanelHeader eyebrow="THI ĐUA TUẦN NÀY" title={`Đường đua ${teamCount} tổ (${isAvg ? 'ĐTB/HS' : 'Tổng điểm'})`} action="Xem chi tiết" onAction={() => onNavigate('teams')} />
           <div className="team-bars">
-            {teams.map((team, index) => (
-              <div className="team-bar-row" key={team.team}>
-                <div className={`team-badge team-${team.team}`}>{index === 0 ? '👑' : team.team}</div>
-                <div className="team-bar-info"><div><strong>Tổ {team.team}</strong><span>{team.members} thành viên</span><b>{team.weekly} điểm tuần</b></div><div className="progress-track"><i style={{ width: `${(team.weekly / Math.max(1, teams[0].weekly)) * 100}%` }} /></div></div>
-              </div>
-            ))}
+            {teams.map((team, index) => {
+              const displayVal = isAvg ? `${team.weeklyAvg} đ/HS` : `${team.weekly} điểm tuần`;
+              const displaySub = isAvg ? `Tổng ${team.weekly}đ · ${team.members} HS` : `${team.members} thành viên`;
+              const leadingVal = Math.max(1, isAvg ? (teams[0]?.weeklyAvg ?? 1) : (teams[0]?.weekly ?? 1));
+              const currentVal = isAvg ? team.weeklyAvg : team.weekly;
+              const widthPct = Math.max(0, Math.min(100, (currentVal / leadingVal) * 100));
+              return (
+                <div className="team-bar-row" key={team.team}>
+                  <div className={`team-badge team-${team.team}`}>{index === 0 ? '👑' : team.team}</div>
+                  <div className="team-bar-info">
+                    <div><strong>Tổ {team.team}</strong><span>{displaySub}</span><b>{displayVal}</b></div>
+                    <div className="progress-track"><i style={{ width: `${widthPct}%` }} /></div>
+                  </div>
+                </div>
+              );
+            })}
           </div>
-          <div className="encouragement"><span>🎯</span><p><strong>Tổ {teams[1]?.team ?? teams[0].team} đang bám rất sát!</strong> Chỉ còn cách vị trí đầu tiên {Math.max(0, teams[0].weekly - (teams[1]?.weekly ?? 0))} điểm tuần.</p></div>
+          <div className="encouragement">
+            <span>🎯</span>
+            <p>
+              <strong>Tổ {teams[1]?.team ?? teams[0].team} đang bám rất sát!</strong>{' '}
+              {isAvg
+                ? `Chỉ kém vị trí dẫn đầu ${(teams[0].weeklyAvg - (teams[1]?.weeklyAvg ?? 0)).toFixed(1)} điểm trung bình/HS.`
+                : `Chỉ còn cách vị trí đầu tiên ${Math.max(0, teams[0].weekly - (teams[1]?.weekly ?? 0))} điểm tuần.`}
+            </p>
+          </div>
         </section>
 
         <section className="panel activity-panel">
@@ -2390,27 +2435,84 @@ function PointReasonSettings({ reasons, onSave, onClose }: { reasons: PointReaso
   );
 }
 
-function TeamsPage({ students, teamCount, week }: { students: Student[]; teamCount: number; week: WeekPeriod }) {
-  const teams = getTeamStats(students, teamCount);
+function TeamsPage({
+  students,
+  teamCount,
+  week,
+  teamScoringMode = 'average',
+  onToggleScoringMode,
+}: {
+  students: Student[];
+  teamCount: number;
+  week: WeekPeriod;
+  teamScoringMode?: TeamScoringMode;
+  onToggleScoringMode?: () => void;
+}) {
+  const teams = getTeamStats(students, teamCount, teamScoringMode);
   const daysRemaining = Math.max(0, Math.ceil((dateFromInput(week.endDate).getTime() - Date.now()) / 86_400_000) + 1);
-  const leadingScore = Math.max(1, teams[0]?.weekly ?? 0);
+  const isAvg = teamScoringMode === 'average';
+  const leadingScore = Math.max(1, isAvg ? (teams[0]?.weeklyAvg ?? 0) : (teams[0]?.weekly ?? 0));
   return (
     <>
       <PageHeading eyebrow={`THI ĐUA ${teamCount} TỔ`} title="Cùng tiến về phía trước" description="Một cuộc đua tích cực, nơi mỗi đóng góp nhỏ đều làm nên thành công của tập thể." icon="🏁" />
+      {onToggleScoringMode && (
+        <div className="scoring-mode-bar panel">
+          <span>CHẾ ĐỘ TÍNH ĐIỂM:</span>
+          <button className={`scoring-mode-btn ${isAvg ? 'active' : ''}`} onClick={() => isAvg || onToggleScoringMode()}>
+            📊 Điểm trung bình / HS <small>(Công bằng khi sĩ số tổ khác nhau)</small>
+          </button>
+          <button className={`scoring-mode-btn ${!isAvg ? 'active' : ''}`} onClick={() => !isAvg || onToggleScoringMode()}>
+            🧮 Tổng điểm dồn
+          </button>
+        </div>
+      )}
       <section className="race-hero panel">
-        <div className="race-copy"><span>CHẶNG ĐUA TUẦN {week.number}</span><h2>Tổ {teams[0].team} đang dẫn đầu</h2><p>{formatShortDate(week.startDate)}–{formatShortDate(week.endDate)} · {daysRemaining > 0 ? `Còn ${daysRemaining} ngày để cùng nhau bứt phá!` : 'Tuần đã đến ngày chốt kết quả.'}</p></div>
+        <div className="race-copy">
+          <span>CHẶNG ĐUA TUẦN {week.number} ({isAvg ? 'XẾP HẠNG THEO ĐTB / HS' : 'XẾP HẠNG THEO TỔNG ĐIỂM'})</span>
+          <h2>Tổ {teams[0].team} đang dẫn đầu</h2>
+          <p>{formatShortDate(week.startDate)}–{formatShortDate(week.endDate)} · {daysRemaining > 0 ? `Còn ${daysRemaining} ngày để cùng nhau bứt phá!` : 'Tuần đã đến ngày chốt kết quả.'}</p>
+        </div>
         <div className="race-podium">
-          {teams.slice(0, 3).map((team, index) => <div key={team.team} className={`podium-mini place-${index + 1}`}><span>{index === 0 ? '👑' : `#${index + 1}`}</span><strong>Tổ {team.team}</strong><b>{team.weekly}</b><small>điểm tuần</small></div>)}
+          {teams.slice(0, 3).map((team, index) => (
+            <div key={team.team} className={`podium-mini place-${index + 1}`}>
+              <span>{index === 0 ? '👑' : `#${index + 1}`}</span>
+              <strong>Tổ {team.team}</strong>
+              <b>{isAvg ? `${team.weeklyAvg}đ` : team.weekly}</b>
+              <small>{isAvg ? 'đ/HS' : 'điểm tuần'}</small>
+            </div>
+          ))}
         </div>
       </section>
       <div className="team-card-grid">
-        {teams.map((team, index) => (
-          <section className={`panel team-detail team-detail-${team.team}`} key={team.team}>
-            <div className="team-detail-head"><div className={`team-big-icon team-${team.team}`}>{index === 0 ? '👑' : team.team}</div><div><span>HẠNG {index + 1}</span><h3>Tổ {team.team}</h3></div><div className="team-total"><strong>{team.weekly}</strong><span>điểm tuần</span></div></div>
-            <div className="team-progress"><div><span>Tiến độ chặng</span><b>{Math.round((team.weekly / leadingScore) * 100)}%</b></div><div className="progress-track"><i style={{ width: `${Math.max(0, (team.weekly / leadingScore) * 100)}%` }} /></div></div>
-            <div className="team-members">{students.filter((student) => student.team === team.team).map((student) => <div key={student.id}><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="tiny" /><span>{student.name.split(' ').slice(-2).join(' ')}</span><b>{student.weeklyScore > 0 ? '+' : ''}{student.weeklyScore}</b></div>)}</div>
-          </section>
-        ))}
+        {teams.map((team, index) => {
+          const scoreVal = isAvg ? team.weeklyAvg : team.weekly;
+          const pct = Math.round((scoreVal / leadingScore) * 100);
+          return (
+            <section className={`panel team-detail team-detail-${team.team}`} key={team.team}>
+              <div className="team-detail-head">
+                <div className={`team-big-icon team-${team.team}`}>{index === 0 ? '👑' : team.team}</div>
+                <div><span>HẠNG {index + 1} ({team.members} HS)</span><h3>Tổ {team.team}</h3></div>
+                <div className="team-total">
+                  <strong>{isAvg ? `${team.weeklyAvg} đ/HS` : team.weekly}</strong>
+                  <span>{isAvg ? `Tổng ${team.weekly}đ · ${team.members} HS` : 'điểm tuần'}</span>
+                </div>
+              </div>
+              <div className="team-progress">
+                <div><span>Tiến độ chặng</span><b>{pct}%</b></div>
+                <div className="progress-track"><i style={{ width: `${Math.max(0, pct)}%` }} /></div>
+              </div>
+              <div className="team-members">
+                {students.filter((student) => student.team === team.team).map((student) => (
+                  <div key={student.id}>
+                    <Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="tiny" />
+                    <span>{student.name.split(' ').slice(-2).join(' ')}</span>
+                    <b>{student.weeklyScore > 0 ? '+' : ''}{student.weeklyScore}</b>
+                  </div>
+                ))}
+              </div>
+            </section>
+          );
+        })}
       </div>
     </>
   );
