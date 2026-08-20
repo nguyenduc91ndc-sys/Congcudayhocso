@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { ArrowLeft, CheckCircle2, Facebook, Heart, Laptop, Loader2, LogIn, MessageCircle, RefreshCw, ShieldCheck, Sparkles, Smartphone } from 'lucide-react';
+import { ArrowLeft, CheckCircle2, Facebook, FileText, Heart, Laptop, Loader2, LogIn, MessageCircle, RefreshCw, ShieldCheck, Sparkles, Smartphone } from 'lucide-react';
 import QRCode from 'qrcode';
 import type { User as PlatformUser } from '../../types';
 import {
@@ -13,7 +13,7 @@ import {
 } from './firebase';
 
 const ZALO_GROUP_URL = 'https://zalo.me/g/uafjqjcpskahgt6xa9gh';
-const ZALO_ADMIN_URL = 'https://zalo.me/0975509490';
+const FORM_REGISTER_URL = 'https://forms.gle/36iBVB7hzURmxsAN8';
 const FACEBOOK_URL = 'https://www.facebook.com/duc.the3?locale=vi_VN';
 
 type GateStatus = 'checking' | 'allowed' | 'auth-required' | 'denied' | 'revoked' | 'device-limit' | 'account-mismatch' | 'error';
@@ -121,7 +121,7 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
     : status === 'revoked'
       ? 'Tài khoản đã được thu hồi quyền. Thầy/cô vui lòng liên hệ Admin để được mở lại miễn phí.'
       : status === 'denied'
-        ? 'Để truy cập app, thầy/cô cần được cấp quyền. Hãy tham gia nhóm Zalo hoặc liên hệ Zalo Admin 0975 509 490 để được cấp hoàn toàn miễn phí.'
+        ? 'Để truy cập app, thầy/cô cần được cấp quyền. Thầy/cô vui lòng đăng ký cấp quyền miễn phí qua Form hoặc tham gia nhóm Zalo để được hỗ trợ.'
         : status === 'account-mismatch'
           ? `GIAOVIENCN đang dùng ${email}, nhưng Firebase đang xác minh ${decision?.status === 'account-mismatch' ? decision.firebaseEmail : 'một email khác'}.`
           : status === 'auth-required'
@@ -219,8 +219,8 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
                     <a href={ZALO_GROUP_URL} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border-[3px] border-[#7be4ff] bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3 text-center text-sm font-black text-white shadow-[0_6px_0_#1854ad,0_10px_18px_rgba(24,84,173,.2)] transition hover:-translate-y-0.5">
                       <Smartphone size={19} /> Vào nhóm Zalo
                     </a>
-                    <a href={ZALO_ADMIN_URL} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border-[3px] border-[#e4b5ef] bg-white px-4 py-3 text-center text-sm font-black text-purple-800 shadow-[0_5px_0_#9a51ae] transition hover:-translate-y-0.5 hover:bg-purple-50">
-                      <MessageCircle size={18} /> Zalo 0975 509 490
+                    <a href={FORM_REGISTER_URL} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border-[3px] border-[#ffe06c] bg-gradient-to-r from-amber-400 to-orange-400 px-4 py-3 text-center text-sm font-black text-purple-950 shadow-[0_5px_0_#c86e00] transition hover:-translate-y-0.5 hover:brightness-105">
+                      <FileText size={18} /> Thầy cô đăng ký cấp quyền miễn phí tại đây
                     </a>
                   </div>
                 </div>
@@ -240,3 +240,4 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
     </div>
   );
 }
+
