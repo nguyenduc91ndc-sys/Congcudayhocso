@@ -79,4 +79,11 @@ export type Reward = {
   stock: number | null;
 };
 
+export type AttendanceRecord = {
+  date: string;
+  weekId: string;
+  records: Record<number, AttendanceStatus>;
+  completedAt?: string;
+};
 
+export type AttendanceHistory = AttendanceRecord[];

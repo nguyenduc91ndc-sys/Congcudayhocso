@@ -60,7 +60,7 @@ import {
   Zap,
 } from 'lucide-react';
 import { initialActivities, initialStudents, pointReasons as initialPointReasons, rewards as initialRewards } from './data';
-import type { Activity, AttendanceStatus, PointReason, Reward, Student, WeekArchive, WeekPeriod, WeekState } from './types';
+import type { Activity, AttendanceRecord, AttendanceStatus, PointReason, Reward, Student, WeekArchive, WeekPeriod, WeekState } from './types';
 import { downloadStudentTemplate, parseStudentWorkbook } from './excel';
 import type { ExcelImportResult } from './excel';
 import parentFeedbackAppsScriptCode from './google-apps-script-parent-feedback.gs?raw';
@@ -131,6 +131,7 @@ type ClassBackup = {
   parentPortal?: ParentPortalSettings;
   weekState?: WeekState;
   weeklyScoring?: WeeklyScoringSettings;
+  attendanceHistory?: AttendanceRecord[];
 };
 
 const DEFAULT_TEAM_COUNT = 4;
@@ -335,7 +336,6 @@ function parseClassBackup(content: string): ClassBackup {
     throw new Error('Danh sách học sinh hoặc hoạt động trong bản sao không hợp lệ.');
   }
 
-  const attendanceValues: AttendanceStatus[] = ['present', 'late', 'excused', 'absent'];
   const studentsValid = value.students.every((item) => isRecord(item)
     && isNumber(item.id) && isText(item.name) && Boolean(item.name.trim())
     && isText(item.initials) && isText(item.birthday)
@@ -393,6 +393,21 @@ function parseClassBackup(content: string): ClassBackup {
 
   if (value.weeklyScoring !== undefined && !isWeeklyScoringSettings(value.weeklyScoring)) {
     throw new Error('Cấu hình mốc điểm tuần trong bản sao không hợp lệ.');
+  }
+
+  if (value.attendanceHistory !== undefined) {
+    if (!Array.isArray(value.attendanceHistory) || value.attendanceHistory.length > 400) {
+      throw new Error('Lịch sử điểm danh trong bản sao không hợp lệ.');
+    }
+    const attendanceValid = value.attendanceHistory.every((item: unknown) => isRecord(item)
+      && isText(item.date) && /^\d{4}-\d{2}-\d{2}$/.test(item.date)
+      && isText(item.weekId)
+      && isRecord(item.records)
+      && Object.values(item.records).every((status) => attendanceValues.includes(status as AttendanceStatus))
+      && (item.completedAt === undefined || isText(item.completedAt)));
+    if (!attendanceValid) {
+      throw new Error('Lịch sử điểm danh trong bản sao không hợp lệ.');
+    }
   }
 
   return value as ClassBackup;
@@ -610,6 +625,30 @@ function readWeeklyScoringSettings(): WeeklyScoringSettings {
   }
 }
 
+const attendanceValues: AttendanceStatus[] = ['present', 'late', 'excused', 'absent'];
+
+function isAttendanceRecord(value: unknown): value is AttendanceRecord {
+  if (!isRecord(value)) return false;
+  return isText(value.date) && /^\d{4}-\d{2}-\d{2}$/.test(value.date)
+    && isText(value.weekId)
+    && isRecord(value.records)
+    && Object.values(value.records).every((s) => attendanceValues.includes(s as AttendanceStatus))
+    && (value.completedAt === undefined || isText(value.completedAt));
+}
+
+function readStoredAttendanceHistory(): AttendanceRecord[] {
+  try {
+    const stored = localStorage.getItem('happy-class-attendance-history');
+    if (!stored) return [];
+    const value: unknown = JSON.parse(stored);
+    if (!Array.isArray(value) || value.length > 400) return [];
+    const valid = value.filter(isAttendanceRecord);
+    return valid.sort((a, b) => b.date.localeCompare(a.date));
+  } catch {
+    return [];
+  }
+}
+
 function getTeacherInitials(name: string) {
   const words = name.replace(/^(cô|thầy)\s+/i, '').trim().split(/\s+/).filter(Boolean);
   return (words.length > 1 ? `${words[words.length - 2][0]}${words[words.length - 1][0]}` : words[0]?.slice(0, 2) || 'GV').toUpperCase();
@@ -686,6 +725,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [classProfile, setClassProfile] = useState<ClassProfile>(readClassProfile);
   const [parentPortal, setParentPortal] = useState<ParentPortalSettings>(readParentPortalSettings);
   const [weeklyScoring, setWeeklyScoring] = useState<WeeklyScoringSettings>(readWeeklyScoringSettings);
+  const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>(readStoredAttendanceHistory);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [classSettingsOpen, setClassSettingsOpen] = useState(false);
   const [teacherAccessOpen, setTeacherAccessOpen] = useState(false);
@@ -789,6 +829,22 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   useEffect(() => {
     localStorage.setItem('happy-class-weekly-scoring', JSON.stringify(weeklyScoring));
   }, [weeklyScoring]);
+
+  useEffect(() => {
+    localStorage.setItem('happy-class-attendance-history', JSON.stringify(attendanceHistory));
+  }, [attendanceHistory]);
+
+  // Sync student.attendance from today's attendance record on mount
+  useEffect(() => {
+    const todayKey = toLocalDateInput(new Date());
+    const todayRecord = attendanceHistory.find((r) => r.date === todayKey);
+    if (!todayRecord) return;
+    setStudents((current) => current.map((student) => {
+      const recorded = todayRecord.records[student.id];
+      return recorded && recorded !== student.attendance ? { ...student, attendance: recorded } : student;
+    }));
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   useEffect(() => {
     if (!toast) return;
@@ -968,6 +1024,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setStudents([]);
     setActivities([]);
     setWeekState((current) => ({ ...current, history: [] }));
+    setAttendanceHistory([]);
     setProfileId(null);
     setToast('Đã xóa danh sách hiện tại. Bây giờ có thể nhập danh sách lớp thật từ Excel.');
   };
@@ -983,6 +1040,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setPointReasons(initialPointReasons);
     setRewardCatalog(initialRewards);
     setWeeklyScoring(createWeeklyScoringSettings());
+    setAttendanceHistory([]);
     setToast('Đã khôi phục dữ liệu mẫu');
   };
 
@@ -1032,6 +1090,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       setRewardCatalog(backup.rewards ?? initialRewards);
       setParentPortal(backup.parentPortal ?? createParentPortalSettings());
       setWeeklyScoring(backup.weeklyScoring ?? createWeeklyScoringSettings());
+      setAttendanceHistory(backup.attendanceHistory ?? []);
       setTeacherName(backup.teacher.name.trim());
       setTeacherPhoto(backup.teacher.photo);
       setClassProfile(normalizedProfile);
@@ -1079,9 +1138,65 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setToast(`${points > 0 ? 'Đã cộng' : 'Đã trừ'} ${Math.abs(points)} điểm cho ${studentIds.length} học sinh`);
   };
 
-  const updateAttendance = (studentId: number, status: AttendanceStatus) => {
-    setStudents((current) =>
-      current.map((student) => (student.id === studentId ? { ...student, attendance: status } : student)),
+  const updateAttendance = (studentId: number, status: AttendanceStatus, date?: string) => {
+    const targetDate = date ?? toLocalDateInput(new Date());
+    const isToday = targetDate === toLocalDateInput(new Date());
+
+    if (isToday) {
+      setStudents((current) =>
+        current.map((student) => (student.id === studentId ? { ...student, attendance: status } : student)),
+      );
+    }
+
+    setAttendanceHistory((current) => {
+      const existing = current.find((r) => r.date === targetDate);
+      if (existing) {
+        return current.map((r) => r.date === targetDate
+          ? { ...r, records: { ...r.records, [studentId]: status } }
+          : r,
+        );
+      }
+      const newRecord: AttendanceRecord = {
+        date: targetDate,
+        weekId: weekState.current.id,
+        records: Object.fromEntries(
+          students.map((s) => [s.id, s.id === studentId ? status : 'present']),
+        ),
+      };
+      return [newRecord, ...current].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 300);
+    });
+  };
+
+  const updateAttendanceBulk = (statuses: Record<number, AttendanceStatus>, date: string) => {
+    const isToday = date === toLocalDateInput(new Date());
+    if (isToday) {
+      setStudents((current) =>
+        current.map((student) => {
+          const recorded = statuses[student.id];
+          return recorded ? { ...student, attendance: recorded } : student;
+        }),
+      );
+    }
+    setAttendanceHistory((current) => {
+      const existing = current.find((r) => r.date === date);
+      if (existing) {
+        return current.map((r) => r.date === date
+          ? { ...r, records: { ...r.records, ...statuses } }
+          : r,
+        );
+      }
+      const newRecord: AttendanceRecord = {
+        date,
+        weekId: weekState.current.id,
+        records: { ...Object.fromEntries(students.map((s) => [s.id, 'present' as AttendanceStatus])), ...statuses },
+      };
+      return [newRecord, ...current].sort((a, b) => b.date.localeCompare(a.date)).slice(0, 300);
+    });
+  };
+
+  const markAttendanceComplete = (date: string) => {
+    setAttendanceHistory((current) =>
+      current.map((r) => r.date === date ? { ...r, completedAt: new Date().toISOString() } : r),
     );
   };
 
@@ -1340,11 +1455,11 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} />}
           {page === 'attendance' && (
-            <AttendancePage students={students} classCode={classProfile.code} onUpdate={updateAttendance} onToast={setToast} />
+            <AttendancePage students={students} classCode={classProfile.code} attendanceHistory={attendanceHistory} weekState={weekState} weeklyScoring={weeklyScoring} onUpdate={updateAttendance} onUpdateBulk={updateAttendanceBulk} onComplete={markAttendanceComplete} onToast={setToast} />
           )}
           {page === 'honors' && <HonorsPage students={students} week={weekState.current} scoring={weeklyScoring} />}
           {page === 'parents' && <ParentsPage students={students} activities={activities} classCode={classProfile.code} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} portal={parentPortal} publishing={cloudPublishing} onPublish={publishParentPortal} onTogglePortal={() => void toggleParentPortal()} onToggleRequireAccessCode={toggleParentAccessMode} onRegenerateCode={regenerateParentCode} onToggleAccess={toggleParentAccess} onSaveFeedbackConfig={saveParentFeedbackConfig} onToast={setToast} />}
-          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
+          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
         </div>
       </main>
 
@@ -1540,7 +1655,7 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
   );
 }
 
-function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
+function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [backupImporting, setBackupImporting] = useState(false);
@@ -1552,7 +1667,7 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
     parentName: '', parentPhone: '', strengths: [],
   });
   const exportData = () => {
-    const content = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), teacher: { name: teacherName, photo: teacherPhoto }, classProfile, students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring }, null, 2);
+    const content = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), teacher: { name: teacherName, photo: teacherPhoto }, classProfile, students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory }, null, 2);
     const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
@@ -2825,26 +2940,248 @@ function RandomPage({ students, teamCount }: { students: Student[]; teamCount: n
   );
 }
 
-function AttendancePage({ students, classCode, onUpdate, onToast }: { students: Student[]; classCode: string; onUpdate: (id: number, status: AttendanceStatus) => void; onToast: (message: string) => void }) {
-  const summary = (status: AttendanceStatus) => students.filter((student) => student.attendance === status).length;
+function AttendancePage({ students, classCode, attendanceHistory, weekState, weeklyScoring, onUpdate, onUpdateBulk, onComplete, onToast }: { students: Student[]; classCode: string; attendanceHistory: AttendanceRecord[]; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; onUpdate: (id: number, status: AttendanceStatus, date?: string) => void; onUpdateBulk: (statuses: Record<number, AttendanceStatus>, date: string) => void; onComplete: (date: string) => void; onToast: (message: string) => void }) {
+  const todayKey = toLocalDateInput(new Date());
+  const [selectedDate, setSelectedDate] = useState(todayKey);
+  const [viewWeekStart, setViewWeekStart] = useState(() => {
+    const d = new Date();
+    const day = d.getDay() || 7;
+    d.setDate(d.getDate() - day + 1);
+    return toLocalDateInput(d);
+  });
+  const [statsTab, setStatsTab] = useState<'week' | 'month'>('week');
+  const isToday = selectedDate === todayKey;
+
+  const studyDays = weekState.current.studyDays === 6 ? 6 : 5;
+  const weekDates = Array.from({ length: studyDays }, (_, i) => addDays(viewWeekStart, i));
+  const weekDayLabels = ['CN', 'T2', 'T3', 'T4', 'T5', 'T6', 'T7'];
+
+  const todayRecord = attendanceHistory.find((r) => r.date === selectedDate);
+  const getStudentStatus = (studentId: number): AttendanceStatus => {
+    if (todayRecord) return todayRecord.records[studentId] ?? 'present';
+    if (isToday) return students.find((s) => s.id === studentId)?.attendance ?? 'present';
+    return 'present';
+  };
+
+  const countStatus = (status: AttendanceStatus) => students.filter((s) => getStudentStatus(s.id) === status).length;
+
+  const selectedDateDisplay = (() => {
+    const d = dateFromInput(selectedDate);
+    return new Intl.DateTimeFormat('vi-VN', { weekday: 'long', day: '2-digit', month: '2-digit', year: 'numeric' }).format(d);
+  })();
+
+  const handleSetAllPresent = () => {
+    const statuses = Object.fromEntries(students.map((s) => [s.id, 'present' as AttendanceStatus]));
+    onUpdateBulk(statuses, selectedDate);
+    onToast(`Đã đánh dấu cả lớp có mặt ngày ${formatShortDate(selectedDate)}`);
+  };
+
+  const handleStartDay = () => {
+    const statuses = Object.fromEntries(students.map((s) => [s.id, 'present' as AttendanceStatus]));
+    onUpdateBulk(statuses, selectedDate);
+    onToast(`Đã bắt đầu điểm danh ngày ${formatShortDate(selectedDate)}`);
+  };
+
+  const handleComplete = () => {
+    onComplete(selectedDate);
+    onToast(isToday ? 'Đã hoàn tất điểm danh hôm nay' : `Đã hoàn tất điểm danh ngày ${formatShortDate(selectedDate)}`);
+  };
+
+  // Stats calculations
+  const currentMonth = selectedDate.slice(0, 7);
+  const monthRecords = attendanceHistory.filter((r) => r.date.startsWith(currentMonth));
+
+  const getStudentMonthStats = (studentId: number) => {
+    let present = 0, late = 0, excused = 0, absent = 0;
+    for (const record of monthRecords) {
+      const status = record.records[studentId];
+      if (status === 'present') present++;
+      else if (status === 'late') late++;
+      else if (status === 'excused') excused++;
+      else if (status === 'absent') absent++;
+    }
+    return { present, late, excused, absent, total: present + late + excused + absent };
+  };
+
+  const classMonthRate = (() => {
+    if (!monthRecords.length || !students.length) return 0;
+    let total = 0, presentCount = 0;
+    for (const record of monthRecords) {
+      for (const student of students) {
+        total++;
+        const status = record.records[student.id];
+        if (status === 'present' || status === 'late') presentCount++;
+      }
+    }
+    return total > 0 ? Math.round((presentCount / total) * 100) : 0;
+  })();
+
+  const topPresent = [...students]
+    .map((s) => ({ ...s, stats: getStudentMonthStats(s.id) }))
+    .sort((a, b) => (b.stats.present + b.stats.late) - (a.stats.present + a.stats.late))
+    .slice(0, 3);
+
+  const topAbsent = [...students]
+    .map((s) => ({ ...s, stats: getStudentMonthStats(s.id) }))
+    .filter((s) => s.stats.absent + s.stats.excused > 0)
+    .sort((a, b) => (b.stats.absent + b.stats.excused) - (a.stats.absent + a.stats.excused))
+    .slice(0, 3);
+
   return (
     <>
-      <PageHeading eyebrow="CHUYÊN CẦN" title="Điểm danh nhanh, quan tâm kịp lúc" description={today.charAt(0).toUpperCase() + today.slice(1)} icon="📅" />
-      <section className="attendance-summary">
-        {(['present', 'late', 'excused', 'absent'] as AttendanceStatus[]).map((status) => <div className={`attendance-stat ${status}`} key={status}><span>{status === 'present' ? '✓' : status === 'late' ? '⏱' : status === 'excused' ? '✉' : '!'}</span><div><strong>{summary(status)}</strong><small>{attendanceLabels[status]}</small></div></div>)}
-      </section>
-      <section className="panel attendance-panel">
-        <div className="attendance-toolbar"><div><h3>Danh sách lớp {classCode}</h3><p>Chạm vào trạng thái để thay đổi</p></div><button className="button button-soft" onClick={() => students.forEach((student) => onUpdate(student.id, 'present'))}><Check size={17} /> Cả lớp có mặt</button></div>
-        <div className="attendance-list">
-          {students.map((student, index) => (
-            <div className="attendance-row" key={student.id}>
-              <span className="student-number">{String(index + 1).padStart(2, '0')}</span><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" /><div className="attendance-name"><strong>{student.name}</strong><span>Tổ {student.team} · {student.role}</span></div>
-              <div className="attendance-options">{(['present', 'late', 'excused', 'absent'] as AttendanceStatus[]).map((status) => <button key={status} className={student.attendance === status ? `active ${status}` : ''} onClick={() => onUpdate(student.id, status)}><i />{attendanceLabels[status]}</button>)}</div>
-            </div>
-          ))}
+      <PageHeading eyebrow="CHUYÊN CẦN" title="Điểm danh nhanh, quan tâm kịp lúc" description={selectedDateDisplay.charAt(0).toUpperCase() + selectedDateDisplay.slice(1)} icon="📅" />
+
+      {/* Date Picker Bar */}
+      <section className="attendance-date-bar">
+        <button className="attendance-date-nav" onClick={() => setViewWeekStart(addDays(viewWeekStart, -7))} aria-label="Tuần trước"><ChevronDown size={18} style={{ transform: 'rotate(90deg)' }} /></button>
+        <div className="attendance-date-list">
+          {weekDates.map((date) => {
+            const dayOfWeek = dateFromInput(date).getDay();
+            const label = weekDayLabels[dayOfWeek];
+            const record = attendanceHistory.find((r) => r.date === date);
+            const isSelected = date === selectedDate;
+            const isTodayDate = date === todayKey;
+            const isFuture = date > todayKey;
+            return (
+              <button
+                key={date}
+                className={`attendance-date-item${isSelected ? ' selected' : ''}${isTodayDate ? ' today' : ''}${isFuture ? ' future' : ''}`}
+                onClick={() => !isFuture && setSelectedDate(date)}
+                disabled={isFuture}
+              >
+                <span className="attendance-date-weekday">{label}</span>
+                <span className="attendance-date-day">{formatShortDate(date)}</span>
+                {record && <span className={`attendance-date-dot${record.completedAt ? ' completed' : ''}`}>{record.completedAt ? '✓' : '•'}</span>}
+                {isTodayDate && <span className="attendance-date-today-badge">Hôm nay</span>}
+              </button>
+            );
+          })}
         </div>
-        <div className="attendance-save"><span><ShieldCheck size={18} /> Dữ liệu được tự động lưu trên thiết bị</span><button className="button button-primary" onClick={() => onToast('Đã hoàn tất điểm danh hôm nay')}>Hoàn tất điểm danh <Check size={17} /></button></div>
+        <button className="attendance-date-nav" onClick={() => setViewWeekStart(addDays(viewWeekStart, 7))} aria-label="Tuần sau"><ChevronDown size={18} style={{ transform: 'rotate(-90deg)' }} /></button>
       </section>
+
+      {/* Viewing banner */}
+      {!isToday && (
+        <div className="attendance-viewing-banner">
+          <CalendarCheck2 size={17} />
+          <span>Đang xem điểm danh ngày <strong>{selectedDateDisplay}</strong></span>
+          <button onClick={() => setSelectedDate(todayKey)}>Về hôm nay</button>
+        </div>
+      )}
+
+      {/* Summary for selected date */}
+      <section className="attendance-summary">
+        {(['present', 'late', 'excused', 'absent'] as AttendanceStatus[]).map((status) => <div className={`attendance-stat ${status}`} key={status}><span>{status === 'present' ? '✓' : status === 'late' ? '⏱' : status === 'excused' ? '✉' : '!'}</span><div><strong>{countStatus(status)}</strong><small>{attendanceLabels[status]}</small></div></div>)}
+      </section>
+
+      {/* Attendance list or empty state */}
+      {!todayRecord && !isToday ? (
+        <section className="panel attendance-empty-day">
+          <CalendarCheck2 size={36} />
+          <strong>Chưa có dữ liệu điểm danh</strong>
+          <p>Ngày {selectedDateDisplay} chưa được điểm danh.</p>
+          <button className="button button-primary" onClick={handleStartDay}><Plus size={17} /> Bắt đầu điểm danh ngày này</button>
+        </section>
+      ) : (
+        <section className="panel attendance-panel">
+          <div className="attendance-toolbar"><div><h3>Danh sách lớp {classCode}</h3><p>Chạm vào trạng thái để thay đổi</p></div><button className="button button-soft" onClick={handleSetAllPresent}><Check size={17} /> Cả lớp có mặt</button></div>
+          <div className="attendance-list">
+            {students.map((student, index) => {
+              const currentStatus = getStudentStatus(student.id);
+              return (
+                <div className="attendance-row" key={student.id}>
+                  <span className="student-number">{String(index + 1).padStart(2, '0')}</span><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" /><div className="attendance-name"><strong>{student.name}</strong><span>Tổ {student.team} · {student.role}</span></div>
+                  <div className="attendance-options">{(['present', 'late', 'excused', 'absent'] as AttendanceStatus[]).map((status) => <button key={status} className={currentStatus === status ? `active ${status}` : ''} onClick={() => onUpdate(student.id, status, selectedDate)}><i />{attendanceLabels[status]}</button>)}</div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="attendance-save"><span><ShieldCheck size={18} /> Dữ liệu được tự động lưu trên thiết bị</span><button className="button button-primary" onClick={handleComplete}>Hoàn tất điểm danh <Check size={17} /></button></div>
+        </section>
+      )}
+
+      {/* Statistics section */}
+      {attendanceHistory.length > 0 && (
+        <section className="panel attendance-stats-section">
+          <div className="attendance-stats-header">
+            <div><span>THỐNG KÊ CHUYÊN CẦN</span><h3>Báo cáo theo {statsTab === 'week' ? 'tuần' : 'tháng'}</h3></div>
+            <div className="attendance-stats-tabs">
+              <button className={statsTab === 'week' ? 'active' : ''} onClick={() => setStatsTab('week')}>Tuần</button>
+              <button className={statsTab === 'month' ? 'active' : ''} onClick={() => setStatsTab('month')}>Tháng</button>
+            </div>
+          </div>
+
+          {statsTab === 'week' ? (
+            <div className="attendance-weekly-grid">
+              <div className="attendance-weekly-header">
+                <div className="attendance-weekly-cell name-cell">Học sinh</div>
+                {weekDates.filter((d) => d <= todayKey).map((date) => {
+                  const dayOfWeek = dateFromInput(date).getDay();
+                  return <div className="attendance-weekly-cell day-cell" key={date}>{weekDayLabels[dayOfWeek]}<small>{formatShortDate(date)}</small></div>;
+                })}
+                <div className="attendance-weekly-cell total-cell">Có mặt</div>
+              </div>
+              {students.map((student) => {
+                const daysInView = weekDates.filter((d) => d <= todayKey);
+                let presentDays = 0;
+                return (
+                  <div className="attendance-weekly-row" key={student.id}>
+                    <div className="attendance-weekly-cell name-cell"><strong>{student.name}</strong></div>
+                    {daysInView.map((date) => {
+                      const record = attendanceHistory.find((r) => r.date === date);
+                      const status = record?.records[student.id] ?? (date === todayKey ? student.attendance : undefined);
+                      if (status === 'present' || status === 'late') presentDays++;
+                      const icon = status === 'present' ? '✓' : status === 'late' ? '⏱' : status === 'excused' ? '✉' : status === 'absent' ? '✗' : '—';
+                      return <div className={`attendance-weekly-cell day-cell ${status ?? 'none'}`} key={date}>{icon}</div>;
+                    })}
+                    <div className="attendance-weekly-cell total-cell"><strong>{presentDays}/{daysInView.length}</strong></div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="attendance-monthly-summary">
+              <div className="attendance-monthly-rate">
+                <div className="attendance-monthly-rate-circle">
+                  <strong>{classMonthRate}%</strong>
+                  <small>chuyên cần</small>
+                </div>
+                <div>
+                  <h4>Tỷ lệ chuyên cần cả lớp</h4>
+                  <p>{formatMonthKey(currentMonth)} · {monthRecords.length} ngày đã điểm danh</p>
+                  <div className="attendance-bar"><div className="attendance-bar-fill" style={{ width: `${classMonthRate}%` }} /></div>
+                </div>
+              </div>
+
+              {topPresent.length > 0 && (
+                <div className="attendance-monthly-top">
+                  <h4>🌟 Chuyên cần tốt nhất</h4>
+                  {topPresent.map((s, i) => (
+                    <div className="attendance-monthly-row" key={s.id}>
+                      <span className="attendance-monthly-rank">{i + 1}</span>
+                      <Avatar initials={s.initials} gradient={s.gradient} photo={s.photo} size="small" />
+                      <div><strong>{s.name}</strong><small>Có mặt {s.stats.present + s.stats.late}/{s.stats.total} ngày</small></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+
+              {topAbsent.length > 0 && (
+                <div className="attendance-monthly-top attention">
+                  <h4>⚠️ Cần quan tâm</h4>
+                  {topAbsent.map((s, i) => (
+                    <div className="attendance-monthly-row" key={s.id}>
+                      <span className="attendance-monthly-rank">{i + 1}</span>
+                      <Avatar initials={s.initials} gradient={s.gradient} photo={s.photo} size="small" />
+                      <div><strong>{s.name}</strong><small>Nghỉ {s.stats.absent + s.stats.excused}/{s.stats.total} ngày</small></div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </section>
+      )}
     </>
   );
 }
