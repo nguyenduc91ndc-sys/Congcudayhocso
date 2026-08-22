@@ -35,6 +35,15 @@ const noiseStates = [
   { max: 100, label: 'Quá ồn', hint: 'Hạ âm lượng nhé', emoji: '🔔', tone: 'loud' },
 ];
 
+const classroomSounds = {
+  countdown: '/sounds/classroom-tools/countdown-tick.mp3',
+  finish: '/sounds/classroom-tools/timer-finish.mp3',
+  warning: '/sounds/classroom-tools/noise-warning.mp3',
+  start: '/sounds/classroom-tools/timer-start.mp3',
+};
+
+type AudioHandle = { current: HTMLAudioElement | null };
+
 let toolAudioContext: AudioContext | null = null;
 
 function getToolAudioContext() {
@@ -69,6 +78,26 @@ function playFinishChime() {
   playTone(1046.5, 0.34, 0.06, 0.36);
 }
 
+function playSoundFile(handle: AudioHandle, source: string, volume: number, startAt = 0, fallback?: () => void) {
+  try {
+    const audio = handle.current ?? new Audio(source);
+    handle.current = audio;
+    audio.preload = 'auto';
+    audio.pause();
+    audio.currentTime = Math.max(0, startAt);
+    audio.volume = Math.max(0, Math.min(1, volume / 100));
+    void audio.play().catch(() => fallback?.());
+  } catch {
+    fallback?.();
+  }
+}
+
+function stopSoundFile(handle: AudioHandle) {
+  if (!handle.current) return;
+  handle.current.pause();
+  handle.current.currentTime = 0;
+}
+
 function formatTime(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const minutes = Math.floor(safeSeconds / 60);
@@ -86,10 +115,15 @@ export default function ClassroomToolsPage() {
   const [timerCompleted, setTimerCompleted] = useState(false);
   const [finishSound, setFinishSound] = useState(true);
   const [lastTenSound, setLastTenSound] = useState(true);
+  const [timerVolume, setTimerVolume] = useState(72);
   const [isPresentation, setIsPresentation] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [noiseLevel, setNoiseLevel] = useState(0);
   const [sensitivity, setSensitivity] = useState(55);
+  const [noiseAlertEnabled, setNoiseAlertEnabled] = useState(true);
+  const [noiseAlertThreshold, setNoiseAlertThreshold] = useState(80);
+  const [noiseAlertCooldown, setNoiseAlertCooldown] = useState(10);
+  const [noiseAlertVolume, setNoiseAlertVolume] = useState(68);
   const [microphoneError, setMicrophoneError] = useState('');
 
   const stageRef = useRef<HTMLElement | null>(null);
@@ -98,6 +132,10 @@ export default function ClassroomToolsPage() {
   const stopwatchBaseRef = useRef(0);
   const lastTickRef = useRef<number | null>(null);
   const finishPlayedRef = useRef(false);
+  const countdownAudioRef = useRef<HTMLAudioElement | null>(null);
+  const finishAudioRef = useRef<HTMLAudioElement | null>(null);
+  const startAudioRef = useRef<HTMLAudioElement | null>(null);
+  const noiseWarningAudioRef = useRef<HTMLAudioElement | null>(null);
   const microphoneStreamRef = useRef<MediaStream | null>(null);
   const microphoneContextRef = useRef<AudioContext | null>(null);
   const analyserRef = useRef<AnalyserNode | null>(null);
@@ -105,6 +143,9 @@ export default function ClassroomToolsPage() {
   const smoothedNoiseRef = useRef(0);
   const lastNoisePaintRef = useRef(0);
   const sensitivityRef = useRef(sensitivity);
+  const noiseAlertSettingsRef = useRef({ enabled: noiseAlertEnabled, threshold: noiseAlertThreshold, cooldown: noiseAlertCooldown, volume: noiseAlertVolume });
+  const noiseAboveThresholdSinceRef = useRef<number | null>(null);
+  const lastNoiseAlertAtRef = useRef(Number.NEGATIVE_INFINITY);
 
   const displayedSeconds = timerMode === 'countdown' ? remaining : elapsed;
   const timerMinutes = Math.floor(duration / 60);
@@ -127,18 +168,19 @@ export default function ClassroomToolsPage() {
         const nextRemaining = Math.max(0, Math.ceil((countdownEndRef.current - Date.now()) / 1000));
         setRemaining(nextRemaining);
 
-        if (nextRemaining > 0 && nextRemaining <= 10 && nextRemaining !== lastTickRef.current) {
+        if (nextRemaining > 0 && nextRemaining <= 10 && lastTickRef.current === null) {
           lastTickRef.current = nextRemaining;
-          if (lastTenSound) playTone(880, 0.075, 0.035);
+          if (lastTenSound) playSoundFile(countdownAudioRef, classroomSounds.countdown, timerVolume, Math.max(0, 10 - nextRemaining), () => playTone(880, 0.075, 0.035));
         }
 
         if (nextRemaining === 0) {
           setTimerRunning(false);
           setTimerCompleted(true);
+          stopSoundFile(countdownAudioRef);
           lastTickRef.current = null;
           if (!finishPlayedRef.current) {
             finishPlayedRef.current = true;
-            if (finishSound) playFinishChime();
+            if (finishSound) playSoundFile(finishAudioRef, classroomSounds.finish, timerVolume, 0, playFinishChime);
           }
         }
       } else {
@@ -150,7 +192,7 @@ export default function ClassroomToolsPage() {
     updateTimer();
     const interval = window.setInterval(updateTimer, 150);
     return () => window.clearInterval(interval);
-  }, [finishSound, lastTenSound, timerMode, timerRunning]);
+  }, [finishSound, lastTenSound, timerMode, timerRunning, timerVolume]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -171,6 +213,31 @@ export default function ClassroomToolsPage() {
     sensitivityRef.current = sensitivity;
   }, [sensitivity]);
 
+  useEffect(() => {
+    if (!lastTenSound) stopSoundFile(countdownAudioRef);
+    if (countdownAudioRef.current) countdownAudioRef.current.volume = timerVolume / 100;
+    if (finishAudioRef.current) finishAudioRef.current.volume = timerVolume / 100;
+  }, [lastTenSound, timerVolume]);
+
+  useEffect(() => {
+    noiseAlertSettingsRef.current = { enabled: noiseAlertEnabled, threshold: noiseAlertThreshold, cooldown: noiseAlertCooldown, volume: noiseAlertVolume };
+    if (!noiseAlertEnabled) stopSoundFile(noiseWarningAudioRef);
+  }, [noiseAlertCooldown, noiseAlertEnabled, noiseAlertThreshold, noiseAlertVolume]);
+
+  useEffect(() => {
+    const soundEntries: [AudioHandle, string][] = [
+      [countdownAudioRef, classroomSounds.countdown],
+      [finishAudioRef, classroomSounds.finish],
+      [startAudioRef, classroomSounds.start],
+      [noiseWarningAudioRef, classroomSounds.warning],
+    ];
+    soundEntries.forEach(([handle, source]) => {
+      handle.current = new Audio(source);
+      handle.current.preload = 'auto';
+      handle.current.load();
+    });
+  }, []);
+
   const releaseMicrophone = () => {
     if (animationFrameRef.current !== null) cancelAnimationFrame(animationFrameRef.current);
     animationFrameRef.current = null;
@@ -184,13 +251,22 @@ export default function ClassroomToolsPage() {
     microphoneContextRef.current = null;
   };
 
-  useEffect(() => () => releaseMicrophone(), []);
+  useEffect(() => () => {
+    releaseMicrophone();
+    stopSoundFile(countdownAudioRef);
+    stopSoundFile(finishAudioRef);
+    stopSoundFile(startAudioRef);
+    stopSoundFile(noiseWarningAudioRef);
+  }, []);
 
   const stopListening = () => {
     releaseMicrophone();
     setIsListening(false);
     setNoiseLevel(0);
     smoothedNoiseRef.current = 0;
+    noiseAboveThresholdSinceRef.current = null;
+    lastNoiseAlertAtRef.current = Number.NEGATIVE_INFINITY;
+    stopSoundFile(noiseWarningAudioRef);
   };
 
   const startListening = async () => {
@@ -229,8 +305,25 @@ export default function ClassroomToolsPage() {
         const decibels = 20 * Math.log10(Math.max(rms, 0.00001));
         const mappedLevel = Math.max(0, Math.min(100, ((decibels + 60) / 45) * 100 + (sensitivityRef.current - 55) * 0.8));
         smoothedNoiseRef.current = smoothedNoiseRef.current * 0.72 + mappedLevel * 0.28;
+        const measuredLevel = Math.round(smoothedNoiseRef.current);
+        const alertSettings = noiseAlertSettingsRef.current;
+        if (alertSettings.enabled && measuredLevel >= alertSettings.threshold) {
+          noiseAboveThresholdSinceRef.current ??= time;
+          const loudLongEnough = time - noiseAboveThresholdSinceRef.current >= 1200;
+          const cooldownComplete = time - lastNoiseAlertAtRef.current >= alertSettings.cooldown * 1000;
+          if (loudLongEnough && cooldownComplete) {
+            lastNoiseAlertAtRef.current = time;
+            noiseAboveThresholdSinceRef.current = time;
+            playSoundFile(noiseWarningAudioRef, classroomSounds.warning, alertSettings.volume, 0, () => {
+              playTone(659.25, 0.14, 0.05, 0);
+              playTone(523.25, 0.2, 0.05, 0.18);
+            });
+          }
+        } else {
+          noiseAboveThresholdSinceRef.current = null;
+        }
         if (time - lastNoisePaintRef.current > 45) {
-          setNoiseLevel(Math.round(smoothedNoiseRef.current));
+          setNoiseLevel(measuredLevel);
           lastNoisePaintRef.current = time;
         }
         animationFrameRef.current = requestAnimationFrame(measure);
@@ -254,6 +347,7 @@ export default function ClassroomToolsPage() {
   const toggleTimer = () => {
     if (timerRunning) {
       setTimerRunning(false);
+      stopSoundFile(countdownAudioRef);
       if (timerMode === 'stopwatch') stopwatchBaseRef.current = elapsed;
       return;
     }
@@ -261,6 +355,7 @@ export default function ClassroomToolsPage() {
     setTimerCompleted(false);
     finishPlayedRef.current = false;
     lastTickRef.current = null;
+    if (finishSound || lastTenSound) playSoundFile(startAudioRef, classroomSounds.start, Math.min(timerVolume, 58), 0, () => playTone(659.25, 0.08, 0.035));
     if (timerMode === 'countdown') {
       const startFrom = remaining > 0 ? remaining : duration;
       setRemaining(startFrom);
@@ -274,6 +369,8 @@ export default function ClassroomToolsPage() {
 
   const resetTimer = () => {
     setTimerRunning(false);
+    stopSoundFile(countdownAudioRef);
+    stopSoundFile(finishAudioRef);
     setTimerCompleted(false);
     finishPlayedRef.current = false;
     setRemaining(duration);
@@ -292,6 +389,7 @@ export default function ClassroomToolsPage() {
 
   const switchTimerMode = (mode: TimerMode) => {
     setTimerRunning(false);
+    stopSoundFile(countdownAudioRef);
     setTimerMode(mode);
     setTimerCompleted(false);
     finishPlayedRef.current = false;
@@ -314,6 +412,19 @@ export default function ClassroomToolsPage() {
   const resetNoiseBaseline = () => {
     smoothedNoiseRef.current = 0;
     setNoiseLevel(0);
+    noiseAboveThresholdSinceRef.current = null;
+  };
+
+  const previewTimerSound = () => {
+    playSoundFile(finishAudioRef, classroomSounds.finish, timerVolume, 0, playFinishChime);
+  };
+
+  const previewNoiseWarning = () => {
+    lastNoiseAlertAtRef.current = performance.now();
+    playSoundFile(noiseWarningAudioRef, classroomSounds.warning, noiseAlertVolume, 0, () => {
+      playTone(659.25, 0.14, 0.05, 0);
+      playTone(523.25, 0.2, 0.05, 0.18);
+    });
   };
 
   return (
@@ -437,6 +548,11 @@ export default function ClassroomToolsPage() {
                   </button>
                 )}
               </div>
+              <div className="tool-volume-control timer-volume-control">
+                <label htmlFor="timer-volume"><span><strong>Âm lượng đồng hồ</strong><small>Áp dụng cho tiếng bắt đầu, tích tắc và hoàn thành</small></span><em>{timerVolume}%</em></label>
+                <input id="timer-volume" type="range" min="10" max="100" value={timerVolume} onChange={(event) => setTimerVolume(Number(event.target.value))} />
+                <button type="button" onClick={previewTimerSound}><Volume2 size={15} /> Nghe thử chuông</button>
+              </div>
             </aside>
           </div>
         ) : (
@@ -459,6 +575,7 @@ export default function ClassroomToolsPage() {
               <div className="noise-bars" aria-hidden="true">
                 {Array.from({ length: 24 }, (_, index) => <i key={index} className={noiseLevel >= (index + 1) * (100 / 24) ? 'active' : ''} style={{ height: `${30 + ((index * 17) % 55)}%` }} />)}
               </div>
+              {noiseAlertEnabled && <div className={`noise-alert-live ${isListening && noiseLevel >= noiseAlertThreshold ? 'over' : ''}`}><BellRing size={14} /> {isListening && noiseLevel >= noiseAlertThreshold ? `Đang vượt ngưỡng ${noiseAlertThreshold}` : `Chuông cảnh báo từ mức ${noiseAlertThreshold}`}</div>}
               <button type="button" className={`noise-primary ${isListening ? 'stop' : ''}`} onClick={() => isListening ? stopListening() : void startListening()}>
                 {isListening ? <MicOff size={21} /> : <Mic size={21} />}
                 {isListening ? 'Tắt micro' : 'Bật micro'}
@@ -481,6 +598,23 @@ export default function ClassroomToolsPage() {
                 <input id="noise-sensitivity" type="range" min="35" max="80" value={sensitivity} onChange={(event) => setSensitivity(Number(event.target.value))} />
                 <div><span>Ít nhạy</span><span>Nhạy hơn</span></div>
                 <button type="button" onClick={resetNoiseBaseline} disabled={!isListening}><RotateCcw size={16} /> Hiệu chỉnh lại</button>
+              </div>
+
+              <div className={`noise-alert-settings ${noiseAlertEnabled ? 'enabled' : ''}`}>
+                <div className="noise-alert-heading">
+                  <span><BellRing size={19} /></span>
+                  <div><strong>Cảnh báo khi lớp quá ồn</strong><small>Chuông chỉ phát sau khi vượt ngưỡng liên tục 1,2 giây</small></div>
+                  <button type="button" role="switch" aria-checked={noiseAlertEnabled} aria-label="Bật hoặc tắt cảnh báo tiếng ồn" onClick={() => setNoiseAlertEnabled((value) => !value)}><i /></button>
+                </div>
+                <div className="noise-alert-controls">
+                  <label htmlFor="noise-alert-threshold"><span><strong>Ngưỡng cảnh báo</strong><small>Chuông phát từ mức này</small></span><em>{noiseAlertThreshold}</em></label>
+                  <input id="noise-alert-threshold" type="range" min="60" max="95" value={noiseAlertThreshold} disabled={!noiseAlertEnabled} onChange={(event) => setNoiseAlertThreshold(Number(event.target.value))} />
+                  <div className="noise-alert-row">
+                    <label><span>Khoảng nghỉ</span><select value={noiseAlertCooldown} disabled={!noiseAlertEnabled} onChange={(event) => setNoiseAlertCooldown(Number(event.target.value))}><option value={5}>5 giây</option><option value={10}>10 giây</option><option value={15}>15 giây</option><option value={30}>30 giây</option></select></label>
+                    <label><span>Âm lượng</span><div className="noise-volume-inline"><input aria-label="Âm lượng cảnh báo" type="range" min="10" max="100" value={noiseAlertVolume} disabled={!noiseAlertEnabled} onChange={(event) => setNoiseAlertVolume(Number(event.target.value))} /><em>{noiseAlertVolume}%</em></div></label>
+                  </div>
+                  <button type="button" className="noise-preview-button" disabled={!noiseAlertEnabled} onClick={previewNoiseWarning}><Volume2 size={15} /> Nghe thử cảnh báo</button>
+                </div>
               </div>
 
               <div className="noise-privacy-note">

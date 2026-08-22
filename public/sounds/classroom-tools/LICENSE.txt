@@ -1,0 +1,16 @@
+Classroom tool sound effects
+============================
+
+Source: Mixkit (https://mixkit.co/free-sound-effects/)
+License: Mixkit Sound Effects Free License (https://mixkit.co/license/)
+Downloaded: 2026-08-22
+
+Files:
+- countdown-tick.mp3 — “Ticking timer”, Mixkit item 1056
+- timer-finish.mp3 — “Fantasy game success notification”, Mixkit item 270
+- noise-warning.mp3 — “Clear announce tones”, Mixkit item 2861
+- timer-start.mp3 — “Software interface start”, Mixkit item 2574
+
+Mixkit states that its free sound effects may be used in personal and commercial
+projects and attribution is not required. The source and item identifiers are kept
+here so the asset origin remains traceable.
