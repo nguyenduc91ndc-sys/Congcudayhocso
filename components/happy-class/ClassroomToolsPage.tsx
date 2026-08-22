@@ -78,6 +78,29 @@ function playFinishChime() {
   playTone(1046.5, 0.34, 0.06, 0.36);
 }
 
+function playSecondTickAccent(volume: number) {
+  if (volume <= 0) return;
+  try {
+    const context = getToolAudioContext();
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    const startAt = context.currentTime + 0.006;
+    const peakVolume = 0.025 + (volume / 100) * 0.13;
+    oscillator.type = 'square';
+    oscillator.frequency.setValueAtTime(1320, startAt);
+    oscillator.frequency.exponentialRampToValueAtTime(720, startAt + 0.055);
+    gain.gain.setValueAtTime(0.0001, startAt);
+    gain.gain.exponentialRampToValueAtTime(peakVolume, startAt + 0.004);
+    gain.gain.exponentialRampToValueAtTime(0.0001, startAt + 0.065);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start(startAt);
+    oscillator.stop(startAt + 0.075);
+  } catch {
+    // Giữ tệp MP3 làm phương án dự phòng nếu Web Audio chưa khả dụng.
+  }
+}
+
 function playSoundFile(handle: AudioHandle, source: string, volume: number, startAt = 0, fallback?: () => void) {
   try {
     const audio = handle.current ?? new Audio(source);
@@ -98,6 +121,12 @@ function stopSoundFile(handle: AudioHandle) {
   handle.current.currentTime = 0;
 }
 
+function playAudibleSecondTick(handle: AudioHandle, volume: number) {
+  if (volume <= 0) return;
+  playSoundFile(handle, classroomSounds.countdown, volume);
+  playSecondTickAccent(volume);
+}
+
 function formatTime(totalSeconds: number) {
   const safeSeconds = Math.max(0, Math.floor(totalSeconds));
   const minutes = Math.floor(safeSeconds / 60);
@@ -116,7 +145,7 @@ export default function ClassroomToolsPage() {
   const [finishSound, setFinishSound] = useState(true);
   const [secondTickSound, setSecondTickSound] = useState(true);
   const [timerVolume, setTimerVolume] = useState(72);
-  const [secondTickVolume, setSecondTickVolume] = useState(42);
+  const [secondTickVolume, setSecondTickVolume] = useState(65);
   const [isPresentation, setIsPresentation] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [noiseLevel, setNoiseLevel] = useState(0);
@@ -171,7 +200,7 @@ export default function ClassroomToolsPage() {
 
         if (nextRemaining > 0 && nextRemaining !== lastTickRef.current) {
           lastTickRef.current = nextRemaining;
-          if (secondTickSound) playSoundFile(countdownAudioRef, classroomSounds.countdown, secondTickVolume, 0, () => playTone(880, 0.075, Math.max(0.01, secondTickVolume / 2000)));
+          if (secondTickSound) playAudibleSecondTick(countdownAudioRef, secondTickVolume);
         }
 
         if (nextRemaining === 0) {
@@ -356,6 +385,9 @@ export default function ClassroomToolsPage() {
     setTimerCompleted(false);
     finishPlayedRef.current = false;
     lastTickRef.current = null;
+    if (timerMode === 'countdown' && secondTickSound) {
+      try { void getToolAudioContext().resume(); } catch { /* MP3 vẫn tiếp tục là phương án dự phòng. */ }
+    }
     if (finishSound || secondTickSound) playSoundFile(startAudioRef, classroomSounds.start, Math.min(timerVolume, 58), 0, () => playTone(659.25, 0.08, 0.035));
     if (timerMode === 'countdown') {
       const startFrom = remaining > 0 ? remaining : duration;
@@ -553,7 +585,7 @@ export default function ClassroomToolsPage() {
                 <div className="tool-volume-control tick-volume-control">
                   <label htmlFor="second-tick-volume"><span><strong>Âm lượng tiếng giây</strong><small>Chỉnh riêng tiếng “tick” phát ở mỗi giây</small></span><em>{secondTickVolume}%</em></label>
                   <input id="second-tick-volume" type="range" min="0" max="100" value={secondTickVolume} disabled={!secondTickSound} onChange={(event) => setSecondTickVolume(Number(event.target.value))} />
-                  <button type="button" disabled={!secondTickSound} onClick={() => playSoundFile(countdownAudioRef, classroomSounds.countdown, secondTickVolume, 0, () => playTone(880, 0.075, Math.max(0.01, secondTickVolume / 2000)))}><Volume2 size={15} /> Nghe thử tiếng giây</button>
+                  <button type="button" disabled={!secondTickSound} onClick={() => playAudibleSecondTick(countdownAudioRef, secondTickVolume)}><Volume2 size={15} /> Nghe thử tiếng giây</button>
                 </div>
               )}
               <div className="tool-volume-control timer-volume-control">
