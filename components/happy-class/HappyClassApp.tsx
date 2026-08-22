@@ -130,6 +130,11 @@ type WeekUndoAction = {
   historyIndex: number;
   activities: Activity[];
 };
+type TeamUndoAction = {
+  message: string;
+  teamCount: number;
+  assignments: Array<Pick<Student, 'id' | 'team'>>;
+};
 type ClassBackup = {
   version: 1;
   exportedAt?: string;
@@ -733,6 +738,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [toast, setToast] = useState('');
   const [pointUndoAction, setPointUndoAction] = useState<PointUndoAction | null>(null);
   const [weekUndoAction, setWeekUndoAction] = useState<WeekUndoAction | null>(null);
+  const [teamUndoAction, setTeamUndoAction] = useState<TeamUndoAction | null>(null);
   const [teacherName, setTeacherName] = useState(readTeacherName);
   const [teacherPhoto, setTeacherPhoto] = useState<string | undefined>(readTeacherPhoto);
   const [classProfile, setClassProfile] = useState<ClassProfile>(readClassProfile);
@@ -876,6 +882,10 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   }, [page]);
 
   useEffect(() => {
+    if (page !== 'teams') setTeamUndoAction(null);
+  }, [page]);
+
+  useEffect(() => {
     const handleHashChange = () => {
       const requestedPage = readPageFromHash();
       if (parentPortalEntry) {
@@ -999,6 +1009,35 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setClassProfile(nextProfile);
     localStorage.setItem('happy-class-profile', JSON.stringify(nextProfile));
     setToast(nextMode === 'average' ? 'Đã chuyển sang tính Điểm trung bình / HS' : 'Đã chuyển sang tính Tổng điểm dồn của tổ');
+  };
+
+  const applyRandomTeams = (assignments: Array<Pick<Student, 'id' | 'team'>>, nextTeamCount: number) => {
+    if (!assignments.length) return;
+    const normalizedTeamCount = normalizeTeamCount(nextTeamCount);
+    const previousAssignments = students.map(({ id, team }) => ({ id, team }));
+    const assignmentMap = new Map(assignments.map((student) => [student.id, Math.min(Math.max(1, student.team), normalizedTeamCount)]));
+    setStudents((current) => current.map((student) => ({ ...student, team: assignmentMap.get(student.id) ?? Math.min(student.team, normalizedTeamCount) })));
+    const nextProfile = { ...classProfile, teamCount: normalizedTeamCount };
+    setClassProfile(nextProfile);
+    localStorage.setItem('happy-class-profile', JSON.stringify(nextProfile));
+    setTeamUndoAction({
+      message: `Đã áp dụng cách chia ngẫu nhiên thành ${normalizedTeamCount} tổ`,
+      teamCount: classProfile.teamCount,
+      assignments: previousAssignments,
+    });
+    setToast(`Đã áp dụng chia tổ ngẫu nhiên: ${normalizedTeamCount} tổ`);
+  };
+
+  const undoRandomTeams = () => {
+    if (!teamUndoAction) return;
+    const action = teamUndoAction;
+    const assignmentMap = new Map(action.assignments.map((student) => [student.id, student.team]));
+    setStudents((current) => current.map((student) => ({ ...student, team: assignmentMap.get(student.id) ?? student.team })));
+    const previousProfile = { ...classProfile, teamCount: action.teamCount };
+    setClassProfile(previousProfile);
+    localStorage.setItem('happy-class-profile', JSON.stringify(previousProfile));
+    setTeamUndoAction(null);
+    setToast('Đã khôi phục cách chia tổ trước đó');
   };
 
   const saveStudentProfile = (student: Student) => {
@@ -1535,7 +1574,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'students' && <StudentsPage students={students} teamCount={classProfile.teamCount} canManageStudents={isTeacher} onOpenStudent={setProfileId} onAddStudent={() => navigate('management')} />}
           {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
-          {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} onToggleScoringMode={toggleTeamScoringMode} />}
+          {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} />}
           {page === 'attendance' && (
@@ -1654,6 +1693,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
     { icon: '👩‍🎓', title: 'Học sinh và nhập Excel', description: 'Thêm, sửa hồ sơ hoặc nhập cả danh sách học sinh từ tệp Excel.', keywords: 'học sinh excel danh sách thêm sửa xóa mã định danh', page: 'management', teacherOnly: true },
     { icon: '🗓️', title: 'Quản lý tuần học', description: 'Đặt thời gian, chốt điểm tuần, mở tuần mới và xem lại lịch sử.', keywords: 'tuần chốt tuần điểm tuần lịch sử thi đua vinh danh', page: 'management', teacherOnly: true },
     { icon: '✨', title: 'Cộng và trừ điểm', description: 'Chọn học sinh, ghi nhận điểm tốt hoặc nhắc nhở; có thể hoàn tác lượt chấm gần nhất bằng nút Hoàn tác.', keywords: 'điểm cộng trừ nhắc nhở hoàn tác undo cấu hình vườn điểm tốt', page: 'points' },
+    { icon: '🎲', title: 'Chia tổ ngẫu nhiên', description: 'Chọn số tổ, xáo trộn cả lớp hoặc học sinh có mặt, xem trước rồi xác nhận phân tổ.', keywords: 'chia tổ ngẫu nhiên xáo trộn chia nhóm phân tổ hoàn tác', page: 'teams', teacherOnly: true },
     { icon: '📅', title: 'Điểm danh', description: 'Đánh dấu có mặt, đi muộn, nghỉ có phép hoặc nghỉ không phép.', keywords: 'điểm danh chuyên cần có mặt vắng nghỉ', page: 'attendance' },
     { icon: '🎡', title: 'Gọi tên ngẫu nhiên', description: 'Quay theo cả lớp hoặc từng tổ; chỉ học sinh đang có mặt được tham gia.', keywords: 'gọi tên vòng quay ngẫu nhiên tổ', page: 'random' },
     { icon: '💞', title: 'Cổng phụ huynh', description: 'Tra cứu hành trình học sinh bằng mã phụ huynh trong hồ sơ.', keywords: 'phụ huynh tra cứu mã hành trình', page: 'parents' },
@@ -2672,21 +2712,97 @@ function TeamsPage({
   teamCount,
   week,
   teamScoringMode = 'average',
+  canManage,
+  lastTeamAction,
   onToggleScoringMode,
+  onApplyRandomTeams,
+  onUndoRandomTeams,
 }: {
   students: Student[];
   teamCount: number;
   week: WeekPeriod;
   teamScoringMode?: TeamScoringMode;
+  canManage: boolean;
+  lastTeamAction: string;
   onToggleScoringMode?: () => void;
+  onApplyRandomTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void;
+  onUndoRandomTeams: () => void;
 }) {
+  const [randomizerOpen, setRandomizerOpen] = useState(false);
+  const [randomTeamCount, setRandomTeamCount] = useState(teamCount);
+  const [randomScope, setRandomScope] = useState<'all' | 'present'>('all');
+  const [randomPreview, setRandomPreview] = useState<Array<Pick<Student, 'id' | 'team'>>>([]);
   const teams = getTeamStats(students, teamCount, teamScoringMode);
   const daysRemaining = Math.max(0, Math.ceil((dateFromInput(week.endDate).getTime() - Date.now()) / 86_400_000) + 1);
   const isAvg = teamScoringMode === 'average';
   const leadingScore = Math.max(1, isAvg ? (teams[0]?.weeklyAvg ?? 0) : (teams[0]?.weekly ?? 0));
+  const previewTeamMap = new Map(randomPreview.map((student) => [student.id, student.team]));
+  const previewGroups = getTeamNumbers(randomTeamCount).map((team) => ({
+    team,
+    students: students.filter((student) => previewTeamMap.get(student.id) === team),
+  }));
+  const randomCandidateCount = randomScope === 'present' ? students.filter((student) => student.attendance === 'present').length : students.length;
+
+  const createRandomPreview = (count = randomTeamCount, scope = randomScope) => {
+    const candidates = students.filter((student) => scope === 'all' || student.attendance === 'present');
+    const shuffled = [...candidates];
+    for (let index = shuffled.length - 1; index > 0; index -= 1) {
+      const target = Math.floor(Math.random() * (index + 1));
+      [shuffled[index], shuffled[target]] = [shuffled[target], shuffled[index]];
+    }
+    const assignments = new Map(students.map((student) => [student.id, Math.min(Math.max(1, student.team), count)]));
+    shuffled.forEach((student, index) => assignments.set(student.id, (index % count) + 1));
+    setRandomPreview(students.map((student) => ({ id: student.id, team: assignments.get(student.id) ?? 1 })));
+  };
+
+  const openRandomizer = () => {
+    setRandomTeamCount(teamCount);
+    setRandomScope('all');
+    setRandomizerOpen(true);
+    createRandomPreview(teamCount, 'all');
+  };
+
+  const applyPreview = () => {
+    if (!randomPreview.length) return;
+    const accepted = window.confirm(`Áp dụng cách chia ngẫu nhiên thành ${randomTeamCount} tổ?\n\nChỉ số tổ của học sinh được thay đổi; điểm, hồ sơ và lịch sử vẫn giữ nguyên.`);
+    if (!accepted) return;
+    onApplyRandomTeams(randomPreview, randomTeamCount);
+    setRandomizerOpen(false);
+    setRandomPreview([]);
+  };
   return (
     <>
       <PageHeading eyebrow={`THI ĐUA ${teamCount} TỔ`} title="Cùng tiến về phía trước" description="Một cuộc đua tích cực, nơi mỗi đóng góp nhỏ đều làm nên thành công của tập thể." icon="🏁" />
+      {canManage && (
+        <section className={`team-randomizer panel ${randomizerOpen ? 'is-open' : ''}`}>
+          <header className="team-randomizer-head">
+            <span className="team-randomizer-icon"><Wand2 size={22} /></span>
+            <div><strong>Chia tổ ngẫu nhiên</strong><small>Xáo trộn và chia đều học sinh; không thay đổi điểm hoặc lịch sử.</small></div>
+            {!randomizerOpen
+              ? <button type="button" onClick={openRandomizer}><Wand2 size={17} /> Bắt đầu chia tổ</button>
+              : <button type="button" className="team-randomizer-close" onClick={() => { setRandomizerOpen(false); setRandomPreview([]); }}><X size={17} /> Đóng</button>}
+          </header>
+          {lastTeamAction && !randomizerOpen && (
+            <div className="team-randomizer-undo"><div><RotateCcw size={18} /><span><strong>Có thể hoàn tác</strong><small>{lastTeamAction}</small></span></div><button type="button" onClick={onUndoRandomTeams}><RotateCcw size={16} /> Hoàn tác phân tổ</button></div>
+          )}
+          {randomizerOpen && (
+            <div className="team-randomizer-body">
+              <div className="team-randomizer-controls">
+                <label><span>Số lượng tổ</span><select value={randomTeamCount} onChange={(event) => { setRandomTeamCount(Number(event.target.value)); setRandomPreview([]); }}>{getTeamNumbers(8).map((count) => <option key={count} value={count}>{count} tổ</option>)}</select></label>
+                <label><span>Phạm vi chia</span><select value={randomScope} onChange={(event) => { setRandomScope(event.target.value as 'all' | 'present'); setRandomPreview([]); }}><option value="all">Cả lớp ({students.length} học sinh)</option><option value="present">Chỉ học sinh có mặt ({students.filter((student) => student.attendance === 'present').length})</option></select></label>
+                <button type="button" disabled={!randomCandidateCount} onClick={() => createRandomPreview()}><Wand2 size={17} /> {randomPreview.length ? 'Chia lại' : 'Tạo danh sách'}</button>
+              </div>
+              {randomScope === 'present' && <p className="team-randomizer-note"><ShieldCheck size={16} /> Học sinh vắng mặt được giữ ở tổ hiện tại; chỉ các em có mặt được xáo trộn.</p>}
+              {randomPreview.length > 0 && (
+                <div className="team-random-preview">
+                  {previewGroups.map((group) => <article key={group.team}><header><span>{group.team}</span><strong>Tổ {group.team}</strong><small>{group.students.length} học sinh</small></header><div>{group.students.map((student) => <span key={student.id}><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="tiny" /><b>{student.name}</b></span>)}</div></article>)}
+                </div>
+              )}
+              <footer className="team-randomizer-actions"><span><ShieldCheck size={16} /> Hãy xem trước danh sách trước khi xác nhận.</span><button type="button" disabled={!randomPreview.length} onClick={applyPreview}><Check size={17} /> Xác nhận phân tổ</button></footer>
+            </div>
+          )}
+        </section>
+      )}
       {onToggleScoringMode && (
         <div className="scoring-mode-bar panel">
           <span>CHẾ ĐỘ TÍNH ĐIỂM:</span>
