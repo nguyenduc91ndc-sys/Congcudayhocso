@@ -65,6 +65,7 @@ import { downloadStudentTemplate, parseStudentWorkbook } from './excel';
 import type { ExcelImportResult } from './excel';
 import ClassroomToolsPage from './ClassroomToolsPage';
 import ClassReportExport from './ClassReportExport';
+import WeeklyTrackingSheetExport from './WeeklyTrackingSheetExport';
 import parentFeedbackAppsScriptCode from './google-apps-script-parent-feedback.gs?raw';
 import happyClassStyles from './styles.css?raw';
 import {
@@ -1703,7 +1704,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
     { icon: '🎡', title: 'Gọi tên ngẫu nhiên', description: 'Quay theo cả lớp hoặc từng tổ; chỉ học sinh đang có mặt được tham gia.', keywords: 'gọi tên vòng quay ngẫu nhiên tổ', page: 'random' },
     { icon: '⏱️', title: 'Đồng hồ và quản lý tiếng ồn', description: 'Đếm ngược, bấm giờ và hiển thị mức ồn trực quan ngay trên thiết bị.', keywords: 'đồng hồ bấm giờ đếm ngược micro tiếng ồn trình chiếu', page: 'tools' },
     { icon: '💞', title: 'Cổng phụ huynh', description: 'Tra cứu hành trình học sinh bằng mã phụ huynh trong hồ sơ.', keywords: 'phụ huynh tra cứu mã hành trình', page: 'parents' },
-    { icon: '📘', title: 'Xuất sổ lớp để in', description: 'Tạo báo cáo tuần, tháng hoặc năm học; in A4, lưu PDF hay xuất Excel.', keywords: 'xuất sổ báo cáo in pdf excel đóng sổ kết quả', page: 'management', teacherOnly: true },
+    { icon: '📘', title: 'Xuất sổ và phiếu theo dõi tuần', description: 'Tạo báo cáo kết quả hoặc phiếu giấy để ban cán sự ghi tạm, giáo viên duyệt sau.', keywords: 'xuất sổ báo cáo in pdf excel đóng sổ kết quả phiếu theo dõi tuần ban cán sự', page: 'management', teacherOnly: true },
     { icon: '🛡️', title: 'Sao lưu và khôi phục', description: 'Xuất bản sao JSON để giữ an toàn dữ liệu hoặc chuyển sang máy khác.', keywords: 'sao lưu json khôi phục xuất nhập dữ liệu', page: 'management', teacherOnly: true },
   ];
   const search = query.trim().toLocaleLowerCase('vi-VN');
@@ -1799,6 +1800,7 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [reportExportOpen, setReportExportOpen] = useState(false);
+  const [trackingSheetOpen, setTrackingSheetOpen] = useState(false);
   const [backupImporting, setBackupImporting] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const backupInputRef = useRef<HTMLInputElement>(null);
@@ -1858,7 +1860,7 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
         <button type="button" className="button button-primary" disabled={!students.length} onClick={() => setReportExportOpen(true)}><Download size={18} /> Mở trình xuất sổ</button>
       </section>
 
-      <WeekManagement students={students} teamCount={classProfile.teamCount} activities={activities} weekState={weekState} scoring={weeklyScoring} onUpdate={onUpdateWeek} onClose={onCloseWeek} onDeleteClosedWeek={onDeleteClosedWeek} onSaveScoring={onSaveWeeklyScoring} onResetWeekPoints={onResetWeekPoints} />
+      <WeekManagement students={students} teamCount={classProfile.teamCount} activities={activities} weekState={weekState} scoring={weeklyScoring} onUpdate={onUpdateWeek} onClose={onCloseWeek} onDeleteClosedWeek={onDeleteClosedWeek} onSaveScoring={onSaveWeeklyScoring} onResetWeekPoints={onResetWeekPoints} onOpenTrackingSheet={() => setTrackingSheetOpen(true)} />
 
       <section className="management-students panel">
         <div className="management-header">
@@ -1907,12 +1909,13 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
       )}
       {excelImportOpen && <ExcelStudentImport currentStudents={students} onImport={onImportStudents} onClose={() => setExcelImportOpen(false)} />}
       {reportExportOpen && <ClassReportExport students={students} activities={activities} attendanceHistory={attendanceHistory} weekState={weekState} teacherName={teacherName} classInfo={classProfile} onClose={() => setReportExportOpen(false)} />}
+      {trackingSheetOpen && <WeeklyTrackingSheetExport students={students} pointReasons={pointReasons} week={weekState.current} teacherName={teacherName} classInfo={classProfile} onClose={() => setTrackingSheetOpen(false)} />}
       {editingStudent && <StudentEditor key={editingStudent.id} student={editingStudent} teamCount={classProfile.teamCount} isNew={!students.some((item) => item.id === editingStudent.id)} onSave={(student) => { onSaveStudent(student); setEditingStudent(null); }} onClose={() => setEditingStudent(null)} />}
     </>
   );
 }
 
-function WeekManagement({ students, teamCount, activities, weekState, scoring, onUpdate, onClose, onDeleteClosedWeek, onSaveScoring, onResetWeekPoints }: { students: Student[]; teamCount: number; activities: Activity[]; weekState: WeekState; scoring: WeeklyScoringSettings; onUpdate: (number: number, startDate: string, studyDays: 5 | 6) => void; onClose: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void }) {
+function WeekManagement({ students, teamCount, activities, weekState, scoring, onUpdate, onClose, onDeleteClosedWeek, onSaveScoring, onResetWeekPoints, onOpenTrackingSheet }: { students: Student[]; teamCount: number; activities: Activity[]; weekState: WeekState; scoring: WeeklyScoringSettings; onUpdate: (number: number, startDate: string, studyDays: 5 | 6) => void; onClose: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onOpenTrackingSheet: () => void }) {
   const [number, setNumber] = useState(weekState.current.number);
   const [startDate, setStartDate] = useState(weekState.current.startDate);
   const [studyDays, setStudyDays] = useState<5 | 6>(weekState.current.studyDays === 6 ? 6 : 5);
@@ -1983,7 +1986,7 @@ function WeekManagement({ students, teamCount, activities, weekState, scoring, o
     <section className="week-management panel">
       <div className="week-management-head">
         <div className="week-management-title"><span><CalendarCheck2 size={18} /> VẬN HÀNH THEO TUẦN</span><h2>Quản lý tuần học</h2><p>Điểm thi đua, vinh danh và thông tin gửi phụ huynh đang dùng dữ liệu của tuần hiện tại.</p></div>
-        <div className="week-live-badge"><i /><span>ĐANG HOẠT ĐỘNG</span><strong>Tuần {current.number}</strong><small>{formatFullDate(current.startDate)} – {formatFullDate(current.endDate)} · {current.studyDays === 6 ? 'Thứ 2–Thứ 7' : 'Thứ 2–Thứ 6'}</small></div>
+        <div className="week-management-head-actions"><button type="button" className="week-tracking-sheet-button" onClick={onOpenTrackingSheet}><Download size={18} /><span><strong>In phiếu theo dõi tuần</strong><small>Giao ban cán sự ghi tạm</small></span></button><div className="week-live-badge"><i /><span>ĐANG HOẠT ĐỘNG</span><strong>Tuần {current.number}</strong><small>{formatFullDate(current.startDate)} – {formatFullDate(current.endDate)} · {current.studyDays === 6 ? 'Thứ 2–Thứ 7' : 'Thứ 2–Thứ 6'}</small></div></div>
       </div>
 
       <div className="week-management-body">
