@@ -2953,7 +2953,23 @@ body {
 .app-shell .toast-undo-button { min-height: 34px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; border: 2px solid #f1c952; border-radius: 11px; color: #6f2b74; background: linear-gradient(#fff9bf,#ffd95d); box-shadow: 0 3px 0 #bf7b2a; font: inherit; font-weight: 950; cursor: pointer; transition: transform .15s ease, filter .15s ease; }
 .app-shell .toast-undo-button:hover { transform: translateY(-1px); filter: brightness(1.03); }
 .app-shell .toast-undo-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #bf7b2a; }
+.app-shell .toast-danger-action { border-color: #f2b9c0; background: linear-gradient(145deg,#fff,#fff0f2); box-shadow: 0 7px 0 #dfa6af,0 20px 42px rgba(117,34,52,.2); }
+.app-shell .toast-danger-action .toast-check { color: white; background: linear-gradient(#ef7785,#c83e56); box-shadow: 0 3px 0 #922d41; }
 @media (max-width: 680px) {
   .app-shell .toast-with-action { align-items: center; }
   .app-shell .toast-undo-button { min-height: 38px; padding-inline: 10px; }
+}
+
+/* Vùng nguy hiểm: chỉ xuất hiện khi mở chi tiết một tuần đã chốt. */
+.app-shell .week-danger-zone { margin: 12px; padding: 13px 14px; display: flex; align-items: center; justify-content: space-between; gap: 14px; border: 2px solid #efb4bd; border-radius: 15px; background: linear-gradient(145deg,#fff9fa,#ffecef); }
+.app-shell .week-danger-zone > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.app-shell .week-danger-zone span { color: #c33d56; font-size: 10px; font-weight: 950; letter-spacing: 1px; }
+.app-shell .week-danger-zone strong { color: #7f2f43; font-size: 12px; }
+.app-shell .week-danger-zone small { max-width: 620px; color: #72545c; font-size: 10.5px; font-weight: 700; line-height: 1.5; }
+.app-shell .week-danger-zone button { min-height: 40px; padding: 0 13px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; border: 3px solid #ffc7ca; border-radius: 14px; color: white; background: linear-gradient(#f17885,#c9435b); box-shadow: 0 5px 0 #942f43; font-size: 11px; font-weight: 950; cursor: pointer; transition: transform .15s ease, filter .15s ease; }
+.app-shell .week-danger-zone button:hover { transform: translateY(-1px); filter: brightness(1.03); }
+.app-shell .week-danger-zone button:active { transform: translateY(2px); box-shadow: 0 2px 0 #942f43; }
+@media (max-width: 680px) {
+  .app-shell .week-danger-zone { align-items: stretch; flex-direction: column; }
+  .app-shell .week-danger-zone button { width: 100%; }
 }

@@ -124,6 +124,12 @@ type PointUndoAction = {
   activityIds: number[];
   students: Array<Pick<Student, 'id' | 'score' | 'weeklyScore' | 'streak'>>;
 };
+type WeekUndoAction = {
+  message: string;
+  week: WeekArchive;
+  historyIndex: number;
+  activities: Activity[];
+};
 type ClassBackup = {
   version: 1;
   exportedAt?: string;
@@ -726,6 +732,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [profileId, setProfileId] = useState<number | null>(null);
   const [toast, setToast] = useState('');
   const [pointUndoAction, setPointUndoAction] = useState<PointUndoAction | null>(null);
+  const [weekUndoAction, setWeekUndoAction] = useState<WeekUndoAction | null>(null);
   const [teacherName, setTeacherName] = useState(readTeacherName);
   const [teacherPhoto, setTeacherPhoto] = useState<string | undefined>(readTeacherPhoto);
   const [classProfile, setClassProfile] = useState<ClassProfile>(readClassProfile);
@@ -863,6 +870,12 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     const timer = window.setTimeout(() => setPointUndoAction(null), 8000);
     return () => window.clearTimeout(timer);
   }, [pointUndoAction]);
+
+  useEffect(() => {
+    if (!weekUndoAction) return;
+    const timer = window.setTimeout(() => setWeekUndoAction(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [weekUndoAction]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -1124,6 +1137,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const addPoints = (studentIds: number[], points: number, reason: string) => {
     if (!studentIds.length) return;
     setToast('');
+    setWeekUndoAction(null);
     const studentSnapshots = students
       .filter((student) => studentIds.includes(student.id))
       .map(({ id, score, weeklyScore, streak }) => ({ id, score, weeklyScore, streak }));
@@ -1428,6 +1442,42 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setToast(`Đã chốt Tuần ${current.number} và mở Tuần ${current.number + 1}`);
   };
 
+  const deleteClosedWeek = (weekId: string) => {
+    const historyIndex = weekState.history.findIndex((week) => week.id === weekId);
+    if (historyIndex < 0) return;
+    const week = weekState.history[historyIndex];
+    const deletedActivities = activities.filter((activity) => activity.weekId === weekId);
+    setWeekState((current) => ({ ...current, history: current.history.filter((item) => item.id !== weekId) }));
+    setActivities((current) => current.filter((activity) => activity.weekId !== weekId));
+    setToast('');
+    setPointUndoAction(null);
+    setWeekUndoAction({
+      message: `Đã xóa Tuần ${week.number} khỏi lịch sử và báo cáo tháng`,
+      week,
+      historyIndex,
+      activities: deletedActivities,
+    });
+  };
+
+  const undoDeletedWeek = () => {
+    if (!weekUndoAction) return;
+    const action = weekUndoAction;
+    setWeekState((current) => {
+      if (current.history.some((week) => week.id === action.week.id)) return current;
+      const history = [...current.history];
+      history.splice(Math.min(action.historyIndex, history.length), 0, action.week);
+      return { ...current, history: history.slice(0, 520) };
+    });
+    setActivities((current) => {
+      const existingIds = new Set(current.map((activity) => activity.id));
+      return [...current, ...action.activities.filter((activity) => !existingIds.has(activity.id))]
+        .sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? ''))
+        .slice(0, 10000);
+    });
+    setWeekUndoAction(null);
+    setToast(`Đã khôi phục Tuần ${action.week.number}`);
+  };
+
   const selectedProfile = students.find((student) => student.id === profileId) ?? null;
   const pageTitle = page === 'management' ? 'Quản lý lớp' : navItems.find((item) => item.id === page)?.label ?? 'Tổng quan';
 
@@ -1494,7 +1544,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'honors' && <HonorsPage students={students} week={weekState.current} scoring={weeklyScoring} />}
           {page === 'parents' && <ParentsPage students={students} activities={activities} classCode={classProfile.code} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} portal={parentPortal} publishing={cloudPublishing} onPublish={publishParentPortal} onTogglePortal={() => void toggleParentPortal()} onToggleRequireAccessCode={toggleParentAccessMode} onRegenerateCode={regenerateParentCode} onToggleAccess={toggleParentAccess} onSaveFeedbackConfig={saveParentFeedbackConfig} onToast={setToast} />}
-          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
+          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
         </div>
       </main>
 
@@ -1512,7 +1562,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           onClose={() => setProfileId(null)}
         />
       )}
-      {toast && !pointUndoAction && (
+      {toast && !pointUndoAction && !weekUndoAction && (
         <div className="toast" role="status">
           <span className="toast-check"><Check size={16} strokeWidth={3} /></span>
           {toast}
@@ -1523,6 +1573,15 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           <span className="toast-check"><Check size={16} strokeWidth={3} /></span>
           <span className="toast-message">{pointUndoAction.message}</span>
           <button type="button" className="toast-undo-button" onClick={undoLastPointAction}>
+            <RotateCcw size={15} /> Hoàn tác
+          </button>
+        </div>
+      )}
+      {weekUndoAction && (
+        <div className="toast toast-with-action toast-danger-action" role="status" aria-live="polite">
+          <span className="toast-check"><Trash2 size={16} /></span>
+          <span className="toast-message">{weekUndoAction.message}</span>
+          <button type="button" className="toast-undo-button" onClick={undoDeletedWeek}>
             <RotateCcw size={15} /> Hoàn tác
           </button>
         </div>
@@ -1699,7 +1758,7 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
   );
 }
 
-function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
+function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [backupImporting, setBackupImporting] = useState(false);
@@ -1755,7 +1814,7 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
         </article>
       </section>
 
-      <WeekManagement students={students} teamCount={classProfile.teamCount} activities={activities} weekState={weekState} scoring={weeklyScoring} onUpdate={onUpdateWeek} onClose={onCloseWeek} onSaveScoring={onSaveWeeklyScoring} onResetWeekPoints={onResetWeekPoints} />
+      <WeekManagement students={students} teamCount={classProfile.teamCount} activities={activities} weekState={weekState} scoring={weeklyScoring} onUpdate={onUpdateWeek} onClose={onCloseWeek} onDeleteClosedWeek={onDeleteClosedWeek} onSaveScoring={onSaveWeeklyScoring} onResetWeekPoints={onResetWeekPoints} />
 
       <section className="management-students panel">
         <div className="management-header">
@@ -1808,7 +1867,7 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
   );
 }
 
-function WeekManagement({ students, teamCount, activities, weekState, scoring, onUpdate, onClose, onSaveScoring, onResetWeekPoints }: { students: Student[]; teamCount: number; activities: Activity[]; weekState: WeekState; scoring: WeeklyScoringSettings; onUpdate: (number: number, startDate: string, studyDays: 5 | 6) => void; onClose: () => void; onSaveScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void }) {
+function WeekManagement({ students, teamCount, activities, weekState, scoring, onUpdate, onClose, onDeleteClosedWeek, onSaveScoring, onResetWeekPoints }: { students: Student[]; teamCount: number; activities: Activity[]; weekState: WeekState; scoring: WeeklyScoringSettings; onUpdate: (number: number, startDate: string, studyDays: 5 | 6) => void; onClose: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void }) {
   const [number, setNumber] = useState(weekState.current.number);
   const [startDate, setStartDate] = useState(weekState.current.startDate);
   const [studyDays, setStudyDays] = useState<5 | 6>(weekState.current.studyDays === 6 ? 6 : 5);
@@ -1928,7 +1987,19 @@ function WeekManagement({ students, teamCount, activities, weekState, scoring, o
           <div className="week-history-list">{weekState.history.slice(0, 6).map((week) => {
             const top = week.studentScores[0];
             const total = week.studentScores.reduce((sum, student) => sum + student.points, 0);
-            return <details className="week-history-entry" key={week.id}><summary><span className="week-history-icon"><Check size={17} /></span><div><strong>Tuần {week.number}</strong><small>{formatFullDate(week.startDate)} – {formatFullDate(week.endDate)}</small></div><div><span>Tổng điểm</span><b>{total > 0 ? '+' : ''}{total}</b></div><div><span>Nổi bật</span><b>{top ? `${top.name} · ${top.points > 0 ? '+' : ''}${top.points}` : '—'}</b></div><div><span>Ghi nhận</span><b>{week.activityCount}</b></div><span className="week-history-open"><span>Xem từng em</span><ChevronDown size={17} /></span></summary><div className="week-student-results"><div className="week-student-result-head"><span>Hạng</span><span>Học sinh</span><span>Tổ</span><span>Điểm tuần</span></div>{week.studentScores.map((score, index) => <div className="week-student-result-row" key={score.studentId}><span className={`week-student-rank rank-${index + 1}`}>{index + 1}</span><strong>{score.name}</strong><span>Tổ {score.team}</span><b>{score.points > 0 ? '+' : ''}{score.points}</b></div>)}</div></details>;
+            return (
+              <details className="week-history-entry" key={week.id}>
+                <summary><span className="week-history-icon"><Check size={17} /></span><div><strong>Tuần {week.number}</strong><small>{formatFullDate(week.startDate)} – {formatFullDate(week.endDate)}</small></div><div><span>Tổng điểm</span><b>{total > 0 ? '+' : ''}{total}</b></div><div><span>Nổi bật</span><b>{top ? `${top.name} · ${top.points > 0 ? '+' : ''}${top.points}` : '—'}</b></div><div><span>Ghi nhận</span><b>{week.activityCount}</b></div><span className="week-history-open"><span>Xem từng em</span><ChevronDown size={17} /></span></summary>
+                <div className="week-student-results"><div className="week-student-result-head"><span>Hạng</span><span>Học sinh</span><span>Tổ</span><span>Điểm tuần</span></div>{week.studentScores.map((score, index) => <div className="week-student-result-row" key={score.studentId}><span className={`week-student-rank rank-${index + 1}`}>{index + 1}</span><strong>{score.name}</strong><span>Tổ {score.team}</span><b>{score.points > 0 ? '+' : ''}{score.points}</b></div>)}</div>
+                <div className="week-danger-zone">
+                  <div><span>VÙNG NGUY HIỂM</span><strong>Xóa Tuần {week.number} khỏi lịch sử</strong><small>Tuần này và các ghi nhận liên quan sẽ bị loại khỏi báo cáo tháng. Điểm tích lũy hiện tại của học sinh không thay đổi.</small></div>
+                  <button type="button" onClick={() => {
+                    const accepted = window.confirm(`VÙNG NGUY HIỂM\n\nXóa Tuần ${week.number} (${formatFullDate(week.startDate)} – ${formatFullDate(week.endDate)})?\n\n• Tuần này sẽ bị loại khỏi báo cáo tháng.\n• Các ghi nhận thuộc tuần này sẽ bị xóa.\n• Điểm tích lũy hiện tại không thay đổi.\n\nHãy cân nhắc kỹ trước khi tiếp tục.`);
+                    if (accepted) onDeleteClosedWeek(week.id);
+                  }}><Trash2 size={16} /> Xóa tuần đã lưu</button>
+                </div>
+              </details>
+            );
           })}</div>
         ) : <div className="week-history-empty"><History size={24} /><div><strong>Chưa có tuần nào được chốt</strong><span>Khi kết thúc tuần, kết quả sẽ xuất hiện tại đây để giáo viên xem lại.</span></div></div>}
 
