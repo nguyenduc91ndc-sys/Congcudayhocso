@@ -63,6 +63,7 @@ import { initialActivities, initialStudents, pointReasons as initialPointReasons
 import type { Activity, AttendanceRecord, AttendanceStatus, PointReason, Reward, Student, WeekArchive, WeekPeriod, WeekState } from './types';
 import { downloadStudentTemplate, parseStudentWorkbook } from './excel';
 import type { ExcelImportResult } from './excel';
+import ClassroomToolsPage from './ClassroomToolsPage';
 import parentFeedbackAppsScriptCode from './google-apps-script-parent-feedback.gs?raw';
 import happyClassStyles from './styles.css?raw';
 import {
@@ -94,6 +95,7 @@ type PageId =
   | 'teams'
   | 'rewards'
   | 'random'
+  | 'tools'
   | 'attendance'
   | 'honors'
   | 'parents'
@@ -436,6 +438,7 @@ const navItems: NavItem[] = [
   { id: 'teams', label: 'Thi đua tổ', icon: BarChart3 },
   { id: 'rewards', label: 'Đổi thưởng', icon: Store },
   { id: 'random', label: 'Gọi tên vui', icon: Wand2 },
+  { id: 'tools', label: 'Công cụ lớp học', icon: Clock3 },
   { id: 'attendance', label: 'Chuyên cần', icon: CalendarCheck2 },
   { id: 'honors', label: 'Vinh danh', icon: Trophy },
   { id: 'parents', label: 'Cổng phụ huynh', icon: HeartHandshake },
@@ -1577,6 +1580,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} />}
+          {page === 'tools' && <ClassroomToolsPage />}
           {page === 'attendance' && (
             <AttendancePage students={students} classCode={classProfile.code} attendanceHistory={attendanceHistory} weekState={weekState} weeklyScoring={weeklyScoring} onUpdate={updateAttendance} onUpdateBulk={updateAttendanceBulk} onComplete={markAttendanceComplete} onToast={setToast} />
           )}
@@ -1635,7 +1639,7 @@ function Sidebar({ page, open, teacherAccount, teacherName, teacherPhoto, classP
 
       <nav className="sidebar-nav" aria-label="Điều hướng chính">
         <span className="nav-eyebrow">QUẢN LÝ LỚP</span>
-        {navItems.slice(0, 8).map((item) => {
+        {navItems.slice(0, 9).map((item) => {
           const Icon = item.icon;
           return (
             <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => onNavigate(item.id)}>
@@ -1646,7 +1650,7 @@ function Sidebar({ page, open, teacherAccount, teacherName, teacherPhoto, classP
           );
         })}
         <span className="nav-eyebrow nav-eyebrow-spaced">KẾT NỐI</span>
-        {navItems.slice(8).map((item) => {
+        {navItems.slice(9).map((item) => {
           const Icon = item.icon;
           return (
             <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => onNavigate(item.id)}>
@@ -1696,6 +1700,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
     { icon: '🎲', title: 'Chia tổ ngẫu nhiên', description: 'Chọn số tổ, xáo trộn cả lớp hoặc học sinh có mặt, xem trước rồi xác nhận phân tổ.', keywords: 'chia tổ ngẫu nhiên xáo trộn chia nhóm phân tổ hoàn tác', page: 'teams', teacherOnly: true },
     { icon: '📅', title: 'Điểm danh', description: 'Đánh dấu có mặt, đi muộn, nghỉ có phép hoặc nghỉ không phép.', keywords: 'điểm danh chuyên cần có mặt vắng nghỉ', page: 'attendance' },
     { icon: '🎡', title: 'Gọi tên ngẫu nhiên', description: 'Quay theo cả lớp hoặc từng tổ; chỉ học sinh đang có mặt được tham gia.', keywords: 'gọi tên vòng quay ngẫu nhiên tổ', page: 'random' },
+    { icon: '⏱️', title: 'Đồng hồ và quản lý tiếng ồn', description: 'Đếm ngược, bấm giờ và hiển thị mức ồn trực quan ngay trên thiết bị.', keywords: 'đồng hồ bấm giờ đếm ngược micro tiếng ồn trình chiếu', page: 'tools' },
     { icon: '💞', title: 'Cổng phụ huynh', description: 'Tra cứu hành trình học sinh bằng mã phụ huynh trong hồ sơ.', keywords: 'phụ huynh tra cứu mã hành trình', page: 'parents' },
     { icon: '🛡️', title: 'Sao lưu và khôi phục', description: 'Xuất bản sao JSON để giữ an toàn dữ liệu hoặc chuyển sang máy khác.', keywords: 'sao lưu json khôi phục xuất nhập dữ liệu', page: 'management', teacherOnly: true },
   ];
@@ -2348,7 +2353,7 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
 }
 
 function MobileNav({ page, onNavigate }: { page: PageId; onNavigate: (page: PageId) => void }) {
-  const items = navItems.filter((item) => ['dashboard', 'students', 'points', 'attendance', 'honors'].includes(item.id));
+  const items = navItems.filter((item) => ['dashboard', 'students', 'points', 'tools', 'attendance'].includes(item.id));
   return (
     <nav className="mobile-nav">
       {items.map((item) => {
