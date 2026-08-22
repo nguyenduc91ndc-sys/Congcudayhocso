@@ -12,7 +12,7 @@ import {
   type HappyClassAccessDecision,
 } from './firebase';
 
-const ZALO_GROUP_URL = 'https://zalo.me/g/uafjqjcpskahgt6xa9gh';
+const ZALO_GROUP_N2_URL = 'https://zalo.me/g/xllue7odsjmevwrgwll6';
 const FORM_REGISTER_URL = 'https://forms.gle/36iBVB7hzURmxsAN8';
 const FACEBOOK_URL = 'https://www.facebook.com/duc.the3?locale=vi_VN';
 
@@ -37,7 +37,7 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
   const email = platformUser?.email?.trim().toLowerCase() || '';
 
   useEffect(() => {
-    QRCode.toDataURL(ZALO_GROUP_URL, { width: 260, margin: 2, color: { dark: '#17113f', light: '#ffffff' } })
+    QRCode.toDataURL(ZALO_GROUP_N2_URL, { width: 260, margin: 2, color: { dark: '#17113f', light: '#ffffff' } })
       .then(setQrCode)
       .catch(() => setQrCode(''));
   }, []);
@@ -214,11 +214,16 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
                 </div>
 
                 <div className="grid items-center gap-4 sm:grid-cols-[138px_1fr] md:grid-cols-1 lg:grid-cols-[138px_1fr]">
-                  {qrCode && <div className="mx-auto hidden rounded-[22px] border-[3px] border-[#ffd85a] bg-white p-2 shadow-[0_6px_0_#7b278e,0_12px_22px_rgba(91,34,111,.2)] sm:block md:hidden lg:block"><img src={qrCode} alt="QR tham gia nhóm Zalo App tùy chỉnh GIAOVIENCN" className="h-[122px] w-[122px] rounded-xl" /></div>}
+                  {qrCode && <div className="mx-auto hidden rounded-[22px] border-[3px] border-[#ffd85a] bg-white p-2 shadow-[0_6px_0_#7b278e,0_12px_22px_rgba(91,34,111,.2)] sm:block md:hidden lg:block"><img src={qrCode} alt="QR tham gia nhóm Zalo N2 GIAOVIENCN" className="h-[122px] w-[122px] rounded-xl" /></div>}
                   <div className="space-y-3">
-                    <a href={ZALO_GROUP_URL} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border-[3px] border-[#7be4ff] bg-gradient-to-r from-blue-600 to-cyan-500 px-4 py-3 text-center text-sm font-black text-white shadow-[0_6px_0_#1854ad,0_10px_18px_rgba(24,84,173,.2)] transition hover:-translate-y-0.5">
-                      <Smartphone size={19} /> Vào nhóm Zalo
-                    </a>
+                    <div className="grid grid-cols-2 gap-2">
+                      <button type="button" disabled aria-disabled="true" className="flex min-h-12 cursor-not-allowed items-center justify-center gap-1 rounded-2xl border-[3px] border-red-200 bg-slate-200 px-2 py-3 text-center text-xs font-black text-slate-500 shadow-[0_5px_0_#94a3b8]">
+                        N1 · ĐÃ ĐẦY
+                      </button>
+                      <a href={ZALO_GROUP_N2_URL} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center gap-1 rounded-2xl border-[3px] border-[#7be4ff] bg-gradient-to-r from-blue-600 to-cyan-500 px-2 py-3 text-center text-xs font-black text-white shadow-[0_6px_0_#1854ad,0_10px_18px_rgba(24,84,173,.2)] transition hover:-translate-y-0.5">
+                        <Smartphone size={17} /> N2 · VÀO NHÓM
+                      </a>
+                    </div>
                     <a href={FORM_REGISTER_URL} target="_blank" rel="noopener noreferrer" className="flex min-h-12 items-center justify-center gap-2 rounded-2xl border-[3px] border-[#ffe06c] bg-gradient-to-r from-amber-400 to-orange-400 px-4 py-3 text-center text-sm font-black text-purple-950 shadow-[0_5px_0_#c86e00] transition hover:-translate-y-0.5 hover:brightness-105">
                       <FileText size={18} /> Thầy cô đăng ký cấp quyền miễn phí tại đây
                     </a>
@@ -240,4 +245,3 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
     </div>
   );
 }
-
