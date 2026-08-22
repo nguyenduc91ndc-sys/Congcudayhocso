@@ -3215,6 +3215,12 @@ body {
 .tool-volume-control > input { width: 100%; margin: 10px 0 7px; accent-color: #a14fd4; cursor: pointer; }
 .tool-volume-control > button { display: inline-flex; align-items: center; justify-content: center; gap: 5px; width: 100%; padding: 8px; color: #754491; border: 1px solid #dac7e6; border-radius: 9px; background: #fff; font-size: 8px; font-weight: 850; cursor: pointer; }
 .tool-volume-control > button:hover { color: #fff; border-color: #9149ca; background: #9149ca; }
+.tool-volume-control > input:disabled,
+.tool-volume-control > button:disabled { opacity: .42; cursor: not-allowed; }
+.tool-volume-control > button:disabled:hover { color: #754491; border-color: #dac7e6; background: #fff; }
+.tick-volume-control { border-color: #ead2e4; background: linear-gradient(135deg,#fff9fd,#fbf7ff); }
+.tick-volume-control > label em { background: linear-gradient(135deg,#df55aa,#f27a8b); }
+.tick-volume-control > input { accent-color: #df55aa; }
 
 .classroom-noise-focus { min-height: 505px; display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 24px; transition: background .3s ease; background: radial-gradient(circle at 50% 42%,#fff 0 23%,#faf6ff 60%,#f5edfc 100%); }
 .noise-visual { position: relative; width: min(280px,67vw); aspect-ratio: 1; display: grid; place-items: center; margin: -8px 0 1px; }

@@ -114,8 +114,9 @@ export default function ClassroomToolsPage() {
   const [timerRunning, setTimerRunning] = useState(false);
   const [timerCompleted, setTimerCompleted] = useState(false);
   const [finishSound, setFinishSound] = useState(true);
-  const [lastTenSound, setLastTenSound] = useState(true);
+  const [secondTickSound, setSecondTickSound] = useState(true);
   const [timerVolume, setTimerVolume] = useState(72);
+  const [secondTickVolume, setSecondTickVolume] = useState(42);
   const [isPresentation, setIsPresentation] = useState(false);
   const [isListening, setIsListening] = useState(false);
   const [noiseLevel, setNoiseLevel] = useState(0);
@@ -168,9 +169,9 @@ export default function ClassroomToolsPage() {
         const nextRemaining = Math.max(0, Math.ceil((countdownEndRef.current - Date.now()) / 1000));
         setRemaining(nextRemaining);
 
-        if (nextRemaining > 0 && nextRemaining <= 10 && lastTickRef.current === null) {
+        if (nextRemaining > 0 && nextRemaining !== lastTickRef.current) {
           lastTickRef.current = nextRemaining;
-          if (lastTenSound) playSoundFile(countdownAudioRef, classroomSounds.countdown, timerVolume, Math.max(0, 10 - nextRemaining), () => playTone(880, 0.075, 0.035));
+          if (secondTickSound) playSoundFile(countdownAudioRef, classroomSounds.countdown, secondTickVolume, 0, () => playTone(880, 0.075, Math.max(0.01, secondTickVolume / 2000)));
         }
 
         if (nextRemaining === 0) {
@@ -192,7 +193,7 @@ export default function ClassroomToolsPage() {
     updateTimer();
     const interval = window.setInterval(updateTimer, 150);
     return () => window.clearInterval(interval);
-  }, [finishSound, lastTenSound, timerMode, timerRunning, timerVolume]);
+  }, [finishSound, secondTickSound, secondTickVolume, timerMode, timerRunning, timerVolume]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -214,10 +215,10 @@ export default function ClassroomToolsPage() {
   }, [sensitivity]);
 
   useEffect(() => {
-    if (!lastTenSound) stopSoundFile(countdownAudioRef);
-    if (countdownAudioRef.current) countdownAudioRef.current.volume = timerVolume / 100;
+    if (!secondTickSound) stopSoundFile(countdownAudioRef);
+    if (countdownAudioRef.current) countdownAudioRef.current.volume = secondTickVolume / 100;
     if (finishAudioRef.current) finishAudioRef.current.volume = timerVolume / 100;
-  }, [lastTenSound, timerVolume]);
+  }, [secondTickSound, secondTickVolume, timerVolume]);
 
   useEffect(() => {
     noiseAlertSettingsRef.current = { enabled: noiseAlertEnabled, threshold: noiseAlertThreshold, cooldown: noiseAlertCooldown, volume: noiseAlertVolume };
@@ -355,7 +356,7 @@ export default function ClassroomToolsPage() {
     setTimerCompleted(false);
     finishPlayedRef.current = false;
     lastTickRef.current = null;
-    if (finishSound || lastTenSound) playSoundFile(startAudioRef, classroomSounds.start, Math.min(timerVolume, 58), 0, () => playTone(659.25, 0.08, 0.035));
+    if (finishSound || secondTickSound) playSoundFile(startAudioRef, classroomSounds.start, Math.min(timerVolume, 58), 0, () => playTone(659.25, 0.08, 0.035));
     if (timerMode === 'countdown') {
       const startFrom = remaining > 0 ? remaining : duration;
       setRemaining(startFrom);
@@ -541,15 +542,22 @@ export default function ClassroomToolsPage() {
                   <i>{finishSound ? <Check size={13} /> : ''}</i>
                 </button>
                 {timerMode === 'countdown' && (
-                  <button type="button" className={lastTenSound ? 'enabled' : ''} onClick={() => setLastTenSound((value) => !value)}>
+                  <button type="button" className={secondTickSound ? 'enabled' : ''} onClick={() => setSecondTickSound((value) => !value)}>
                     <BellRing size={18} />
-                    <span><strong>Tích tắc 10 giây cuối</strong><small>{lastTenSound ? 'Đang bật' : 'Đang tắt'}</small></span>
-                    <i>{lastTenSound ? <Check size={13} /> : ''}</i>
+                    <span><strong>Âm thanh từng giây</strong><small>{secondTickSound ? 'Phát trong toàn bộ thời gian đếm ngược' : 'Đang tắt'}</small></span>
+                    <i>{secondTickSound ? <Check size={13} /> : ''}</i>
                   </button>
                 )}
               </div>
+              {timerMode === 'countdown' && (
+                <div className="tool-volume-control tick-volume-control">
+                  <label htmlFor="second-tick-volume"><span><strong>Âm lượng tiếng giây</strong><small>Chỉnh riêng tiếng “tick” phát ở mỗi giây</small></span><em>{secondTickVolume}%</em></label>
+                  <input id="second-tick-volume" type="range" min="0" max="100" value={secondTickVolume} disabled={!secondTickSound} onChange={(event) => setSecondTickVolume(Number(event.target.value))} />
+                  <button type="button" disabled={!secondTickSound} onClick={() => playSoundFile(countdownAudioRef, classroomSounds.countdown, secondTickVolume, 0, () => playTone(880, 0.075, Math.max(0.01, secondTickVolume / 2000)))}><Volume2 size={15} /> Nghe thử tiếng giây</button>
+                </div>
+              )}
               <div className="tool-volume-control timer-volume-control">
-                <label htmlFor="timer-volume"><span><strong>Âm lượng đồng hồ</strong><small>Áp dụng cho tiếng bắt đầu, tích tắc và hoàn thành</small></span><em>{timerVolume}%</em></label>
+                <label htmlFor="timer-volume"><span><strong>Âm lượng chuông</strong><small>Áp dụng cho tiếng bắt đầu và hoàn thành</small></span><em>{timerVolume}%</em></label>
                 <input id="timer-volume" type="range" min="10" max="100" value={timerVolume} onChange={(event) => setTimerVolume(Number(event.target.value))} />
                 <button type="button" onClick={previewTimerSound}><Volume2 size={15} /> Nghe thử chuông</button>
               </div>
