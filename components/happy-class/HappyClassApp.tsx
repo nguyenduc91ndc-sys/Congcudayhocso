@@ -866,16 +866,14 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   }, [toast]);
 
   useEffect(() => {
-    if (!pointUndoAction) return;
-    const timer = window.setTimeout(() => setPointUndoAction(null), 8000);
-    return () => window.clearTimeout(timer);
-  }, [pointUndoAction]);
-
-  useEffect(() => {
     if (!weekUndoAction) return;
     const timer = window.setTimeout(() => setWeekUndoAction(null), 8000);
     return () => window.clearTimeout(timer);
   }, [weekUndoAction]);
+
+  useEffect(() => {
+    if (page !== 'points') setPointUndoAction(null);
+  }, [page]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -1172,6 +1170,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       activityIds: newEntries.map((entry) => entry.id),
       students: studentSnapshots,
     });
+    setToast(`${points > 0 ? 'Đã cộng' : 'Đã trừ'} ${Math.abs(points)} điểm cho ${studentSnapshots.length} học sinh`);
   };
 
   const undoLastPointAction = () => {
@@ -1535,7 +1534,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
             />
           )}
           {page === 'students' && <StudentsPage students={students} teamCount={classProfile.teamCount} canManageStudents={isTeacher} onOpenStudent={setProfileId} onAddStudent={() => navigate('management')} />}
-          {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} onSaveReasons={savePointReasons} onAddPoints={addPoints} />}
+          {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} onToggleScoringMode={toggleTeamScoringMode} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} />}
@@ -1562,19 +1561,10 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           onClose={() => setProfileId(null)}
         />
       )}
-      {toast && !pointUndoAction && !weekUndoAction && (
+      {toast && !weekUndoAction && (
         <div className="toast" role="status">
           <span className="toast-check"><Check size={16} strokeWidth={3} /></span>
           {toast}
-        </div>
-      )}
-      {pointUndoAction && (
-        <div className="toast toast-with-action" role="status" aria-live="polite">
-          <span className="toast-check"><Check size={16} strokeWidth={3} /></span>
-          <span className="toast-message">{pointUndoAction.message}</span>
-          <button type="button" className="toast-undo-button" onClick={undoLastPointAction}>
-            <RotateCcw size={15} /> Hoàn tác
-          </button>
         </div>
       )}
       {weekUndoAction && (
@@ -1663,7 +1653,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
   const topics: { icon: string; title: string; description: string; keywords: string; page: PageId; teacherOnly?: boolean }[] = [
     { icon: '👩‍🎓', title: 'Học sinh và nhập Excel', description: 'Thêm, sửa hồ sơ hoặc nhập cả danh sách học sinh từ tệp Excel.', keywords: 'học sinh excel danh sách thêm sửa xóa mã định danh', page: 'management', teacherOnly: true },
     { icon: '🗓️', title: 'Quản lý tuần học', description: 'Đặt thời gian, chốt điểm tuần, mở tuần mới và xem lại lịch sử.', keywords: 'tuần chốt tuần điểm tuần lịch sử thi đua vinh danh', page: 'management', teacherOnly: true },
-    { icon: '✨', title: 'Cộng và trừ điểm', description: 'Chọn học sinh, ghi nhận điểm tốt hoặc nhắc nhở; có thể hoàn tác lượt vừa chấm trong 8 giây.', keywords: 'điểm cộng trừ nhắc nhở hoàn tác undo cấu hình vườn điểm tốt', page: 'points' },
+    { icon: '✨', title: 'Cộng và trừ điểm', description: 'Chọn học sinh, ghi nhận điểm tốt hoặc nhắc nhở; có thể hoàn tác lượt chấm gần nhất bằng nút Hoàn tác.', keywords: 'điểm cộng trừ nhắc nhở hoàn tác undo cấu hình vườn điểm tốt', page: 'points' },
     { icon: '📅', title: 'Điểm danh', description: 'Đánh dấu có mặt, đi muộn, nghỉ có phép hoặc nghỉ không phép.', keywords: 'điểm danh chuyên cần có mặt vắng nghỉ', page: 'attendance' },
     { icon: '🎡', title: 'Gọi tên ngẫu nhiên', description: 'Quay theo cả lớp hoặc từng tổ; chỉ học sinh đang có mặt được tham gia.', keywords: 'gọi tên vòng quay ngẫu nhiên tổ', page: 'random' },
     { icon: '💞', title: 'Cổng phụ huynh', description: 'Tra cứu hành trình học sinh bằng mã phụ huynh trong hồ sơ.', keywords: 'phụ huynh tra cứu mã hành trình', page: 'parents' },
@@ -2502,7 +2492,7 @@ function StudentsPage({ students, teamCount, canManageStudents, onOpenStudent, o
   );
 }
 
-function PointsPage({ students, reasons, canConfigure, onSaveReasons, onAddPoints }: { students: Student[]; reasons: PointReason[]; canConfigure: boolean; onSaveReasons: (reasons: PointReason[]) => void; onAddPoints: (ids: number[], points: number, reason: string) => void }) {
+function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveReasons, onAddPoints, onUndoPoints }: { students: Student[]; reasons: PointReason[]; canConfigure: boolean; lastPointAction: string; onSaveReasons: (reasons: PointReason[]) => void; onAddPoints: (ids: number[], points: number, reason: string) => void; onUndoPoints: () => void }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [mode, setMode] = useState<'positive' | 'negative'>('positive');
   const [settingsVisible, setSettingsVisible] = useState(false);
@@ -2512,6 +2502,11 @@ function PointsPage({ students, reasons, canConfigure, onSaveReasons, onAddPoint
   return (
     <>
       <PageHeading eyebrow="VƯỜN HOA ĐIỂM TỐT" title="Gieo lời khen, nuôi dưỡng tiến bộ" description="Chọn học sinh và ghi nhận ngay những nỗ lực đáng quý trong ngày." icon="✨" />
+      <div className={`points-undo-bar panel ${lastPointAction ? 'is-ready' : ''}`}>
+        <span className="points-undo-icon"><RotateCcw size={20} /></span>
+        <div><strong>Hoàn tác chấm điểm</strong><small>{lastPointAction || 'Sau khi cộng hoặc trừ điểm, lượt gần nhất có thể được hoàn tác tại đây.'}</small></div>
+        <button type="button" disabled={!lastPointAction} onClick={onUndoPoints}><RotateCcw size={16} /> Hoàn tác lượt gần nhất</button>
+      </div>
       <div className="points-layout">
         <section className="panel selection-panel">
           <div className="selection-header"><div><span>BƯỚC 1</span><h3>Chọn học sinh</h3></div><button className="text-button" onClick={() => setSelected(selected.length === students.length ? [] : students.map((item) => item.id))}>{selected.length === students.length ? 'Bỏ chọn tất cả' : 'Chọn cả lớp'}</button></div>

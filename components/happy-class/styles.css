@@ -2973,3 +2973,22 @@ body {
   .app-shell .week-danger-zone { align-items: stretch; flex-direction: column; }
   .app-shell .week-danger-zone button { width: 100%; }
 }
+
+/* Nút hoàn tác chấm điểm luôn hiện, không giới hạn thời gian trong phiên làm việc. */
+.app-shell .points-undo-bar { margin-bottom: 14px; padding: 12px 14px; display: flex; align-items: center; gap: 11px; border: 2px solid #dfd6e3; background: linear-gradient(145deg,#fff,#faf6fc); }
+.app-shell .points-undo-bar.is-ready { border-color: #f0cf5c; background: linear-gradient(145deg,#fffef0,#fff3c4); box-shadow: 0 5px 0 #e3c259,0 14px 28px rgba(121,85,28,.1); }
+.app-shell .points-undo-icon { width: 40px; height: 40px; display: grid; place-items: center; flex: none; border-radius: 13px; color: #776b7a; background: #eee8f0; }
+.app-shell .points-undo-bar.is-ready .points-undo-icon { color: #7a3b76; background: linear-gradient(#fff086,#ffc844); box-shadow: 0 3px 0 #c8862e; }
+.app-shell .points-undo-bar > div { min-width: 0; display: flex; flex: 1; flex-direction: column; gap: 3px; }
+.app-shell .points-undo-bar strong { color: #653b66; font-size: 12px; }
+.app-shell .points-undo-bar small { overflow: hidden; color: #746776; font-size: 10.5px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+.app-shell .points-undo-bar > button { min-height: 40px; padding: 0 13px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; flex: none; border: 3px solid #f2d264; border-radius: 14px; color: #6f2b74; background: linear-gradient(#fff59c,#ffd253); box-shadow: 0 5px 0 #bd7928; font-size: 11px; font-weight: 950; cursor: pointer; transition: transform .15s ease, filter .15s ease; }
+.app-shell .points-undo-bar > button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.03); }
+.app-shell .points-undo-bar > button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #bd7928; }
+.app-shell .points-undo-bar > button:disabled { border-color: #ded7e0; color: #a59ba7; background: #eee9ef; box-shadow: 0 4px 0 #d3ccd5; cursor: not-allowed; }
+@media (max-width: 680px) {
+  .app-shell .points-undo-bar { align-items: stretch; flex-wrap: wrap; }
+  .app-shell .points-undo-bar > div { justify-content: center; }
+  .app-shell .points-undo-bar small { white-space: normal; }
+  .app-shell .points-undo-bar > button { width: 100%; }
+}
