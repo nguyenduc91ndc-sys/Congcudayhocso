@@ -64,6 +64,7 @@ import type { Activity, AttendanceRecord, AttendanceStatus, PointReason, Reward,
 import { downloadStudentTemplate, parseStudentWorkbook } from './excel';
 import type { ExcelImportResult } from './excel';
 import ClassroomToolsPage from './ClassroomToolsPage';
+import ClassReportExport from './ClassReportExport';
 import parentFeedbackAppsScriptCode from './google-apps-script-parent-feedback.gs?raw';
 import happyClassStyles from './styles.css?raw';
 import {
@@ -1702,6 +1703,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
     { icon: '🎡', title: 'Gọi tên ngẫu nhiên', description: 'Quay theo cả lớp hoặc từng tổ; chỉ học sinh đang có mặt được tham gia.', keywords: 'gọi tên vòng quay ngẫu nhiên tổ', page: 'random' },
     { icon: '⏱️', title: 'Đồng hồ và quản lý tiếng ồn', description: 'Đếm ngược, bấm giờ và hiển thị mức ồn trực quan ngay trên thiết bị.', keywords: 'đồng hồ bấm giờ đếm ngược micro tiếng ồn trình chiếu', page: 'tools' },
     { icon: '💞', title: 'Cổng phụ huynh', description: 'Tra cứu hành trình học sinh bằng mã phụ huynh trong hồ sơ.', keywords: 'phụ huynh tra cứu mã hành trình', page: 'parents' },
+    { icon: '📘', title: 'Xuất sổ lớp để in', description: 'Tạo báo cáo tuần, tháng hoặc năm học; in A4, lưu PDF hay xuất Excel.', keywords: 'xuất sổ báo cáo in pdf excel đóng sổ kết quả', page: 'management', teacherOnly: true },
     { icon: '🛡️', title: 'Sao lưu và khôi phục', description: 'Xuất bản sao JSON để giữ an toàn dữ liệu hoặc chuyển sang máy khác.', keywords: 'sao lưu json khôi phục xuất nhập dữ liệu', page: 'management', teacherOnly: true },
   ];
   const search = query.trim().toLocaleLowerCase('vi-VN');
@@ -1796,6 +1798,7 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
 function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
+  const [reportExportOpen, setReportExportOpen] = useState(false);
   const [backupImporting, setBackupImporting] = useState(false);
   const [clearConfirmOpen, setClearConfirmOpen] = useState(false);
   const backupInputRef = useRef<HTMLInputElement>(null);
@@ -1849,6 +1852,12 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
         </article>
       </section>
 
+      <section className="management-report-launch panel">
+        <div className="management-report-art" aria-hidden="true"><span>📘</span><i>PDF</i><b>XL</b></div>
+        <div><span>SỔ THEO DÕI LỚP HỌC</span><h2>Xuất kết quả để in và đóng sổ</h2><p>Tạo báo cáo theo tuần, tháng hoặc năm học; có bảng tổng hợp, chi tiết từng học sinh, chuyên cần và phần ký xác nhận.</p><div className="management-report-tags"><small>A4 dọc/ngang</small><small>In hoặc lưu PDF</small><small>Xuất Excel</small><small>Không chứa dữ liệu phụ huynh</small></div></div>
+        <button type="button" className="button button-primary" disabled={!students.length} onClick={() => setReportExportOpen(true)}><Download size={18} /> Mở trình xuất sổ</button>
+      </section>
+
       <WeekManagement students={students} teamCount={classProfile.teamCount} activities={activities} weekState={weekState} scoring={weeklyScoring} onUpdate={onUpdateWeek} onClose={onCloseWeek} onDeleteClosedWeek={onDeleteClosedWeek} onSaveScoring={onSaveWeeklyScoring} onResetWeekPoints={onResetWeekPoints} />
 
       <section className="management-students panel">
@@ -1897,6 +1906,7 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
         </div>
       )}
       {excelImportOpen && <ExcelStudentImport currentStudents={students} onImport={onImportStudents} onClose={() => setExcelImportOpen(false)} />}
+      {reportExportOpen && <ClassReportExport students={students} activities={activities} attendanceHistory={attendanceHistory} weekState={weekState} teacherName={teacherName} classInfo={classProfile} onClose={() => setReportExportOpen(false)} />}
       {editingStudent && <StudentEditor key={editingStudent.id} student={editingStudent} teamCount={classProfile.teamCount} isNew={!students.some((item) => item.id === editingStudent.id)} onSave={(student) => { onSaveStudent(student); setEditingStudent(null); }} onClose={() => setEditingStudent(null)} />}
     </>
   );
