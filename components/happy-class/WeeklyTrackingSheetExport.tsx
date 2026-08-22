@@ -109,36 +109,36 @@ export default function WeeklyTrackingSheetExport({
           <style>
             @page { size: A4 landscape; margin: 9mm 9mm 12mm; }
             * { box-sizing: border-box; }
-            body { margin: 0; color: #17121a; font: 10.5px Arial, "Segoe UI", sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+            body { margin: 0; color: #100b12; font: 11.5px Arial, "Segoe UI", sans-serif; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
             header { display: grid; grid-template-columns: 1fr 1.6fr 1fr; align-items: start; padding-bottom: 7px; border-bottom: 2px solid #5e217e; }
-            header .school { font-size: 9px; font-weight: 700; line-height: 1.7; }
+            header .school { font-size: 10px; font-weight: 800; line-height: 1.7; }
             header .title { text-align: center; }
-            header h1 { margin: 2px 0; color: #48155f; font-size: 17px; text-transform: uppercase; }
-            header p { margin: 2px 0; color: #534858; font-weight: 600; }
+            header h1 { margin: 2px 0; color: #3e0d55; font-size: 19px; font-weight: 900; text-transform: uppercase; }
+            header p { margin: 2px 0; color: #302535; font-size: 10px; font-weight: 750; }
             header .week { justify-self: end; padding: 7px 10px; border: 1.5px solid #b99bc9; border-radius: 7px; text-align: center; }
-            .week b { display: block; color: #5f247f; font-size: 14px; }
-            .week span { font-size: 9px; }
+            .week b { display: block; color: #50146f; font-size: 15px; }
+            .week span { color: #241b29; font-size: 9.5px; font-weight: 700; }
             .meta { display: grid; grid-template-columns: .55fr 1.3fr 1fr 1fr; gap: 6px; margin: 7px 0; }
             .meta div { padding: 5px 7px; border: 1px solid #c7bdca; border-radius: 5px; }
-            .meta span { display: block; color: #635869; font-size: 7px; text-transform: uppercase; }
-            .meta b { display: block; margin-top: 2px; font-size: 9px; }
+            .meta span { display: block; color: #453949; font-size: 8px; font-weight: 750; text-transform: uppercase; }
+            .meta b { display: block; margin-top: 2px; font-size: 10px; font-weight: 850; }
             .reason-title { display: flex; align-items: center; justify-content: space-between; margin: 6px 0 4px; }
-            .reason-title b { color: #512067; font-size: 10px; }
-            .reason-title span { color: #665b6b; font-size: 8px; }
+            .reason-title b { color: #45105e; font-size: 11px; }
+            .reason-title span { color: #413647; font-size: 9px; font-weight: 700; }
             .reasons { display: grid; grid-template-columns: repeat(5, 1fr); gap: 4px; margin-bottom: 7px; }
             .reason { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 4px; min-height: 26px; padding: 4px 5px; border: 1px solid #bcaec2; border-radius: 5px; background: #faf8fb; }
-            .reason b { min-width: 24px; padding: 3px; color: #fff; border-radius: 4px; background: #6f3292; text-align: center; font-size: 8px; }
+            .reason b { min-width: 26px; padding: 3px; color: #fff; border-radius: 4px; background: #652686; text-align: center; font-size: 9px; }
             .reason.negative b { background: #c64567; }
-            .reason span { overflow: hidden; font-size: 8px; font-weight: 650; text-overflow: ellipsis; white-space: nowrap; }
-            .reason strong { color: #5a246f; font-size: 8px; }
+            .reason span { overflow: hidden; color: #171019; font-size: 9px; font-weight: 800; text-overflow: ellipsis; white-space: nowrap; }
+            .reason strong { color: #4c1265; font-size: 9px; }
             .reason.negative strong { color: #a62f4d; }
-            .instructions { margin: 5px 0 7px; padding: 5px 7px; color: #2d6253; border: 1px solid #b8ddcf; border-radius: 5px; background: #effbf6; font-size: 8px; font-weight: 650; }
+            .instructions { margin: 5px 0 7px; padding: 6px 8px; color: #164d3d; border: 1px solid #91cbb7; border-radius: 5px; background: #effbf6; font-size: 9.5px; font-weight: 800; }
             table { width: 100%; border-collapse: collapse; table-layout: fixed; }
             thead { display: table-header-group; }
             tr { page-break-inside: avoid; }
             th, td { height: 23px; padding: 3px 4px; border: 1px solid #827786; }
-            th { height: 26px; color: #fff; background: #5d217c; font-size: 8px; text-transform: uppercase; }
-            td { text-align: center; font-size: 9px; }
+            th { height: 27px; color: #fff; background: #51206b; font-size: 9px; font-weight: 900; text-transform: uppercase; }
+            td { color: #130d15; text-align: center; font-size: 10px; font-weight: 600; }
             th:nth-child(1), td:nth-child(1) { width: 32px; }
             th:nth-child(2), td:nth-child(2) { width: 68px; }
             th:nth-child(3), td:nth-child(3) { width: 155px; text-align: left; }
@@ -149,8 +149,8 @@ export default function WeeklyTrackingSheetExport({
             th:nth-child(9), td:nth-child(9) { width: 54px; }
             .approve { font-size: 14px; }
             .signatures { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-top: 8px; text-align: center; page-break-inside: avoid; }
-            .signatures b { display: block; font-size: 8px; }
-            .signatures span { display: block; margin-top: 20px; color: #605565; font-size: 7px; font-style: italic; }
+            .signatures b { display: block; font-size: 9.5px; }
+            .signatures span { display: block; margin-top: 20px; color: #453a49; font-size: 8px; font-style: italic; }
             .roster { page-break-before: always; }
             .roster h2 { margin: 0 0 3px; color: #4d1765; text-align: center; }
             .roster > p { margin: 0 0 9px; text-align: center; }
@@ -158,7 +158,7 @@ export default function WeeklyTrackingSheetExport({
             .roster table th:nth-child(2), .roster table td:nth-child(2) { text-align: left; }
             .roster table td { height: 25px; }
             .roster-note { height: 65px; margin-top: 9px; padding: 8px; border: 1px dashed #8e828f; }
-            .footer { position: fixed; right: 0; bottom: -8mm; left: 0; color: #6d626f; font-size: 7px; text-align: center; }
+            .footer { position: fixed; right: 0; bottom: -8mm; left: 0; color: #453a49; font-size: 8px; font-weight: 700; text-align: center; }
             .footer::after { content: " · Trang " counter(page); }
           </style>
         </head>
