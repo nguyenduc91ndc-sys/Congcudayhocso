@@ -119,6 +119,11 @@ type WeeklyScoringSettings = {
 type ParentFeedbackCategory = 'learning' | 'attendance' | 'support' | 'thanks';
 type TeacherAccount = { id?: string; email?: string; name: string; source?: 'platform' | 'local' | 'firebase' };
 type TeacherCredential = { name: string; salt: string; pinHash: string };
+type PointUndoAction = {
+  message: string;
+  activityIds: number[];
+  students: Array<Pick<Student, 'id' | 'score' | 'weeklyScore' | 'streak'>>;
+};
 type ClassBackup = {
   version: 1;
   exportedAt?: string;
@@ -720,6 +725,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [profileId, setProfileId] = useState<number | null>(null);
   const [toast, setToast] = useState('');
+  const [pointUndoAction, setPointUndoAction] = useState<PointUndoAction | null>(null);
   const [teacherName, setTeacherName] = useState(readTeacherName);
   const [teacherPhoto, setTeacherPhoto] = useState<string | undefined>(readTeacherPhoto);
   const [classProfile, setClassProfile] = useState<ClassProfile>(readClassProfile);
@@ -851,6 +857,12 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     const timer = window.setTimeout(() => setToast(''), 2800);
     return () => window.clearTimeout(timer);
   }, [toast]);
+
+  useEffect(() => {
+    if (!pointUndoAction) return;
+    const timer = window.setTimeout(() => setPointUndoAction(null), 8000);
+    return () => window.clearTimeout(timer);
+  }, [pointUndoAction]);
 
   useEffect(() => {
     const handleHashChange = () => {
@@ -1111,6 +1123,11 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
 
   const addPoints = (studentIds: number[], points: number, reason: string) => {
     if (!studentIds.length) return;
+    setToast('');
+    const studentSnapshots = students
+      .filter((student) => studentIds.includes(student.id))
+      .map(({ id, score, weeklyScore, streak }) => ({ id, score, weeklyScore, streak }));
+    if (!studentSnapshots.length) return;
     setStudents((current) =>
       current.map((student) =>
         studentIds.includes(student.id)
@@ -1123,9 +1140,10 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           : student,
       ),
     );
-    const newEntries = studentIds.map((studentId, index) => ({
-      id: Date.now() + index,
-      studentId,
+    const activityIdBase = Date.now();
+    const newEntries = studentSnapshots.map((student, index) => ({
+      id: activityIdBase + index,
+      studentId: student.id,
       title: reason,
       detail: 'Ghi nhận nhanh từ giáo viên',
       points,
@@ -1135,7 +1153,24 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       weekId: weekState.current.id,
     }));
     setActivities((current) => [...newEntries, ...current].slice(0, 10000));
-    setToast(`${points > 0 ? 'Đã cộng' : 'Đã trừ'} ${Math.abs(points)} điểm cho ${studentIds.length} học sinh`);
+    setPointUndoAction({
+      message: `${points > 0 ? 'Đã cộng' : 'Đã trừ'} ${Math.abs(points)} điểm cho ${studentSnapshots.length} học sinh`,
+      activityIds: newEntries.map((entry) => entry.id),
+      students: studentSnapshots,
+    });
+  };
+
+  const undoLastPointAction = () => {
+    if (!pointUndoAction) return;
+    const snapshots = new Map(pointUndoAction.students.map((student) => [student.id, student]));
+    const activityIds = new Set(pointUndoAction.activityIds);
+    setStudents((current) => current.map((student) => {
+      const snapshot = snapshots.get(student.id);
+      return snapshot ? { ...student, score: snapshot.score, weeklyScore: snapshot.weeklyScore, streak: snapshot.streak } : student;
+    }));
+    setActivities((current) => current.filter((activity) => !activityIds.has(activity.id)));
+    setPointUndoAction(null);
+    setToast('Đã hoàn tác lượt cộng/trừ điểm vừa rồi');
   };
 
   const updateAttendance = (studentId: number, status: AttendanceStatus, date?: string) => {
@@ -1477,10 +1512,19 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           onClose={() => setProfileId(null)}
         />
       )}
-      {toast && (
+      {toast && !pointUndoAction && (
         <div className="toast" role="status">
           <span className="toast-check"><Check size={16} strokeWidth={3} /></span>
           {toast}
+        </div>
+      )}
+      {pointUndoAction && (
+        <div className="toast toast-with-action" role="status" aria-live="polite">
+          <span className="toast-check"><Check size={16} strokeWidth={3} /></span>
+          <span className="toast-message">{pointUndoAction.message}</span>
+          <button type="button" className="toast-undo-button" onClick={undoLastPointAction}>
+            <RotateCcw size={15} /> Hoàn tác
+          </button>
         </div>
       )}
     </div>
@@ -1560,7 +1604,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
   const topics: { icon: string; title: string; description: string; keywords: string; page: PageId; teacherOnly?: boolean }[] = [
     { icon: '👩‍🎓', title: 'Học sinh và nhập Excel', description: 'Thêm, sửa hồ sơ hoặc nhập cả danh sách học sinh từ tệp Excel.', keywords: 'học sinh excel danh sách thêm sửa xóa mã định danh', page: 'management', teacherOnly: true },
     { icon: '🗓️', title: 'Quản lý tuần học', description: 'Đặt thời gian, chốt điểm tuần, mở tuần mới và xem lại lịch sử.', keywords: 'tuần chốt tuần điểm tuần lịch sử thi đua vinh danh', page: 'management', teacherOnly: true },
-    { icon: '✨', title: 'Cộng và trừ điểm', description: 'Chọn học sinh, ghi nhận điểm tốt hoặc nhắc nhở; giáo viên có thể tự tạo nội dung.', keywords: 'điểm cộng trừ nhắc nhở cấu hình vườn điểm tốt', page: 'points' },
+    { icon: '✨', title: 'Cộng và trừ điểm', description: 'Chọn học sinh, ghi nhận điểm tốt hoặc nhắc nhở; có thể hoàn tác lượt vừa chấm trong 8 giây.', keywords: 'điểm cộng trừ nhắc nhở hoàn tác undo cấu hình vườn điểm tốt', page: 'points' },
     { icon: '📅', title: 'Điểm danh', description: 'Đánh dấu có mặt, đi muộn, nghỉ có phép hoặc nghỉ không phép.', keywords: 'điểm danh chuyên cần có mặt vắng nghỉ', page: 'attendance' },
     { icon: '🎡', title: 'Gọi tên ngẫu nhiên', description: 'Quay theo cả lớp hoặc từng tổ; chỉ học sinh đang có mặt được tham gia.', keywords: 'gọi tên vòng quay ngẫu nhiên tổ', page: 'random' },
     { icon: '💞', title: 'Cổng phụ huynh', description: 'Tra cứu hành trình học sinh bằng mã phụ huynh trong hồ sơ.', keywords: 'phụ huynh tra cứu mã hành trình', page: 'parents' },

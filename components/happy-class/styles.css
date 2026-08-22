@@ -2946,3 +2946,14 @@ body {
 @media (max-width: 680px) {
   .point-reason-icon-picker { grid-template-columns: repeat(5, 1fr); }
 }
+
+/* Hoàn tác nhanh lượt cộng/trừ điểm gần nhất. */
+.app-shell .toast-with-action { max-width: 470px; }
+.app-shell .toast-message { min-width: 0; flex: 1; }
+.app-shell .toast-undo-button { min-height: 34px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; flex: none; border: 2px solid #f1c952; border-radius: 11px; color: #6f2b74; background: linear-gradient(#fff9bf,#ffd95d); box-shadow: 0 3px 0 #bf7b2a; font: inherit; font-weight: 950; cursor: pointer; transition: transform .15s ease, filter .15s ease; }
+.app-shell .toast-undo-button:hover { transform: translateY(-1px); filter: brightness(1.03); }
+.app-shell .toast-undo-button:active { transform: translateY(2px); box-shadow: 0 1px 0 #bf7b2a; }
+@media (max-width: 680px) {
+  .app-shell .toast-with-action { align-items: center; }
+  .app-shell .toast-undo-button { min-height: 38px; padding-inline: 10px; }
+}
