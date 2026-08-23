@@ -3888,3 +3888,36 @@ body {
   .seating-stage:is(.is-presentation, :fullscreen) .seating-desk-grid { row-gap: 22px; }
   .seating-stage:is(.is-presentation, :fullscreen) .seating-seat .seating-avatar { width: 25px; height: 25px; }
 }
+
+.seating-viewpoint-button.is-active {
+  color: #fff;
+  border-color: #7a36ae;
+  background: linear-gradient(145deg, #7d43cf, #c84ca8);
+  box-shadow: 0 3px 0 #5b2677, 0 7px 13px rgba(91,38,119,.18);
+}
+.seating-stage.is-teacher-view .seating-room-scroll { padding-top: 25px; padding-bottom: 18px; }
+.seating-stage.is-teacher-view .seating-teacher-desk { margin: 34px auto 14px; }
+.seating-stage.is-teacher-view .seating-board { margin: 0 auto 12px; }
+.seating-stage.is-teacher-view .seating-board::before,
+.seating-stage.is-teacher-view .seating-board::after {
+  top: -17px;
+  bottom: auto;
+  border-radius: 8px 8px 2px 2px;
+}
+.seating-stage:is(.is-presentation, :fullscreen).is-teacher-view .seating-room-scroll {
+  padding-top: clamp(16px, 2.6vh, 25px);
+  padding-bottom: 5px;
+}
+.seating-stage:is(.is-presentation, :fullscreen).is-teacher-view .seating-teacher-desk {
+  margin: clamp(19px, 2.7vh, 28px) auto 7px;
+}
+.seating-stage:is(.is-presentation, :fullscreen).is-teacher-view .seating-board { margin-bottom: 0; }
+.seating-stage:is(.is-presentation, :fullscreen).is-teacher-view .seating-board::before,
+.seating-stage:is(.is-presentation, :fullscreen).is-teacher-view .seating-board::after { top: -12px; }
+
+@media (max-height: 820px) {
+  .seating-stage:is(.is-presentation, :fullscreen).is-teacher-view .seating-teacher-desk {
+    margin-top: 18px;
+    margin-bottom: 7px;
+  }
+}
