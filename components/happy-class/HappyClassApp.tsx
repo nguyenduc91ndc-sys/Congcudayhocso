@@ -728,8 +728,14 @@ function getTeacherInitials(name: string) {
 }
 
 function getTeacherGreeting(name: string) {
-  const role = name.match(/^(cô|thầy)\b/i)?.[0] || 'Cô';
-  const words = name.replace(/^(cô|thầy)\s+/i, '').trim().split(/\s+/).filter(Boolean);
+  const normalizedName = name
+    .normalize('NFC')
+    .replace(/[\u200B-\u200F\u202A-\u202E\u2060\u2066-\u2069\uFEFF]/g, '')
+    .replace(/\s+/g, ' ')
+    .trim();
+  const roleMatch = normalizedName.match(/^(cô|thầy)(?=\s|$)/i);
+  const role = roleMatch?.[1] || 'Cô';
+  const words = normalizedName.slice(roleMatch?.[0].length ?? 0).trim().split(/\s+/).filter(Boolean);
   return `${role.toLocaleLowerCase('vi-VN')} ${words[words.length - 1] || 'giáo viên'}`;
 }
 
