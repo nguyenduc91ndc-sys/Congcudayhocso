@@ -17,6 +17,7 @@ import {
   Clock3,
   Coins,
   Copy,
+  Dices,
   Download,
   ExternalLink,
   Facebook,
@@ -55,6 +56,8 @@ import {
   UserPlus,
   UsersRound,
   Video,
+  Volume2,
+  VolumeX,
   Wand2,
   X,
   Zap,
@@ -172,6 +175,24 @@ const isValidTeamCount = (value: unknown) => {
   return Number.isInteger(count) && count >= 1 && count <= MAX_TEAM_COUNT;
 };
 const getTeamNumbers = (teamCount: number) => Array.from({ length: normalizeTeamCount(teamCount) }, (_, index) => index + 1);
+
+function secureRandomIndex(limit: number) {
+  if (limit <= 1) return 0;
+  if (!globalThis.crypto?.getRandomValues) return Math.floor(Math.random() * limit);
+  const ceiling = 0x100000000 - (0x100000000 % limit);
+  const value = new Uint32Array(1);
+  do globalThis.crypto.getRandomValues(value); while (value[0] >= ceiling);
+  return value[0] % limit;
+}
+
+function shuffleStudentsSecurely(students: Student[]) {
+  const shuffled = [...students];
+  for (let index = shuffled.length - 1; index > 0; index -= 1) {
+    const nextIndex = secureRandomIndex(index + 1);
+    [shuffled[index], shuffled[nextIndex]] = [shuffled[nextIndex], shuffled[index]];
+  }
+  return shuffled;
+}
 
 const isRecord = (value: unknown): value is Record<string, unknown> =>
   typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -1622,7 +1643,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
-          {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} />}
+          {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} onApplyTeams={applyRandomTeams} />}
           {page === 'tools' && <ClassroomToolsPage />}
           {page === 'attendance' && (
             <AttendancePage students={students} classCode={classProfile.code} attendanceHistory={attendanceHistory} weekState={weekState} weeklyScoring={weeklyScoring} onUpdate={updateAttendance} onUpdateBulk={updateAttendanceBulk} onComplete={markAttendanceComplete} onToast={setToast} />
@@ -3085,7 +3106,245 @@ function RewardSettings({ rewards, onSave, onClose }: { rewards: Reward[]; onSav
   );
 }
 
-function RandomPage({ students, teamCount }: { students: Student[]; teamCount: number }) {
+type RandomMode = 'wheel' | 'groups';
+type SecretGroupPhase = 'idle' | 'countdown' | 'shuffling' | 'revealing' | 'complete';
+
+function RandomPage({ students, teamCount, onApplyTeams }: { students: Student[]; teamCount: number; onApplyTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void }) {
+  const [mode, setMode] = useState<RandomMode>('wheel');
+  return (
+    <>
+      <PageHeading eyebrow="SÂN KHẤU NGẪU NHIÊN" title={mode === 'wheel' ? 'Vòng quay vinh quang' : 'Chia tổ bí mật'} description={mode === 'wheel' ? 'Mỗi lượt quay là một khoảnh khắc bất ngờ và đầy hứng khởi của lớp học.' : 'Xúc xắc đã gieo — đồng đội của em là ai?'} icon={mode === 'wheel' ? '🏆' : '🎲'} />
+      <div className="random-mode-switch" role="tablist" aria-label="Chọn trò chơi ngẫu nhiên">
+        <button type="button" role="tab" aria-selected={mode === 'wheel'} className={mode === 'wheel' ? 'active' : ''} onClick={() => setMode('wheel')}><Sparkles size={18} /><span>Vòng quay cá nhân</span></button>
+        <button type="button" role="tab" aria-selected={mode === 'groups'} className={mode === 'groups' ? 'active' : ''} onClick={() => setMode('groups')}><Dices size={19} /><span>Chia tổ bí mật</span><i>MỚI</i></button>
+      </div>
+      {mode === 'wheel'
+        ? <div className="random-legacy-shell"><LegacyRandomPage students={students} teamCount={teamCount} /></div>
+        : <SecretGroupsPage students={students} initialTeamCount={teamCount} onApplyTeams={onApplyTeams} />}
+    </>
+  );
+}
+
+function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { students: Student[]; initialTeamCount: number; onApplyTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void }) {
+  const [groupCount, setGroupCount] = useState(Math.min(8, Math.max(2, initialTeamCount)));
+  const [groupScope, setGroupScope] = useState<'present' | 'all'>('present');
+  const [secretGroups, setSecretGroups] = useState<Student[][]>([]);
+  const [secretPhase, setSecretPhase] = useState<SecretGroupPhase>('idle');
+  const [countdown, setCountdown] = useState(3);
+  const [revealedRows, setRevealedRows] = useState(0);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [resultSaved, setResultSaved] = useState(false);
+  const [isPresentation, setIsPresentation] = useState(false);
+  const stageRef = useRef<HTMLElement | null>(null);
+  const spinAudioRef = useRef<HTMLAudioElement | null>(null);
+  const victoryAudioRef = useRef<HTMLAudioElement | null>(null);
+  const groupTimersRef = useRef<number[]>([]);
+  const audioContextRef = useRef<AudioContext | null>(null);
+  const groupPool = useMemo(() => students.filter((student) => groupScope === 'all' || student.attendance === 'present'), [students, groupScope]);
+  const groupBusy = secretPhase === 'countdown' || secretPhase === 'shuffling' || secretPhase === 'revealing';
+  const maxGroupRows = Math.max(0, ...secretGroups.map((group) => group.length));
+  const groupColors = ['#f05f76', '#8b62df', '#31aa91', '#f2a72f', '#438bd8', '#dc6fb0', '#45a7bd', '#7caf48'];
+
+  const stopSpinAudio = () => {
+    if (!spinAudioRef.current) return;
+    spinAudioRef.current.pause();
+    spinAudioRef.current.currentTime = 0;
+  };
+  const clearGroupTimers = () => {
+    groupTimersRef.current.forEach((timer) => window.clearTimeout(timer));
+    groupTimersRef.current = [];
+  };
+  const scheduleGroupStep = (callback: () => void, delay: number) => {
+    groupTimersRef.current.push(window.setTimeout(callback, delay));
+  };
+  const prepareAudioContext = () => {
+    if (!soundEnabled) return null;
+    if (!audioContextRef.current) audioContextRef.current = new AudioContext();
+    void audioContextRef.current.resume().catch(() => undefined);
+    return audioContextRef.current;
+  };
+  const playRevealTick = (emphasis = false) => {
+    if (!soundEnabled) return;
+    const context = prepareAudioContext();
+    if (!context) return;
+    const oscillator = context.createOscillator();
+    const gain = context.createGain();
+    oscillator.type = emphasis ? 'triangle' : 'sine';
+    oscillator.frequency.setValueAtTime(emphasis ? 880 : 620, context.currentTime);
+    oscillator.frequency.exponentialRampToValueAtTime(emphasis ? 1320 : 780, context.currentTime + .11);
+    gain.gain.setValueAtTime(.0001, context.currentTime);
+    gain.gain.exponentialRampToValueAtTime(emphasis ? .16 : .075, context.currentTime + .015);
+    gain.gain.exponentialRampToValueAtTime(.0001, context.currentTime + .14);
+    oscillator.connect(gain);
+    gain.connect(context.destination);
+    oscillator.start();
+    oscillator.stop(context.currentTime + .15);
+  };
+  const resetSecretStage = () => {
+    clearGroupTimers();
+    stopSpinAudio();
+    setSecretGroups([]);
+    setSecretPhase('idle');
+    setCountdown(3);
+    setRevealedRows(0);
+    setResultSaved(false);
+  };
+
+  useEffect(() => () => {
+    clearGroupTimers();
+    stopSpinAudio();
+    if (victoryAudioRef.current) {
+      victoryAudioRef.current.pause();
+      victoryAudioRef.current.currentTime = 0;
+    }
+    if (audioContextRef.current) void audioContextRef.current.close().catch(() => undefined);
+  }, []);
+  useEffect(() => {
+    const syncFullscreen = () => setIsPresentation(document.fullscreenElement === stageRef.current);
+    const closeFallbackWithEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.fullscreenElement) setIsPresentation(false);
+    };
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    document.addEventListener('keydown', closeFallbackWithEscape);
+    return () => {
+      document.removeEventListener('fullscreenchange', syncFullscreen);
+      document.removeEventListener('keydown', closeFallbackWithEscape);
+    };
+  }, []);
+
+  const startSecretGroups = () => {
+    if (groupBusy || groupPool.length < 2) return;
+    clearGroupTimers();
+    stopSpinAudio();
+    if (victoryAudioRef.current) {
+      victoryAudioRef.current.pause();
+      victoryAudioRef.current.currentTime = 0;
+    }
+    const shuffled = shuffleStudentsSecurely(groupPool);
+    const nextGroups = Array.from({ length: groupCount }, () => [] as Student[]);
+    shuffled.forEach((student, index) => nextGroups[index % groupCount].push(student));
+    const rowCount = Math.max(0, ...nextGroups.map((group) => group.length));
+    setSecretGroups(nextGroups);
+    setSecretPhase('countdown');
+    setCountdown(3);
+    setRevealedRows(0);
+    setResultSaved(false);
+    prepareAudioContext();
+    scheduleGroupStep(() => setCountdown(2), 700);
+    scheduleGroupStep(() => setCountdown(1), 1400);
+    scheduleGroupStep(() => {
+      setSecretPhase('shuffling');
+      const audio = spinAudioRef.current;
+      if (audio && soundEnabled) {
+        audio.currentTime = 0;
+        audio.volume = .45;
+        void audio.play().catch(() => undefined);
+      }
+    }, 2050);
+    const revealStart = 4050;
+    scheduleGroupStep(() => {
+      stopSpinAudio();
+      setSecretPhase('revealing');
+    }, revealStart);
+    for (let row = 1; row <= rowCount; row += 1) {
+      const isLast = row === rowCount;
+      scheduleGroupStep(() => {
+        setRevealedRows(row);
+        playRevealTick(isLast);
+      }, revealStart + (row - 1) * 560);
+    }
+    scheduleGroupStep(() => {
+      setSecretPhase('complete');
+      const audio = victoryAudioRef.current;
+      if (audio && soundEnabled) {
+        audio.currentTime = 0;
+        audio.volume = .78;
+        void audio.play().catch(() => undefined);
+      }
+    }, revealStart + Math.max(1, rowCount) * 560 + 500);
+  };
+  const saveSecretGroups = () => {
+    if (secretPhase !== 'complete' || !secretGroups.length) return;
+    const assignments = secretGroups.flatMap((group, groupIndex) => group.map((student) => ({ id: student.id, team: groupIndex + 1 })));
+    const scopeNote = assignments.length < students.length ? `\n\n${students.length - assignments.length} học sinh không tham gia lượt chia sẽ giữ nguyên tổ hiện tại.` : '';
+    if (!window.confirm(`Lưu kết quả này làm ${groupCount} tổ chính thức?${scopeNote}`)) return;
+    onApplyTeams(assignments, groupCount);
+    setResultSaved(true);
+  };
+  const togglePresentation = async () => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (isPresentation) {
+      setIsPresentation(false);
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+      return;
+    }
+    setIsPresentation(true);
+    if (stage.requestFullscreen) await stage.requestFullscreen().catch(() => undefined);
+  };
+  const phaseMessage = secretPhase === 'countdown'
+    ? 'Chuẩn bị gieo xúc xắc…'
+    : secretPhase === 'shuffling'
+      ? 'Đang xáo trộn những người đồng đội…'
+      : secretPhase === 'revealing'
+        ? `Đang mở bí mật ${Math.min(revealedRows, maxGroupRows)}/${maxGroupRows}`
+        : secretPhase === 'complete'
+          ? `${groupPool.length} học sinh đã tìm thấy đồng đội!`
+          : 'Kết quả chỉ được lưu khi giáo viên xác nhận.';
+
+  return (
+    <section ref={stageRef} className={`random-stage secret-group-stage panel ${isPresentation ? 'is-presentation' : ''}`}>
+      <audio ref={spinAudioRef} src={spinWheelSound} preload="auto" aria-hidden="true" />
+      <audio ref={victoryAudioRef} src={victorySound} preload="auto" aria-hidden="true" />
+      <div className="random-settings secret-group-settings">
+        <label><span>Số lượng tổ</span><select aria-label="Số lượng tổ ngẫu nhiên" value={groupCount} disabled={groupBusy} onChange={(event) => { resetSecretStage(); setGroupCount(Number(event.target.value)); }}>{Array.from({ length: 7 }, (_, index) => index + 2).map((count) => <option key={count} value={count}>{count} tổ</option>)}</select></label>
+        <div className="secret-scope"><span>Phạm vi chia</span><div className="filter-tabs"><button type="button" className={groupScope === 'present' ? 'active' : ''} disabled={groupBusy} onClick={() => { resetSecretStage(); setGroupScope('present'); }}>Học sinh có mặt</button><button type="button" className={groupScope === 'all' ? 'active' : ''} disabled={groupBusy} onClick={() => { resetSecretStage(); setGroupScope('all'); }}>Cả lớp</button></div></div>
+        <p><UserRoundCheck size={17} /><strong>{groupPool.length}</strong> học sinh · chênh lệch tối đa 1 em</p>
+        <button className="random-sound-button" type="button" onClick={() => setSoundEnabled((current) => !current)} aria-label={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}>{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
+        <button className="random-presentation-button" type="button" onClick={() => void togglePresentation()} aria-label={isPresentation ? 'Thoát trình chiếu toàn màn hình' : 'Trình chiếu toàn màn hình'}>{isPresentation ? <Minimize2 size={18} /> : <Maximize2 size={18} />}<span>{isPresentation ? 'Thu nhỏ' : 'Phóng to'}</span></button>
+      </div>
+      <div className={`secret-groups-arena phase-${secretPhase}`} aria-live="polite">
+        <div className="secret-stage-lights" aria-hidden="true"><i /><i /><i /><i /></div>
+        {secretPhase === 'idle' ? (
+          <div className="secret-group-intro">
+            <div className="secret-dice-orbit"><span>?</span><Dices size={56} /><i>✦</i><i>★</i></div>
+            <span className="secret-kicker">SÂN KHẤU ĐÃ SẴN SÀNG</span>
+            <h2>Xúc xắc đã gieo,<br />đồng đội của em là ai?</h2>
+            <p>Ảnh và tên sẽ được mở bí mật từng lượt để cả lớp cùng hồi hộp chờ đợi.</p>
+            <div className="secret-fairness"><Check size={17} /><span>Không trùng học sinh</span><Check size={17} /><span>Chia đều số lượng</span><Check size={17} /><span>Chưa đổi tổ chính thức</span></div>
+          </div>
+        ) : (
+          <>
+            <div className={`secret-status phase-${secretPhase}`}><span>{secretPhase === 'complete' ? '🎉' : '🎲'}</span><strong>{phaseMessage}</strong></div>
+            <div className="secret-groups-board" style={{ '--secret-group-count': groupCount } as CSSProperties}>
+              {secretGroups.map((group, groupIndex) => (
+                <article className="secret-group-column" key={groupIndex} style={{ '--secret-color': groupColors[groupIndex % groupColors.length], '--secret-delay': `${groupIndex * 70}ms` } as CSSProperties}>
+                  <header><span>{groupIndex + 1}</span><div><small>ĐỘI NGŨ BÍ MẬT</small><strong>Tổ {groupIndex + 1}</strong></div><b>{group.length} HS</b></header>
+                  <div className="secret-member-list">
+                    {group.map((student, rowIndex) => {
+                      const revealed = rowIndex < revealedRows;
+                      return <div className={`secret-member-card ${revealed ? 'is-revealed' : 'is-hidden'} ${secretPhase === 'shuffling' ? 'is-shuffling' : ''}`} key={student.id} style={{ '--member-delay': `${groupIndex * 55}ms` } as CSSProperties}>{revealed ? <><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" /><div><small>THÀNH VIÊN {rowIndex + 1}</small><strong>{student.name}</strong></div><span className="secret-reveal-star">✦</span></> : <><span className="secret-mystery-dice"><Dices size={22} /></span><div><small>THÀNH VIÊN {rowIndex + 1}</small><strong>?????</strong></div><span className="secret-question">?</span></>}</div>;
+                    })}
+                  </div>
+                </article>
+              ))}
+            </div>
+            {secretPhase === 'countdown' && <div className="secret-countdown"><span>CHUẨN BỊ</span><strong key={countdown}>{countdown}</strong><small>Ai sẽ là đồng đội của em?</small></div>}
+            {secretPhase === 'shuffling' && <div className="secret-shuffle-banner"><div><Dices size={38} /><Dices size={28} /></div><strong>ĐANG XÁO TRỘN…</strong><span>Giữ bí mật nhé!</span></div>}
+            {secretPhase === 'complete' && <><div className="secret-complete-burst" aria-hidden="true">{Array.from({ length: 24 }, (_, index) => <i key={index} style={{ '--burst-index': index } as CSSProperties} />)}</div><div className="secret-complete-ribbon"><PartyPopper size={22} /><strong>ĐÃ TÌM THẤY ĐỒNG ĐỘI!</strong><PartyPopper size={22} /></div></>}
+          </>
+        )}
+      </div>
+      <div className="secret-group-actions">
+        <button className="secret-start-button" type="button" onClick={startSecretGroups} disabled={groupBusy || groupPool.length < 2}><Dices size={22} />{groupBusy ? phaseMessage : secretPhase === 'complete' ? 'CHIA LẠI MỘT LƯỢT' : 'BẮT ĐẦU CHIA TỔ'}</button>
+        {secretPhase === 'complete' && <button className={`secret-save-button ${resultSaved ? 'is-saved' : ''}`} type="button" onClick={saveSecretGroups} disabled={resultSaved}><Save size={20} />{resultSaved ? 'Đã lưu tổ chính thức' : 'Lưu làm tổ chính thức'}</button>}
+      </div>
+      <p className="secret-group-note">{groupPool.length < 2 ? 'Cần ít nhất 2 học sinh trong phạm vi đã chọn.' : resultSaved ? 'Kết quả đã được cập nhật vào hồ sơ lớp. Có thể hoàn tác tại trang Thi đua tổ.' : '🔒 Kết quả hiện chỉ là bản xem trước, chưa làm thay đổi tổ hiện tại.'}</p>
+    </section>
+  );
+}
+
+function LegacyRandomPage({ students, teamCount }: { students: Student[]; teamCount: number }) {
   const [team, setTeam] = useState(0);
   const [winner, setWinner] = useState<Student | null>(null);
   const [spinning, setSpinning] = useState(false);
