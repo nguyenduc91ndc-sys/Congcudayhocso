@@ -2620,7 +2620,28 @@ function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveRe
   const [mode, setMode] = useState<'positive' | 'negative'>('positive');
   const [settingsVisible, setSettingsVisible] = useState(false);
   const visibleReasons = reasons.filter((item) => (mode === 'positive' ? item.points > 0 : item.points < 0));
+  const teamOptions = Array.from(new Set(students.map((student) => student.team))).sort((a, b) => a - b);
+  const selectedSet = new Set(selected);
+  const unavailableSelected = students.filter((student) => selectedSet.has(student.id) && student.attendance !== 'present');
+  const fullySelectedTeams = teamOptions.filter((team) => {
+    const members = students.filter((student) => student.team === team);
+    return members.length > 0 && members.every((student) => selectedSet.has(student.id));
+  });
+  const fullySelectedMemberIds = new Set(students.filter((student) => fullySelectedTeams.includes(student.team)).map((student) => student.id));
+  const extraSelectedCount = selected.filter((id) => !fullySelectedMemberIds.has(id)).length;
+  const selectionSummaryLabel = selected.length === students.length && students.length
+    ? 'Đã chọn cả lớp'
+    : fullySelectedTeams.length
+      ? `Đã chọn ${fullySelectedTeams.map((team) => `Tổ ${team}`).join(', ')}${extraSelectedCount ? ` và ${extraSelectedCount} em khác` : ''}`
+      : `Đã chọn ${selected.length} học sinh`;
   const toggleStudent = (id: number) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  const toggleStudents = (ids: number[]) => setSelected((current) => {
+    const currentSet = new Set(current);
+    const allSelected = ids.length > 0 && ids.every((id) => currentSet.has(id));
+    if (allSelected) return current.filter((id) => !ids.includes(id));
+    ids.forEach((id) => currentSet.add(id));
+    return students.map((student) => student.id).filter((id) => currentSet.has(id));
+  });
 
   return (
     <>
@@ -2633,22 +2654,35 @@ function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveRe
       <div className="points-layout">
         <section className="panel selection-panel">
           <div className="selection-header"><div><span>BƯỚC 1</span><h3>Chọn học sinh</h3></div><button className="text-button" onClick={() => setSelected(selected.length === students.length ? [] : students.map((item) => item.id))}>{selected.length === students.length ? 'Bỏ chọn tất cả' : 'Chọn cả lớp'}</button></div>
+          <div className="points-team-picker">
+            <div className="points-team-picker-head"><span><UsersRound size={17} /></span><div><strong>Chọn nhanh theo tổ</strong><small>Nhấn một lần để chọn tất cả thành viên</small></div></div>
+            <div className="points-team-chips">
+              {teamOptions.map((team) => {
+                const memberIds = students.filter((student) => student.team === team).map((student) => student.id);
+                const selectedCount = memberIds.filter((id) => selectedSet.has(id)).length;
+                const selectionState = selectedCount === memberIds.length ? 'selected' : selectedCount > 0 ? 'partial' : '';
+                return <button type="button" key={team} className={selectionState} aria-pressed={selectionState === 'selected'} onClick={() => toggleStudents(memberIds)}><span className={`team-${((team - 1) % 8) + 1}`}>{team}</span><strong>Tổ {team}</strong><small>{selectedCount > 0 && selectedCount < memberIds.length ? `${selectedCount}/${memberIds.length}` : `${memberIds.length} HS`}</small>{selectionState === 'selected' && <Check size={14} strokeWidth={3} />}</button>;
+              })}
+              <button type="button" className={`points-all-chip ${selected.length === students.length && students.length ? 'selected' : selected.length ? 'partial' : ''}`} aria-pressed={selected.length === students.length && students.length > 0} onClick={() => toggleStudents(students.map((student) => student.id))}><UsersRound size={17} /><strong>Cả lớp</strong><small>{selected.length > 0 && selected.length < students.length ? `${selected.length}/${students.length}` : `${students.length} HS`}</small>{selected.length === students.length && students.length > 0 && <Check size={14} strokeWidth={3} />}</button>
+            </div>
+          </div>
           <div className="student-pick-grid">
             {students.map((student) => (
-              <button key={student.id} className={`student-pick ${selected.includes(student.id) ? 'selected' : ''}`} onClick={() => toggleStudent(student.id)}>
+              <button key={student.id} className={`student-pick ${selected.includes(student.id) ? 'selected' : ''}`} aria-pressed={selected.includes(student.id)} onClick={() => toggleStudent(student.id)}>
                 <span className="check-circle">{selected.includes(student.id) && <Check size={14} strokeWidth={3} />}</span>
                 <Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" />
-                <div><strong>{student.name}</strong><span>Tổ {student.team} · {student.score} điểm</span></div>
+                <div><strong>{student.name}</strong><span>Tổ {student.team} · {student.score} điểm{student.attendance !== 'present' && <em className={`points-attendance-tag ${student.attendance}`}>{attendanceLabels[student.attendance]}</em>}</span></div>
               </button>
             ))}
           </div>
         </section>
         <section className="panel reason-panel">
           <div className="selection-header"><div><span>BƯỚC 2</span><h3>Chọn điều muốn ghi nhận</h3></div><div className="reason-header-actions"><div className="mode-switch"><button className={mode === 'positive' ? 'positive active' : ''} onClick={() => setMode('positive')}><Plus size={15} />Điểm tốt</button><button className={mode === 'negative' ? 'negative active' : ''} onClick={() => setMode('negative')}><Minus size={15} />Nhắc nhở</button></div>{canConfigure && <button className="reason-settings-button" onClick={() => setSettingsVisible(true)}><Settings size={15} /> Cấu hình</button>}</div></div>
+          {selected.length > 0 && <div className="points-selection-summary"><span><UsersRound size={19} /></span><div><strong>{selectionSummaryLabel}</strong><small>{unavailableSelected.length ? `Có ${unavailableSelected.length} em không ở trạng thái Có mặt — có thể bỏ chọn riêng bên trái.` : 'Mỗi em sẽ nhận số điểm của nội dung được chọn bên dưới.'}</small></div><b>{selected.length} HS</b></div>}
           <div className="reason-grid">
             {visibleReasons.map((reason) => (
               <button key={reason.id} className={`reason-card ${reason.tone}`} disabled={!selected.length} onClick={() => { onAddPoints(selected, reason.points, reason.label); setSelected([]); }}>
-                <span>{reason.icon}</span><div><strong>{reason.label}</strong><small>{reason.points > 0 ? '+' : ''}{reason.points} điểm</small></div><ChevronRight size={17} />
+                <span>{reason.icon}</span><div><strong>{reason.label}</strong><small>{reason.points > 0 ? '+' : ''}{reason.points} điểm{selected.length ? ` × ${selected.length} HS` : ''}</small></div><ChevronRight size={17} />
               </button>
             ))}
           </div>

@@ -4126,3 +4126,65 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .secret-stage-lights i,.secret-dice-orbit,.secret-member-card,.secret-mystery-dice svg,.secret-reveal-star,.secret-complete-ribbon,.secret-complete-burst i { animation-duration: .01ms !important; animation-iteration-count: 1 !important; }
 }
+
+/* Vườn điểm tốt — chọn nhanh toàn bộ thành viên theo tổ. */
+.points-team-picker {
+  margin: -2px 0 15px;
+  padding: 12px;
+  border: 2px solid #ead6e9;
+  border-radius: 18px;
+  background: linear-gradient(145deg,#fffdf6,#fff5fb 58%,#f7f1ff);
+  box-shadow: 0 4px 0 #dfc8df,0 9px 18px rgba(92,47,92,.07);
+}
+.points-team-picker-head { margin-bottom: 10px; display: flex; align-items: center; gap: 9px; }
+.points-team-picker-head > span { width: 34px; height: 34px; display: grid; place-items: center; flex: none; border: 2px solid #ffe171; border-radius: 12px; color: white; background: linear-gradient(145deg,#e4559e,#7e48c2); box-shadow: 0 3px 0 #61337e; }
+.points-team-picker-head > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.points-team-picker-head strong { color: #713d72; font-size: 12px; font-weight: 950; }
+.points-team-picker-head small { color: #756675; font-size: 9px; font-weight: 750; }
+.points-team-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.points-team-chips button {
+  min-width: 104px;
+  min-height: 45px;
+  padding: 5px 8px;
+  position: relative;
+  display: grid;
+  grid-template-columns: 30px minmax(35px,1fr);
+  grid-template-rows: repeat(2,auto);
+  align-items: center;
+  column-gap: 7px;
+  border: 2px solid #e4d4e5;
+  border-radius: 14px;
+  color: #654966;
+  background: white;
+  box-shadow: 0 3px 0 #d6c4d8;
+  text-align: left;
+  transition: .16s ease;
+}
+.points-team-chips button:hover { transform: translateY(-1px); border-color: #c98bc4; box-shadow: 0 4px 0 #c79ac9; }
+.points-team-chips button > span { width: 29px; height: 29px; grid-row: 1/3; display: grid; place-items: center; border-radius: 10px; color: white; font-size: 11px; font-weight: 950; box-shadow: 0 2px 0 rgba(63,29,66,.22); }
+.points-team-chips button > strong { align-self: end; font-size: 10px; font-weight: 950; line-height: 1.1; }
+.points-team-chips button > small { align-self: start; color: #887888; font-size: 8px; font-weight: 850; }
+.points-team-chips button > svg { position: absolute; right: 6px; top: 5px; padding: 2px; border-radius: 50%; color: #4d8b50; background: #eaffc9; }
+.points-team-chips button.partial { border-style: dashed; border-color: #d58eb8; background: #fff4fa; }
+.points-team-chips button.selected { border-color: #ffe16a; color: white; background: linear-gradient(135deg,#d94c9a,#8147c3); box-shadow: 0 4px 0 #603278,0 8px 13px rgba(91,44,105,.18); }
+.points-team-chips button.selected > strong,.points-team-chips button.selected > small { color: white; }
+.points-team-chips .points-all-chip { grid-template-columns: 30px minmax(42px,1fr); }
+.points-team-chips .points-all-chip > svg:first-child { width: 29px; height: 29px; padding: 6px; position: static; grid-row: 1/3; color: white; border-radius: 10px; background: linear-gradient(145deg,#f19b39,#d34a89); box-shadow: 0 2px 0 #a0445f; }
+.points-team-chips .points-all-chip > svg:last-child { position: absolute; }
+.points-attendance-tag { margin-left: 5px; padding: 2px 5px; border-radius: 999px; color: #986213; background: #fff0bd; font-size: 7px; font-style: normal; font-weight: 900; white-space: nowrap; }
+.points-attendance-tag.absent { color: #a6404a; background: #ffe0e2; }.points-attendance-tag.excused { color: #356f9b; background: #e2f2ff; }
+.points-selection-summary { min-height: 65px; margin: -3px 0 14px; padding: 9px 11px; display: grid; grid-template-columns: 39px minmax(0,1fr) auto; align-items: center; gap: 10px; border: 2px solid #f0d166; border-radius: 17px; background: linear-gradient(145deg,#fffef0,#fff1c4); box-shadow: 0 4px 0 #dfbd53,0 9px 16px rgba(110,76,20,.08); animation: pointsTeamSummaryIn .28s ease both; }
+.points-selection-summary > span { width: 38px; height: 38px; display: grid; place-items: center; border-radius: 13px; color: white; background: linear-gradient(145deg,#e6539c,#7f48c2); box-shadow: 0 3px 0 #60327b; }
+.points-selection-summary > div { min-width: 0; display: flex; flex-direction: column; gap: 3px; }.points-selection-summary strong { overflow: hidden; color: #663a68; font-size: 12px; font-weight: 950; text-overflow: ellipsis; white-space: nowrap; }.points-selection-summary small { color: #746174; font-size: 9px; font-weight: 750; line-height: 1.35; }
+.points-selection-summary > b { min-width: 49px; padding: 7px 8px; border-radius: 12px; color: #74366e; background: white; box-shadow: 0 2px 0 #e2c267; font-size: 11px; text-align: center; white-space: nowrap; }
+@keyframes pointsTeamSummaryIn { from { opacity: 0; transform: translateY(-7px) scale(.97); } }
+
+@media (max-width: 680px) {
+  .points-team-picker { padding: 10px; }
+  .points-team-chips { margin-inline: -2px; padding: 2px 2px 6px; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; }
+  .points-team-chips button { min-width: 108px; scroll-snap-align: start; }
+  .points-selection-summary { grid-template-columns: 36px minmax(0,1fr) auto; padding-inline: 8px; gap: 8px; }
+  .points-selection-summary > span { width: 35px; height: 35px; }
+  .points-selection-summary strong { white-space: normal; }
+  .points-selection-summary small { font-size: 8px; }
+}
