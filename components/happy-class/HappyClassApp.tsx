@@ -339,6 +339,10 @@ const isReward = (value: unknown): value is Reward => isRecord(value)
   && isText(value.color) && rewardColors.includes(value.color as typeof rewardColors[number])
   && (value.stock === null || (isNumber(value.stock) && Number.isInteger(value.stock) && value.stock >= 0 && value.stock <= 999));
 
+const rewardActivityPrefix = 'Đổi thưởng: ';
+const isRewardRedemption = (activity: Activity) => activity.points < 0 && activity.title.startsWith(rewardActivityPrefix);
+const getRewardNameFromActivity = (activity: Activity) => activity.title.slice(rewardActivityPrefix.length).trim();
+
 function parseClassBackup(content: string): ClassBackup {
   let value: unknown;
   try {
@@ -1378,7 +1382,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setToast('Đã xóa ảnh học sinh');
   };
 
-  const redeemNamedReward = (studentId: number, rewardName: string, rewardCost: number) => {
+  const redeemNamedReward = (studentId: number, rewardId: number, rewardName: string, rewardCost: number) => {
     const student = students.find((item) => item.id === studentId);
     if (!student) return false;
     if (student.score < rewardCost) {
@@ -1399,6 +1403,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
         tone: 'neutral',
         createdAt: new Date().toISOString(),
         weekId: weekState.current.id,
+        rewardId,
       },
       ...current,
     ]);
@@ -1408,17 +1413,55 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
 
   const redeemReward = (studentId: number, rewardId: number) => {
     const reward = rewardCatalog.find((item) => item.id === rewardId);
-    if (!reward) return;
+    const student = students.find((item) => item.id === studentId);
+    if (!reward || !student) return;
     if (reward.stock === 0) {
       setToast(`Phần thưởng “${reward.name}” đã hết`);
       return;
     }
-    const redeemed = redeemNamedReward(studentId, reward.name, reward.cost);
+    if (student.score < reward.cost) {
+      setToast(`${student.name} chưa đủ điểm để đổi phần thưởng này`);
+      return;
+    }
+    if (!window.confirm(`${student.name} đổi “${reward.name}” với ${reward.cost} điểm?\n\nSau khi xác nhận, học sinh sẽ còn ${student.score - reward.cost} điểm.`)) return;
+    const redeemed = redeemNamedReward(studentId, reward.id, reward.name, reward.cost);
     if (redeemed && reward.stock !== null) {
       setRewardCatalog((current) => current.map((item) => item.id === rewardId
         ? { ...item, stock: Math.max(0, (item.stock ?? 0) - 1) }
         : item));
     }
+  };
+
+  const undoRewardRedemption = (activityId: number) => {
+    if (!isTeacher) {
+      setToast('Chỉ tài khoản giáo viên mới được hoàn tác đổi thưởng.');
+      return;
+    }
+    const redemption = activities.find((activity) => activity.id === activityId && isRewardRedemption(activity));
+    if (!redemption) {
+      setToast('Lượt đổi thưởng này không còn trong lịch sử.');
+      return;
+    }
+    const student = students.find((item) => item.id === redemption.studentId);
+    if (!student) {
+      setToast('Không tìm thấy học sinh để hoàn lại điểm.');
+      return;
+    }
+    const rewardName = getRewardNameFromActivity(redemption) || 'phần thưởng';
+    const refund = Math.abs(redemption.points);
+    if (!window.confirm(`Hoàn tác lượt đổi “${rewardName}” của ${student.name}?\n\n• Hoàn lại ${refund} điểm cho học sinh.\n• Xóa lượt đổi này khỏi lịch sử.\n• Khôi phục số lượng quà nếu phần thưởng có giới hạn.`)) return;
+
+    setStudents((current) => current.map((item) => item.id === student.id ? { ...item, score: item.score + refund } : item));
+    setActivities((current) => current.filter((activity) => activity.id !== redemption.id));
+    setRewardCatalog((current) => current.map((reward) => {
+      const matchesReward = redemption.rewardId !== undefined
+        ? reward.id === redemption.rewardId
+        : reward.name.toLocaleLowerCase('vi-VN') === rewardName.toLocaleLowerCase('vi-VN');
+      return matchesReward && reward.stock !== null
+        ? { ...reward, stock: Math.min(999, reward.stock + 1) }
+        : reward;
+    }));
+    setToast(`Đã hoàn lại ${refund} điểm cho ${student.name}`);
   };
 
   const regenerateParentCode = (studentId: number) => {
@@ -1648,7 +1691,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'seating' && <ClassroomSeatingPage students={students} classCode={classProfile.code} className={classProfile.name} schoolYear={classProfile.schoolYear} teacherName={teacherName} canManage={isTeacher} value={classroomLayout} onChange={setClassroomLayout} onToast={setToast} />}
           {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
-          {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
+          {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} activities={activities} canConfigure={isTeacher} onRedeem={redeemReward} onUndoRedeem={undoRewardRedemption} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} onApplyTeams={applyRandomTeams} />}
           {page === 'tools' && <ClassroomToolsPage />}
           {page === 'attendance' && (
@@ -2990,10 +3033,13 @@ function TeamsPage({
   );
 }
 
-function RewardsPage({ students, rewards, canConfigure, onRedeem, onSaveRewards }: { students: Student[]; rewards: Reward[]; canConfigure: boolean; onRedeem: (studentId: number, rewardId: number) => void; onSaveRewards: (rewards: Reward[]) => void }) {
+function RewardsPage({ students, rewards, activities, canConfigure, onRedeem, onUndoRedeem, onSaveRewards }: { students: Student[]; rewards: Reward[]; activities: Activity[]; canConfigure: boolean; onRedeem: (studentId: number, rewardId: number) => void; onUndoRedeem: (activityId: number) => void; onSaveRewards: (rewards: Reward[]) => void }) {
   const [studentId, setStudentId] = useState(students[0]?.id ?? 0);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const selected = students.find((student) => student.id === studentId) ?? students[0];
+  const redemptions = selected
+    ? activities.filter((activity) => activity.studentId === selected.id && isRewardRedemption(activity)).slice(0, 5)
+    : [];
   if (!selected) return <><PageHeading eyebrow="CỬA HÀNG NIỀM VUI" title="Điểm tốt hóa thành món quà nhỏ" description="Mỗi phần thưởng là một lời cảm ơn cho sự cố gắng và tiến bộ mỗi ngày." icon="🎁" /><div className="panel page-empty-state"><Gift size={31} /><strong>Chưa có học sinh trong lớp</strong><span>Giáo viên hãy nhập danh sách lớp thật trước khi sử dụng đổi thưởng.</span></div></>;
   return (
     <>
@@ -3004,6 +3050,31 @@ function RewardsPage({ students, rewards, canConfigure, onRedeem, onSaveRewards 
           {canConfigure && <button className="reward-settings-button" onClick={() => setSettingsVisible(true)}><Settings size={17} /> Tùy chỉnh quà</button>}
           <div className="wallet"><Coins size={21} /><div><strong>{selected.score}</strong><span>điểm hiện có</span></div></div>
         </div>
+      </section>
+      <section className="reward-history panel">
+        <header className="reward-history-head">
+          <span className="reward-history-icon"><History size={20} /></span>
+          <div><span>LỊCH SỬ ĐỔI THƯỞNG</span><strong>{selected.name}</strong><small>Có thể hoàn tác nếu giáo viên bấm đổi nhầm.</small></div>
+          <b>{redemptions.length} lượt gần đây</b>
+        </header>
+        {redemptions.length ? (
+          <div className="reward-history-list">
+            {redemptions.map((activity) => {
+              const rewardName = getRewardNameFromActivity(activity) || 'Phần thưởng';
+              const timestamp = activity.createdAt && !Number.isNaN(new Date(activity.createdAt).getTime())
+                ? new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }).format(new Date(activity.createdAt))
+                : activity.time;
+              return (
+                <div className="reward-history-row" key={activity.id}>
+                  <span className="reward-history-gift"><Gift size={18} /></span>
+                  <div><strong>{rewardName}</strong><small>{timestamp} · Đã sử dụng {Math.abs(activity.points)} điểm</small></div>
+                  <b>−{Math.abs(activity.points)}</b>
+                  {canConfigure && <button type="button" onClick={() => onUndoRedeem(activity.id)}><RotateCcw size={15} /> Hoàn tác</button>}
+                </div>
+              );
+            })}
+          </div>
+        ) : <div className="reward-history-empty"><Check size={17} /><span>Học sinh này chưa có lượt đổi thưởng nào.</span></div>}
       </section>
       <div className="reward-grid">
         {rewards.map((reward) => {

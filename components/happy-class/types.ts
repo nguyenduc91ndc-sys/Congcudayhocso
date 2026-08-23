@@ -32,6 +32,7 @@ export type Activity = {
   tone: 'positive' | 'negative' | 'neutral';
   createdAt?: string;
   weekId?: string;
+  rewardId?: number;
 };
 
 export type WeekPeriod = {
