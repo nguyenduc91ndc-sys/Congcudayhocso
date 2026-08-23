@@ -572,8 +572,8 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
       return `<div class="seat ${student ? 'filled' : ''}"><b>${student ? escapeHtml(initials(student.name)) : '—'}</b><span>${student ? escapeHtml(student.name) : 'Ghế trống'}</span>${student ? `<small>Tổ ${student.team}</small>` : ''}</div>`;
     }).join('')}</div></article>`).join('');
     return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Sơ đồ lớp ${escapeHtml(classCode)}</title><style>
-      @page{size:A4 landscape;margin:9mm}*{box-sizing:border-box}body{margin:0;color:#33233b;font-family:Arial,'Segoe UI',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sheet{min-height:185mm;padding:7mm;border:2px solid #ead9f4;border-radius:20px;background:linear-gradient(145deg,#fff 0%,#fff9fd 58%,#f7f0ff 100%)}.top{text-align:center}.top h1{margin:0;color:#762e95;font-size:24px}.top p{margin:4px 0 10px;color:#775d7f;font-size:10px}.board{width:58%;margin:0 auto 8px;padding:7px;color:#fff;border:5px solid #c98c4e;border-radius:9px;background:linear-gradient(#337565,#1f5a50);box-shadow:0 4px 0 #87522d;font-weight:800;letter-spacing:2px}.grid{display:grid;grid-template-columns:repeat(${layout.columns},minmax(0,1fr));gap:6mm 7mm;align-items:start}.desk{padding:4px;border:2px solid #b77a3c;border-radius:10px;background:linear-gradient(145deg,#efc989,#dba863);box-shadow:0 3px 0 #8c572c}.desk header{display:flex;justify-content:space-between;margin-bottom:3px;color:#6d3e1e;font-size:7px;font-weight:900}.seats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.seats-1{grid-template-columns:1fr}.seat{min-height:32px;display:grid;grid-template-columns:24px 1fr;grid-template-rows:1fr 1fr;align-items:center;padding:3px;border:1px dashed #d5b58a;border-radius:6px;background:rgba(255,255,255,.62);font-size:7px}.seat b{grid-row:1/3;width:21px;height:21px;display:grid;place-items:center;border-radius:50%;color:#fff;background:linear-gradient(145deg,#9c5be3,#e75daf)}.seat span{font-weight:800}.seat small{color:#8d718e;font-size:6px}.teacher{width:38%;margin:9mm auto 0;padding:5px;text-align:center;color:#fff;border:3px solid #a16734;border-radius:8px;background:linear-gradient(145deg,#b97841,#794329);font-size:9px;font-weight:800}.footer{display:flex;justify-content:space-between;margin-top:4mm;color:#8a758d;font-size:7px}@media print{.sheet{break-inside:avoid}}
-    </style></head><body><main class="sheet"><div class="top"><h1>SƠ ĐỒ LỚP ${escapeHtml(classCode)}</h1><p>${escapeHtml(className)} · Năm học ${escapeHtml(schoolYear)} · GVCN: ${escapeHtml(teacherName)}</p></div><div class="board">BẢNG LỚP</div><section class="grid">${desksHtml}</section><div class="teacher">BÀN GIÁO VIÊN · ${escapeHtml(teacherName)}</div><footer class="footer"><span>${assignedIds.size}/${capacity} vị trí đã xếp</span><span>Cập nhật: ${new Intl.DateTimeFormat('vi-VN').format(new Date(layout.updatedAt))}</span></footer></main></body></html>`;
+      @page{size:A4 landscape;margin:9mm}*{box-sizing:border-box}body{margin:0;color:#33233b;font-family:Arial,'Segoe UI',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sheet{min-height:185mm;padding:7mm;border:2px solid #ead9f4;border-radius:20px;background:linear-gradient(145deg,#fff 0%,#fff9fd 58%,#f7f0ff 100%)}.top{text-align:center}.top h1{margin:0;color:#762e95;font-size:24px}.top p{margin:4px 0 10px;color:#775d7f;font-size:11px}.board{width:58%;margin:0 auto 6px;padding:7px;color:#fff;border:5px solid #c98c4e;border-radius:9px;background:linear-gradient(#337565,#1f5a50);box-shadow:0 4px 0 #87522d;font-size:15px;font-weight:800;letter-spacing:2px}.teacher{width:38%;margin:0 auto 8mm;padding:6px;text-align:center;color:#fff;border:3px solid #a16734;border-radius:8px;background:linear-gradient(145deg,#b97841,#794329);font-size:10px;font-weight:800}.grid{display:grid;grid-template-columns:repeat(${layout.columns},minmax(0,1fr));gap:6mm 7mm;align-items:start}.desk{padding:4px;border:2px solid #b77a3c;border-radius:10px;background:linear-gradient(145deg,#efc989,#dba863);box-shadow:0 3px 0 #8c572c}.desk header{display:flex;justify-content:space-between;margin-bottom:3px;color:#6d3e1e;font-size:8px;font-weight:900}.seats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.seats-1{grid-template-columns:1fr}.seat{min-height:36px;display:grid;grid-template-columns:26px 1fr;grid-template-rows:1fr 1fr;align-items:center;padding:3px;border:1px dashed #d5b58a;border-radius:6px;background:rgba(255,255,255,.62);font-size:8.5px}.seat b{grid-row:1/3;width:23px;height:23px;display:grid;place-items:center;border-radius:50%;color:#fff;background:linear-gradient(145deg,#9c5be3,#e75daf)}.seat span{font-weight:800;line-height:1.1}.seat small{color:#725b77;font-size:7px;font-weight:700}.footer{display:flex;justify-content:space-between;margin-top:4mm;color:#79677d;font-size:8px}@media print{.sheet{break-inside:avoid}}
+    </style></head><body><main class="sheet"><div class="top"><h1>SƠ ĐỒ LỚP ${escapeHtml(classCode)}</h1><p>${escapeHtml(className)} · Năm học ${escapeHtml(schoolYear)} · GVCN: ${escapeHtml(teacherName)}</p></div><div class="board">BẢNG LỚP</div><div class="teacher">BÀN GIÁO VIÊN · ${escapeHtml(teacherName)}</div><section class="grid">${desksHtml}</section><footer class="footer"><span>${assignedIds.size}/${capacity} vị trí đã xếp</span><span>Cập nhật: ${new Intl.DateTimeFormat('vi-VN').format(new Date(layout.updatedAt))}</span></footer></main></body></html>`;
   };
 
   const printLayout = () => {
@@ -595,8 +595,8 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     const gapX = 42;
     const gapY = 42;
     const deskHeight = 170;
-    const headerHeight = 260;
-    const footerHeight = 190;
+    const headerHeight = 340;
+    const footerHeight = 80;
     const height = headerHeight + layout.rows * (deskHeight + gapY) + footerHeight;
     const canvas = document.createElement('canvas');
     canvas.width = width;
@@ -640,7 +640,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
       context.stroke();
       context.textAlign = 'left';
       context.fillStyle = '#72431f';
-      context.font = '900 15px Arial';
+      context.font = '900 18px Arial';
       context.fillText(`BÀN ${deskIndex + 1}`, x + 13, y + 24);
       const seatColumns = desk.seats.length === 1 ? 1 : 2;
       const seatRows = Math.ceil(desk.seats.length / seatColumns);
@@ -668,11 +668,11 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
           context.fillText(student.initials || initials(student.name), seatX + 28, seatY + seatHeight / 2 + 5);
           context.textAlign = 'left';
           context.fillStyle = '#39263f';
-          context.font = '800 16px Arial';
+          context.font = '800 19px Arial';
           const label = shortName(student.name);
           context.fillText(label.length > 20 ? `${label.slice(0, 19)}…` : label, seatX + 54, seatY + seatHeight / 2 + 1, Math.max(30, seatWidth - 62));
           context.fillStyle = '#92799a';
-          context.font = '600 11px Arial';
+          context.font = '700 14px Arial';
           context.fillText(`Tổ ${student.team}`, seatX + 54, seatY + seatHeight / 2 + 19);
         } else {
           context.textAlign = 'center';
@@ -682,17 +682,17 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
         }
       });
     });
-    const teacherY = headerHeight + layout.rows * (deskHeight + gapY) + 24;
-    roundedRect(context, width * .32, teacherY, width * .36, 74, 15);
+    const teacherY = 232;
+    roundedRect(context, width * .32, teacherY, width * .36, 64, 15);
     context.fillStyle = '#79452d';
     context.fill();
     context.textAlign = 'center';
     context.fillStyle = '#fff';
-    context.font = '800 21px Arial';
-    context.fillText(`BÀN GIÁO VIÊN · ${teacherName}`, width / 2, teacherY + 45);
+    context.font = '800 25px Arial';
+    context.fillText(`BÀN GIÁO VIÊN · ${teacherName}`, width / 2, teacherY + 39);
     context.fillStyle = '#8f7994';
     context.font = '600 15px Arial';
-    context.fillText(`${assignedIds.size}/${capacity} vị trí đã xếp · Tạo bởi Lớp học Hạnh phúc`, width / 2, teacherY + 112);
+    context.fillText(`${assignedIds.size}/${capacity} vị trí đã xếp · Tạo bởi Lớp học Hạnh phúc`, width / 2, height - 28);
     canvas.toBlob((blob) => {
       if (!blob) return;
       const url = URL.createObjectURL(blob);
@@ -732,6 +732,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
           <section ref={stageRef} className={`seating-stage panel ${isPresentation ? 'is-presentation' : ''}`}>
             <div className="seating-stage-top"><div><span>SƠ ĐỒ · {classCode}</span><strong>{layout.name}</strong></div><div><small>{layout.columns} dãy · {layout.rows} hàng</small><b>{assignedIds.size}/{capacity} vị trí</b></div></div>
             <div className="seating-board"><span>BẢNG LỚP</span><small>{className} · {schoolYear}</small></div>
+            <div className="seating-teacher-desk"><span>👩‍🏫</span><div><small>BÀN GIÁO VIÊN</small><strong>{teacherName}</strong></div></div>
             <div className="seating-room-scroll">
               <div className="seating-desk-grid" style={{ '--seating-columns': layout.columns } as CSSProperties}>
                 {layout.desks.map((desk, deskIndex) => (
@@ -745,7 +746,6 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
                 ))}
               </div>
             </div>
-            <div className="seating-teacher-desk"><span>👩‍🏫</span><div><small>BÀN GIÁO VIÊN</small><strong>{teacherName}</strong></div></div>
             {shufflePhase === 'countdown' && <div className="seating-countdown"><div><Sparkles size={34} /><span>CHUẨN BỊ</span><strong key={countdown}>{countdown}</strong><small>Vị trí mới sắp được hé lộ!</small></div></div>}
             {shufflePhase === 'revealing' && <div className="seating-reveal-badge"><Shuffle size={15} /> Đang mở từng bàn…</div>}
             {isPresentation && <button className="seating-close-presentation" type="button" onClick={() => void togglePresentation()}><X size={18} /> Thoát trình chiếu</button>}
