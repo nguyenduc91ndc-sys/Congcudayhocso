@@ -3760,3 +3760,131 @@ body {
   .tracking-sheet-footer > div { display: grid; grid-template-columns:1fr 1fr; }
   .tracking-sheet-footer button { justify-content: center; padding-inline: 8px; }
 }
+
+/* Keep the whole classroom visible on common laptop screens while presenting. */
+.seating-stage:is(.is-presentation, :fullscreen) {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 10px clamp(12px, 3vw, 48px) 9px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-stage-top {
+  flex: 0 0 auto;
+  min-height: 25px;
+  margin-bottom: 3px;
+  padding-right: 150px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-stage-top strong { font-size: 14px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-board {
+  flex: 0 0 auto;
+  width: min(510px, 56vw);
+  min-height: 54px;
+  margin-bottom: 5px;
+  padding: 5px 45px;
+  border-width: 5px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-board::before,
+.seating-stage:is(.is-presentation, :fullscreen) .seating-board::after {
+  bottom: -12px;
+  height: 9px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-board span { font-size: 21px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-board small { font-size: 9px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-teacher-desk {
+  flex: 0 0 auto;
+  width: min(345px, 44vw);
+  min-height: 48px;
+  margin: 7px auto clamp(19px, 2.7vh, 28px);
+  border-width: 3px;
+  border-radius: 12px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-teacher-desk > span { font-size: 27px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-teacher-desk small { font-size: 8px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-teacher-desk strong { font-size: 13px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-room-scroll {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: hidden;
+  padding: clamp(16px, 2.6vh, 25px) 4px 5px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk-grid {
+  width: 100%;
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: repeat(var(--seating-columns), minmax(0, 1fr));
+  grid-template-rows: repeat(var(--seating-rows), minmax(0, 1fr));
+  gap: clamp(23px, 3.2vh, 35px) clamp(12px, 1.8vw, 30px);
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk {
+  height: 100%;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  padding-top: 3px;
+  border-width: 2px;
+  border-radius: 12px 12px 9px 9px;
+  box-shadow: 0 4px 0 #80502d, 0 8px 14px rgba(91,53,58,.13), inset 0 2px 0 rgba(255,255,255,.35);
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk::before,
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk::after { bottom: -9px; height: 12px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-chair-row {
+  top: -20px;
+  height: 19px;
+  padding-inline: 8%;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-chair-row i { height: 19px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk.seats-3 .seating-chair-row { grid-template-columns: repeat(3, 1fr); top: -20px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk.seats-4 .seating-chair-row { grid-template-columns: repeat(4, 1fr); top: -20px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk header {
+  min-height: 19px;
+  padding: 0 6px 2px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk header > span { font-size: 9px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk header small { font-size: 8px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk header button { width: 18px; height: 18px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk-surface {
+  min-height: 0;
+  padding: 3px;
+  gap: 3px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk.seats-3 .seating-desk-surface { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-desk.seats-4 .seating-desk-surface { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-seat,
+.seating-stage:is(.is-presentation, :fullscreen) .seating-empty-seat,
+.seating-stage:is(.is-presentation, :fullscreen) .seating-seat .seating-student-card {
+  height: 100%;
+  min-height: 0;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-seat .seating-student-card {
+  grid-template-rows: minmax(23px, 1fr) auto;
+  gap: 2px;
+  padding: 2px;
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-seat .seating-avatar {
+  width: clamp(24px, 3.5vh, 34px);
+  height: clamp(24px, 3.5vh, 34px);
+}
+.seating-stage:is(.is-presentation, :fullscreen) .seating-seat .seating-student-card strong { font-size: 10px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-seat .seating-student-card small { font-size: 8px; }
+.seating-stage:is(.is-presentation, :fullscreen) .seating-empty-seat { font-size: 9px; }
+.seating-stage:is(.is-presentation, :fullscreen).has-many-rows .seating-room-scroll { overflow: auto; }
+.seating-stage:is(.is-presentation, :fullscreen).has-many-rows .seating-desk-grid {
+  height: auto;
+  grid-template-rows: none;
+  grid-auto-rows: minmax(82px, auto);
+}
+
+@media (max-height: 820px) {
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-stage-top { min-height: 20px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-stage-top span,
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-stage-top small { font-size: 8px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-stage-top strong { font-size: 12px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-board { min-height: 47px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-board span { font-size: 18px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-teacher-desk { min-height: 42px; margin-bottom: 18px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-teacher-desk > span { font-size: 23px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-room-scroll { padding-top: 15px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-desk-grid { row-gap: 22px; }
+  .seating-stage:is(.is-presentation, :fullscreen) .seating-seat .seating-avatar { width: 25px; height: 25px; }
+}

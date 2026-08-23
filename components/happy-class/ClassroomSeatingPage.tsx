@@ -729,7 +729,11 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
         </section>
 
         <div className="seating-workspace">
-          <section ref={stageRef} className={`seating-stage panel ${isPresentation ? 'is-presentation' : ''}`}>
+          <section
+            ref={stageRef}
+            className={`seating-stage panel ${isPresentation ? 'is-presentation' : ''} ${layout.rows > 6 ? 'has-many-rows' : ''}`}
+            style={{ '--seating-rows': layout.rows } as CSSProperties}
+          >
             <div className="seating-stage-top"><div><span>SƠ ĐỒ · {classCode}</span><strong>{layout.name}</strong></div><div><small>{layout.columns} dãy · {layout.rows} hàng</small><b>{assignedIds.size}/{capacity} vị trí</b></div></div>
             <div className="seating-board"><span>BẢNG LỚP</span><small>{className} · {schoolYear}</small></div>
             <div className="seating-teacher-desk"><span>👩‍🏫</span><div><small>BÀN GIÁO VIÊN</small><strong>{teacherName}</strong></div></div>
