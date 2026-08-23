@@ -64,6 +64,11 @@ import type { Activity, AttendanceRecord, AttendanceStatus, PointReason, Reward,
 import { downloadStudentTemplate, parseStudentWorkbook } from './excel';
 import type { ExcelImportResult } from './excel';
 import ClassroomToolsPage from './ClassroomToolsPage';
+import ClassroomSeatingPage, {
+  getClassroomLayoutStudentIds,
+  isClassroomLayout,
+  type ClassroomLayout,
+} from './ClassroomSeatingPage';
 import ClassReportExport from './ClassReportExport';
 import WeeklyTrackingSheetExport from './WeeklyTrackingSheetExport';
 import parentFeedbackAppsScriptCode from './google-apps-script-parent-feedback.gs?raw';
@@ -93,6 +98,7 @@ type HappyClassAppProps = {
 type PageId =
   | 'dashboard'
   | 'students'
+  | 'seating'
   | 'points'
   | 'teams'
   | 'rewards'
@@ -152,12 +158,18 @@ type ClassBackup = {
   weekState?: WeekState;
   weeklyScoring?: WeeklyScoringSettings;
   attendanceHistory?: AttendanceRecord[];
+  classroomLayout?: ClassroomLayout;
 };
 
 const DEFAULT_TEAM_COUNT = 4;
+const MAX_TEAM_COUNT = 30;
 const normalizeTeamCount = (value: unknown) => {
   const count = Number(value);
-  return Number.isInteger(count) && count >= 1 && count <= 8 ? count : DEFAULT_TEAM_COUNT;
+  return Number.isInteger(count) && count >= 1 && count <= MAX_TEAM_COUNT ? count : DEFAULT_TEAM_COUNT;
+};
+const isValidTeamCount = (value: unknown) => {
+  const count = Number(value);
+  return Number.isInteger(count) && count >= 1 && count <= MAX_TEAM_COUNT;
 };
 const getTeamNumbers = (teamCount: number) => Array.from({ length: normalizeTeamCount(teamCount) }, (_, index) => index + 1);
 
@@ -347,7 +359,7 @@ function parseClassBackup(content: string): ClassBackup {
     || !isText(profile.name) || !profile.name.trim()
     || !isText(profile.code) || !profile.code.trim()
     || !isText(profile.schoolYear) || !profile.schoolYear.trim()
-    || (profile.teamCount !== undefined && (!isNumber(profile.teamCount) || !Number.isInteger(profile.teamCount) || profile.teamCount < 1 || profile.teamCount > 8))) {
+    || (profile.teamCount !== undefined && (!isNumber(profile.teamCount) || !isValidTeamCount(profile.teamCount)))) {
     throw new Error('Thông tin giáo viên hoặc lớp học trong bản sao không hợp lệ.');
   }
 
@@ -430,12 +442,20 @@ function parseClassBackup(content: string): ClassBackup {
     }
   }
 
+  if (value.classroomLayout !== undefined) {
+    if (!isClassroomLayout(value.classroomLayout)
+      || getClassroomLayoutStudentIds(value.classroomLayout).some((studentId) => !studentIds.has(studentId))) {
+      throw new Error('Dữ liệu sơ đồ lớp trong bản sao không hợp lệ.');
+    }
+  }
+
   return value as ClassBackup;
 }
 
 const navItems: NavItem[] = [
   { id: 'dashboard', label: 'Tổng quan', icon: Home },
   { id: 'students', label: 'Học sinh', icon: UsersRound },
+  { id: 'seating', label: 'Sơ đồ lớp', icon: LayoutGrid, badge: 'Mới' },
   { id: 'points', label: 'Vườn điểm tốt', icon: Sparkles },
   { id: 'teams', label: 'Thi đua tổ', icon: BarChart3 },
   { id: 'rewards', label: 'Đổi thưởng', icon: Store },
@@ -543,6 +563,17 @@ function readStoredStudents() {
     return stored ? (JSON.parse(stored) as Student[]) : initialStudents;
   } catch {
     return initialStudents;
+  }
+}
+
+function readStoredClassroomLayout(): ClassroomLayout | null {
+  try {
+    const stored = localStorage.getItem('happy-class-seating-layout');
+    if (!stored) return null;
+    const value: unknown = JSON.parse(stored);
+    return isClassroomLayout(value) ? value : null;
+  } catch {
+    return null;
   }
 }
 
@@ -734,6 +765,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     return requestedPage === 'management' && !readTeacherAccount() ? 'students' : requestedPage;
   });
   const [students, setStudents] = useState<Student[]>(readStoredStudents);
+  const [classroomLayout, setClassroomLayout] = useState<ClassroomLayout | null>(readStoredClassroomLayout);
   const [weekState, setWeekState] = useState<WeekState>(readStoredWeekState);
   const [activities, setActivities] = useState<Activity[]>(() => readStoredActivities(weekState.current.id));
   const [pointReasons, setPointReasons] = useState<PointReason[]>(readStoredPointReasons);
@@ -829,6 +861,11 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   useEffect(() => {
     localStorage.setItem('happy-class-students', JSON.stringify(students));
   }, [students]);
+
+  useEffect(() => {
+    if (classroomLayout) localStorage.setItem('happy-class-seating-layout', JSON.stringify(classroomLayout));
+    else localStorage.removeItem('happy-class-seating-layout');
+  }, [classroomLayout]);
 
   useEffect(() => {
     localStorage.setItem('happy-class-activities', JSON.stringify(activities));
@@ -1092,6 +1129,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setActivities([]);
     setWeekState((current) => ({ ...current, history: [] }));
     setAttendanceHistory([]);
+    setClassroomLayout(null);
     setProfileId(null);
     setToast('Đã xóa danh sách hiện tại. Bây giờ có thể nhập danh sách lớp thật từ Excel.');
   };
@@ -1108,6 +1146,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setRewardCatalog(initialRewards);
     setWeeklyScoring(createWeeklyScoringSettings());
     setAttendanceHistory([]);
+    setClassroomLayout(null);
     setToast('Đã khôi phục dữ liệu mẫu');
   };
 
@@ -1158,6 +1197,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       setParentPortal(backup.parentPortal ?? createParentPortalSettings());
       setWeeklyScoring(backup.weeklyScoring ?? createWeeklyScoringSettings());
       setAttendanceHistory(backup.attendanceHistory ?? []);
+      setClassroomLayout(backup.classroomLayout ?? null);
       setTeacherName(backup.teacher.name.trim());
       setTeacherPhoto(backup.teacher.photo);
       setClassProfile(normalizedProfile);
@@ -1578,6 +1618,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
             />
           )}
           {page === 'students' && <StudentsPage students={students} teamCount={classProfile.teamCount} canManageStudents={isTeacher} onOpenStudent={setProfileId} onAddStudent={() => navigate('management')} />}
+          {page === 'seating' && <ClassroomSeatingPage students={students} classCode={classProfile.code} className={classProfile.name} schoolYear={classProfile.schoolYear} teacherName={teacherName} canManage={isTeacher} value={classroomLayout} onChange={setClassroomLayout} onToast={setToast} />}
           {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} canConfigure={isTeacher} onRedeem={redeemReward} onSaveRewards={saveRewards} />}
@@ -1588,7 +1629,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'honors' && <HonorsPage students={students} week={weekState.current} scoring={weeklyScoring} />}
           {page === 'parents' && <ParentsPage students={students} activities={activities} classCode={classProfile.code} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} portal={parentPortal} publishing={cloudPublishing} onPublish={publishParentPortal} onTogglePortal={() => void toggleParentPortal()} onToggleRequireAccessCode={toggleParentAccessMode} onRegenerateCode={regenerateParentCode} onToggleAccess={toggleParentAccess} onSaveFeedbackConfig={saveParentFeedbackConfig} onToast={setToast} />}
-          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
+          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} classroomLayout={classroomLayout} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
         </div>
       </main>
 
@@ -1641,7 +1682,7 @@ function Sidebar({ page, open, teacherAccount, teacherName, teacherPhoto, classP
 
       <nav className="sidebar-nav" aria-label="Điều hướng chính">
         <span className="nav-eyebrow">QUẢN LÝ LỚP</span>
-        {navItems.slice(0, 9).map((item) => {
+        {navItems.slice(0, 10).map((item) => {
           const Icon = item.icon;
           return (
             <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => onNavigate(item.id)}>
@@ -1652,7 +1693,7 @@ function Sidebar({ page, open, teacherAccount, teacherName, teacherPhoto, classP
           );
         })}
         <span className="nav-eyebrow nav-eyebrow-spaced">KẾT NỐI</span>
-        {navItems.slice(9).map((item) => {
+        {navItems.slice(10).map((item) => {
           const Icon = item.icon;
           return (
             <button key={item.id} className={page === item.id ? 'active' : ''} onClick={() => onNavigate(item.id)}>
@@ -1697,6 +1738,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
   const [query, setQuery] = useState('');
   const topics: { icon: string; title: string; description: string; keywords: string; page: PageId; teacherOnly?: boolean }[] = [
     { icon: '👩‍🎓', title: 'Học sinh và nhập Excel', description: 'Thêm, sửa hồ sơ hoặc nhập cả danh sách học sinh từ tệp Excel.', keywords: 'học sinh excel danh sách thêm sửa xóa mã định danh', page: 'management', teacherOnly: true },
+    { icon: '🪑', title: 'Tạo và xếp sơ đồ lớp', description: 'Chọn bàn 1–4 chỗ, kéo thả học sinh, khóa ghế hoặc bốc vị trí ngẫu nhiên.', keywords: 'sơ đồ lớp bàn ghế chỗ ngồi kéo thả ngẫu nhiên xuất png pdf', page: 'seating' },
     { icon: '🗓️', title: 'Quản lý tuần học', description: 'Đặt thời gian, chốt điểm tuần, mở tuần mới và xem lại lịch sử.', keywords: 'tuần chốt tuần điểm tuần lịch sử thi đua vinh danh', page: 'management', teacherOnly: true },
     { icon: '✨', title: 'Cộng và trừ điểm', description: 'Chọn học sinh, ghi nhận điểm tốt hoặc nhắc nhở; có thể hoàn tác lượt chấm gần nhất bằng nút Hoàn tác.', keywords: 'điểm cộng trừ nhắc nhở hoàn tác undo cấu hình vườn điểm tốt', page: 'points' },
     { icon: '🎲', title: 'Chia tổ ngẫu nhiên', description: 'Chọn số tổ, xáo trộn cả lớp hoặc học sinh có mặt, xem trước rồi xác nhận phân tổ.', keywords: 'chia tổ ngẫu nhiên xáo trộn chia nhóm phân tổ hoàn tác', page: 'teams', teacherOnly: true },
@@ -1796,7 +1838,7 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
   );
 }
 
-function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
+function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, classroomLayout, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; classroomLayout: ClassroomLayout | null; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [reportExportOpen, setReportExportOpen] = useState(false);
@@ -1810,7 +1852,7 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
     parentName: '', parentPhone: '', strengths: [],
   });
   const exportData = () => {
-    const content = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), teacher: { name: teacherName, photo: teacherPhoto }, classProfile, students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory }, null, 2);
+    const content = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), teacher: { name: teacherName, photo: teacherPhoto }, classProfile, students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, classroomLayout }, null, 2);
     const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
     const link = document.createElement('a');
     link.href = url;
@@ -2325,8 +2367,10 @@ function TeacherSettings({ teacherName, teacherPhoto, classCode, onSave, onClose
 
 function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassProfile; onSave: (profile: ClassProfile) => void; onClose: () => void }) {
   const [draft, setDraft] = useState(classProfile);
+  const teamCountValid = isValidTeamCount(draft.teamCount);
   const submit = (event: FormEvent<HTMLFormElement>) => {
     event.preventDefault();
+    if (!teamCountValid) return;
     const profile: ClassProfile = {
       name: draft.name.trim(),
       code: draft.code.trim(),
@@ -2344,12 +2388,12 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
         <span className="settings-eyebrow">THÔNG TIN LỚP HỌC</span>
         <h2 id="class-settings-title">Tùy chỉnh lớp đang quản lý</h2>
         <p>Nội dung sẽ được cập nhật đồng bộ trên toàn bộ ứng dụng.</p>
-        <div className="class-settings-preview"><div className="class-icon">{draft.code || '—'}</div><div><strong>{draft.name || 'Tên lớp'}</strong><span>Năm học {draft.schoolYear || '—'} · {normalizeTeamCount(draft.teamCount)} tổ</span></div></div>
+        <div className="class-settings-preview"><div className="class-icon">{draft.code || '—'}</div><div><strong>{draft.name || 'Tên lớp'}</strong><span>Năm học {draft.schoolYear || '—'} · {teamCountValid ? draft.teamCount : '—'} tổ</span></div></div>
         <div className="class-settings-fields">
           <label><span>Tên lớp</span><input autoFocus maxLength={60} value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Ví dụ: Lớp Hạnh Phúc" /></label>
           <label><span>Mã lớp</span><input maxLength={20} value={draft.code} onChange={(event) => setDraft((current) => ({ ...current, code: event.target.value }))} placeholder="Ví dụ: 3/1 hoặc 4A" /></label>
           <label><span>Năm học</span><input maxLength={30} value={draft.schoolYear} onChange={(event) => setDraft((current) => ({ ...current, schoolYear: event.target.value }))} placeholder="Ví dụ: 2026–2027" /></label>
-          <label><span>Số lượng tổ</span><select value={normalizeTeamCount(draft.teamCount)} onChange={(event) => setDraft((current) => ({ ...current, teamCount: Number(event.target.value) }))}>{getTeamNumbers(8).map((count) => <option key={count} value={count}>{count} tổ</option>)}</select><small>Cho phép từ 1 đến 8 tổ.</small></label>
+          <label><span>Số lượng tổ/nhóm</span><input type="number" inputMode="numeric" min={1} max={MAX_TEAM_COUNT} step={1} value={draft.teamCount || ''} onChange={(event) => setDraft((current) => ({ ...current, teamCount: event.target.value === '' ? 0 : Number(event.target.value) }))} placeholder="Ví dụ: 9" /><small>Tự nhập số lượng thực tế, từ 1 đến {MAX_TEAM_COUNT} tổ/nhóm.</small></label>
           <label>
             <span>Cách tính điểm thi đua tổ</span>
             <select value={draft.teamScoringMode || 'average'} onChange={(event) => setDraft((current) => ({ ...current, teamScoringMode: event.target.value as TeamScoringMode }))}>
@@ -2359,14 +2403,14 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
             <small>Điểm trung bình giúp các tổ ít học sinh hơn không bị thiệt thòi khi so sánh.</small>
           </label>
         </div>
-        <div className="settings-actions"><button type="button" className="settings-cancel" onClick={onClose}>Hủy</button><button type="submit" className="settings-save" disabled={!draft.name.trim() || !draft.code.trim() || !draft.schoolYear.trim()}><Check size={18} /> Lưu thông tin lớp</button></div>
+        <div className="settings-actions"><button type="button" className="settings-cancel" onClick={onClose}>Hủy</button><button type="submit" className="settings-save" disabled={!draft.name.trim() || !draft.code.trim() || !draft.schoolYear.trim() || !teamCountValid}><Check size={18} /> Lưu thông tin lớp</button></div>
       </form>
     </div>
   );
 }
 
 function MobileNav({ page, onNavigate }: { page: PageId; onNavigate: (page: PageId) => void }) {
-  const items = navItems.filter((item) => ['dashboard', 'students', 'points', 'tools', 'attendance'].includes(item.id));
+  const items = navItems.filter((item) => ['dashboard', 'students', 'seating', 'points', 'attendance'].includes(item.id));
   return (
     <nav className="mobile-nav">
       {items.map((item) => {
@@ -2762,6 +2806,7 @@ function TeamsPage({
   const randomCandidateCount = randomScope === 'present' ? students.filter((student) => student.attendance === 'present').length : students.length;
 
   const createRandomPreview = (count = randomTeamCount, scope = randomScope) => {
+    if (!isValidTeamCount(count)) return;
     const candidates = students.filter((student) => scope === 'all' || student.attendance === 'present');
     const shuffled = [...candidates];
     for (let index = shuffled.length - 1; index > 0; index -= 1) {
@@ -2806,9 +2851,9 @@ function TeamsPage({
           {randomizerOpen && (
             <div className="team-randomizer-body">
               <div className="team-randomizer-controls">
-                <label><span>Số lượng tổ</span><select value={randomTeamCount} onChange={(event) => { setRandomTeamCount(Number(event.target.value)); setRandomPreview([]); }}>{getTeamNumbers(8).map((count) => <option key={count} value={count}>{count} tổ</option>)}</select></label>
+                <label><span>Số lượng tổ/nhóm</span><input type="number" inputMode="numeric" min={1} max={MAX_TEAM_COUNT} step={1} value={randomTeamCount || ''} onChange={(event) => { setRandomTeamCount(event.target.value === '' ? 0 : Number(event.target.value)); setRandomPreview([]); }} placeholder="Ví dụ: 9" /></label>
                 <label><span>Phạm vi chia</span><select value={randomScope} onChange={(event) => { setRandomScope(event.target.value as 'all' | 'present'); setRandomPreview([]); }}><option value="all">Cả lớp ({students.length} học sinh)</option><option value="present">Chỉ học sinh có mặt ({students.filter((student) => student.attendance === 'present').length})</option></select></label>
-                <button type="button" disabled={!randomCandidateCount} onClick={() => createRandomPreview()}><Wand2 size={17} /> {randomPreview.length ? 'Chia lại' : 'Tạo danh sách'}</button>
+                <button type="button" disabled={!randomCandidateCount || !isValidTeamCount(randomTeamCount)} onClick={() => createRandomPreview()}><Wand2 size={17} /> {randomPreview.length ? 'Chia lại' : 'Tạo danh sách'}</button>
               </div>
               {randomScope === 'present' && <p className="team-randomizer-note"><ShieldCheck size={16} /> Học sinh vắng mặt được giữ ở tổ hiện tại; chỉ các em có mặt được xáo trộn.</p>}
               {randomPreview.length > 0 && (
