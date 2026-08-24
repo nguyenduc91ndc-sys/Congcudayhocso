@@ -4,11 +4,11 @@ const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
 const mammoth = require("mammoth");
+const { GoogleGenAI } = require("@google/genai");
 const sharp = require("sharp");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
-const GEMINI_INTERACTIONS_URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
@@ -145,64 +145,17 @@ async function callGroq(apiKey, parts, hasImages = false) {
   return data.choices?.[0]?.message?.content || "";
 }
 
-function partsToGeminiInput(parts) {
-  return parts.flatMap((part) => {
-    if (part.text) return [{ type: "text", text: part.text }];
-    if (!part.inlineData) return [];
-
-    const mimeType = part.inlineData.mimeType;
-    const type = mimeType.startsWith("image/")
-      ? "image"
-      : mimeType.startsWith("audio/")
-        ? "audio"
-        : mimeType.startsWith("video/")
-          ? "video"
-          : "document";
-
-    return [
-      {
-        type,
-        data: part.inlineData.data,
-        mime_type: mimeType,
-      },
-    ];
-  });
-}
-
-function extractGeminiOutputText(data) {
-  if (typeof data.output_text === "string") return data.output_text;
-  if (typeof data.outputText === "string") return data.outputText;
-
-  return (data.steps || [])
-    .filter((step) => step.type === "model_output")
-    .flatMap((step) => step.content || [])
-    .filter((content) => content.type === "text" && typeof content.text === "string")
-    .map((content) => content.text)
-    .join("\n")
-    .trim();
-}
-
 async function callGemini(apiKey, parts) {
-  const response = await fetch(GEMINI_INTERACTIONS_URL, {
-    method: "POST",
-    headers: {
-      "x-goog-api-key": apiKey,
-      "Content-Type": "application/json",
-      "Api-Revision": "2026-05-20",
-    },
-    body: JSON.stringify({
-      model: GEMINI_MODEL,
-      store: false,
-      input: partsToGeminiInput(parts),
-    }),
+  const ai = new GoogleGenAI({ apiKey });
+  const response = await ai.models.generateContent({
+    model: GEMINI_MODEL,
+    contents: [{ role: "user", parts }],
   });
 
-  const data = await response.json().catch(() => ({}));
-  if (!response.ok) {
-    throw new Error(data.error?.message || `Gemini API error ${response.status}`);
-  }
-
-  return extractGeminiOutputText(data);
+  return response.text || response.candidates?.[0]?.content?.parts
+    ?.map((part) => part.text || "")
+    .join("")
+    .trim() || "";
 }
 
 // --- API: Test API Key ---
