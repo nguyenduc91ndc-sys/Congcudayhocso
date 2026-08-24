@@ -3887,8 +3887,9 @@ function HonorsPage({ students, teamCount, week, scoring, isTeacher }: { student
   const classRanked = rankStudentsByWeeklyScore(students);
   const selectedTeamStudents = students.filter((student) => student.team === selectedTeam);
   const activeRanked = scope === 'teams' ? rankStudentsByWeeklyScore(selectedTeamStudents) : classRanked;
-  const cutoffScore = activeRanked[Math.min(honorLimit, activeRanked.length) - 1]?.student.weeklyScore;
-  const visibleRanked = activeRanked.filter((entry, index) => index < honorLimit || entry.student.weeklyScore === cutoffScore);
+  const visibleRanked = activeRanked.slice(0, honorLimit);
+  const lastVisibleScore = visibleRanked[visibleRanked.length - 1]?.student.weeklyScore;
+  const hiddenTiedCount = activeRanked.slice(honorLimit).filter((entry) => entry.student.weeklyScore === lastVisibleScore).length;
   const honorRows = visibleRanked.reduce<Array<{ rank: number; score: number; entries: HonorRank[] }>>((rows, entry) => {
     const currentRow = rows[rows.length - 1];
     if (currentRow?.score === entry.student.weeklyScore) currentRow.entries.push(entry);
@@ -3970,7 +3971,7 @@ function HonorsPage({ students, teamCount, week, scoring, isTeacher }: { student
               ))}
             </div>
           ) : <div className="honor-empty"><span>🌱</span><strong>Chưa có học sinh</strong><small>Thêm học sinh vào {scope === 'teams' ? `Tổ ${selectedTeam}` : 'lớp'} để bắt đầu vinh danh.</small></div>}
-          {activeRanked.length > honorLimit && <p className="honor-portrait-limit"><Award size={15} /> Đang hiển thị Top {honorLimit}{visibleRanked.length > honorLimit ? ` và ${visibleRanked.length - honorLimit} bạn đồng hạng` : ''}</p>}
+          {activeRanked.length > honorLimit && <p className="honor-portrait-limit"><Award size={15} /> Đang hiển thị Top {honorLimit}{hiddenTiedCount ? ` · ${hiddenTiedCount} bạn còn lại đồng hạng` : ''}</p>}
         </section>
 
         <footer className="honor-board-note"><HeartHandshake size={18} /><span><strong>Cùng điểm, cùng hạng.</strong> Bảng chỉ tuyên dương các vị trí nổi bật và không công khai thứ hạng cuối.</span></footer>
