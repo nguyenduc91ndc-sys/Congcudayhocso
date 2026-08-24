@@ -1,10 +1,9 @@
 import type { VercelRequest } from '@vercel/node';
-import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import Busboy from 'busboy';
 import mammoth from 'mammoth';
-import { createPartFromUri, GoogleGenAI, type Part } from '@google/genai';
+import { GoogleGenAI, type Part } from '@google/genai';
 
 export type Provider = 'gemini' | 'groq';
 
@@ -14,11 +13,7 @@ export interface AiPart {
         mimeType: string;
         data: string;
     };
-    uploadFile?: {
-        filePath: string;
-        mimeType: string;
-        displayName: string;
-    };
+    referenceAttachment?: boolean;
 }
 
 export interface UploadedFile {
@@ -35,17 +30,12 @@ export interface MultipartPayload {
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'xdkhbdcv3439', 'xdkhbdcv3439', 'data');
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
-const GEMINI_INLINE_REFERENCE_LIMIT = 4 * 1024 * 1024;
-const GEMINI_FILE_CACHE_MS = 44 * 60 * 60 * 1000;
+const GEMINI_MAX_REFERENCE_BYTES = 4 * 1024 * 1024;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_TEXT_MODEL = 'openai/gpt-oss-120b';
 const GROQ_VISION_MODEL = 'qwen/qwen3.6-27b';
 
 let referencePartsPromise: Promise<AiPart[]> | null = null;
-const geminiFileCache = new Map<string, {
-    expiresAt: number;
-    promise: Promise<{ uri: string; mimeType: string }>;
-}>();
 
 export function normalizeProvider(value: unknown): Provider {
     return String(value || 'gemini').toLowerCase() === 'groq' ? 'groq' : 'gemini';
@@ -112,17 +102,18 @@ async function readReferenceParts(): Promise<AiPart[]> {
         if (ext === '.pdf') {
             const fileBuffer = fs.readFileSync(filePath);
             parts.push({ text: `\n--- Tài liệu tham khảo: "${filename}" ---\n` });
-            parts.push(fileBuffer.length > GEMINI_INLINE_REFERENCE_LIMIT ? {
-                uploadFile: {
-                    filePath,
-                    mimeType: 'application/pdf',
-                    displayName: filename,
-                },
-            } : {
+            if (fileBuffer.length > GEMINI_MAX_REFERENCE_BYTES) {
+                parts.push({
+                    text: `[Tài liệu "${filename}" có dung lượng lớn nên không đính kèm; hãy áp dụng các yêu cầu tương ứng đã nêu trong chỉ dẫn.]\n`,
+                });
+                continue;
+            }
+            parts.push({
                 inlineData: {
                     mimeType: 'application/pdf',
                     data: fileBuffer.toString('base64'),
                 },
+                referenceAttachment: true,
             });
         } else if (ext === '.docx') {
             try {
@@ -178,12 +169,37 @@ export function parseMultipart(req: VercelRequest): Promise<MultipartPayload> {
 }
 
 export async function fileToImagePart(file: UploadedFile, provider: Provider): Promise<AiPart> {
+    const mimeType = normalizeImageMimeType(file);
     return {
         inlineData: {
-            mimeType: file.mimetype || 'image/jpeg',
+            mimeType,
             data: file.buffer.toString('base64'),
         },
     };
+}
+
+function normalizeImageMimeType(file: UploadedFile): string {
+    const aliases: Record<string, string> = {
+        'image/jpg': 'image/jpeg',
+        'image/pjpeg': 'image/jpeg',
+        'image/x-png': 'image/png',
+    };
+    const supplied = aliases[file.mimetype?.toLowerCase()] || file.mimetype?.toLowerCase() || '';
+    const supported = new Set(['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif']);
+    if (supported.has(supplied)) return supplied;
+
+    const ext = path.extname(file.originalname).toLowerCase();
+    const fromExtension: Record<string, string> = {
+        '.jpg': 'image/jpeg',
+        '.jpeg': 'image/jpeg',
+        '.png': 'image/png',
+        '.webp': 'image/webp',
+        '.heic': 'image/heic',
+        '.heif': 'image/heif',
+    };
+    if (fromExtension[ext]) return fromExtension[ext];
+
+    throw new Error(`Định dạng ảnh "${file.originalname}" không được hỗ trợ. Hãy dùng JPG, PNG, WEBP, HEIC hoặc HEIF.`);
 }
 
 function partsToGroqContent(parts: AiPart[]) {
@@ -214,7 +230,7 @@ function partsToGroqContent(parts: AiPart[]) {
             continue;
         }
 
-        if (part.inlineData || part.uploadFile) skippedFiles++;
+        if (part.inlineData) skippedFiles++;
     }
 
     if (skippedFiles > 0) {
@@ -252,19 +268,31 @@ export async function callGroq(apiKey: string, parts: AiPart[], hasImages = fals
 
 export async function callGemini(apiKey: string, parts: AiPart[]): Promise<string> {
     const ai = new GoogleGenAI({ apiKey });
-    const resolvedParts = await resolveGeminiParts(ai, apiKey, parts);
-    const response = await ai.models.generateContent({
-        model: GEMINI_MODEL,
-        contents: [{ role: 'user', parts: resolvedParts }],
-    });
+    const generate = async (requestParts: AiPart[]) => {
+        const resolvedParts = resolveGeminiParts(requestParts);
+        const response = await ai.models.generateContent({
+            model: GEMINI_MODEL,
+            contents: [{ role: 'user', parts: resolvedParts }],
+        });
 
-    return response.text || response.candidates?.[0]?.content?.parts
-        ?.map((part) => part.text || '')
-        .join('')
-        .trim() || '';
+        return response.text || response.candidates?.[0]?.content?.parts
+            ?.map((part) => part.text || '')
+            .join('')
+            .trim() || '';
+    };
+
+    try {
+        return await generate(parts);
+    } catch (error) {
+        const hasReferenceAttachments = parts.some((part) => part.referenceAttachment);
+        if (!hasReferenceAttachments || !isGeminiInvalidArgument(error)) throw error;
+
+        console.warn('Gemini rejected reference PDFs; retrying without binary reference attachments.');
+        return generate(parts.filter((part) => !part.referenceAttachment));
+    }
 }
 
-async function resolveGeminiParts(ai: GoogleGenAI, apiKey: string, parts: AiPart[]): Promise<Part[]> {
+function resolveGeminiParts(parts: AiPart[]): Part[] {
     const resolved: Part[] = [];
 
     for (const part of parts) {
@@ -272,76 +300,21 @@ async function resolveGeminiParts(ai: GoogleGenAI, apiKey: string, parts: AiPart
             resolved.push({ text: part.text });
         } else if (part.inlineData) {
             resolved.push({ inlineData: part.inlineData });
-        } else if (part.uploadFile) {
-            const uploaded = await getUploadedReference(ai, apiKey, part.uploadFile);
-            resolved.push(createPartFromUri(uploaded.uri, uploaded.mimeType));
         }
     }
 
     return resolved;
 }
 
-async function getUploadedReference(
-    ai: GoogleGenAI,
-    apiKey: string,
-    file: NonNullable<AiPart['uploadFile']>,
-): Promise<{ uri: string; mimeType: string }> {
-    const stat = fs.statSync(file.filePath);
-    const cacheKey = createHash('sha256')
-        .update(apiKey)
-        .update('\0')
-        .update(file.filePath)
-        .update('\0')
-        .update(String(stat.size))
-        .update('\0')
-        .update(String(stat.mtimeMs))
-        .digest('hex');
-    const cached = geminiFileCache.get(cacheKey);
-    if (cached && cached.expiresAt > Date.now()) return cached.promise;
-
-    const promise = uploadReferenceFile(ai, file);
-    geminiFileCache.set(cacheKey, {
-        expiresAt: Date.now() + GEMINI_FILE_CACHE_MS,
-        promise,
-    });
-
-    try {
-        return await promise;
-    } catch (error) {
-        geminiFileCache.delete(cacheKey);
-        throw error;
-    }
-}
-
-async function uploadReferenceFile(
-    ai: GoogleGenAI,
-    file: NonNullable<AiPart['uploadFile']>,
-): Promise<{ uri: string; mimeType: string }> {
-    let uploaded = await ai.files.upload({
-        file: file.filePath,
-        config: {
-            mimeType: file.mimeType,
-            displayName: file.displayName,
-        },
-    });
-
-    const deadline = Date.now() + 30_000;
-    while (uploaded.state === 'PROCESSING' && uploaded.name && Date.now() < deadline) {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-        uploaded = await ai.files.get({ name: uploaded.name });
-    }
-
-    if (uploaded.state === 'FAILED') {
-        throw new Error(`Gemini could not process reference document ${file.displayName}.`);
-    }
-    if (!uploaded.uri) {
-        throw new Error(`Gemini reference document is not ready: ${file.displayName}.`);
-    }
-
-    return {
-        uri: uploaded.uri,
-        mimeType: uploaded.mimeType || file.mimeType,
-    };
+function isGeminiInvalidArgument(error: unknown): boolean {
+    const details = error && typeof error === 'object'
+        ? error as { status?: number; statusCode?: number; message?: string }
+        : {};
+    const message = String(details.message || error || '').toLowerCase();
+    return details.status === 400
+        || details.statusCode === 400
+        || message.includes('invalid_argument')
+        || message.includes('invalid argument');
 }
 
 export function baseLessonPrompt(subject: string, grade: string, userNote = ''): string {

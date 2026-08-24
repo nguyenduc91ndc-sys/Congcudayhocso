@@ -3,20 +3,17 @@ const express = require("express");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const crypto = require("crypto");
 const mammoth = require("mammoth");
-const { createPartFromUri, GoogleGenAI } = require("@google/genai");
+const { GoogleGenAI } = require("@google/genai");
 const sharp = require("sharp");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 const GEMINI_MODEL = process.env.GEMINI_MODEL || "gemini-3.6-flash";
-const GEMINI_INLINE_REFERENCE_LIMIT = 4 * 1024 * 1024;
-const GEMINI_FILE_CACHE_MS = 44 * 60 * 60 * 1000;
+const GEMINI_MAX_REFERENCE_BYTES = 4 * 1024 * 1024;
 const GROQ_API_URL = "https://api.groq.com/openai/v1/chat/completions";
 const GROQ_TEXT_MODEL = "openai/gpt-oss-120b";
 const GROQ_VISION_MODEL = "qwen/qwen3.6-27b";
-const geminiFileCache = new Map();
 
 // --- Multer config: store uploads in memory ---
 const upload = multer({
@@ -51,17 +48,18 @@ async function loadReferenceFiles() {
       // PDF: send as inline binary data
       const fileBuffer = fs.readFileSync(filePath);
       parts.push({ text: `\n--- Tài liệu tham khảo: "${filename}" ---\n` });
-      parts.push(fileBuffer.length > GEMINI_INLINE_REFERENCE_LIMIT ? {
-        uploadFile: {
-          filePath,
-          mimeType: "application/pdf",
-          displayName: filename,
-        },
-      } : {
+      if (fileBuffer.length > GEMINI_MAX_REFERENCE_BYTES) {
+        parts.push({
+          text: `[Tài liệu "${filename}" có dung lượng lớn nên không đính kèm; hãy áp dụng các yêu cầu tương ứng đã nêu trong chỉ dẫn.]\n`,
+        });
+        continue;
+      }
+      parts.push({
         inlineData: {
           mimeType: "application/pdf",
           data: fileBuffer.toString("base64"),
         },
+        referenceAttachment: true,
       });
     } else if (ext === ".docx") {
       // DOCX: extract text content
@@ -119,7 +117,7 @@ function partsToGroqContent(parts) {
       continue;
     }
 
-    if (part.inlineData || part.uploadFile) skippedFiles++;
+    if (part.inlineData) skippedFiles++;
   }
 
   if (skippedFiles > 0) {
@@ -157,72 +155,44 @@ async function callGroq(apiKey, parts, hasImages = false) {
 
 async function callGemini(apiKey, parts) {
   const ai = new GoogleGenAI({ apiKey });
-  const resolvedParts = await resolveGeminiParts(ai, apiKey, parts);
-  const response = await ai.models.generateContent({
-    model: GEMINI_MODEL,
-    contents: [{ role: "user", parts: resolvedParts }],
-  });
+  const generate = async (requestParts) => {
+    const response = await ai.models.generateContent({
+      model: GEMINI_MODEL,
+      contents: [{ role: "user", parts: resolveGeminiParts(requestParts) }],
+    });
 
-  return response.text || response.candidates?.[0]?.content?.parts
-    ?.map((part) => part.text || "")
-    .join("")
-    .trim() || "";
+    return response.text || response.candidates?.[0]?.content?.parts
+      ?.map((part) => part.text || "")
+      .join("")
+      .trim() || "";
+  };
+
+  try {
+    return await generate(parts);
+  } catch (error) {
+    const hasReferenceAttachments = parts.some((part) => part.referenceAttachment);
+    if (!hasReferenceAttachments || !isGeminiInvalidArgument(error)) throw error;
+
+    console.warn("Gemini rejected reference PDFs; retrying without binary reference attachments.");
+    return generate(parts.filter((part) => !part.referenceAttachment));
+  }
 }
 
-async function resolveGeminiParts(ai, apiKey, parts) {
+function resolveGeminiParts(parts) {
   const resolved = [];
   for (const part of parts) {
     if (part.text) resolved.push({ text: part.text });
     else if (part.inlineData) resolved.push({ inlineData: part.inlineData });
-    else if (part.uploadFile) {
-      const uploaded = await getUploadedReference(ai, apiKey, part.uploadFile);
-      resolved.push(createPartFromUri(uploaded.uri, uploaded.mimeType));
-    }
   }
   return resolved;
 }
 
-async function getUploadedReference(ai, apiKey, file) {
-  const stat = fs.statSync(file.filePath);
-  const cacheKey = crypto.createHash("sha256")
-    .update(apiKey)
-    .update("\0")
-    .update(file.filePath)
-    .update("\0")
-    .update(String(stat.size))
-    .update("\0")
-    .update(String(stat.mtimeMs))
-    .digest("hex");
-  const cached = geminiFileCache.get(cacheKey);
-  if (cached && cached.expiresAt > Date.now()) return cached.promise;
-
-  const promise = uploadReferenceFile(ai, file);
-  geminiFileCache.set(cacheKey, { expiresAt: Date.now() + GEMINI_FILE_CACHE_MS, promise });
-  try {
-    return await promise;
-  } catch (error) {
-    geminiFileCache.delete(cacheKey);
-    throw error;
-  }
-}
-
-async function uploadReferenceFile(ai, file) {
-  let uploaded = await ai.files.upload({
-    file: file.filePath,
-    config: { mimeType: file.mimeType, displayName: file.displayName },
-  });
-  const deadline = Date.now() + 30000;
-  while (uploaded.state === "PROCESSING" && uploaded.name && Date.now() < deadline) {
-    await new Promise((resolve) => setTimeout(resolve, 500));
-    uploaded = await ai.files.get({ name: uploaded.name });
-  }
-  if (uploaded.state === "FAILED") {
-    throw new Error(`Gemini could not process reference document ${file.displayName}.`);
-  }
-  if (!uploaded.uri) {
-    throw new Error(`Gemini reference document is not ready: ${file.displayName}.`);
-  }
-  return { uri: uploaded.uri, mimeType: uploaded.mimeType || file.mimeType };
+function isGeminiInvalidArgument(error) {
+  const message = String(error?.message || error || "").toLowerCase();
+  return error?.status === 400
+    || error?.statusCode === 400
+    || message.includes("invalid_argument")
+    || message.includes("invalid argument");
 }
 
 // --- API: Test API Key ---
