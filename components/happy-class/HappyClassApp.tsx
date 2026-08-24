@@ -1697,7 +1697,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'attendance' && (
             <AttendancePage students={students} classCode={classProfile.code} attendanceHistory={attendanceHistory} weekState={weekState} weeklyScoring={weeklyScoring} onUpdate={updateAttendance} onUpdateBulk={updateAttendanceBulk} onComplete={markAttendanceComplete} onToast={setToast} />
           )}
-          {page === 'honors' && <HonorsPage students={students} week={weekState.current} scoring={weeklyScoring} />}
+          {page === 'honors' && <HonorsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} />}
           {page === 'parents' && <ParentsPage students={students} activities={activities} classCode={classProfile.code} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} portal={parentPortal} publishing={cloudPublishing} onPublish={publishParentPortal} onTogglePortal={() => void toggleParentPortal()} onToggleRequireAccessCode={toggleParentAccessMode} onRegenerateCode={regenerateParentCode} onToggleAccess={toggleParentAccess} onSaveFeedbackConfig={saveParentFeedbackConfig} onToast={setToast} />}
           {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} classroomLayout={classroomLayout} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
         </div>
@@ -3845,25 +3845,136 @@ function AttendancePage({ students, classCode, attendanceHistory, weekState, wee
   );
 }
 
-function HonorsPage({ students, week, scoring }: { students: Student[]; week: WeekPeriod; scoring: WeeklyScoringSettings }) {
-  const ranked = [...students].sort((a, b) => b.weeklyScore - a.weeklyScore);
-  const podium = [ranked[1], ranked[0], ranked[2]].filter(Boolean);
+type HonorRank = { student: Student; rank: number };
+
+function rankStudentsByWeeklyScore(students: Student[]): HonorRank[] {
+  let previousScore: number | undefined;
+  let rank = 0;
+  return [...students]
+    .sort((a, b) => b.weeklyScore - a.weeklyScore)
+    .map((student, index) => {
+      if (previousScore === undefined || student.weeklyScore !== previousScore) rank = index + 1;
+      previousScore = student.weeklyScore;
+      return { student, rank };
+    });
+}
+
+function HonorPortraitCard({ entry, showTeam = false }: { entry: HonorRank; showTeam?: boolean }) {
+  const { student, rank } = entry;
+  const medal = rank === 1 ? '🥇' : rank === 2 ? '🥈' : rank === 3 ? '🥉' : `#${rank}`;
+  return (
+    <article className={`honor-portrait-card honor-portrait-rank-${Math.min(rank, 4)}`}>
+      <h4>{student.name}</h4>
+      <div className="honor-portrait-frame">
+        <Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="xlarge" />
+        <span className="honor-portrait-score" aria-label={`${student.weeklyScore} điểm`}>{student.weeklyScore}</span>
+        <span className="honor-portrait-medal" aria-label={`Hạng ${rank}`}>{medal}</span>
+      </div>
+      <span className="honor-portrait-caption">{showTeam ? `Tổ ${student.team} · ` : ''}Hạng {rank}</span>
+    </article>
+  );
+}
+
+function HonorsPage({ students, teamCount, week, scoring, isTeacher }: { students: Student[]; teamCount: number; week: WeekPeriod; scoring: WeeklyScoringSettings; isTeacher: boolean }) {
+  const [scope, setScope] = useState<'teams' | 'class'>('teams');
+  const [selectedTeam, setSelectedTeam] = useState(1);
+  const [honorLimit, setHonorLimit] = useState<3 | 5 | 10>(() => {
+    const storedLimit = Number(localStorage.getItem('happy-class-honor-limit'));
+    return storedLimit === 3 || storedLimit === 10 ? storedLimit : 5;
+  });
+  const [isPresentation, setIsPresentation] = useState(false);
+  const honorBoardRef = useRef<HTMLElement>(null);
+  const classRanked = rankStudentsByWeeklyScore(students);
+  const selectedTeamStudents = students.filter((student) => student.team === selectedTeam);
+  const activeRanked = scope === 'teams' ? rankStudentsByWeeklyScore(selectedTeamStudents) : classRanked;
+  const cutoffScore = activeRanked[Math.min(honorLimit, activeRanked.length) - 1]?.student.weeklyScore;
+  const visibleRanked = activeRanked.filter((entry, index) => index < honorLimit || entry.student.weeklyScore === cutoffScore);
+  const honorRows = visibleRanked.reduce<Array<{ rank: number; score: number; entries: HonorRank[] }>>((rows, entry) => {
+    const currentRow = rows[rows.length - 1];
+    if (currentRow?.score === entry.student.weeklyScore) currentRow.entries.push(entry);
+    else rows.push({ rank: entry.rank, score: entry.student.weeklyScore, entries: [entry] });
+    return rows;
+  }, []);
+  const podiumOrder = honorRows.length <= 3 ? [2, 1, 3] : [3, 2, 4, 1, 5];
+  const podiumLift = [-34, -18, -6, 0, 0];
+
+  useEffect(() => {
+    localStorage.setItem('happy-class-honor-limit', String(honorLimit));
+  }, [honorLimit]);
+  useEffect(() => {
+    const syncFullscreen = () => setIsPresentation(document.fullscreenElement === honorBoardRef.current);
+    const closeFallbackWithEscape = (event: KeyboardEvent) => {
+      if (event.key === 'Escape' && !document.fullscreenElement) setIsPresentation(false);
+    };
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    document.addEventListener('keydown', closeFallbackWithEscape);
+    return () => {
+      document.removeEventListener('fullscreenchange', syncFullscreen);
+      document.removeEventListener('keydown', closeFallbackWithEscape);
+    };
+  }, []);
+  const togglePresentation = async () => {
+    const board = honorBoardRef.current;
+    if (!board) return;
+    if (isPresentation) {
+      setIsPresentation(false);
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+      return;
+    }
+    setIsPresentation(true);
+    if (board.requestFullscreen) await board.requestFullscreen().catch(() => undefined);
+  };
+
   return (
     <>
-      <PageHeading eyebrow="BẢNG VÀNG DANH DỰ" title="Tỏa sáng theo cách của riêng mình" description="Tôn vinh nỗ lực, sự tiến bộ và những giá trị tốt đẹp của mỗi học sinh." icon="🏆" />
-      <section className="honor-stage">
-        <div className="honor-rays" />
-        <span className="honor-month">NHỮNG NGÔI SAO TUẦN {week.number} · MỐC VINH DANH {scoring.honorTarget} ĐIỂM</span>
-        <div className="podium">
-          {podium.map((student, index) => {
-            const place = index === 0 ? 2 : index === 1 ? 1 : 3;
-            return <div className={`podium-person podium-${place}`} key={student.id}><span className="medal">{place === 1 ? '👑' : `#${place}`}</span><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size={place === 1 ? 'xlarge' : 'large'} /><strong>{student.name}</strong><small>Tổ {student.team}</small><div><Star size={15} fill="currentColor" />{student.weeklyScore}</div><i>{place}</i></div>;
-          })}
-        </div>
+      <PageHeading eyebrow="VINH DANH CHĂM CHỈ" title={`Những ngôi sao Tuần ${week.number}`} description="Ghi nhận nỗ lực theo từng tổ để mọi học sinh đều có thêm cơ hội tỏa sáng." icon="🏆" />
+      <section ref={honorBoardRef} className={`honor-board panel ${isPresentation ? 'is-presentation' : ''}`}>
+        <header className="honor-board-header">
+          <div>
+            <span><Sparkles size={15} /> BẢNG TUYÊN DƯƠNG TUẦN</span>
+            <h2>{scope === 'teams' ? `Vinh danh học sinh Tổ ${selectedTeam}` : 'Vinh danh học sinh toàn lớp'}</h2>
+            <p>Tuần {week.number} · {formatFullDate(week.startDate)} – {formatFullDate(week.endDate)} · Mốc vinh danh {scoring.honorTarget} điểm</p>
+          </div>
+          <div className="honor-board-controls">
+            <div className="honor-scope-tabs" role="tablist" aria-label="Phạm vi bảng vinh danh">
+              <button role="tab" aria-selected={scope === 'teams'} className={scope === 'teams' ? 'active' : ''} onClick={() => setScope('teams')}><UsersRound size={17} /> Theo từng tổ</button>
+              <button role="tab" aria-selected={scope === 'class'} className={scope === 'class' ? 'active' : ''} onClick={() => setScope('class')}><Trophy size={17} /> Toàn lớp</button>
+            </div>
+            {isTeacher ? <div className="honor-limit-picker"><span>Hiển thị</span><button aria-pressed={honorLimit === 3} className={honorLimit === 3 ? 'active' : ''} onClick={() => setHonorLimit(3)}>Top 3</button><button aria-pressed={honorLimit === 5} className={honorLimit === 5 ? 'active' : ''} onClick={() => setHonorLimit(5)}>Top 5</button><button aria-pressed={honorLimit === 10} className={honorLimit === 10 ? 'active' : ''} onClick={() => setHonorLimit(10)}>Top 10</button></div> : <span className="honor-limit-view">Đang hiển thị Top {honorLimit}</span>}
+            <button className="honor-presentation-button" type="button" onClick={() => void togglePresentation()} aria-label={isPresentation ? 'Thoát trình chiếu bảng vinh danh' : 'Phóng to bảng vinh danh để trình chiếu'}>{isPresentation ? <Minimize2 size={17} /> : <Maximize2 size={17} />}<span>{isPresentation ? 'Thu nhỏ' : 'Phóng to để chiếu'}</span></button>
+          </div>
+        </header>
+
+        {scope === 'teams' && (
+          <div className="honor-team-picker">
+            <span><LayoutGrid size={16} /> Chọn tổ muốn xem</span>
+            <div>
+              {getTeamNumbers(teamCount).map((team) => <button className={selectedTeam === team ? 'active' : ''} aria-pressed={selectedTeam === team} onClick={() => setSelectedTeam(team)} key={team}><b>{team}</b>Tổ {team}</button>)}
+            </div>
+          </div>
+        )}
+
+        <section className="honor-portrait-stage">
+          <div className="honor-portrait-heading">
+            <span>🐝 NHỮNG CHÚ ONG CHĂM CHỈ</span>
+            <h3>Vinh danh Ong Vàng chăm chỉ</h3>
+            <p>Tuần {formatShortDate(week.startDate)} – {formatShortDate(week.endDate)}{scope === 'teams' ? ` · Tổ ${selectedTeam}` : ' · Toàn lớp'}</p>
+          </div>
+          {honorRows.length ? (
+            <div className="honor-portrait-ranks">
+              {honorRows.map((row, rowIndex) => (
+                <section className="honor-portrait-rank-row" style={{ '--honor-order': podiumOrder[rowIndex] ?? rowIndex + 1, '--honor-lift': `${podiumLift[rowIndex] ?? 0}px` } as CSSProperties} key={`${row.rank}-${row.score}`}>
+                  <span>Hạng {row.rank} · {row.score} điểm</span>
+                  <div>{row.entries.map((entry) => <HonorPortraitCard entry={entry} showTeam={scope === 'class'} key={entry.student.id} />)}</div>
+                </section>
+              ))}
+            </div>
+          ) : <div className="honor-empty"><span>🌱</span><strong>Chưa có học sinh</strong><small>Thêm học sinh vào {scope === 'teams' ? `Tổ ${selectedTeam}` : 'lớp'} để bắt đầu vinh danh.</small></div>}
+          {activeRanked.length > honorLimit && <p className="honor-portrait-limit"><Award size={15} /> Đang hiển thị Top {honorLimit}{visibleRanked.length > honorLimit ? ` và ${visibleRanked.length - honorLimit} bạn đồng hạng` : ''}</p>}
+        </section>
+
+        <footer className="honor-board-note"><HeartHandshake size={18} /><span><strong>Cùng điểm, cùng hạng.</strong> Bảng chỉ tuyên dương các vị trí nổi bật và không công khai thứ hạng cuối.</span></footer>
       </section>
-      <div className="honor-categories">
-        {ranked.slice(0, 3).map((student, index) => <article className="panel honor-category" key={student.id}><span className={`category-icon ${['green', 'orange', 'purple'][index]}`}>{['🚀', '🌻', '🤝'][index]}</span><div><span>{['TIẾN BỘ NỔI BẬT', 'BÔNG HOA CHĂM CHỈ', 'NGƯỜI BẠN TÍCH CỰC'][index]}</span><h3>{student.name}</h3><p>{index === 0 ? 'Đang dẫn đầu bảng điểm của tuần.' : `Đóng góp tích cực cho Tổ ${student.team} trong tuần này.`}</p></div><b>{student.weeklyScore > 0 ? '+' : ''}{student.weeklyScore}<small>điểm tuần</small></b></article>)}
-      </div>
     </>
   );
 }
