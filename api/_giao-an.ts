@@ -1,9 +1,10 @@
 import type { VercelRequest } from '@vercel/node';
+import { createHash } from 'node:crypto';
 import fs from 'node:fs';
 import path from 'node:path';
 import Busboy from 'busboy';
 import mammoth from 'mammoth';
-import { GoogleGenAI } from '@google/genai';
+import { createPartFromUri, GoogleGenAI, type Part } from '@google/genai';
 
 export type Provider = 'gemini' | 'groq';
 
@@ -12,6 +13,11 @@ export interface AiPart {
     inlineData?: {
         mimeType: string;
         data: string;
+    };
+    uploadFile?: {
+        filePath: string;
+        mimeType: string;
+        displayName: string;
     };
 }
 
@@ -29,11 +35,17 @@ export interface MultipartPayload {
 
 const DATA_DIR = path.join(process.cwd(), 'public', 'xdkhbdcv3439', 'xdkhbdcv3439', 'data');
 const GEMINI_MODEL = process.env.GEMINI_MODEL || 'gemini-3.6-flash';
+const GEMINI_INLINE_REFERENCE_LIMIT = 4 * 1024 * 1024;
+const GEMINI_FILE_CACHE_MS = 44 * 60 * 60 * 1000;
 const GROQ_API_URL = 'https://api.groq.com/openai/v1/chat/completions';
 const GROQ_TEXT_MODEL = 'openai/gpt-oss-120b';
 const GROQ_VISION_MODEL = 'qwen/qwen3.6-27b';
 
 let referencePartsPromise: Promise<AiPart[]> | null = null;
+const geminiFileCache = new Map<string, {
+    expiresAt: number;
+    promise: Promise<{ uri: string; mimeType: string }>;
+}>();
 
 export function normalizeProvider(value: unknown): Provider {
     return String(value || 'gemini').toLowerCase() === 'groq' ? 'groq' : 'gemini';
@@ -68,6 +80,10 @@ export function errorMessage(err: unknown, fallback = 'Đã xảy ra lỗi khôn
         return 'Dữ liệu gửi lên quá lớn. Hãy giảm số lượng hoặc kích thước ảnh/tài liệu.';
     }
 
+    if (lower.includes('invalid_argument') || lower.includes('invalid argument')) {
+        return 'Gemini không đọc được một ảnh hoặc tài liệu trong yêu cầu. Hãy dùng ảnh JPG, PNG, WEBP, HEIC hoặc HEIF rồi thử lại.';
+    }
+
     return message ? `Lỗi: ${message}` : fallback;
 }
 
@@ -96,7 +112,13 @@ async function readReferenceParts(): Promise<AiPart[]> {
         if (ext === '.pdf') {
             const fileBuffer = fs.readFileSync(filePath);
             parts.push({ text: `\n--- Tài liệu tham khảo: "${filename}" ---\n` });
-            parts.push({
+            parts.push(fileBuffer.length > GEMINI_INLINE_REFERENCE_LIMIT ? {
+                uploadFile: {
+                    filePath,
+                    mimeType: 'application/pdf',
+                    displayName: filename,
+                },
+            } : {
                 inlineData: {
                     mimeType: 'application/pdf',
                     data: fileBuffer.toString('base64'),
@@ -192,7 +214,7 @@ function partsToGroqContent(parts: AiPart[]) {
             continue;
         }
 
-        if (part.inlineData) skippedFiles++;
+        if (part.inlineData || part.uploadFile) skippedFiles++;
     }
 
     if (skippedFiles > 0) {
@@ -230,15 +252,96 @@ export async function callGroq(apiKey: string, parts: AiPart[], hasImages = fals
 
 export async function callGemini(apiKey: string, parts: AiPart[]): Promise<string> {
     const ai = new GoogleGenAI({ apiKey });
+    const resolvedParts = await resolveGeminiParts(ai, apiKey, parts);
     const response = await ai.models.generateContent({
         model: GEMINI_MODEL,
-        contents: [{ role: 'user', parts }],
+        contents: [{ role: 'user', parts: resolvedParts }],
     });
 
     return response.text || response.candidates?.[0]?.content?.parts
         ?.map((part) => part.text || '')
         .join('')
         .trim() || '';
+}
+
+async function resolveGeminiParts(ai: GoogleGenAI, apiKey: string, parts: AiPart[]): Promise<Part[]> {
+    const resolved: Part[] = [];
+
+    for (const part of parts) {
+        if (part.text) {
+            resolved.push({ text: part.text });
+        } else if (part.inlineData) {
+            resolved.push({ inlineData: part.inlineData });
+        } else if (part.uploadFile) {
+            const uploaded = await getUploadedReference(ai, apiKey, part.uploadFile);
+            resolved.push(createPartFromUri(uploaded.uri, uploaded.mimeType));
+        }
+    }
+
+    return resolved;
+}
+
+async function getUploadedReference(
+    ai: GoogleGenAI,
+    apiKey: string,
+    file: NonNullable<AiPart['uploadFile']>,
+): Promise<{ uri: string; mimeType: string }> {
+    const stat = fs.statSync(file.filePath);
+    const cacheKey = createHash('sha256')
+        .update(apiKey)
+        .update('\0')
+        .update(file.filePath)
+        .update('\0')
+        .update(String(stat.size))
+        .update('\0')
+        .update(String(stat.mtimeMs))
+        .digest('hex');
+    const cached = geminiFileCache.get(cacheKey);
+    if (cached && cached.expiresAt > Date.now()) return cached.promise;
+
+    const promise = uploadReferenceFile(ai, file);
+    geminiFileCache.set(cacheKey, {
+        expiresAt: Date.now() + GEMINI_FILE_CACHE_MS,
+        promise,
+    });
+
+    try {
+        return await promise;
+    } catch (error) {
+        geminiFileCache.delete(cacheKey);
+        throw error;
+    }
+}
+
+async function uploadReferenceFile(
+    ai: GoogleGenAI,
+    file: NonNullable<AiPart['uploadFile']>,
+): Promise<{ uri: string; mimeType: string }> {
+    let uploaded = await ai.files.upload({
+        file: file.filePath,
+        config: {
+            mimeType: file.mimeType,
+            displayName: file.displayName,
+        },
+    });
+
+    const deadline = Date.now() + 30_000;
+    while (uploaded.state === 'PROCESSING' && uploaded.name && Date.now() < deadline) {
+        await new Promise((resolve) => setTimeout(resolve, 500));
+        uploaded = await ai.files.get({ name: uploaded.name });
+    }
+
+    if (uploaded.state === 'FAILED') {
+        throw new Error(`Gemini could not process reference document ${file.displayName}.`);
+    }
+    if (!uploaded.uri) {
+        throw new Error(`Gemini reference document is not ready: ${file.displayName}.`);
+    }
+
+    return {
+        uri: uploaded.uri,
+        mimeType: uploaded.mimeType || file.mimeType,
+    };
 }
 
 export function baseLessonPrompt(subject: string, grade: string, userNote = ''): string {

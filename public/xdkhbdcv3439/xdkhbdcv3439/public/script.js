@@ -309,31 +309,68 @@
     docPreview.appendChild(d);
   }
 
+  async function optimizeImageForUpload(file) {
+    const canvasFriendly = /^(image\/jpeg|image\/png|image\/webp)$/i.test(file.type);
+    if (!canvasFriendly || file.size <= 900 * 1024 || typeof createImageBitmap !== "function") return file;
+
+    try {
+      const bitmap = await createImageBitmap(file);
+      const maxSide = 1800;
+      const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+      const canvas = document.createElement("canvas");
+      canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+      canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+      const context = canvas.getContext("2d", { alpha: false });
+      context.fillStyle = "#fff";
+      context.fillRect(0, 0, canvas.width, canvas.height);
+      context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+      bitmap.close();
+
+      let blob = null;
+      for (const quality of [0.82, 0.68, 0.55]) {
+        blob = await new Promise(resolve => canvas.toBlob(resolve, "image/jpeg", quality));
+        if (blob && blob.size <= 1024 * 1024) break;
+      }
+      if (!blob || blob.size >= file.size) return file;
+
+      const jpegName = file.name.replace(/\.[^.]+$/, "") + ".jpg";
+      return new File([blob], jpegName, { type: "image/jpeg", lastModified: file.lastModified });
+    } catch {
+      return file;
+    }
+  }
+
+  async function appendOptimizedImages(formData, fieldName, files) {
+    for (const file of files) {
+      formData.append(fieldName, await optimizeImageForUpload(file));
+    }
+  }
+
   // --- Generate ---
   generateBtn.addEventListener("click", async () => {
     if (currentMode === "create" && !lessonFiles.length) { showError("Vui lòng tải lên ít nhất 1 ảnh bài học."); return; }
     if (currentMode === "enhance" && !docFile) { showError("Vui lòng tải lên 1 file kế hoạch bài dạy (.docx hoặc .pdf)."); return; }
 
-    const fd = new FormData();
-    const key = apiKeyInput.value.trim();
-    if (key) fd.append("apiKey", key);
-    fd.append("provider", getProvider());
-    if (subjectSelect.value) fd.append("subject", subjectSelect.value);
-    if (gradeSelect.value) fd.append("grade", gradeSelect.value);
-    if (userNote.value.trim()) fd.append("userNote", userNote.value.trim());
-
-    let apiUrl = "/api/generate";
-    if (currentMode === "create") {
-      lessonFiles.forEach(f => fd.append("lessonImage", f));
-      supportFiles.forEach(f => fd.append("supportImage", f));
-    } else {
-      apiUrl = "/api/enhance";
-      fd.append("lessonDoc", docFile);
-    }
-
     setLoading(true); hideError(); hideResult();
 
     try {
+      const fd = new FormData();
+      const key = apiKeyInput.value.trim();
+      if (key) fd.append("apiKey", key);
+      fd.append("provider", getProvider());
+      if (subjectSelect.value) fd.append("subject", subjectSelect.value);
+      if (gradeSelect.value) fd.append("grade", gradeSelect.value);
+      if (userNote.value.trim()) fd.append("userNote", userNote.value.trim());
+
+      let apiUrl = "/api/generate";
+      if (currentMode === "create") {
+        await appendOptimizedImages(fd, "lessonImage", lessonFiles);
+        await appendOptimizedImages(fd, "supportImage", supportFiles);
+      } else {
+        apiUrl = "/api/enhance";
+        fd.append("lessonDoc", docFile);
+      }
+
       const res = await fetch(apiUrl, { method: "POST", body: fd });
       const data = await readApiJson(res);
       if (!res.ok) { showError(data.error || "Lỗi không xác định."); return; }
