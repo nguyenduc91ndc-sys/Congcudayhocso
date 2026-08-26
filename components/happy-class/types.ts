@@ -19,6 +19,9 @@ export type Student = {
   parentAccessEnabled?: boolean;
   parentName: string;
   parentPhone: string;
+  teacherComment?: string;
+  teacherCommentWeekId?: string;
+  teacherCommentUpdatedAt?: string;
   strengths: string[];
 };
 

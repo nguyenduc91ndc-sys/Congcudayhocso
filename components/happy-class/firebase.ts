@@ -75,7 +75,8 @@ export type PublicStudentRecord = {
   active: boolean;
   student: Pick<Student,
     'id' | 'name' | 'initials' | 'team' | 'role' | 'score' | 'weeklyScore' | 'streak' |
-    'attendance' | 'gradient' | 'parentName' | 'parentPhone'
+    'attendance' | 'gradient' | 'parentName' | 'parentPhone' | 'teacherComment' |
+    'teacherCommentWeekId' | 'teacherCommentUpdatedAt'
   > & { photo?: string };
   activities: Pick<Activity, 'id' | 'title' | 'detail' | 'points' | 'time' | 'tone'>[];
 };
@@ -505,6 +506,13 @@ export async function publishParentPortal(input: PublishInput) {
             gradient: student.gradient,
             parentName: student.parentName,
             parentPhone: student.parentPhone,
+            ...(student.teacherComment?.trim() && student.teacherCommentWeekId === input.week.id
+              ? {
+                  teacherComment: student.teacherComment.trim(),
+                  teacherCommentWeekId: student.teacherCommentWeekId,
+                  teacherCommentUpdatedAt: student.teacherCommentUpdatedAt || publishedAt,
+                }
+              : {}),
             ...(student.photo ? { photo: await prepareParentThumbnail(student.photo) } : {}),
           },
           activities: input.activities

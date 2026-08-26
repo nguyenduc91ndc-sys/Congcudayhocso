@@ -404,6 +404,9 @@ function parseClassBackup(content: string): ClassBackup {
     && isText(item.attendance) && attendanceValues.includes(item.attendance as AttendanceStatus)
     && isText(item.gradient) && isPhoto(item.photo)
     && isText(item.parentCode) && isText(item.parentName) && isText(item.parentPhone)
+    && (item.teacherComment === undefined || (isText(item.teacherComment) && item.teacherComment.length <= 500))
+    && (item.teacherCommentWeekId === undefined || isText(item.teacherCommentWeekId))
+    && (item.teacherCommentUpdatedAt === undefined || isText(item.teacherCommentUpdatedAt))
     && Array.isArray(item.strengths) && item.strengths.every(isText));
   const studentIds = new Set(value.students.map((item) => isRecord(item) ? item.id : undefined));
   if (!studentsValid || studentIds.size !== value.students.length) {
@@ -730,6 +733,17 @@ function readStoredAttendanceHistory(): AttendanceRecord[] {
 function getTeacherInitials(name: string) {
   const words = name.replace(/^(cô|thầy)\s+/i, '').trim().split(/\s+/).filter(Boolean);
   return (words.length > 1 ? `${words[words.length - 2][0]}${words[words.length - 1][0]}` : words[0]?.slice(0, 2) || 'GV').toUpperCase();
+}
+
+function normalizeSearchText(value: string) {
+  return value
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/đ/g, 'd')
+    .replace(/Đ/g, 'D')
+    .toLocaleLowerCase('vi-VN')
+    .replace(/\s+/g, ' ')
+    .trim();
 }
 
 function getTeacherGreeting(name: string) {
@@ -1189,6 +1203,31 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     }
     setPointReasons(reasons);
     setToast('Đã lưu danh mục điểm cộng, điểm trừ');
+  };
+
+  const saveTeacherComment = (studentId: number, content: string) => {
+    if (!isTeacher) {
+      setToast('Chỉ tài khoản giáo viên mới được lưu nhận xét GVCN.');
+      return;
+    }
+    const normalized = content.trim().slice(0, 500);
+    const studentName = students.find((student) => student.id === studentId)?.name || 'học sinh';
+    setStudents((current) => current.map((student) => {
+      if (student.id !== studentId) return student;
+      if (normalized) {
+        return {
+          ...student,
+          teacherComment: normalized,
+          teacherCommentWeekId: weekState.current.id,
+          teacherCommentUpdatedAt: new Date().toISOString(),
+        };
+      }
+      const { teacherComment: _comment, teacherCommentWeekId: _weekId, teacherCommentUpdatedAt: _updatedAt, ...rest } = student;
+      return rest;
+    }));
+    setToast(normalized
+      ? `Đã lưu nhận xét GVCN cho ${studentName}. Bấm “Cập nhật chia sẻ” để phụ huynh xem.`
+      : `Đã xóa nhận xét GVCN của ${studentName} trong tuần này.`);
   };
 
   const saveRewards = (rewardItems: Reward[]) => {
@@ -1690,7 +1729,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'students' && <StudentsPage students={students} teamCount={classProfile.teamCount} canManageStudents={isTeacher} onOpenStudent={setProfileId} onAddStudent={() => navigate('management')} />}
           {page === 'seating' && <ClassroomSeatingPage students={students} classCode={classProfile.code} className={classProfile.name} schoolYear={classProfile.schoolYear} teacherName={teacherName} canManage={isTeacher} value={classroomLayout} onChange={setClassroomLayout} onToast={setToast} />}
-          {page === 'points' && <PointsPage students={students} reasons={pointReasons} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
+          {page === 'points' && <PointsPage students={students} reasons={pointReasons} currentWeekId={weekState.current.id} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onSaveTeacherComment={saveTeacherComment} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} activities={activities} canConfigure={isTeacher} onRedeem={redeemReward} onUndoRedeem={undoRewardRedemption} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} onApplyTeams={applyRandomTeams} />}
@@ -2665,11 +2704,20 @@ function StudentsPage({ students, teamCount, canManageStudents, onOpenStudent, o
   );
 }
 
-function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveReasons, onAddPoints, onUndoPoints }: { students: Student[]; reasons: PointReason[]; canConfigure: boolean; lastPointAction: string; onSaveReasons: (reasons: PointReason[]) => void; onAddPoints: (ids: number[], points: number, reason: string) => void; onUndoPoints: () => void }) {
+function PointsPage({ students, reasons, currentWeekId, canConfigure, lastPointAction, onSaveReasons, onSaveTeacherComment, onAddPoints, onUndoPoints }: { students: Student[]; reasons: PointReason[]; currentWeekId: string; canConfigure: boolean; lastPointAction: string; onSaveReasons: (reasons: PointReason[]) => void; onSaveTeacherComment: (studentId: number, content: string) => void; onAddPoints: (ids: number[], points: number, reason: string) => void; onUndoPoints: () => void }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [mode, setMode] = useState<'positive' | 'negative'>('positive');
   const [settingsVisible, setSettingsVisible] = useState(false);
+  const [studentQuery, setStudentQuery] = useState('');
+  const [commentStudentId, setCommentStudentId] = useState(students[0]?.id ?? 0);
+  const commentStudent = students.find((student) => student.id === commentStudentId) ?? students[0];
+  const savedTeacherComment = commentStudent?.teacherCommentWeekId === currentWeekId ? commentStudent.teacherComment?.trim() || '' : '';
+  const [commentDraft, setCommentDraft] = useState(savedTeacherComment);
   const visibleReasons = reasons.filter((item) => (mode === 'positive' ? item.points > 0 : item.points < 0));
+  const normalizedStudentQuery = normalizeSearchText(studentQuery);
+  const visibleStudents = normalizedStudentQuery
+    ? students.filter((student) => normalizeSearchText(student.name).includes(normalizedStudentQuery))
+    : students;
   const teamOptions = Array.from(new Set(students.map((student) => student.team))).sort((a, b) => a - b);
   const selectedSet = new Set(selected);
   const unavailableSelected = students.filter((student) => selectedSet.has(student.id) && student.attendance !== 'present');
@@ -2684,7 +2732,10 @@ function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveRe
     : fullySelectedTeams.length
       ? `Đã chọn ${fullySelectedTeams.map((team) => `Tổ ${team}`).join(', ')}${extraSelectedCount ? ` và ${extraSelectedCount} em khác` : ''}`
       : `Đã chọn ${selected.length} học sinh`;
-  const toggleStudent = (id: number) => setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+  const toggleStudent = (id: number) => {
+    setSelected((current) => current.includes(id) ? current.filter((item) => item !== id) : [...current, id]);
+    setCommentStudentId(id);
+  };
   const toggleStudents = (ids: number[]) => setSelected((current) => {
     const currentSet = new Set(current);
     const allSelected = ids.length > 0 && ids.every((id) => currentSet.has(id));
@@ -2692,6 +2743,19 @@ function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveRe
     ids.forEach((id) => currentSet.add(id));
     return students.map((student) => student.id).filter((id) => currentSet.has(id));
   });
+
+  useEffect(() => {
+    if (!commentStudent && students[0]) setCommentStudentId(students[0].id);
+  }, [commentStudent, students]);
+
+  useEffect(() => {
+    setCommentDraft(savedTeacherComment);
+  }, [commentStudentId, currentWeekId, savedTeacherComment]);
+
+  const saveComment = () => {
+    if (!commentStudent) return;
+    onSaveTeacherComment(commentStudent.id, commentDraft);
+  };
 
   return (
     <>
@@ -2716,8 +2780,20 @@ function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveRe
               <button type="button" className={`points-all-chip ${selected.length === students.length && students.length ? 'selected' : selected.length ? 'partial' : ''}`} aria-pressed={selected.length === students.length && students.length > 0} onClick={() => toggleStudents(students.map((student) => student.id))}><UsersRound size={17} /><strong>Cả lớp</strong><small>{selected.length > 0 && selected.length < students.length ? `${selected.length}/${students.length}` : `${students.length} HS`}</small>{selected.length === students.length && students.length > 0 && <Check size={14} strokeWidth={3} />}</button>
             </div>
           </div>
+          <div className="points-student-search">
+            <Search size={18} />
+            <input
+              type="search"
+              value={studentQuery}
+              onChange={(event) => setStudentQuery(event.target.value)}
+              placeholder="Tìm nhanh tên học sinh..."
+              aria-label="Tìm nhanh tên học sinh để cộng điểm"
+            />
+            {studentQuery && <button type="button" onClick={() => setStudentQuery('')} aria-label="Xóa nội dung tìm kiếm"><X size={16} /></button>}
+            <small>{normalizedStudentQuery ? `${visibleStudents.length} kết quả` : `${students.length} học sinh`}</small>
+          </div>
           <div className="student-pick-grid">
-            {students.map((student) => (
+            {visibleStudents.map((student) => (
               <button key={student.id} className={`student-pick ${selected.includes(student.id) ? 'selected' : ''}`} aria-pressed={selected.includes(student.id)} onClick={() => toggleStudent(student.id)}>
                 <span className="check-circle">{selected.includes(student.id) && <Check size={14} strokeWidth={3} />}</span>
                 <Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" />
@@ -2725,6 +2801,7 @@ function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveRe
               </button>
             ))}
           </div>
+          {!visibleStudents.length && <div className="points-student-search-empty"><Search size={21} /><strong>Không tìm thấy học sinh</strong><span>Thử nhập tên khác hoặc xóa nội dung tìm kiếm.</span></div>}
         </section>
         <section className="panel reason-panel">
           <div className="selection-header"><div><span>BƯỚC 2</span><h3>Chọn điều muốn ghi nhận</h3></div><div className="reason-header-actions"><div className="mode-switch"><button className={mode === 'positive' ? 'positive active' : ''} onClick={() => setMode('positive')}><Plus size={15} />Điểm tốt</button><button className={mode === 'negative' ? 'negative active' : ''} onClick={() => setMode('negative')}><Minus size={15} />Nhắc nhở</button></div>{canConfigure && <button className="reason-settings-button" onClick={() => setSettingsVisible(true)}><Settings size={15} /> Cấu hình</button>}</div></div>
@@ -2738,6 +2815,17 @@ function PointsPage({ students, reasons, canConfigure, lastPointAction, onSaveRe
           </div>
           {!visibleReasons.length && <div className="reason-empty">Chưa có nội dung {mode === 'positive' ? 'điểm cộng' : 'điểm trừ'}. Giáo viên có thể thêm trong phần Cấu hình.</div>}
           {!selected.length && <div className="selection-hint"><UsersRound size={18} /> Hãy chọn ít nhất một học sinh ở bước 1</div>}
+          {canConfigure && (
+            <section className="teacher-comment-card">
+              <div className="teacher-comment-head">
+                <span><MessageCircle size={20} /></span>
+                <div><small>GỬI ĐẾN CỔNG PHỤ HUYNH</small><strong>Nhận xét của GVCN</strong><p>Nhận xét riêng cho từng học sinh trong tuần hiện tại.</p></div>
+              </div>
+              <label className="teacher-comment-student"><span>Học sinh</span><select value={commentStudent?.id ?? ''} disabled={!students.length} onChange={(event) => setCommentStudentId(Number(event.target.value))}>{students.map((student) => <option value={student.id} key={student.id}>{student.name} · Tổ {student.team}</option>)}</select></label>
+              <label className="teacher-comment-field"><span>Nội dung phụ huynh sẽ xem</span><textarea value={commentDraft} disabled={!commentStudent} maxLength={500} rows={5} onChange={(event) => setCommentDraft(event.target.value)} placeholder="Ví dụ: Tuần này con rất chủ động phát biểu và biết hỗ trợ bạn. Gia đình tiếp tục động viên con duy trì thói quen chuẩn bị bài nhé!" /></label>
+              <div className="teacher-comment-actions"><small>{commentDraft.length}/500 ký tự · Chỉ xuất hiện sau khi bấm “Cập nhật chia sẻ” tại Cổng phụ huynh.</small><div><button type="button" className="teacher-comment-clear" disabled={!savedTeacherComment && !commentDraft} onClick={() => setCommentDraft('')}>Xóa</button><button type="button" className="teacher-comment-save" disabled={!commentStudent || commentDraft.trim() === savedTeacherComment} onClick={saveComment}><Save size={16} /> Lưu nhận xét</button></div></div>
+            </section>
+          )}
           <div className="motivation-scene">
             <div className="motivation-copy">
               <span>GÓC ĐỘNG VIÊN</span>
@@ -4305,6 +4393,10 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
   };
   const friendlyName = result ? studentFriendlyName(result.name) : '';
   const currentStudentActivities = result ? remoteActivities ?? activities.filter((item) => item.studentId === result.id && item.weekId === viewWeek.id) : [];
+  const teacherComment = result?.teacherCommentWeekId === viewWeek.id ? result.teacherComment?.trim() || '' : '';
+  const teacherCommentUpdatedLabel = result?.teacherCommentUpdatedAt && !Number.isNaN(new Date(result.teacherCommentUpdatedAt).getTime())
+    ? new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit', year: 'numeric' }).format(new Date(result.teacherCommentUpdatedAt))
+    : '';
   const progressMessage = result
     ? result.weeklyScore >= viewScoring.honorTarget
       ? `${friendlyName} đã đạt mốc vinh danh của lớp với ${result.weeklyScore} điểm tuần. Thật đáng tự hào!`
@@ -4331,7 +4423,7 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
           </div>
           <div className="parent-share-stats"><div><strong>{activeStudents.length}</strong><span>{requireAccessCode ? 'Mã đang hoạt động' : 'Link riêng đang hoạt động'}</span></div><div><strong>{students.length - activeStudents.length}</strong><span>{requireAccessCode ? 'Mã đang khóa' : 'Link riêng đang khóa'}</span></div><div><strong>{portal.lastPublishedAt ? new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }).format(new Date(portal.lastPublishedAt)) : 'Chưa có'}</strong><span>Lần cập nhật gần nhất</span></div></div>
           <div className="parent-data-scope">
-            <div><ShieldCheck size={22} /><p><strong>Chỉ chia sẻ với phụ huynh</strong><span>Ảnh của con, họ tên, lớp/tổ, chuyên cần, điểm tuần – tích lũy, chuỗi tốt và tối đa 4 ghi nhận gần đây.</span></p></div>
+            <div><ShieldCheck size={22} /><p><strong>Chỉ chia sẻ với phụ huynh</strong><span>Ảnh của con, họ tên, lớp/tổ, chuyên cần, điểm tuần – tích lũy, chuỗi tốt, nhận xét GVCN và tối đa 4 ghi nhận gần đây.</span></p></div>
             <div><LayoutGrid size={22} /><p><strong>Chỉ lưu trên thiết bị giáo viên</strong><span>Vòng quay, âm thanh, kết quả gọi tên, cấu hình trò chơi, danh sách toàn lớp và lịch sử nội bộ chưa xuất bản.</span></p></div>
           </div>
           <form className="parent-feedback-config" onSubmit={saveFeedbackConfig}>
@@ -4433,6 +4525,7 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
           </div>
           <div className="parent-student-head parent-student-highlight"><Avatar initials={result.initials} gradient={result.gradient} photo={result.photo} size="large" /><div><span>HỌC SINH LỚP {viewClassCode}</span><h2>{result.name}</h2><p>{result.role} · Tổ {result.team}</p></div><div className="parent-today-badge"><Sparkles size={17} /><span>Hôm nay</span><strong>{attendanceLabels[result.attendance]}</strong></div></div>
           <div className="parent-progress-message"><span>🌻</span><p><strong>Một lời nhắn nhỏ dành cho gia đình</strong>{progressMessage}</p></div>
+          {teacherComment && <div className="parent-teacher-comment"><span>👩‍🏫</span><div><small>NHẬN XÉT CỦA GIÁO VIÊN CHỦ NHIỆM</small><strong>{teacherComment}</strong>{teacherCommentUpdatedLabel && <em>Cập nhật {teacherCommentUpdatedLabel}</em>}</div></div>}
           <div className="parent-stats"><div><Star size={21} /><strong>{result.weeklyScore > 0 ? '+' : ''}{result.weeklyScore}</strong><span>Điểm Tuần {viewWeek.number}</span></div><div><Coins size={21} /><strong>{result.score}</strong><span>Điểm tích lũy</span></div><div><Zap size={21} /><strong>{result.streak}</strong><span>Chuỗi ngày tốt</span></div><div><CalendarCheck2 size={21} /><strong>{attendanceLabels[result.attendance]}</strong><span>Hôm nay</span></div></div>
           <h3>Ghi nhận trong Tuần {viewWeek.number}</h3>
           <div className="parent-activity">{currentStudentActivities.slice(0, 4).map((activity) => <div key={activity.id}><span className={activity.points > 0 ? 'positive' : 'negative'}>{activity.points > 0 ? '✨' : '💬'}</span><div><strong>{activity.title}</strong><small>{activity.detail} · {activity.time}</small></div><b>{activity.points > 0 ? '+' : ''}{activity.points}</b></div>)}{!currentStudentActivities.length && <p className="empty-state">Chưa có ghi nhận mới trong tuần này.</p>}</div>

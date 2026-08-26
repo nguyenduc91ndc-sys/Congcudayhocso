@@ -761,6 +761,28 @@ body {
 .reason-card small { font-size: 8.5px; }
 .selection-hint { margin-top: 18px; padding: 13px; border: 1px solid #e4ece9; border-radius: 14px; font-size: 9px; box-shadow: inset 0 2px 5px rgba(32,70,62,.045); }
 
+.teacher-comment-card { margin-top: 18px; padding: 17px; border: 2px solid #dbb8e8; border-radius: 21px; background: linear-gradient(145deg,#fff8fd,#fff 52%,#f3edff); box-shadow: 0 6px 0 #d5b8e0,0 14px 24px rgba(91,49,113,.1); }
+.teacher-comment-head { display: flex; align-items: center; gap: 11px; }
+.teacher-comment-head > span { width: 43px; height: 43px; display: grid; place-items: center; flex: none; border: 2px solid #ffe279; border-radius: 14px; color: white; background: linear-gradient(145deg,#e85da6,#8251c9); box-shadow: 0 4px 0 #65328a; }
+.teacher-comment-head > div { min-width: 0; display: flex; flex-direction: column; gap: 2px; }
+.teacher-comment-head small { color: #a33a85; font-size: 8px; font-weight: 900; letter-spacing: .7px; }
+.teacher-comment-head strong { color: #57305d; font-size: 14px; }
+.teacher-comment-head p { margin: 0; color: #77647a; font-size: 9px; line-height: 1.4; }
+.teacher-comment-student,.teacher-comment-field { margin-top: 13px; display: flex; flex-direction: column; gap: 6px; }
+.teacher-comment-student > span,.teacher-comment-field > span { color: #654866; font-size: 9px; font-weight: 900; }
+.teacher-comment-student select,.teacher-comment-field textarea { width: 100%; border: 2px solid #ddc9e3; border-radius: 13px; outline: 0; color: #4e3652; background: rgba(255,255,255,.96); font: inherit; font-size: 10.5px; font-weight: 750; transition: border-color .16s ease,box-shadow .16s ease; }
+.teacher-comment-student select { min-height: 42px; padding: 0 11px; }
+.teacher-comment-field textarea { min-height: 105px; padding: 11px; line-height: 1.55; resize: vertical; }
+.teacher-comment-student select:focus,.teacher-comment-field textarea:focus { border-color: #a260bd; box-shadow: 0 0 0 3px rgba(162,96,189,.13); }
+.teacher-comment-actions { margin-top: 10px; display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+.teacher-comment-actions > small { max-width: 58%; color: #89738b; font-size: 7.5px; font-weight: 700; line-height: 1.45; }
+.teacher-comment-actions > div { display: flex; gap: 7px; }
+.teacher-comment-actions button { min-height: 36px; padding: 0 11px; display: inline-flex; align-items: center; justify-content: center; gap: 6px; border-radius: 11px; font-size: 8.5px; font-weight: 900; transition: .16s ease; }
+.teacher-comment-clear { border: 2px solid #e4d9e5; color: #765f77; background: white; }
+.teacher-comment-save { border: 2px solid #ffe174; color: white; background: linear-gradient(135deg,#a74fc3,#e3549e); box-shadow: 0 4px 0 #743287; }
+.teacher-comment-actions button:not(:disabled):hover { transform: translateY(-2px); }
+.teacher-comment-actions button:disabled { opacity: .45; cursor: not-allowed; box-shadow: none; }
+
 .motivation-scene {
   position: relative;
   min-height: 136px;
@@ -1029,6 +1051,9 @@ body {
   .student-pick strong { font-size: 10px; }
   .reason-card { min-height: 70px; }
   .reason-card strong { font-size: 10px; }
+  .teacher-comment-actions { align-items: stretch; flex-direction: column; }
+  .teacher-comment-actions > small { max-width: none; }
+  .teacher-comment-actions > div { display: grid; grid-template-columns: .7fr 1.3fr; }
   .motivation-scene { min-height: 125px; padding: 19px 135px 18px 15px; }
   .mini-garden { right: 7px; transform: scale(.78); transform-origin: right bottom; }
   .motivation-copy strong { font-size: 11px; }
@@ -2864,6 +2889,12 @@ body {
 .parent-today-badge svg { grid-row: 1 / 3; }.parent-today-badge span { font-size: 10px; }.parent-today-badge strong { font-size: 13px; }
 .parent-progress-message { margin: 15px 0; padding: 14px 16px; display: flex; align-items: center; gap: 12px; border: 2px solid #f2db8a; border-radius: 18px; color: #664b25; background: linear-gradient(135deg,#fffbe2,#fff1ca); }
 .parent-progress-message > span { font-size: 32px; }.parent-progress-message p { margin: 0; display: flex; flex-direction: column; gap: 3px; font-size: 13px; line-height: 1.5; }.parent-progress-message strong { color: #9b6819; }
+.parent-teacher-comment { margin: 15px 0 19px; padding: 17px; display: flex; align-items: flex-start; gap: 13px; border: 3px solid #c9b2eb; border-radius: 21px; color: #54385b; background: linear-gradient(145deg,#f9f3ff,#fff 58%,#fff6df); box-shadow: 0 6px 0 #b7a0d8,0 14px 24px rgba(79,44,104,.12); }
+.parent-teacher-comment > span { width: 48px; height: 48px; display: grid; place-items: center; flex: none; border: 2px solid white; border-radius: 16px; background: linear-gradient(145deg,#ffe684,#ffb75f); box-shadow: 0 4px 0 #ca7e35; font-size: 26px; }
+.parent-teacher-comment > div { min-width: 0; display: flex; flex-direction: column; gap: 5px; }
+.parent-teacher-comment small { color: #8d3f8d; font-size: 10px; font-weight: 950; letter-spacing: .7px; }
+.parent-teacher-comment strong { white-space: pre-line; font-size: 14px; line-height: 1.58; }
+.parent-teacher-comment em { color: #8a788d; font-size: 9.5px; font-style: normal; font-weight: 700; }
 
 .parent-feedback { margin-top: 22px; padding: 19px; border: 3px solid #cdb9ed; border-radius: 24px; background: linear-gradient(145deg,#fbf8ff,#fff 55%,#eefbf6); box-shadow: 0 7px 0 #b6a0d7,0 17px 30px rgba(77,43,101,.13); }
 .parent-feedback-head { display: flex; align-items: center; gap: 12px; }
@@ -2899,6 +2930,7 @@ body {
   .parent-welcome-head { min-height: 180px; grid-template-columns: auto 1fr; align-content: center; }.parent-welcome-head .icon-button { position: absolute; right: 0; top: 4px; }.parent-welcome-head h2 { font-size: 21px; }.parent-welcome-head p { font-size: 12px; }
   .parent-student-highlight { align-items: center; flex-wrap: wrap; }.parent-student-highlight .avatar { width: 64px; height: 64px; }.parent-today-badge { width: 100%; margin-left: 0; }
   .parent-progress-message { align-items: flex-start; }.parent-progress-message > span { font-size: 26px; }
+  .parent-teacher-comment { padding: 14px; }.parent-teacher-comment > span { width: 42px; height: 42px; font-size: 23px; }.parent-teacher-comment strong { font-size: 13px; }
   .parent-feedback { padding: 15px; }.parent-feedback-categories { grid-template-columns: 1fr; }.parent-feedback-categories button { min-height: 76px; }
   .parent-feedback-fields { grid-template-columns: 1fr; }.parent-feedback-actions { align-items: stretch; flex-direction: column; }.parent-feedback-actions button { width: 100%; }
 }
@@ -4199,6 +4231,17 @@ body {
 .points-team-chips .points-all-chip { grid-template-columns: 30px minmax(42px,1fr); }
 .points-team-chips .points-all-chip > svg:first-child { width: 29px; height: 29px; padding: 6px; position: static; grid-row: 1/3; color: white; border-radius: 10px; background: linear-gradient(145deg,#f19b39,#d34a89); box-shadow: 0 2px 0 #a0445f; }
 .points-team-chips .points-all-chip > svg:last-child { position: absolute; }
+.points-student-search { min-height: 45px; margin: 0 0 12px; padding: 0 10px 0 12px; display: flex; align-items: center; gap: 8px; border: 2px solid #e7d8e8; border-radius: 15px; color: #814d82; background: white; box-shadow: 0 3px 0 #ded0df; transition: border-color .16s ease,box-shadow .16s ease; }
+.points-student-search:focus-within { border-color: #bd79b8; box-shadow: 0 3px 0 #c89ac6,0 0 0 3px rgba(190,105,181,.1); }
+.points-student-search > svg { flex: none; }
+.points-student-search input { min-width: 0; height: 40px; flex: 1; border: 0; outline: 0; color: #563a57; background: transparent; font-size: 11px; font-weight: 800; }
+.points-student-search input::placeholder { color: #a496a5; }
+.points-student-search input::-webkit-search-cancel-button { display: none; }
+.points-student-search > button { width: 27px; height: 27px; padding: 0; display: grid; place-items: center; flex: none; border: 0; border-radius: 9px; color: #8b6e8c; background: #f5edf5; cursor: pointer; }
+.points-student-search > button:hover { color: #733c73; background: #eeddef; }
+.points-student-search > small { flex: none; color: #8a758b; font-size: 8px; font-weight: 900; white-space: nowrap; }
+.points-student-search-empty { min-height: 116px; padding: 18px; display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 5px; border: 2px dashed #decfde; border-radius: 16px; color: #9a849a; background: #fcf8fc; text-align: center; }
+.points-student-search-empty strong { color: #684d69; font-size: 11px; }.points-student-search-empty span { font-size: 9px; font-weight: 700; }
 .points-attendance-tag { margin-left: 5px; padding: 2px 5px; border-radius: 999px; color: #986213; background: #fff0bd; font-size: 7px; font-style: normal; font-weight: 900; white-space: nowrap; }
 .points-attendance-tag.absent { color: #a6404a; background: #ffe0e2; }.points-attendance-tag.excused { color: #356f9b; background: #e2f2ff; }
 .points-selection-summary { min-height: 65px; margin: -3px 0 14px; padding: 9px 11px; display: grid; grid-template-columns: 39px minmax(0,1fr) auto; align-items: center; gap: 10px; border: 2px solid #f0d166; border-radius: 17px; background: linear-gradient(145deg,#fffef0,#fff1c4); box-shadow: 0 4px 0 #dfbd53,0 9px 16px rgba(110,76,20,.08); animation: pointsTeamSummaryIn .28s ease both; }
@@ -4211,6 +4254,7 @@ body {
   .points-team-picker { padding: 10px; }
   .points-team-chips { margin-inline: -2px; padding: 2px 2px 6px; flex-wrap: nowrap; overflow-x: auto; scroll-snap-type: x proximity; }
   .points-team-chips button { min-width: 108px; scroll-snap-align: start; }
+  .points-student-search > small { display: none; }
   .points-selection-summary { grid-template-columns: 36px minmax(0,1fr) auto; padding-inline: 8px; gap: 8px; }
   .points-selection-summary > span { width: 35px; height: 35px; }
   .points-selection-summary strong { white-space: normal; }
