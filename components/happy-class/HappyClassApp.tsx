@@ -90,6 +90,7 @@ import {
 
 const spinWheelSound = '/sounds/Am_thanh_vong_quay_chiec_non_ky_dieu-www_tiengdong_com.mp3';
 const victorySound = '/sounds/Am_thanh_chuc_mung_chien_thang-www_tiengdong_com.mp3';
+const secretGroupsSuspenseSound = '/sounds/secret-groups-intense-suspense.mp3';
 const teacherFacebookUrl = 'https://www.facebook.com/duc.the3?locale=vi_VN';
 const tabHoverSelector = '.sidebar-nav button, .mobile-nav button, .filter-tabs button, .mode-switch button';
 
@@ -3247,19 +3248,27 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
   const [resultSaved, setResultSaved] = useState(false);
   const [isPresentation, setIsPresentation] = useState(false);
   const stageRef = useRef<HTMLElement | null>(null);
-  const spinAudioRef = useRef<HTMLAudioElement | null>(null);
+  const suspenseAudioRef = useRef<HTMLAudioElement | null>(null);
   const victoryAudioRef = useRef<HTMLAudioElement | null>(null);
   const groupTimersRef = useRef<number[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
+  const soundEnabledRef = useRef(true);
   const groupPool = useMemo(() => students.filter((student) => groupScope === 'all' || student.attendance === 'present'), [students, groupScope]);
   const groupBusy = secretPhase === 'countdown' || secretPhase === 'shuffling' || secretPhase === 'revealing';
   const maxGroupRows = Math.max(0, ...secretGroups.map((group) => group.length));
   const groupColors = ['#f05f76', '#8b62df', '#31aa91', '#f2a72f', '#438bd8', '#dc6fb0', '#45a7bd', '#7caf48'];
 
-  const stopSpinAudio = () => {
-    if (!spinAudioRef.current) return;
-    spinAudioRef.current.pause();
-    spinAudioRef.current.currentTime = 0;
+  const stopSuspenseAudio = () => {
+    if (!suspenseAudioRef.current) return;
+    suspenseAudioRef.current.pause();
+    suspenseAudioRef.current.currentTime = 0;
+  };
+  const playSuspenseAudio = () => {
+    const audio = suspenseAudioRef.current;
+    if (!audio || !soundEnabledRef.current) return;
+    audio.currentTime = 1.5;
+    audio.volume = .82;
+    void audio.play().catch(() => undefined);
   };
   const clearGroupTimers = () => {
     groupTimersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -3269,13 +3278,13 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
     groupTimersRef.current.push(window.setTimeout(callback, delay));
   };
   const prepareAudioContext = () => {
-    if (!soundEnabled) return null;
+    if (!soundEnabledRef.current) return null;
     if (!audioContextRef.current) audioContextRef.current = new AudioContext();
     void audioContextRef.current.resume().catch(() => undefined);
     return audioContextRef.current;
   };
   const playRevealTick = (emphasis = false) => {
-    if (!soundEnabled) return;
+    if (!soundEnabledRef.current) return;
     const context = prepareAudioContext();
     if (!context) return;
     const oscillator = context.createOscillator();
@@ -3293,7 +3302,7 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
   };
   const resetSecretStage = () => {
     clearGroupTimers();
-    stopSpinAudio();
+    stopSuspenseAudio();
     setSecretGroups([]);
     setSecretPhase('idle');
     setCountdown(3);
@@ -3303,7 +3312,7 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
 
   useEffect(() => () => {
     clearGroupTimers();
-    stopSpinAudio();
+    stopSuspenseAudio();
     if (victoryAudioRef.current) {
       victoryAudioRef.current.pause();
       victoryAudioRef.current.currentTime = 0;
@@ -3326,7 +3335,7 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
   const startSecretGroups = () => {
     if (groupBusy || groupPool.length < 2) return;
     clearGroupTimers();
-    stopSpinAudio();
+    stopSuspenseAudio();
     if (victoryAudioRef.current) {
       victoryAudioRef.current.pause();
       victoryAudioRef.current.currentTime = 0;
@@ -3341,22 +3350,12 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
     setRevealedRows(0);
     setResultSaved(false);
     prepareAudioContext();
+    playSuspenseAudio();
     scheduleGroupStep(() => setCountdown(2), 700);
     scheduleGroupStep(() => setCountdown(1), 1400);
-    scheduleGroupStep(() => {
-      setSecretPhase('shuffling');
-      const audio = spinAudioRef.current;
-      if (audio && soundEnabled) {
-        audio.currentTime = 0;
-        audio.volume = .45;
-        void audio.play().catch(() => undefined);
-      }
-    }, 2050);
+    scheduleGroupStep(() => setSecretPhase('shuffling'), 2050);
     const revealStart = 4050;
-    scheduleGroupStep(() => {
-      stopSpinAudio();
-      setSecretPhase('revealing');
-    }, revealStart);
+    scheduleGroupStep(() => setSecretPhase('revealing'), revealStart);
     for (let row = 1; row <= rowCount; row += 1) {
       const isLast = row === rowCount;
       scheduleGroupStep(() => {
@@ -3365,14 +3364,30 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
       }, revealStart + (row - 1) * 560);
     }
     scheduleGroupStep(() => {
+      stopSuspenseAudio();
       setSecretPhase('complete');
       const audio = victoryAudioRef.current;
-      if (audio && soundEnabled) {
+      if (audio && soundEnabledRef.current) {
         audio.currentTime = 0;
         audio.volume = .78;
         void audio.play().catch(() => undefined);
       }
     }, revealStart + Math.max(1, rowCount) * 560 + 500);
+  };
+  const toggleSecretSound = () => {
+    const nextEnabled = !soundEnabledRef.current;
+    soundEnabledRef.current = nextEnabled;
+    setSoundEnabled(nextEnabled);
+    if (!nextEnabled) {
+      stopSuspenseAudio();
+      if (victoryAudioRef.current) {
+        victoryAudioRef.current.pause();
+        victoryAudioRef.current.currentTime = 0;
+      }
+    } else if (groupBusy) {
+      prepareAudioContext();
+      playSuspenseAudio();
+    }
   };
   const saveSecretGroups = () => {
     if (secretPhase !== 'complete' || !secretGroups.length) return;
@@ -3405,13 +3420,13 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
 
   return (
     <section ref={stageRef} className={`random-stage secret-group-stage panel ${isPresentation ? 'is-presentation' : ''}`}>
-      <audio ref={spinAudioRef} src={spinWheelSound} preload="auto" aria-hidden="true" />
+      <audio ref={suspenseAudioRef} src={secretGroupsSuspenseSound} preload="auto" loop aria-hidden="true" />
       <audio ref={victoryAudioRef} src={victorySound} preload="auto" aria-hidden="true" />
       <div className="random-settings secret-group-settings">
         <label><span>Số lượng tổ</span><select aria-label="Số lượng tổ ngẫu nhiên" value={groupCount} disabled={groupBusy} onChange={(event) => { resetSecretStage(); setGroupCount(Number(event.target.value)); }}>{Array.from({ length: 7 }, (_, index) => index + 2).map((count) => <option key={count} value={count}>{count} tổ</option>)}</select></label>
         <div className="secret-scope"><span>Phạm vi chia</span><div className="filter-tabs"><button type="button" className={groupScope === 'present' ? 'active' : ''} disabled={groupBusy} onClick={() => { resetSecretStage(); setGroupScope('present'); }}>Học sinh có mặt</button><button type="button" className={groupScope === 'all' ? 'active' : ''} disabled={groupBusy} onClick={() => { resetSecretStage(); setGroupScope('all'); }}>Cả lớp</button></div></div>
         <p><UserRoundCheck size={17} /><strong>{groupPool.length}</strong> học sinh · chênh lệch tối đa 1 em</p>
-        <button className="random-sound-button" type="button" onClick={() => setSoundEnabled((current) => !current)} aria-label={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}>{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
+        <button className="random-sound-button" type="button" onClick={toggleSecretSound} aria-label={soundEnabled ? 'Tắt âm thanh hồi hộp' : 'Bật âm thanh hồi hộp'} title={soundEnabled ? 'Tắt âm thanh hồi hộp' : 'Bật âm thanh hồi hộp'}>{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
         <button className="random-presentation-button" type="button" onClick={() => void togglePresentation()} aria-label={isPresentation ? 'Thoát trình chiếu toàn màn hình' : 'Trình chiếu toàn màn hình'}>{isPresentation ? <Minimize2 size={18} /> : <Maximize2 size={18} />}<span>{isPresentation ? 'Thu nhỏ' : 'Phóng to'}</span></button>
       </div>
       <div className={`secret-groups-arena phase-${secretPhase}`} aria-live="polite">
@@ -3451,6 +3466,7 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
         {secretPhase === 'complete' && <button className={`secret-save-button ${resultSaved ? 'is-saved' : ''}`} type="button" onClick={saveSecretGroups} disabled={resultSaved}><Save size={20} />{resultSaved ? 'Đã lưu tổ chính thức' : 'Lưu làm tổ chính thức'}</button>}
       </div>
       <p className="secret-group-note">{groupPool.length < 2 ? 'Cần ít nhất 2 học sinh trong phạm vi đã chọn.' : resultSaved ? 'Kết quả đã được cập nhật vào hồ sơ lớp. Có thể hoàn tác tại trang Thi đua tổ.' : '🔒 Kết quả hiện chỉ là bản xem trước, chưa làm thay đổi tổ hiện tại.'}</p>
+      <small className="secret-audio-credit">Nhạc “Intense Suspense” — <a href="https://audionautix.com" target="_blank" rel="noreferrer">Jason Shaw / Audionautix</a> · CC BY 3.0</small>
     </section>
   );
 }

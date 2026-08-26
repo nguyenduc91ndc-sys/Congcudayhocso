@@ -4109,6 +4109,8 @@ body {
 .secret-start-button { min-width: 245px; color: white; background: linear-gradient(135deg,#ff5d82,#8a58e4 58%,#4e97ee); box-shadow: 0 7px 0 #5937a4,0 15px 25px rgba(82,50,161,.28); }.secret-start-button:not(:disabled):hover { transform: translateY(-2px); box-shadow: 0 9px 0 #5937a4,0 19px 30px rgba(82,50,161,.32); }.secret-start-button:disabled { opacity: .75; }
 .secret-save-button { min-width: 225px; color: #33613c; border: 2px solid #99d09b !important; background: linear-gradient(145deg,#f4ffe8,#c8f2ac); box-shadow: 0 6px 0 #6daa72,0 13px 22px rgba(58,125,71,.2); }.secret-save-button:not(:disabled):hover { transform: translateY(-2px); }.secret-save-button.is-saved { color: #fff; background: linear-gradient(135deg,#58b96d,#328f68); opacity: 1; }
 .secret-group-note { margin: 12px auto 0; color: #654e6e; font-size: 10px; font-weight: 800; text-align: center; }
+.secret-audio-credit { margin-top: 5px; color: #9b879f; font-size: 7px; font-weight: 700; text-align: center; }
+.secret-audio-credit a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
 @keyframes secretLightSweep { to { opacity: .45; transform: rotate(14deg); } }
 @keyframes secretDiceFloat { to { transform: translateY(-8px) rotate(5deg); } }
