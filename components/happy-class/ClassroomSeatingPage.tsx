@@ -227,6 +227,26 @@ function rebuildLayout(layout: ClassroomLayout, rows: number, columns: number, s
   };
 }
 
+function removeLayoutLine(layout: ClassroomLayout, kind: 'row' | 'column', lineIndex: number): ClassroomLayout {
+  const next = copyLayout(layout);
+  next.desks = next.desks
+    .filter((desk) => kind === 'row' ? desk.row !== lineIndex : desk.column !== lineIndex)
+    .map((desk) => {
+      const row = kind === 'row' && desk.row > lineIndex ? desk.row - 1 : desk.row;
+      const column = kind === 'column' && desk.column > lineIndex ? desk.column - 1 : desk.column;
+      return {
+        ...desk,
+        id: `desk-${row}-${column}`,
+        row,
+        column,
+        seats: desk.seats.map((seat, seatIndex) => ({ ...seat, id: makeSeatId(row, column, seatIndex) })),
+      };
+    });
+  if (kind === 'row') next.rows -= 1;
+  else next.columns -= 1;
+  return next;
+}
+
 function secureShuffle<T>(items: T[]) {
   const result = [...items];
   const random = new Uint32Array(Math.max(1, result.length));
@@ -483,6 +503,25 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     const overflow = Math.max(0, assignedIds.size - next.desks.flatMap((desk) => desk.seats).length);
     commit(next);
     if (overflow) onToast(`${overflow} học sinh đã được đưa về danh sách chưa xếp vì thiếu ghế.`);
+  };
+
+  const deleteLayoutLine = (kind: 'row' | 'column', lineIndex: number) => {
+    if (!canManage || isBusy) return;
+    if ((kind === 'row' && layout.rows <= MIN_ROWS) || (kind === 'column' && layout.columns <= MIN_COLUMNS)) {
+      onToast('Sơ đồ cần giữ lại ít nhất một dãy và một hàng bàn.');
+      return;
+    }
+    const removedDesks = layout.desks.filter((desk) => kind === 'row' ? desk.row === lineIndex : desk.column === lineIndex);
+    const removedStudentIds = new Set(removedDesks.flatMap((desk) => desk.seats.flatMap((seat) => seat.studentId === undefined ? [] : [seat.studentId])));
+    const lineName = kind === 'row' ? `hàng ngang ${lineIndex + 1}` : `dãy dọc ${lineIndex + 1}`;
+    const studentNote = removedStudentIds.size
+      ? ` ${removedStudentIds.size} học sinh trong ${lineName} sẽ trở về danh sách chờ.`
+      : '';
+    if (!window.confirm(`Xóa toàn bộ ${lineName}?${studentNote}`)) return;
+    const next = removeLayoutLine(layout, kind, lineIndex);
+    commit(next);
+    setSelectedStudentId(null);
+    onToast(`Đã xóa ${lineName}.${removedStudentIds.size ? ` ${removedStudentIds.size} học sinh đã về danh sách chờ.` : ''}`);
   };
 
   const addCustomStudents = () => {
@@ -922,6 +961,12 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
             <div className="seating-setting-group">
               <Stepper label="Số dãy bàn" value={layout.columns} min={MIN_COLUMNS} max={MAX_COLUMNS} disabled={!canManage || isBusy} onChange={(columns) => changeStructure(layout.rows, columns, layout.defaultSeatsPerDesk)} />
               <Stepper label="Số hàng bàn" value={layout.rows} min={MIN_ROWS} max={MAX_ROWS} disabled={!canManage || isBusy} onChange={(rows) => changeStructure(rows, layout.columns, layout.defaultSeatsPerDesk)} />
+            </div>
+            <div className="seating-setting-block seating-line-manager">
+              <span>XÓA RIÊNG DÃY / HÀNG</span>
+              <p>Chọn đúng dãy dọc hoặc hàng ngang không sử dụng. Các phần còn lại vẫn giữ nguyên.</p>
+              <div><strong>Dãy dọc</strong><div>{Array.from({ length: layout.columns }, (_, index) => <button type="button" key={`column-${index}`} disabled={!canManage || isBusy || layout.columns <= MIN_COLUMNS} onClick={() => deleteLayoutLine('column', index)} aria-label={`Xóa dãy dọc ${index + 1}`} title={`Xóa toàn bộ dãy dọc ${index + 1}`}><span>Dãy {index + 1}</span><Trash2 size={12} /></button>)}</div></div>
+              <div><strong>Hàng ngang</strong><div>{Array.from({ length: layout.rows }, (_, index) => <button type="button" key={`row-${index}`} disabled={!canManage || isBusy || layout.rows <= MIN_ROWS} onClick={() => deleteLayoutLine('row', index)} aria-label={`Xóa hàng ngang ${index + 1}`} title={`Xóa toàn bộ hàng ngang ${index + 1}`}><span>Hàng {index + 1}</span><Trash2 size={12} /></button>)}</div></div>
             </div>
             <div className="seating-setting-block"><span>SỐ CHỖ MẶC ĐỊNH MỖI BÀN</span><div className="seating-seat-presets">{[1, 2, 3, 4].map((count) => <button type="button" key={count} className={layout.defaultSeatsPerDesk === count ? 'active' : ''} disabled={!canManage || isBusy} onClick={() => changeStructure(layout.rows, layout.columns, count)}><b>{count}</b><small>{count === 1 ? 'bàn đơn' : `${count} học sinh`}</small></button>)}</div></div>
             <div className="seating-setting-block seating-custom-students">
