@@ -13,18 +13,19 @@ import { CSS as DndCSS } from '@dnd-kit/utilities';
 import {
   ArrowUpDown,
   Check,
-  Download,
   GripVertical,
   Image as ImageIcon,
   Lock,
   Maximize2,
   Minimize2,
   Minus,
+  Pencil,
   Plus,
   Printer,
   RotateCcw,
   Shuffle,
   Sparkles,
+  Trash2,
   Unlock,
   UsersRound,
   Wand2,
@@ -45,6 +46,12 @@ export type ClassroomDesk = {
   seats: ClassroomSeat[];
 };
 
+export type ClassroomCustomStudent = {
+  id: number;
+  name: string;
+  gradient: string;
+};
+
 export type ClassroomLayout = {
   version: 1;
   name: string;
@@ -53,6 +60,7 @@ export type ClassroomLayout = {
   defaultSeatsPerDesk: 1 | 2 | 3 | 4;
   viewpoint?: 'student' | 'teacher';
   desks: ClassroomDesk[];
+  customStudents?: ClassroomCustomStudent[];
   previousPairings?: string[];
   shuffleRound?: number;
   updatedAt: string;
@@ -71,6 +79,17 @@ type ClassroomSeatingPageProps = {
 };
 
 type ShufflePhase = 'idle' | 'countdown' | 'revealing';
+
+type SeatingStudent = Pick<Student, 'id' | 'name' | 'initials' | 'team' | 'attendance' | 'gradient' | 'photo'> & {
+  isCustom?: boolean;
+};
+
+const MIN_ROWS = 1;
+const MAX_ROWS = 15;
+const MIN_COLUMNS = 1;
+const MAX_COLUMNS = 10;
+const MAX_CUSTOM_STUDENTS = 200;
+const customStudentGradients = ['mint', 'sky', 'sun', 'rose', 'aqua', 'berry', 'ocean', 'peach'];
 
 const clamp = (value: number, min: number, max: number) => Math.min(max, Math.max(min, Math.round(value)));
 
@@ -96,7 +115,7 @@ function buildDesks(rows: number, columns: number, seatCount: number) {
 export function createClassroomLayout(students: Student[] = []): ClassroomLayout {
   const columns = 4;
   const defaultSeatsPerDesk = 2;
-  const rows = clamp(Math.ceil(Math.max(students.length, 1) / (columns * defaultSeatsPerDesk)), 3, 10);
+  const rows = clamp(Math.ceil(Math.max(students.length, 1) / (columns * defaultSeatsPerDesk)), 3, MAX_ROWS);
   const desks = buildDesks(rows, columns, defaultSeatsPerDesk);
   students.forEach((student, index) => {
     const seat = desks.flatMap((desk) => desk.seats)[index];
@@ -120,12 +139,23 @@ export function isClassroomLayout(value: unknown): value is ClassroomLayout {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return false;
   const layout = value as Partial<ClassroomLayout>;
   if (layout.version !== 1 || typeof layout.name !== 'string' || layout.name.length > 100
-    || !Number.isInteger(layout.rows) || (layout.rows ?? 0) < 1 || (layout.rows ?? 0) > 10
-    || !Number.isInteger(layout.columns) || (layout.columns ?? 0) < 1 || (layout.columns ?? 0) > 6
+    || !Number.isInteger(layout.rows) || (layout.rows ?? 0) < MIN_ROWS || (layout.rows ?? 0) > MAX_ROWS
+    || !Number.isInteger(layout.columns) || (layout.columns ?? 0) < MIN_COLUMNS || (layout.columns ?? 0) > MAX_COLUMNS
     || ![1, 2, 3, 4].includes(layout.defaultSeatsPerDesk ?? 0)
     || (layout.viewpoint !== undefined && layout.viewpoint !== 'student' && layout.viewpoint !== 'teacher')
     || !Array.isArray(layout.desks) || layout.desks.length !== (layout.rows ?? 0) * (layout.columns ?? 0)
     || typeof layout.updatedAt !== 'string') return false;
+  if (layout.customStudents !== undefined) {
+    if (!Array.isArray(layout.customStudents) || layout.customStudents.length > MAX_CUSTOM_STUDENTS) return false;
+    const customIds = new Set<number>();
+    for (const student of layout.customStudents) {
+      if (!student || typeof student !== 'object'
+        || !Number.isInteger(student.id) || student.id >= 0 || customIds.has(student.id)
+        || typeof student.name !== 'string' || !student.name.trim() || student.name.length > 80
+        || typeof student.gradient !== 'string' || !/^[a-z0-9-]{1,30}$/i.test(student.gradient)) return false;
+      customIds.add(student.id);
+    }
+  }
   const deskIds = new Set<string>();
   const seatIds = new Set<string>();
   const studentIds = new Set<number>();
@@ -148,20 +178,22 @@ export function isClassroomLayout(value: unknown): value is ClassroomLayout {
 }
 
 export function getClassroomLayoutStudentIds(layout: ClassroomLayout) {
-  return layout.desks.flatMap((desk) => desk.seats).flatMap((seat) => seat.studentId === undefined ? [] : [seat.studentId]);
+  const customIds = new Set((layout.customStudents ?? []).map((student) => student.id));
+  return layout.desks.flatMap((desk) => desk.seats).flatMap((seat) => seat.studentId === undefined || customIds.has(seat.studentId) ? [] : [seat.studentId]);
 }
 
 function copyLayout(layout: ClassroomLayout): ClassroomLayout {
   return {
     ...layout,
     desks: layout.desks.map((desk) => ({ ...desk, seats: desk.seats.map((seat) => ({ ...seat })) })),
+    customStudents: layout.customStudents?.map((student) => ({ ...student })),
     previousPairings: [...(layout.previousPairings ?? [])],
   };
 }
 
 function rebuildLayout(layout: ClassroomLayout, rows: number, columns: number, seatsPerDesk: number): ClassroomLayout {
-  const normalizedRows = clamp(rows, 1, 10);
-  const normalizedColumns = clamp(columns, 1, 6);
+  const normalizedRows = clamp(rows, MIN_ROWS, MAX_ROWS);
+  const normalizedColumns = clamp(columns, MIN_COLUMNS, MAX_COLUMNS);
   const normalizedSeats = clamp(seatsPerDesk, 1, 4) as 1 | 2 | 3 | 4;
   const oldSeats = layout.desks.flatMap((desk) => desk.seats);
   const oldById = new Map(oldSeats.map((seat) => [seat.id, seat]));
@@ -242,7 +274,7 @@ function roundedRect(context: CanvasRenderingContext2D, x: number, y: number, wi
   context.closePath();
 }
 
-function StudentCard({ student, selected, disabled, onSelect }: { student: Student; selected: boolean; disabled: boolean; onSelect: (studentId: number) => void }) {
+function StudentCard({ student, selected, disabled, onSelect }: { student: SeatingStudent; selected: boolean; disabled: boolean; onSelect: (studentId: number) => void }) {
   const draggable = useDraggable({ id: `student-${student.id}`, data: { studentId: student.id }, disabled });
   const style = { transform: DndCSS.Translate.toString(draggable.transform), zIndex: draggable.isDragging ? 20 : undefined } as CSSProperties;
   return (
@@ -256,7 +288,7 @@ function StudentCard({ student, selected, disabled, onSelect }: { student: Stude
       {...draggable.attributes}
     >
       <span className={`seating-avatar gradient-${student.gradient}`}>{student.photo ? <img src={student.photo} alt="" /> : student.initials || initials(student.name)}</span>
-      <span><strong>{shortName(student.name)}</strong><small>Tổ {student.team}</small></span>
+      <span><strong>{shortName(student.name)}</strong><small>{student.isCustom ? 'Tên tự nhập' : `Tổ ${student.team}`}</small></span>
       <GripVertical size={14} />
     </button>
   );
@@ -272,7 +304,7 @@ function SeatCard({
   onToggleLock,
 }: {
   seat: ClassroomSeat;
-  student?: Student;
+  student?: SeatingStudent;
   selected: boolean;
   canManage: boolean;
   hidden: boolean;
@@ -298,11 +330,25 @@ function SeatCard({
   );
 }
 
-function Stepper({ label, value, min, max, onChange }: { label: string; value: number; min: number; max: number; onChange: (value: number) => void }) {
+function Stepper({ label, value, min, max, disabled, onChange }: { label: string; value: number; min: number; max: number; disabled?: boolean; onChange: (value: number) => void }) {
+  const [draftValue, setDraftValue] = useState(String(value));
+  useEffect(() => setDraftValue(String(value)), [value]);
+  const applyDraft = () => {
+    const next = Number(draftValue);
+    if (Number.isFinite(next) && draftValue.trim()) {
+      const normalized = clamp(next, min, max);
+      setDraftValue(String(normalized));
+      if (normalized !== value) onChange(normalized);
+    } else setDraftValue(String(value));
+  };
   return (
     <div className="seating-stepper">
       <span>{label}</span>
-      <div><button type="button" disabled={value <= min} onClick={() => onChange(value - 1)}><Minus size={15} /></button><strong>{value}</strong><button type="button" disabled={value >= max} onClick={() => onChange(value + 1)}><Plus size={15} /></button></div>
+      <div>
+        <button type="button" disabled={disabled || value <= min} onClick={() => onChange(value - 1)} aria-label={`Bớt ${label.toLocaleLowerCase('vi-VN')}`}><Minus size={15} /></button>
+        <input type="number" inputMode="numeric" min={min} max={max} value={draftValue} disabled={disabled} aria-label={label} onChange={(event) => setDraftValue(event.target.value)} onBlur={applyDraft} onKeyDown={(event) => { if (event.key === 'Enter') event.currentTarget.blur(); }} />
+        <button type="button" disabled={disabled || value >= max} onClick={() => onChange(value + 1)} aria-label={`Thêm ${label.toLocaleLowerCase('vi-VN')}`}><Plus size={15} /></button>
+      </div>
     </div>
   );
 }
@@ -318,14 +364,26 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
   const [countdown, setCountdown] = useState(3);
   const [revealedDeskIds, setRevealedDeskIds] = useState<Set<string>>(new Set());
   const [isPresentation, setIsPresentation] = useState(false);
+  const [customNamesDraft, setCustomNamesDraft] = useState('');
   const stageRef = useRef<HTMLDivElement>(null);
   const timersRef = useRef<number[]>([]);
   const audioContextRef = useRef<AudioContext | null>(null);
   const sensors = useSensors(useSensor(PointerSensor, { activationConstraint: { distance: 6 } }));
-  const studentMap = useMemo(() => new Map(students.map((student) => [student.id, student])), [students]);
+  const customStudents = useMemo(() => layout.customStudents ?? [], [layout.customStudents]);
+  const seatingStudents = useMemo<SeatingStudent[]>(() => [
+    ...students,
+    ...customStudents.map((student) => ({
+      ...student,
+      initials: initials(student.name),
+      team: 0,
+      attendance: 'present' as const,
+      isCustom: true,
+    })),
+  ], [customStudents, students]);
+  const studentMap = useMemo(() => new Map(seatingStudents.map((student) => [student.id, student])), [seatingStudents]);
   const allSeats = layout.desks.flatMap((desk) => desk.seats);
   const assignedIds = new Set(allSeats.flatMap((seat) => seat.studentId === undefined || !studentMap.has(seat.studentId) ? [] : [seat.studentId]));
-  const unassigned = students.filter((student) => !assignedIds.has(student.id));
+  const unassigned = seatingStudents.filter((student) => !assignedIds.has(student.id));
   const capacity = allSeats.length;
   const isBusy = shufflePhase !== 'idle';
   const isTeacherView = layout.viewpoint === 'teacher';
@@ -427,6 +485,78 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     if (overflow) onToast(`${overflow} học sinh đã được đưa về danh sách chưa xếp vì thiếu ghế.`);
   };
 
+  const addCustomStudents = () => {
+    if (!canManage || isBusy) return;
+    const requestedNames = customNamesDraft
+      .split(/[\n,;]+/)
+      .map((name) => name.trim().replace(/\s+/g, ' '))
+      .filter(Boolean);
+    if (!requestedNames.length) {
+      onToast('Hãy gõ ít nhất một tên học sinh. Có thể nhập mỗi tên một dòng.');
+      return;
+    }
+    const knownNames = new Set(seatingStudents.map((student) => student.name.toLocaleLowerCase('vi-VN')));
+    const uniqueNames = requestedNames.filter((name, index) => {
+      const key = name.toLocaleLowerCase('vi-VN');
+      if (name.length > 80 || knownNames.has(key)) return false;
+      const firstOccurrence = requestedNames.findIndex((candidate) => candidate.toLocaleLowerCase('vi-VN') === key) === index;
+      if (firstOccurrence) knownNames.add(key);
+      return firstOccurrence;
+    });
+    const available = MAX_CUSTOM_STUDENTS - customStudents.length;
+    const namesToAdd = uniqueNames.slice(0, Math.max(0, available));
+    if (!namesToAdd.length) {
+      onToast(available <= 0 ? `Chỉ có thể thêm tối đa ${MAX_CUSTOM_STUDENTS} tên tự nhập.` : 'Các tên vừa nhập đã có trong danh sách hoặc chưa hợp lệ.');
+      return;
+    }
+    let nextId = Math.min(-999999, ...customStudents.map((student) => student.id)) - 1;
+    const additions = namesToAdd.map((name, index): ClassroomCustomStudent => ({
+      id: nextId--,
+      name,
+      gradient: customStudentGradients[(customStudents.length + index) % customStudentGradients.length],
+    }));
+    const next = copyLayout(layout);
+    next.customStudents = [...(next.customStudents ?? []), ...additions];
+    commit(next);
+    setCustomNamesDraft('');
+    onToast(`Đã thêm ${additions.length} học sinh tự nhập vào danh sách chờ.`);
+  };
+
+  const editCustomStudent = (student: ClassroomCustomStudent) => {
+    if (!canManage || isBusy) return;
+    const entered = window.prompt('Sửa tên học sinh:', student.name);
+    if (entered === null) return;
+    const name = entered.trim().replace(/\s+/g, ' ');
+    if (!name || name.length > 80) {
+      onToast('Tên học sinh cần từ 1 đến 80 ký tự.');
+      return;
+    }
+    if (seatingStudents.some((item) => item.id !== student.id && item.name.toLocaleLowerCase('vi-VN') === name.toLocaleLowerCase('vi-VN'))) {
+      onToast('Tên này đã có trong danh sách.');
+      return;
+    }
+    const next = copyLayout(layout);
+    const target = next.customStudents?.find((item) => item.id === student.id);
+    if (!target) return;
+    target.name = name;
+    commit(next);
+  };
+
+  const deleteCustomStudent = (student: ClassroomCustomStudent) => {
+    if (!canManage || isBusy || !window.confirm(`Xóa “${student.name}” khỏi sơ đồ lớp?`)) return;
+    const next = copyLayout(layout);
+    next.customStudents = (next.customStudents ?? []).filter((item) => item.id !== student.id);
+    next.desks.forEach((desk) => desk.seats.forEach((seat) => {
+      if (seat.studentId === student.id) {
+        delete seat.studentId;
+        seat.locked = false;
+      }
+    }));
+    commit(next);
+    setSelectedStudentId((current) => current === student.id ? null : current);
+    onToast(`Đã xóa ${student.name} khỏi danh sách tự nhập.`);
+  };
+
   const changeDeskSeats = (deskId: string, amount: number) => {
     if (!canManage || isBusy) return;
     const next = copyLayout(layout);
@@ -449,7 +579,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     const lockedIds = new Set(seats.filter((seat) => seat.locked && seat.studentId !== undefined).map((seat) => seat.studentId as number));
     seats.forEach((seat) => { if (!seat.locked) delete seat.studentId; });
     const targets = seats.filter((seat) => !seat.locked);
-    students.filter((student) => !lockedIds.has(student.id)).slice(0, targets.length).forEach((student, index) => { targets[index].studentId = student.id; });
+    seatingStudents.filter((student) => !lockedIds.has(student.id)).slice(0, targets.length).forEach((student, index) => { targets[index].studentId = student.id; });
     commit(next);
     onToast('Đã xếp học sinh theo thứ tự danh sách.');
   };
@@ -493,7 +623,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     const seats = base.desks.flatMap((desk) => desk.seats);
     const fixedIds = new Set<number>();
     if (keepLocked) seats.forEach((seat) => { if (seat.locked && seat.studentId !== undefined && studentMap.has(seat.studentId)) fixedIds.add(seat.studentId); });
-    const eligible = students.filter((student) => (!excludeAbsent || student.attendance !== 'absent') && !fixedIds.has(student.id));
+    const eligible = seatingStudents.filter((student) => (!excludeAbsent || student.attendance !== 'absent') && !fixedIds.has(student.id));
     const targetSeats = seats.filter((seat) => !(keepLocked && seat.locked));
     if (eligible.length > targetSeats.length) {
       onToast(`Sơ đồ còn thiếu ${eligible.length - targetSeats.length} ghế cho danh sách tham gia.`);
@@ -523,7 +653,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
   };
 
   const startRandom = () => {
-    if (!canManage || isBusy || !students.length) return;
+    if (!canManage || isBusy || !seatingStudents.length) return;
     const next = buildRandomLayout();
     if (!next) return;
     timersRef.current.forEach((timer) => window.clearTimeout(timer));
@@ -541,6 +671,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     timersRef.current.push(window.setTimeout(() => {
       onChange({ ...next, updatedAt: new Date().toISOString() });
       setShufflePhase('revealing');
+      const revealInterval = Math.max(25, Math.min(145, Math.floor(5000 / Math.max(1, next.desks.length))));
       next.desks.forEach((desk, index) => timersRef.current.push(window.setTimeout(() => {
         setRevealedDeskIds((current) => new Set([...current, desk.id]));
         if (index % 2 === 0) playTone();
@@ -549,7 +680,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
           playTone(true);
           onToast(`Đã hoàn thành lượt xếp ngẫu nhiên thứ ${next.shuffleRound}.`);
         }
-      }, 180 + index * 145)));
+      }, 180 + index * revealInterval)));
     }, 2250));
   };
 
@@ -587,7 +718,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
       const deskNumber = desk.row * layout.columns + desk.column + 1;
       return `<article class="desk"><header><span>BÀN ${deskNumber}</span><small>${desk.seats.length} chỗ</small></header><div class="seats seats-${desk.seats.length}">${desk.seats.map((seat) => {
       const student = seat.studentId === undefined ? undefined : studentMap.get(seat.studentId);
-      return `<div class="seat ${student ? 'filled' : ''}"><b>${student ? escapeHtml(initials(student.name)) : '—'}</b><span>${student ? escapeHtml(student.name) : 'Ghế trống'}</span>${student ? `<small>Tổ ${student.team}</small>` : ''}</div>`;
+      return `<div class="seat ${student ? 'filled' : ''}"><b>${student ? escapeHtml(initials(student.name)) : '—'}</b><span>${student ? escapeHtml(student.name) : 'Ghế trống'}</span>${student ? `<small>${student.isCustom ? 'Tên tự nhập' : `Tổ ${student.team}`}</small>` : ''}</div>`;
       }).join('')}</div></article>`;
     }).join('');
     const classroomContent = isTeacherView
@@ -687,7 +818,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
         if (student) {
           context.beginPath();
           context.arc(seatX + 28, seatY + seatHeight / 2, 19, 0, Math.PI * 2);
-          context.fillStyle = ['#9a59df', '#e15aa9', '#2bbfa5', '#f09b3c'][student.id % 4];
+          context.fillStyle = ['#9a59df', '#e15aa9', '#2bbfa5', '#f09b3c'][Math.abs(student.id) % 4];
           context.fill();
           context.textAlign = 'center';
           context.fillStyle = '#fff';
@@ -700,7 +831,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
           context.fillText(label.length > 20 ? `${label.slice(0, 19)}…` : label, seatX + 54, seatY + seatHeight / 2 + 1, Math.max(30, seatWidth - 62));
           context.fillStyle = '#92799a';
           context.font = '700 14px Arial';
-          context.fillText(`Tổ ${student.team}`, seatX + 54, seatY + seatHeight / 2 + 19);
+          context.fillText(student.isCustom ? 'Tên tự nhập' : `Tổ ${student.team}`, seatX + 54, seatY + seatHeight / 2 + 19);
         } else {
           context.textAlign = 'center';
           context.fillStyle = '#a9835d';
@@ -748,9 +879,9 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
 
         <section className="seating-toolbar panel">
           <div className="seating-toolbar-main">
-            <button className="seating-random-button" type="button" disabled={!canManage || isBusy || !students.length} onClick={startRandom}><Wand2 size={19} /><span><strong>{isBusy ? 'Đang xếp chỗ…' : 'Bốc chỗ ngẫu nhiên'}</strong><small>Mở tên lần lượt theo từng bàn</small></span></button>
+            <button className="seating-random-button" type="button" disabled={!canManage || isBusy || !seatingStudents.length} onClick={startRandom}><Wand2 size={19} /><span><strong>{isBusy ? 'Đang xếp chỗ…' : 'Bốc chỗ ngẫu nhiên'}</strong><small>Mở tên lần lượt theo từng bàn</small></span></button>
             <button type="button" disabled={!canManage || isBusy || !undoLayout} onClick={undo}><RotateCcw size={17} /><span>Hoàn tác</span></button>
-            <button type="button" disabled={!canManage || isBusy || !students.length} onClick={fillInOrder}><UsersRound size={17} /><span>Xếp theo danh sách</span></button>
+            <button type="button" disabled={!canManage || isBusy || !seatingStudents.length} onClick={fillInOrder}><UsersRound size={17} /><span>Xếp theo danh sách</span></button>
             <button type="button" onClick={printLayout}><Printer size={17} /><span>In / Lưu PDF</span></button>
             <button type="button" onClick={exportPng}><ImageIcon size={17} /><span>Xuất PNG</span></button>
             <button className={`seating-viewpoint-button ${isTeacherView ? 'is-active' : ''}`} type="button" onClick={toggleViewpoint} title="Đổi góc nhìn sơ đồ"><ArrowUpDown size={17} /><span>{isTeacherView ? 'Góc nhìn giáo viên' : 'Góc nhìn học sinh'}</span></button>
@@ -787,14 +918,23 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
           </section>
 
           <aside className="seating-settings panel">
-            <div className="seating-settings-heading"><span>THIẾT KẾ LỚP</span><h2>Tùy chỉnh bàn ghế</h2><p>Có thể đổi toàn lớp, sau đó tăng hoặc giảm ghế riêng ở từng bàn.</p></div>
+            <div className="seating-settings-heading"><span>THIẾT KẾ LỚP</span><h2>Tùy chỉnh bàn ghế</h2><p>Tăng giảm số dãy, số hàng hoặc gõ trực tiếp con số phù hợp với lớp.</p></div>
             <div className="seating-setting-group">
-              <Stepper label="Số dãy bàn" value={layout.columns} min={1} max={6} onChange={(columns) => changeStructure(layout.rows, columns, layout.defaultSeatsPerDesk)} />
-              <Stepper label="Số hàng bàn" value={layout.rows} min={1} max={10} onChange={(rows) => changeStructure(rows, layout.columns, layout.defaultSeatsPerDesk)} />
+              <Stepper label="Số dãy bàn" value={layout.columns} min={MIN_COLUMNS} max={MAX_COLUMNS} disabled={!canManage || isBusy} onChange={(columns) => changeStructure(layout.rows, columns, layout.defaultSeatsPerDesk)} />
+              <Stepper label="Số hàng bàn" value={layout.rows} min={MIN_ROWS} max={MAX_ROWS} disabled={!canManage || isBusy} onChange={(rows) => changeStructure(rows, layout.columns, layout.defaultSeatsPerDesk)} />
             </div>
             <div className="seating-setting-block"><span>SỐ CHỖ MẶC ĐỊNH MỖI BÀN</span><div className="seating-seat-presets">{[1, 2, 3, 4].map((count) => <button type="button" key={count} className={layout.defaultSeatsPerDesk === count ? 'active' : ''} disabled={!canManage || isBusy} onClick={() => changeStructure(layout.rows, layout.columns, count)}><b>{count}</b><small>{count === 1 ? 'bàn đơn' : `${count} học sinh`}</small></button>)}</div></div>
+            <div className="seating-setting-block seating-custom-students">
+              <span>TỰ GÕ TÊN HỌC SINH</span>
+              <p>Nhập một hoặc nhiều tên, mỗi tên một dòng.</p>
+              <textarea value={customNamesDraft} disabled={!canManage || isBusy} maxLength={4000} rows={3} placeholder={'Ví dụ:\nNguyễn An\nTrần Minh Châu'} onChange={(event) => setCustomNamesDraft(event.target.value)} />
+              <button type="button" className="seating-add-name-button" disabled={!canManage || isBusy || !customNamesDraft.trim()} onClick={addCustomStudents}><Plus size={15} /> Thêm vào danh sách</button>
+              {customStudents.length > 0 && <div className="seating-custom-name-list">
+                {customStudents.map((student) => <div key={student.id}><span title={student.name}>{student.name}</span><button type="button" onClick={() => editCustomStudent(student)} aria-label={`Sửa tên ${student.name}`} title="Sửa tên"><Pencil size={13} /></button><button type="button" onClick={() => deleteCustomStudent(student)} aria-label={`Xóa ${student.name}`} title="Xóa tên"><Trash2 size={13} /></button></div>)}
+              </div>}
+            </div>
             <div className="seating-setting-block"><span>TÙY CHỌN XẾP NGẪU NHIÊN</span><label><input type="checkbox" checked={excludeAbsent} onChange={(event) => setExcludeAbsent(event.target.checked)} /><i><Check size={12} /></i><div><strong>Không xếp học sinh vắng</strong><small>Dựa theo chuyên cần hôm nay</small></div></label><label><input type="checkbox" checked={keepLocked} onChange={(event) => setKeepLocked(event.target.checked)} /><i><Check size={12} /></i><div><strong>Giữ nguyên ghế đã khóa</strong><small>Các vị trí đặc biệt không đổi</small></div></label><label><input type="checkbox" checked={avoidPrevious} onChange={(event) => setAvoidPrevious(event.target.checked)} /><i><Check size={12} /></i><div><strong>Hạn chế ngồi lại cùng bàn</strong><small>Ưu tiên bạn ngồi mới ở lượt sau</small></div></label></div>
-            <div className={`seating-capacity-card ${capacity < students.length ? 'warning' : ''}`}><div><strong>{capacity - students.length >= 0 ? `Dư ${capacity - students.length} ghế` : `Thiếu ${students.length - capacity} ghế`}</strong><span>Sĩ số {students.length} · Sức chứa {capacity}</span></div><Sparkles size={22} /></div>
+            <div className={`seating-capacity-card ${capacity < seatingStudents.length ? 'warning' : ''}`}><div><strong>{capacity - seatingStudents.length >= 0 ? `Dư ${capacity - seatingStudents.length} ghế` : `Thiếu ${seatingStudents.length - capacity} ghế`}</strong><span>Sĩ số {seatingStudents.length} · Sức chứa {capacity}</span></div><Sparkles size={22} /></div>
             {canManage && <button type="button" className="seating-clear-button" disabled={isBusy || assignedIds.size === 0} onClick={clearAssignments}>Đưa học sinh về danh sách chưa xếp</button>}
           </aside>
         </div>
