@@ -44,6 +44,7 @@ export type ClassroomDesk = {
   row: number;
   column: number;
   seats: ClassroomSeat[];
+  removed?: boolean;
 };
 
 export type ClassroomCustomStudent = {
@@ -163,10 +164,12 @@ export function isClassroomLayout(value: unknown): value is ClassroomLayout {
     if (!desk || typeof desk !== 'object' || typeof desk.id !== 'string' || deskIds.has(desk.id)
       || !Number.isInteger(desk.row) || desk.row < 0 || desk.row >= (layout.rows ?? 0)
       || !Number.isInteger(desk.column) || desk.column < 0 || desk.column >= (layout.columns ?? 0)
-      || !Array.isArray(desk.seats) || desk.seats.length < 1 || desk.seats.length > 4) return false;
+      || !Array.isArray(desk.seats) || desk.seats.length < 1 || desk.seats.length > 4
+      || (desk.removed !== undefined && typeof desk.removed !== 'boolean')) return false;
     deskIds.add(desk.id);
     for (const seat of desk.seats) {
       if (!seat || typeof seat !== 'object' || typeof seat.id !== 'string' || seatIds.has(seat.id)
+        || (desk.removed && seat.studentId !== undefined)
         || (seat.studentId !== undefined && (!Number.isFinite(seat.studentId) || studentIds.has(seat.studentId)))
         || (seat.locked !== undefined && typeof seat.locked !== 'boolean')) return false;
       seatIds.add(seat.id);
@@ -179,7 +182,7 @@ export function isClassroomLayout(value: unknown): value is ClassroomLayout {
 
 export function getClassroomLayoutStudentIds(layout: ClassroomLayout) {
   const customIds = new Set((layout.customStudents ?? []).map((student) => student.id));
-  return layout.desks.flatMap((desk) => desk.seats).flatMap((seat) => seat.studentId === undefined || customIds.has(seat.studentId) ? [] : [seat.studentId]);
+  return layout.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats).flatMap((seat) => seat.studentId === undefined || customIds.has(seat.studentId) ? [] : [seat.studentId]);
 }
 
 function copyLayout(layout: ClassroomLayout): ClassroomLayout {
@@ -202,6 +205,11 @@ function rebuildLayout(layout: ClassroomLayout, rows: number, columns: number, s
 
   desks.forEach((desk) => desk.seats.forEach((seat) => {
     const previous = oldById.get(seat.id);
+    const previousDesk = layout.desks.find((item) => item.id === desk.id);
+    if (previousDesk?.removed) {
+      desk.removed = true;
+      return;
+    }
     if (previous?.studentId !== undefined && !usedStudents.has(previous.studentId)) {
       seat.studentId = previous.studentId;
       seat.locked = previous.locked;
@@ -209,8 +217,8 @@ function rebuildLayout(layout: ClassroomLayout, rows: number, columns: number, s
     }
   }));
 
-  const displaced = oldSeats.filter((seat) => seat.studentId !== undefined && !usedStudents.has(seat.studentId));
-  const emptySeats = desks.flatMap((desk) => desk.seats).filter((seat) => seat.studentId === undefined);
+  const displaced = layout.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats).filter((seat) => seat.studentId !== undefined && !usedStudents.has(seat.studentId));
+  const emptySeats = desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats).filter((seat) => seat.studentId === undefined);
   displaced.forEach((seat, index) => {
     if (!emptySeats[index] || seat.studentId === undefined) return;
     emptySeats[index].studentId = seat.studentId;
@@ -260,7 +268,7 @@ function secureShuffle<T>(items: T[]) {
 
 function pairingKeys(layout: ClassroomLayout) {
   const pairs: string[] = [];
-  layout.desks.forEach((desk) => {
+  layout.desks.filter((desk) => !desk.removed).forEach((desk) => {
     const ids = desk.seats.flatMap((seat) => seat.studentId === undefined ? [] : [seat.studentId]).sort((a, b) => a - b);
     for (let left = 0; left < ids.length; left += 1) {
       for (let right = left + 1; right < ids.length; right += 1) pairs.push(`${ids[left]}-${ids[right]}`);
@@ -401,7 +409,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     })),
   ], [customStudents, students]);
   const studentMap = useMemo(() => new Map(seatingStudents.map((student) => [student.id, student])), [seatingStudents]);
-  const allSeats = layout.desks.flatMap((desk) => desk.seats);
+  const allSeats = layout.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats);
   const assignedIds = new Set(allSeats.flatMap((seat) => seat.studentId === undefined || !studentMap.has(seat.studentId) ? [] : [seat.studentId]));
   const unassigned = seatingStudents.filter((student) => !assignedIds.has(student.id));
   const capacity = allSeats.length;
@@ -446,12 +454,12 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     onChange({ ...next, updatedAt: new Date().toISOString() });
   };
 
-  const seatById = (seatId: string, source = layout) => source.desks.flatMap((desk) => desk.seats).find((seat) => seat.id === seatId);
+  const seatById = (seatId: string, source = layout) => source.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats).find((seat) => seat.id === seatId);
 
   const moveStudent = (studentId: number, targetSeatId?: string) => {
     if (!canManage || isBusy) return;
     const next = copyLayout(layout);
-    const seats = next.desks.flatMap((desk) => desk.seats);
+    const seats = next.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats);
     const source = seats.find((seat) => seat.studentId === studentId);
     if (source?.locked) {
       onToast('Ghế này đang được khóa. Mở khóa trước khi đổi chỗ.');
@@ -500,7 +508,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
   const changeStructure = (rows: number, columns: number, seats: number) => {
     if (!canManage || isBusy) return;
     const next = rebuildLayout(layout, rows, columns, seats);
-    const overflow = Math.max(0, assignedIds.size - next.desks.flatMap((desk) => desk.seats).length);
+    const overflow = Math.max(0, assignedIds.size - next.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats).length);
     commit(next);
     if (overflow) onToast(`${overflow} học sinh đã được đưa về danh sách chưa xếp vì thiếu ghế.`);
   };
@@ -596,11 +604,32 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     onToast(`Đã xóa ${student.name} khỏi danh sách tự nhập.`);
   };
 
+  const deleteDesk = (deskId: string) => {
+    if (!canManage || isBusy) return;
+    const desk = layout.desks.find((item) => item.id === deskId);
+    if (!desk || desk.removed) return;
+    const studentIds = new Set(desk.seats.flatMap((seat) => seat.studentId === undefined ? [] : [seat.studentId]));
+    const deskNumber = desk.row * layout.columns + desk.column + 1;
+    const studentNote = studentIds.size ? ` ${studentIds.size} học sinh ở bàn này sẽ trở về danh sách chờ.` : '';
+    if (!window.confirm(`Xóa riêng Bàn ${deskNumber}? Vị trí này sẽ được để trống.${studentNote}`)) return;
+    const next = copyLayout(layout);
+    const target = next.desks.find((item) => item.id === deskId);
+    if (!target) return;
+    target.removed = true;
+    target.seats.forEach((seat) => {
+      delete seat.studentId;
+      seat.locked = false;
+    });
+    commit(next);
+    setSelectedStudentId(null);
+    onToast(`Đã xóa riêng Bàn ${deskNumber}.${studentIds.size ? ` ${studentIds.size} học sinh đã về danh sách chờ.` : ''}`);
+  };
+
   const changeDeskSeats = (deskId: string, amount: number) => {
     if (!canManage || isBusy) return;
     const next = copyLayout(layout);
     const desk = next.desks.find((item) => item.id === deskId);
-    if (!desk) return;
+    if (!desk || desk.removed) return;
     const nextCount = clamp(desk.seats.length + amount, 1, 4);
     if (nextCount === desk.seats.length) return;
     if (nextCount > desk.seats.length) {
@@ -614,7 +643,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
   const fillInOrder = () => {
     if (!canManage || isBusy) return;
     const next = copyLayout(layout);
-    const seats = next.desks.flatMap((desk) => desk.seats);
+    const seats = next.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats);
     const lockedIds = new Set(seats.filter((seat) => seat.locked && seat.studentId !== undefined).map((seat) => seat.studentId as number));
     seats.forEach((seat) => { if (!seat.locked) delete seat.studentId; });
     const targets = seats.filter((seat) => !seat.locked);
@@ -659,7 +688,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
 
   const buildRandomLayout = () => {
     const base = copyLayout(layout);
-    const seats = base.desks.flatMap((desk) => desk.seats);
+    const seats = base.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats);
     const fixedIds = new Set<number>();
     if (keepLocked) seats.forEach((seat) => { if (seat.locked && seat.studentId !== undefined && studentMap.has(seat.studentId)) fixedIds.add(seat.studentId); });
     const eligible = seatingStudents.filter((student) => (!excludeAbsent || student.attendance !== 'absent') && !fixedIds.has(student.id));
@@ -675,7 +704,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     const attempts = avoidPrevious && previous.size ? 45 : 1;
     for (let attempt = 0; attempt < attempts; attempt += 1) {
       const candidate = copyLayout(base);
-      const candidateTargets = candidate.desks.flatMap((desk) => desk.seats).filter((seat) => !(keepLocked && seat.locked));
+      const candidateTargets = candidate.desks.filter((desk) => !desk.removed).flatMap((desk) => desk.seats).filter((seat) => !(keepLocked && seat.locked));
       const shuffled = secureShuffle(eligible.map((student) => student.id));
       candidateTargets.forEach((seat, index) => { if (shuffled[index] !== undefined) seat.studentId = shuffled[index]; });
       const score = pairingKeys(candidate).filter((pair) => previous.has(pair)).length;
@@ -755,6 +784,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
   const buildPrintHtml = () => {
     const desksHtml = displayedDesks.map((desk) => {
       const deskNumber = desk.row * layout.columns + desk.column + 1;
+      if (desk.removed) return '<div class="desk removed" aria-hidden="true"></div>';
       return `<article class="desk"><header><span>BÀN ${deskNumber}</span><small>${desk.seats.length} chỗ</small></header><div class="seats seats-${desk.seats.length}">${desk.seats.map((seat) => {
       const student = seat.studentId === undefined ? undefined : studentMap.get(seat.studentId);
       return `<div class="seat ${student ? 'filled' : ''}"><b>${student ? escapeHtml(initials(student.name)) : '—'}</b><span>${student ? escapeHtml(student.name) : 'Ghế trống'}</span>${student ? `<small>${student.isCustom ? 'Tên tự nhập' : `Tổ ${student.team}`}</small>` : ''}</div>`;
@@ -764,7 +794,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
       ? `<section class="grid">${desksHtml}</section><div class="teacher">BÀN GIÁO VIÊN · ${escapeHtml(teacherName)}</div><div class="board">BẢNG LỚP</div>`
       : `<div class="board">BẢNG LỚP</div><div class="teacher">BÀN GIÁO VIÊN · ${escapeHtml(teacherName)}</div><section class="grid">${desksHtml}</section>`;
     return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>Sơ đồ lớp ${escapeHtml(classCode)}</title><style>
-      @page{size:A4 landscape;margin:9mm}*{box-sizing:border-box}body{margin:0;color:#33233b;font-family:Arial,'Segoe UI',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sheet{min-height:185mm;padding:7mm;border:2px solid #ead9f4;border-radius:20px;background:linear-gradient(145deg,#fff 0%,#fff9fd 58%,#f7f0ff 100%)}.top{text-align:center}.top h1{margin:0;color:#762e95;font-size:24px}.top p{margin:4px 0 10px;color:#775d7f;font-size:11px}.board{width:58%;margin:0 auto 6px;padding:7px;color:#fff;border:5px solid #c98c4e;border-radius:9px;background:linear-gradient(#337565,#1f5a50);box-shadow:0 4px 0 #87522d;font-size:15px;font-weight:800;letter-spacing:2px}.teacher{width:38%;margin:0 auto 8mm;padding:6px;text-align:center;color:#fff;border:3px solid #a16734;border-radius:8px;background:linear-gradient(145deg,#b97841,#794329);font-size:10px;font-weight:800}.teacher-view .teacher{margin:8mm auto 2mm}.teacher-view .board{margin-bottom:0}.grid{display:grid;grid-template-columns:repeat(${layout.columns},minmax(0,1fr));gap:6mm 7mm;align-items:start}.desk{padding:4px;border:2px solid #b77a3c;border-radius:10px;background:linear-gradient(145deg,#efc989,#dba863);box-shadow:0 3px 0 #8c572c}.desk header{display:flex;justify-content:space-between;margin-bottom:3px;color:#6d3e1e;font-size:8px;font-weight:900}.seats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.seats-1{grid-template-columns:1fr}.seat{min-height:36px;display:grid;grid-template-columns:26px 1fr;grid-template-rows:1fr 1fr;align-items:center;padding:3px;border:1px dashed #d5b58a;border-radius:6px;background:rgba(255,255,255,.62);font-size:8.5px}.seat b{grid-row:1/3;width:23px;height:23px;display:grid;place-items:center;border-radius:50%;color:#fff;background:linear-gradient(145deg,#9c5be3,#e75daf)}.seat span{font-weight:800;line-height:1.1}.seat small{color:#725b77;font-size:7px;font-weight:700}.footer{display:flex;justify-content:space-between;margin-top:4mm;color:#79677d;font-size:8px}@media print{.sheet{break-inside:avoid}}
+      @page{size:A4 landscape;margin:9mm}*{box-sizing:border-box}body{margin:0;color:#33233b;font-family:Arial,'Segoe UI',sans-serif;-webkit-print-color-adjust:exact;print-color-adjust:exact}.sheet{min-height:185mm;padding:7mm;border:2px solid #ead9f4;border-radius:20px;background:linear-gradient(145deg,#fff 0%,#fff9fd 58%,#f7f0ff 100%)}.top{text-align:center}.top h1{margin:0;color:#762e95;font-size:24px}.top p{margin:4px 0 10px;color:#775d7f;font-size:11px}.board{width:58%;margin:0 auto 6px;padding:7px;color:#fff;border:5px solid #c98c4e;border-radius:9px;background:linear-gradient(#337565,#1f5a50);box-shadow:0 4px 0 #87522d;font-size:15px;font-weight:800;letter-spacing:2px}.teacher{width:38%;margin:0 auto 8mm;padding:6px;text-align:center;color:#fff;border:3px solid #a16734;border-radius:8px;background:linear-gradient(145deg,#b97841,#794329);font-size:10px;font-weight:800}.teacher-view .teacher{margin:8mm auto 2mm}.teacher-view .board{margin-bottom:0}.grid{display:grid;grid-template-columns:repeat(${layout.columns},minmax(0,1fr));gap:6mm 7mm;align-items:start}.desk{padding:4px;border:2px solid #b77a3c;border-radius:10px;background:linear-gradient(145deg,#efc989,#dba863);box-shadow:0 3px 0 #8c572c}.desk.removed{visibility:hidden;min-height:56px}.desk header{display:flex;justify-content:space-between;margin-bottom:3px;color:#6d3e1e;font-size:8px;font-weight:900}.seats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:3px}.seats-1{grid-template-columns:1fr}.seat{min-height:36px;display:grid;grid-template-columns:26px 1fr;grid-template-rows:1fr 1fr;align-items:center;padding:3px;border:1px dashed #d5b58a;border-radius:6px;background:rgba(255,255,255,.62);font-size:8.5px}.seat b{grid-row:1/3;width:23px;height:23px;display:grid;place-items:center;border-radius:50%;color:#fff;background:linear-gradient(145deg,#9c5be3,#e75daf)}.seat span{font-weight:800;line-height:1.1}.seat small{color:#725b77;font-size:7px;font-weight:700}.footer{display:flex;justify-content:space-between;margin-top:4mm;color:#79677d;font-size:8px}@media print{.sheet{break-inside:avoid}}
     </style></head><body class="${isTeacherView ? 'teacher-view' : ''}"><main class="sheet"><div class="top"><h1>SƠ ĐỒ LỚP ${escapeHtml(classCode)}</h1><p>${escapeHtml(className)} · Năm học ${escapeHtml(schoolYear)} · GVCN: ${escapeHtml(teacherName)} · ${isTeacherView ? 'Góc nhìn giáo viên' : 'Góc nhìn học sinh'}</p></div>${classroomContent}<footer class="footer"><span>${assignedIds.size}/${capacity} vị trí đã xếp</span><span>Cập nhật: ${new Intl.DateTimeFormat('vi-VN').format(new Date(layout.updatedAt))}</span></footer></main></body></html>`;
   };
 
@@ -823,6 +853,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     if (!isTeacherView) drawBoard(138);
     const deskWidth = (width - margin * 2 - gapX * (layout.columns - 1)) / layout.columns;
     layout.desks.forEach((desk, deskIndex) => {
+      if (desk.removed) return;
       const x = margin + desk.column * (deskWidth + gapX);
       const visualRow = isTeacherView ? layout.rows - desk.row - 1 : desk.row;
       const y = gridStartY + visualRow * (deskHeight + gapY);
@@ -940,13 +971,14 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
             <div className="seating-room-scroll">
               <div className="seating-desk-grid" style={{ '--seating-columns': layout.columns } as CSSProperties}>
                 {displayedDesks.map((desk) => (
-                  <article className={`seating-desk seats-${desk.seats.length} ${shufflePhase === 'revealing' && revealedDeskIds.has(desk.id) ? 'is-revealed' : ''}`} key={desk.id}>
-                    <div className="seating-chair-row" aria-hidden="true">{desk.seats.map((seat) => <i key={seat.id} />)}</div>
-                    <header><span>Bàn {desk.row * layout.columns + desk.column + 1}</span>{canManage && !isBusy && <div><button type="button" disabled={desk.seats.length <= 1} onClick={() => changeDeskSeats(desk.id, -1)} title="Bớt một ghế"><Minus size={12} /></button><small>{desk.seats.length} chỗ</small><button type="button" disabled={desk.seats.length >= 4} onClick={() => changeDeskSeats(desk.id, 1)} title="Thêm một ghế"><Plus size={12} /></button></div>}</header>
-                    <div className="seating-desk-surface">
-                      {desk.seats.map((seat) => <SeatCard key={seat.id} seat={seat} student={seat.studentId === undefined ? undefined : studentMap.get(seat.studentId)} selected={selectedStudentId === seat.studentId} canManage={canManage && !isBusy} hidden={shufflePhase === 'revealing' && !revealedDeskIds.has(desk.id)} onSelect={() => selectSeat(seat)} onToggleLock={(event) => { event.stopPropagation(); toggleSeatLock(seat.id); }} />)}
-                    </div>
-                  </article>
+                  desk.removed ? <div className="seating-desk-removed" key={desk.id} aria-label={`Vị trí Bàn ${desk.row * layout.columns + desk.column + 1} đã xóa`} /> :
+                    <article className={`seating-desk seats-${desk.seats.length} ${shufflePhase === 'revealing' && revealedDeskIds.has(desk.id) ? 'is-revealed' : ''}`} key={desk.id}>
+                      <div className="seating-chair-row" aria-hidden="true">{desk.seats.map((seat) => <i key={seat.id} />)}</div>
+                      <header><span>Bàn {desk.row * layout.columns + desk.column + 1}</span>{canManage && !isBusy && <div><button type="button" disabled={desk.seats.length <= 1} onClick={() => changeDeskSeats(desk.id, -1)} title="Bớt một ghế"><Minus size={12} /></button><small>{desk.seats.length} chỗ</small><button type="button" disabled={desk.seats.length >= 4} onClick={() => changeDeskSeats(desk.id, 1)} title="Thêm một ghế"><Plus size={12} /></button><button className="seating-delete-desk" type="button" onClick={() => deleteDesk(desk.id)} title={`Xóa riêng Bàn ${desk.row * layout.columns + desk.column + 1}`} aria-label={`Xóa riêng Bàn ${desk.row * layout.columns + desk.column + 1}`}><Trash2 size={12} /></button></div>}</header>
+                      <div className="seating-desk-surface">
+                        {desk.seats.map((seat) => <SeatCard key={seat.id} seat={seat} student={seat.studentId === undefined ? undefined : studentMap.get(seat.studentId)} selected={selectedStudentId === seat.studentId} canManage={canManage && !isBusy} hidden={shufflePhase === 'revealing' && !revealedDeskIds.has(desk.id)} onSelect={() => selectSeat(seat)} onToggleLock={(event) => { event.stopPropagation(); toggleSeatLock(seat.id); }} />)}
+                      </div>
+                    </article>
                 ))}
               </div>
             </div>
