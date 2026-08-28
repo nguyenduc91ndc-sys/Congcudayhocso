@@ -167,6 +167,16 @@ type ClassBackup = {
 
 const DEFAULT_TEAM_COUNT = 4;
 const MAX_TEAM_COUNT = 30;
+const LOCAL_DATA_NOTICE_KEY = 'happy-class-local-data-notice-v1';
+
+function shouldShowLocalDataNotice() {
+  try {
+    return localStorage.getItem(LOCAL_DATA_NOTICE_KEY) !== 'acknowledged';
+  } catch {
+    return true;
+  }
+}
+
 const normalizeTeamCount = (value: unknown) => {
   const count = Number(value);
   return Number.isInteger(count) && count >= 1 && count <= MAX_TEAM_COUNT ? count : DEFAULT_TEAM_COUNT;
@@ -832,6 +842,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [classSettingsOpen, setClassSettingsOpen] = useState(false);
   const [teacherAccessOpen, setTeacherAccessOpen] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const [privacyOpen, setPrivacyOpen] = useState(() => !parentPortalEntry && shouldShowLocalDataNotice());
   const [cloudPublishing, setCloudPublishing] = useState(false);
   const tabHoverAudioContextRef = useRef<AudioContext | null>(null);
   const lastTabHoverSoundAtRef = useRef(0);
@@ -1160,7 +1171,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       setStudents((current) => [...current, ...normalized]);
     }
     const skipped = incoming.length - normalized.length;
-    setToast(`Đã nhập ${normalized.length} học sinh${skipped ? `, bỏ qua ${skipped} dòng trùng hoặc vượt giới hạn` : ''}`);
+    setToast(`Đã nhập ${normalized.length} học sinh${skipped ? `, bỏ qua ${skipped} dòng trùng hoặc vượt giới hạn` : ''}. Hãy sao lưu dữ liệu xuống máy.`);
     return { imported: normalized.length, skipped };
   };
 
@@ -1244,8 +1255,8 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       setToast(`Đang kiểm tra bản sao ${file.name}...`);
       if (file.size > 25 * 1024 * 1024) throw new Error('Bản sao quá lớn. Vui lòng chọn tệp dưới 25 MB.');
       const backup = parseClassBackup(await file.text());
-      if (!window.confirm(`Nhập bản sao của lớp ${backup.classProfile.code}? Dữ liệu hiện tại sẽ được thay thế.`)) {
-        setToast('Đã hủy nhập bản sao. Dữ liệu hiện tại được giữ nguyên.');
+      if (!window.confirm(`Khôi phục bản sao của lớp ${backup.classProfile.code}? Dữ liệu hiện tại trên thiết bị này sẽ được thay thế.`)) {
+        setToast('Đã hủy khôi phục. Dữ liệu hiện tại được giữ nguyên.');
         return;
       }
       const normalizedProfile = {
@@ -1285,6 +1296,40 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       setToast(message);
       window.alert(`Không thể nhập “${file.name}”.\n\n${message}`);
     }
+  };
+
+  const exportBackup = () => {
+    const content = JSON.stringify({
+      version: 1,
+      exportedAt: new Date().toISOString(),
+      teacher: { name: teacherName, photo: teacherPhoto },
+      classProfile,
+      students,
+      activities,
+      pointReasons,
+      rewards: rewardCatalog,
+      parentPortal,
+      weekState,
+      weeklyScoring,
+      attendanceHistory,
+      classroomLayout,
+    }, null, 2);
+    const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `sao-luu-lop-${classProfile.code.replace(/[^a-z0-9-]+/gi, '-')}-${new Date().toISOString().slice(0, 10)}.json`;
+    link.click();
+    URL.revokeObjectURL(url);
+    setToast('Đã tải bản sao dữ liệu xuống máy. Hãy giữ tệp ở nơi an toàn.');
+  };
+
+  const acknowledgeLocalDataNotice = () => {
+    try {
+      localStorage.setItem(LOCAL_DATA_NOTICE_KEY, 'acknowledged');
+    } catch {
+      // Trình duyệt có thể chặn lưu trữ; vẫn cho phép đóng thông báo trong phiên hiện tại.
+    }
+    setPrivacyOpen(false);
   };
 
   const addPoints = (studentIds: number[], points: number, reason: string) => {
@@ -1739,7 +1784,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'honors' && <HonorsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} />}
           {page === 'parents' && <ParentsPage students={students} activities={activities} classCode={classProfile.code} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} portal={parentPortal} publishing={cloudPublishing} onPublish={publishParentPortal} onTogglePortal={() => void toggleParentPortal()} onToggleRequireAccessCode={toggleParentAccessMode} onRegenerateCode={regenerateParentCode} onToggleAccess={toggleParentAccess} onSaveFeedbackConfig={saveParentFeedbackConfig} onToast={setToast} />}
-          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} rewards={rewardCatalog} parentPortal={parentPortal} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} classroomLayout={classroomLayout} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onImport={importBackup} onRestore={restoreSampleData} />}
+          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onExport={exportBackup} onImport={importBackup} onOpenPrivacy={() => setPrivacyOpen(true)} onRestore={restoreSampleData} />}
         </div>
       </main>
 
@@ -1748,6 +1793,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       {classSettingsOpen && <ClassSettings classProfile={classProfile} onSave={saveClassProfile} onClose={() => setClassSettingsOpen(false)} />}
       {teacherAccessOpen && <TeacherAccess teacherName={teacherName} googleAvailable={canUseFirebaseOnline()} onGoogleLogin={loginFirebaseTeacher} onSuccess={finishTeacherLogin} onClose={() => setTeacherAccessOpen(false)} />}
       {helpOpen && <HelpCenter isTeacher={isTeacher} onNavigate={navigate} onTeacherLogin={() => { setHelpOpen(false); setTeacherAccessOpen(true); }} onClose={() => setHelpOpen(false)} />}
+      {privacyOpen && <LocalDataNotice canBackup={isTeacher} onBackup={exportBackup} onClose={acknowledgeLocalDataNotice} />}
       {selectedProfile && (
         <StudentProfile
           student={selectedProfile}
@@ -1911,7 +1957,8 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
 
             <aside className="help-faq">
               <div className="help-section-title"><div><span>CÂU HỎI THƯỜNG GẶP</span><h3>Cần biết trước khi dùng</h3></div></div>
-              <details open><summary>Dữ liệu được lưu ở đâu?</summary><p>Danh sách đầy đủ, vòng quay và lịch sử quản lý lưu trong trình duyệt trên máy. Chỉ hồ sơ tối giản đã bấm “Cập nhật chia sẻ” mới được đưa lên Firebase cho phụ huynh; hãy xuất bản sao JSON định kỳ.</p></details>
+              <details open><summary>Dữ liệu được lưu ở đâu?</summary><p>Danh sách đầy đủ, vòng quay và lịch sử quản lý chỉ lưu trong trình duyệt trên thiết bị đang dùng; người làm ứng dụng không tự nhận được các dữ liệu này. Chỉ hồ sơ tối giản đã bấm “Cập nhật chia sẻ” mới được đưa lên Firebase cho phụ huynh.</p></details>
+              <details><summary>Vì sao danh sách có thể bị mất?</summary><p>Dữ liệu có thể mất khi xóa dữ liệu trang web, dùng chế độ ẩn danh, đổi trình duyệt, đổi hồ sơ người dùng, cài lại ứng dụng hoặc đổi thiết bị. Hãy sao lưu xuống máy sau mỗi lần cập nhật lớn.</p></details>
               <details><summary>Điểm tuần và điểm tích lũy khác nhau thế nào?</summary><p>Điểm tuần dùng cho thi đua và vinh danh trong tuần hiện tại. Khi chốt tuần, điểm tuần về 0 nhưng điểm tích lũy vẫn được giữ nguyên.</p></details>
               <details><summary>Vì sao không thấy nút thêm học sinh?</summary><p>Thêm, sửa, xóa và nhập Excel chỉ xuất hiện sau khi đăng nhập tài khoản giáo viên.</p></details>
               <details><summary>Excel cần có những cột nào?</summary><p>Bắt buộc điền đủ “Họ và tên”, “Ngày sinh”, “Họ tên phụ huynh” và “SĐT phụ huynh”. Các cột giới tính, mã định danh, tổ, vai trò, điểm và mã tra cứu có thể để trống.</p></details>
@@ -1921,6 +1968,36 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
         </div>
 
         <footer className="help-footer"><span>💡 Mẹo: xuất bản sao sau mỗi lần cập nhật danh sách lớn.</span><button onClick={onClose}><Check size={17} /> Đã hiểu</button></footer>
+      </section>
+    </div>
+  );
+}
+
+function LocalDataNotice({ canBackup, onBackup, onClose }: { canBackup: boolean; onBackup: () => void; onClose: () => void }) {
+  const backupAndClose = () => {
+    onBackup();
+    onClose();
+  };
+
+  return (
+    <div className="settings-backdrop local-data-backdrop" role="presentation">
+      <section className="local-data-card" role="dialog" aria-modal="true" aria-labelledby="local-data-title">
+        <div className="local-data-icon"><ShieldCheck size={42} /></div>
+        <span className="local-data-eyebrow">QUYỀN RIÊNG TƯ VÀ AN TOÀN DỮ LIỆU</span>
+        <h2 id="local-data-title">Danh sách lớp được lưu trên thiết bị của thầy cô</h2>
+        <p className="local-data-lead">Ứng dụng không tự thu thập hoặc tự tải danh sách lớp đầy đủ lên máy chủ. Dữ liệu quản lý lớp được lưu trong trình duyệt đang sử dụng trên thiết bị này.</p>
+
+        <div className="local-data-facts">
+          <div><span>✓</span><p><strong>Không tự động gửi đi</strong>Người làm ứng dụng không tự nhận được danh sách, điểm, ảnh và lịch sử quản lý lớp.</p></div>
+          <div><span>✓</span><p><strong>Thầy cô chủ động chia sẻ</strong>Chỉ dữ liệu tối giản cần cho phụ huynh mới được gửi lên Firebase khi thầy cô bấm “Cập nhật chia sẻ”.</p></div>
+          <div className="local-data-warning"><span>!</span><p><strong>Cần sao lưu định kỳ</strong>Dữ liệu có thể mất khi xóa dữ liệu trang web, dùng chế độ ẩn danh, đổi trình duyệt, đổi hồ sơ người dùng, cài lại ứng dụng hoặc đổi thiết bị.</p></div>
+        </div>
+
+        <p className="local-data-footnote">Dữ liệu chỉ rời thiết bị khi thầy cô chủ động xuất, chia sẻ tệp hoặc dùng chức năng Cổng phụ huynh.</p>
+        <div className="local-data-actions">
+          {canBackup && <button className="local-data-backup" onClick={backupAndClose}><Download size={18} /> Sao lưu dữ liệu ngay</button>}
+          <button className="local-data-understand" onClick={onClose}><Check size={18} /> Tôi đã hiểu</button>
+        </div>
       </section>
     </div>
   );
@@ -1948,7 +2025,7 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
   );
 }
 
-function ManagementPage({ students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, classroomLayout, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onImport, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; rewards: Reward[]; parentPortal: ParentPortalSettings; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; classroomLayout: ClassroomLayout | null; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onImport: (file: File) => Promise<void>; onRestore: () => void }) {
+function ManagementPage({ students, activities, pointReasons, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onExport, onImport, onOpenPrivacy, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onExport: () => void; onImport: (file: File) => Promise<void>; onOpenPrivacy: () => void; onRestore: () => void }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [reportExportOpen, setReportExportOpen] = useState(false);
@@ -1961,15 +2038,6 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
     weeklyScore: weeklyScoring.startingPoints, streak: 0, attendance: 'present', gradient: 'mint', parentCode: '',
     parentName: '', parentPhone: '', strengths: [],
   });
-  const exportData = () => {
-    const content = JSON.stringify({ version: 1, exportedAt: new Date().toISOString(), teacher: { name: teacherName, photo: teacherPhoto }, classProfile, students, activities, pointReasons, rewards, parentPortal, weekState, weeklyScoring, attendanceHistory, classroomLayout }, null, 2);
-    const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
-    const link = document.createElement('a');
-    link.href = url;
-    link.download = `lop-hanh-phuc-${new Date().toISOString().slice(0, 10)}.json`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
   return (
     <>
       <PageHeading eyebrow="TRUNG TÂM GIÁO VIÊN" title="Quản lý lớp học" description="Chỉnh sửa hồ sơ, dữ liệu học sinh và sao lưu thông tin của lớp tại một nơi." icon="⚙️" />
@@ -1987,9 +2055,9 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
         <article className="management-data panel">
           <div><strong>{students.length}</strong><span>học sinh</span></div>
           <div><strong>{activities.length}</strong><span>hoạt động</span></div>
-          <button className="button button-soft" onClick={exportData}><Download size={17} /> Xuất bản sao JSON</button>
+          <button className="button button-soft" onClick={onExport}><Download size={17} /> Sao lưu xuống máy</button>
           <button className="button management-import" type="button" disabled={backupImporting} onClick={() => backupInputRef.current?.click()}>
-            <Upload size={17} /> {backupImporting ? 'Đang nhập bản sao...' : 'Nhập bản sao JSON'}
+            <Upload size={17} /> {backupImporting ? 'Đang khôi phục...' : 'Khôi phục từ bản sao'}
           </button>
           <input ref={backupInputRef} className="management-import-input" type="file" accept=".json,application/json" onChange={async (event) => {
             const input = event.currentTarget;
@@ -2004,6 +2072,12 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
             }
           }} />
         </article>
+      </section>
+
+      <section className="management-privacy panel">
+        <div className="management-privacy-icon"><ShieldCheck size={27} /></div>
+        <div><span>DỮ LIỆU LƯU TRÊN THIẾT BỊ NÀY</span><h2>Ứng dụng không tự thu thập danh sách lớp</h2><p>Danh sách đầy đủ, điểm và lịch sử nằm trong trình duyệt hiện tại. Xóa dữ liệu trình duyệt hoặc đổi máy có thể làm mất dữ liệu.</p></div>
+        <div className="management-privacy-actions"><button onClick={onExport}><Download size={17} /> Sao lưu ngay</button><button onClick={onOpenPrivacy}><ShieldCheck size={17} /> Xem quyền riêng tư</button></div>
       </section>
 
       <section className="management-report-launch panel">
@@ -2024,7 +2098,7 @@ function ManagementPage({ students, activities, pointReasons, rewards, parentPor
           </div>
         </div>
         <div className="management-student-list">
-          {!students.length && <div className="management-student-empty"><span><UsersRound size={25} /></span><div><strong>Danh sách lớp đang trống</strong><p>Nhấn “Nhập từ Excel” để đưa danh sách lớp thật lên, hoặc thêm từng học sinh.</p></div><button className="button management-excel-button" onClick={() => setExcelImportOpen(true)}><Upload size={17} /> Nhập danh sách thật</button></div>}
+          {!students.length && <div className="management-student-empty"><span><UsersRound size={25} /></span><div><strong>Danh sách lớp đang trống</strong><p>Nhấn “Nhập từ Excel” để lưu danh sách lớp vào thiết bị này, hoặc thêm từng học sinh.</p></div><button className="button management-excel-button" onClick={() => setExcelImportOpen(true)}><Upload size={17} /> Nhập danh sách vào máy</button></div>}
           {students.map((student, index) => (
             <div className="management-student-row" key={student.id}>
               <span className="management-number">{String(index + 1).padStart(2, '0')}</span>
@@ -2268,6 +2342,7 @@ function ExcelStudentImport({ currentStudents, onImport, onClose }: { currentStu
             <button className="excel-template-button" onClick={downloadStudentTemplate}><Download size={18} /> Tải file mẫu</button>
           </div>
           <p className="excel-required-note"><strong>Bắt buộc:</strong> Họ và tên · Ngày sinh · Họ tên phụ huynh · SĐT phụ huynh</p>
+          <p className="excel-local-note"><ShieldCheck size={18} /><span><strong>Tệp được xử lý ngay trên thiết bị này.</strong> Danh sách sau khi nhập được lưu trong trình duyệt, không tự động tải lên máy chủ. Hãy sao lưu sau khi nhập xong.</span></p>
 
           {error && <div className="excel-error" role="alert">{error}</div>}
           {result && (

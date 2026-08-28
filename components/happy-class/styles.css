@@ -2214,6 +2214,40 @@ body {
   backdrop-filter: blur(7px);
   animation: fadeIn .2s ease;
 }
+.local-data-backdrop { z-index: 360; overflow-y: auto; }
+.local-data-card { width: min(650px,100%); max-height: calc(100vh - 40px); overflow-y: auto; padding: 28px 30px 25px; border: 5px solid #ffd75d; border-radius: 32px 32px 40px 27px; color: #4e3851; background: radial-gradient(circle at 88% 4%,rgba(255,210,76,.25),transparent 27%),linear-gradient(145deg,#fffef5,#f0fff8 58%,#f5efff); box-shadow: 0 10px 0 #d77c25,0 18px 0 #4a8f78,0 34px 70px rgba(35,51,48,.43),inset 0 3px 2px white; animation: settingsPop .3s cubic-bezier(.17,.89,.32,1.2); text-align: center; }
+.local-data-icon { width: 82px; height: 78px; margin: 0 auto 15px; display: grid; place-items: center; border: 5px solid #d7f4e8; border-radius: 27px 27px 33px 22px; color: white; background: linear-gradient(145deg,#61cfa4,#268568); box-shadow: 0 7px 0 #1e6751,0 14px 23px rgba(32,113,85,.2); transform: rotate(-2deg); }
+.local-data-eyebrow { color: #278065; font-size: 11px; font-weight: 900; letter-spacing: 1.2px; }
+.local-data-card h2 { max-width: 540px; margin: 7px auto 9px; color: #3f5d55; font-size: clamp(22px,4vw,29px); font-weight: 900; line-height: 1.18; }
+.local-data-lead { max-width: 560px; margin: 0 auto; color: #53655f; font-size: 13.5px; font-weight: 750; line-height: 1.65; }
+.local-data-facts { margin-top: 18px; display: grid; gap: 9px; text-align: left; }
+.local-data-facts > div { padding: 12px 13px; display: grid; grid-template-columns: 30px 1fr; align-items: start; gap: 10px; border: 2px solid #b8e4d4; border-radius: 16px; background: rgba(255,255,255,.82); }
+.local-data-facts > div > span { width: 28px; height: 28px; display: grid; place-items: center; border-radius: 10px; color: white; background: #35a77d; font-size: 16px; font-weight: 900; }
+.local-data-facts p { margin: 0; color: #56625e; font-size: 11.5px; font-weight: 700; line-height: 1.5; }
+.local-data-facts strong { display: block; margin-bottom: 2px; color: #315e51; font-size: 12.5px; font-weight: 900; }
+.local-data-facts > .local-data-warning { border-color: #ecd08b; background: #fff9df; }
+.local-data-facts > .local-data-warning > span { color: #755220; background: #ffc84e; }
+.local-data-facts > .local-data-warning strong { color: #7d5a27; }
+.local-data-footnote { margin: 13px 4px 0; color: #715e73; font-size: 10.5px; font-weight: 750; line-height: 1.5; }
+.local-data-actions { margin-top: 19px; display: flex; justify-content: center; gap: 11px; }
+.local-data-actions button { min-height: 47px; padding: 0 18px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 3px solid #bce8d7; border-radius: 16px; font-size: 12px; font-weight: 900; }
+.local-data-backup { color: #315f53; background: white; box-shadow: 0 5px 0 #a7d3c2; }
+.local-data-understand { color: white; border-color: #ffe17b!important; background: linear-gradient(#61c99a,#31986f); box-shadow: 0 5px 0 #216e50; }
+@media (max-width: 620px) {
+  .local-data-backdrop { padding: 9px; }
+  .local-data-card { max-height: calc(100vh - 18px); padding: 20px 14px 17px; border-radius: 24px; }
+  .local-data-icon { width: 65px; height: 62px; margin-bottom: 11px; border-radius: 21px; }
+  .local-data-icon svg { width: 34px; }
+  .local-data-eyebrow { font-size: 9px; }
+  .local-data-card h2 { margin-top: 5px; font-size: 21px; }
+  .local-data-lead { font-size: 12px; line-height: 1.55; }
+  .local-data-facts { margin-top: 13px; }
+  .local-data-facts > div { padding: 10px; grid-template-columns: 27px 1fr; gap: 8px; }
+  .local-data-facts > div > span { width: 26px; height: 26px; }
+  .local-data-facts p { font-size: 10.5px; }
+  .local-data-actions { display: grid; grid-template-columns: 1fr; }
+  .local-data-actions button { width: 100%; }
+}
 .teacher-settings-card,
 .class-settings-card {
   width: min(510px,100%);
@@ -2397,6 +2431,15 @@ body {
 .management-data > .button { width: 100%; min-height: 36px; grid-column: 1/-1; padding-inline: 8px; font-size: 7.5px; white-space: nowrap; }
 .management-data > .management-import { position: relative; width: 100%; min-height: 36px; grid-column: 1/-1; padding-inline: 8px; justify-content: center; color: white; background: linear-gradient(#70c98d,#349a69); box-shadow: 0 6px 0 #25724e,0 12px 19px rgba(46,126,82,.2); font-size: 7.5px; white-space: nowrap; cursor: pointer; }
 .management-import-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); clip-path: inset(50%); white-space: nowrap; }
+.management-privacy { margin-bottom: 17px; padding: 18px 20px; display: grid; grid-template-columns: auto minmax(0,1fr) auto; align-items: center; gap: 15px; border-color: #a8dfcd!important; background: linear-gradient(135deg,#effbf6,#fffdf3 58%,#f2edff)!important; }
+.management-privacy-icon { width: 54px; height: 54px; display: grid; place-items: center; border: 3px solid #d5f4e8; border-radius: 18px; color: white; background: linear-gradient(145deg,#55c79a,#27896b); box-shadow: 0 5px 0 #1f6d55; }
+.management-privacy > div:nth-child(2) { min-width: 0; }
+.management-privacy span { color: #2d8067; font-size: 10px; font-weight: 900; letter-spacing: 1px; }
+.management-privacy h2 { margin: 3px 0; color: #315f54; font-size: 16px; font-weight: 900; }
+.management-privacy p { margin: 0; color: #566963; font-size: 11px; font-weight: 700; line-height: 1.5; }
+.management-privacy-actions { display: flex; align-items: center; gap: 9px; }
+.management-privacy-actions button { min-height: 42px; padding: 0 13px; display: inline-flex; align-items: center; justify-content: center; gap: 7px; border: 3px solid #bce8d7; border-radius: 15px; color: white; background: linear-gradient(#5fc99c,#31986f); box-shadow: 0 5px 0 #216e50; font-size: 11px; font-weight: 900; white-space: nowrap; }
+.management-privacy-actions button:last-child { color: #67436c; border-color: #e2c9e3; background: white; box-shadow: 0 5px 0 #ccb2ce; }
 .management-class { min-height: 132px; padding: 18px; display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 10px; }
 .management-class-icon { width: 51px; height: 51px; display: grid; place-items: center; border: 4px solid #fff0a0; border-radius: 17px 17px 21px 13px; color: #833968; background: linear-gradient(145deg,#fff38b,#ffad29); box-shadow: 0 5px 0 #b45b20,0 10px 16px rgba(82,31,82,.2); font-size: 12px; font-weight: 900; }
 .management-class > div:nth-child(2) { min-width: 0; }
@@ -2469,6 +2512,8 @@ body {
   .management-delete { grid-column: 4; }
   .management-danger { align-items: stretch; flex-direction: column; }
   .management-danger button { justify-content: center; }
+  .management-privacy { grid-template-columns: auto 1fr; padding: 16px; }
+  .management-privacy-actions { grid-column: 1/-1; display: grid; grid-template-columns: 1fr; }
   .student-editor-backdrop { padding: 8px; }
   .student-editor-card { max-height: calc(100vh - 16px); padding-inline: 15px; }
   .student-editor-head { margin-inline: -15px; }
@@ -2612,6 +2657,7 @@ body {
 .excel-import-head > button { width: 40px; height: 40px; display: grid; place-items: center; flex: none; border: 3px solid #ffe079; border-radius: 14px; color: #77346e; background: linear-gradient(#fffbd0,#ffc847); box-shadow: 0 4px 0 #a64739; }
 .excel-import-body { padding: 20px 22px 6px; }.excel-upload-row { display: grid; grid-template-columns: 1fr auto; align-items: stretch; gap: 12px; }
 .excel-required-note { margin: 12px 0 0; padding: 10px 13px; border: 2px solid #f0d18a; border-radius: 13px; color: #705327; background: #fff9dd; font-size: 12px; font-weight: 750; line-height: 1.5; }.excel-required-note strong { color: #a44162; font-weight: 900; }
+.excel-local-note { margin: 10px 0 0; padding: 11px 13px; display: flex; align-items: flex-start; gap: 9px; border: 2px solid #a9dfcc; border-radius: 13px; color: #3c6257; background: #effaf5; font-size: 11px; font-weight: 700; line-height: 1.5; }.excel-local-note > svg { flex: none; margin-top: 1px; color: #268260; }.excel-local-note strong { display: block; color: #246a53; font-weight: 900; }
 .excel-file-picker { min-height: 68px; display: flex; align-items: center; gap: 13px; padding: 12px 15px; border: 3px dashed #b997d0; border-radius: 19px; color: #703879; background: rgba(255,255,255,.78); cursor: pointer; transition: .18s ease; }.excel-file-picker:hover { border-color: #a644ac; background: white; }.excel-file-picker > svg { width: 43px; height: 43px; padding: 10px; flex: none; border-radius: 14px; color: white; background: linear-gradient(145deg,#69c9ef,#9751cc); box-shadow: 0 4px 0 #63318c; }.excel-file-picker > span { min-width: 0; display: flex; flex-direction: column; gap: 4px; }.excel-file-picker strong { overflow: hidden; font-size: 13px; text-overflow: ellipsis; white-space: nowrap; }.excel-file-picker small { color: #6c606e; font-size: 10px; font-weight: 700; }.excel-file-picker input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
 .excel-template-button { min-width: 150px; padding: 0 16px; display: flex; align-items: center; justify-content: center; gap: 7px; border: 3px solid #ffe17b; border-radius: 18px; color: #743a6e; background: linear-gradient(#fff8bd,#ffc94d); box-shadow: 0 5px 0 #b45f2a; font-size: 11px; font-weight: 900; }
 .excel-error,.excel-note { margin: 13px 0 0; padding: 11px 13px; border: 2px solid #efbdc5; border-radius: 13px; color: #a83c50; background: #fff0f2; font-size: 10.5px; font-weight: 800; line-height: 1.5; }.excel-note { border-color: #eed69a; color: #765b31; background: #fff9df; }
