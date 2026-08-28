@@ -1316,11 +1316,12 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     }, null, 2);
     const url = URL.createObjectURL(new Blob([content], { type: 'application/json' }));
     const link = document.createElement('a');
+    const fileName = `sao-luu-lop-${classProfile.code.replace(/[^a-z0-9-]+/gi, '-')}-${new Date().toISOString().slice(0, 10)}.json`;
     link.href = url;
-    link.download = `sao-luu-lop-${classProfile.code.replace(/[^a-z0-9-]+/gi, '-')}-${new Date().toISOString().slice(0, 10)}.json`;
+    link.download = fileName;
     link.click();
-    URL.revokeObjectURL(url);
-    setToast('Đã tải bản sao dữ liệu xuống máy. Hãy giữ tệp ở nơi an toàn.');
+    window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+    setToast(`Đã tải tệp “${fileName}” xuống máy. Hãy giữ tệp ở nơi an toàn.`);
   };
 
   const acknowledgeLocalDataNotice = () => {
@@ -1556,7 +1557,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setStudents((current) => current.map((student) => student.id === studentId
       ? { ...student, parentCode: nextCode, parentAccessEnabled: true }
       : student));
-    setToast('Đã tạo mã mới. Bấm “Cập nhật chia sẻ” để thu hồi mã cũ trên Firebase.');
+    setToast('Đã tạo mã mới. Bấm “Cập nhật chia sẻ” để thu hồi mã cũ trên hệ thống chia sẻ.');
   };
 
   const toggleParentAccess = (studentId: number) => {
@@ -1568,7 +1569,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
 
   const publishParentPortal = async () => {
     if (!canUseFirebaseOnline()) {
-      setToast('Cần mở bản web để cập nhật liên kết phụ huynh lên Firebase. Dữ liệu local vẫn được giữ nguyên.');
+      setToast('Cần mở bản web để cập nhật liên kết phụ huynh lên hệ thống chia sẻ. Dữ liệu trên thiết bị vẫn được giữ nguyên.');
       return;
     }
     setCloudPublishing(true);
@@ -1588,10 +1589,10 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       });
       setParentPortal((current) => ({ ...current, lastPublishedAt: result.publishedAt }));
       setToast(result.changed || result.removed
-        ? `Đã cập nhật ${result.changed} hồ sơ, thu hồi ${result.removed} liên kết cũ trên Firebase`
+        ? `Đã cập nhật ${result.changed} hồ sơ, thu hồi ${result.removed} liên kết cũ trên hệ thống chia sẻ`
         : `Dữ liệu phụ huynh đã mới nhất; không ghi lại ${result.total} hồ sơ không đổi`);
     } catch {
-      setToast('Chưa thể cập nhật Firebase. Hãy kiểm tra quy tắc Firestore và kết nối Internet.');
+      setToast('Chưa thể cập nhật kho dữ liệu chia sẻ. Hãy kiểm tra kết nối Internet rồi thử lại.');
     } finally {
       setCloudPublishing(false);
     }
@@ -1601,14 +1602,14 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     const enabled = !parentPortal.enabled;
     setParentPortal((current) => ({ ...current, enabled }));
     if (!canUseFirebaseOnline() || !getFirebaseTeacher() || !parentPortal.lastPublishedAt) {
-      setToast(enabled ? 'Đã mở cổng trên thiết bị; bấm Cập nhật chia sẻ để đưa lên Firebase.' : 'Đã tạm dừng trên thiết bị; bấm Cập nhật chia sẻ để áp dụng lên Firebase.');
+      setToast(enabled ? 'Đã mở cổng trên thiết bị; bấm Cập nhật chia sẻ để đồng bộ trực tuyến.' : 'Đã tạm dừng trên thiết bị; bấm Cập nhật chia sẻ để đồng bộ thay đổi.');
       return;
     }
     try {
       await setPublicPortalEnabled(parentPortal.publicId, enabled);
-      setToast(enabled ? 'Đã mở lại cổng phụ huynh trên Firebase' : 'Đã tạm dừng cổng phụ huynh trên Firebase');
+      setToast(enabled ? 'Đã mở lại cổng phụ huynh trực tuyến' : 'Đã tạm dừng cổng phụ huynh trực tuyến');
     } catch {
-      setToast('Đã đổi trên thiết bị nhưng chưa cập nhật được Firebase.');
+      setToast('Đã đổi trên thiết bị nhưng chưa đồng bộ được lên hệ thống chia sẻ.');
     }
   };
 
@@ -1793,7 +1794,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       {classSettingsOpen && <ClassSettings classProfile={classProfile} onSave={saveClassProfile} onClose={() => setClassSettingsOpen(false)} />}
       {teacherAccessOpen && <TeacherAccess teacherName={teacherName} googleAvailable={canUseFirebaseOnline()} onGoogleLogin={loginFirebaseTeacher} onSuccess={finishTeacherLogin} onClose={() => setTeacherAccessOpen(false)} />}
       {helpOpen && <HelpCenter isTeacher={isTeacher} onNavigate={navigate} onTeacherLogin={() => { setHelpOpen(false); setTeacherAccessOpen(true); }} onClose={() => setHelpOpen(false)} />}
-      {privacyOpen && <LocalDataNotice canBackup={isTeacher} onBackup={exportBackup} onClose={acknowledgeLocalDataNotice} />}
+      {privacyOpen && <LocalDataNotice onClose={acknowledgeLocalDataNotice} />}
       {selectedProfile && (
         <StudentProfile
           student={selectedProfile}
@@ -1903,7 +1904,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
     { icon: '⏱️', title: 'Đồng hồ và quản lý tiếng ồn', description: 'Đếm ngược, bấm giờ và hiển thị mức ồn trực quan ngay trên thiết bị.', keywords: 'đồng hồ bấm giờ đếm ngược micro tiếng ồn trình chiếu', page: 'tools' },
     { icon: '💞', title: 'Cổng phụ huynh', description: 'Tra cứu hành trình học sinh bằng mã phụ huynh trong hồ sơ.', keywords: 'phụ huynh tra cứu mã hành trình', page: 'parents' },
     { icon: '📘', title: 'Xuất sổ và phiếu theo dõi tuần', description: 'Tạo báo cáo kết quả hoặc phiếu giấy để ban cán sự ghi tạm, giáo viên duyệt sau.', keywords: 'xuất sổ báo cáo in pdf excel đóng sổ kết quả phiếu theo dõi tuần ban cán sự', page: 'management', teacherOnly: true },
-    { icon: '🛡️', title: 'Sao lưu và khôi phục', description: 'Xuất bản sao JSON để giữ an toàn dữ liệu hoặc chuyển sang máy khác.', keywords: 'sao lưu json khôi phục xuất nhập dữ liệu', page: 'management', teacherOnly: true },
+    { icon: '🛡️', title: 'Sao lưu và khôi phục', description: 'Tải một tệp sao lưu để giữ an toàn dữ liệu hoặc chuyển sang máy khác.', keywords: 'sao lưu khôi phục xuất nhập dữ liệu', page: 'management', teacherOnly: true },
   ];
   const search = query.trim().toLocaleLowerCase('vi-VN');
   const visibleTopics = topics.filter((topic) => !search || `${topic.title} ${topic.description} ${topic.keywords}`.toLocaleLowerCase('vi-VN').includes(search));
@@ -1957,12 +1958,12 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
 
             <aside className="help-faq">
               <div className="help-section-title"><div><span>CÂU HỎI THƯỜNG GẶP</span><h3>Cần biết trước khi dùng</h3></div></div>
-              <details open><summary>Dữ liệu được lưu ở đâu?</summary><p>Danh sách đầy đủ, vòng quay và lịch sử quản lý chỉ lưu trong trình duyệt trên thiết bị đang dùng; người làm ứng dụng không tự nhận được các dữ liệu này. Chỉ hồ sơ tối giản đã bấm “Cập nhật chia sẻ” mới được đưa lên Firebase cho phụ huynh.</p></details>
+              <details open><summary>Dữ liệu được lưu ở đâu?</summary><p>Danh sách đầy đủ, vòng quay và lịch sử quản lý chỉ lưu trong trình duyệt trên thiết bị đang dùng; người làm ứng dụng không tự nhận được các dữ liệu này. Chỉ hồ sơ tối giản đã bấm “Cập nhật chia sẻ” mới được đồng bộ vào kho dữ liệu chia sẻ dành cho phụ huynh.</p></details>
               <details><summary>Vì sao danh sách có thể bị mất?</summary><p>Dữ liệu có thể mất khi xóa dữ liệu trang web, dùng chế độ ẩn danh, đổi trình duyệt, đổi hồ sơ người dùng, cài lại ứng dụng hoặc đổi thiết bị. Hãy sao lưu xuống máy sau mỗi lần cập nhật lớn.</p></details>
               <details><summary>Điểm tuần và điểm tích lũy khác nhau thế nào?</summary><p>Điểm tuần dùng cho thi đua và vinh danh trong tuần hiện tại. Khi chốt tuần, điểm tuần về 0 nhưng điểm tích lũy vẫn được giữ nguyên.</p></details>
               <details><summary>Vì sao không thấy nút thêm học sinh?</summary><p>Thêm, sửa, xóa và nhập Excel chỉ xuất hiện sau khi đăng nhập tài khoản giáo viên.</p></details>
               <details><summary>Excel cần có những cột nào?</summary><p>Bắt buộc điền đủ “Họ và tên”, “Ngày sinh”, “Họ tên phụ huynh” và “SĐT phụ huynh”. Các cột giới tính, mã định danh, tổ, vai trò, điểm và mã tra cứu có thể để trống.</p></details>
-              <details><summary>Khi gặp lỗi nên làm gì?</summary><p>Không xóa dữ liệu ngay. Hãy chụp lại màn hình, ghi thao tác vừa thực hiện và xuất bản sao JSON nếu vẫn mở được trang quản lý.</p></details>
+              <details><summary>Khi gặp lỗi nên làm gì?</summary><p>Không xóa dữ liệu ngay. Hãy chụp lại màn hình, ghi thao tác vừa thực hiện và tải một tệp sao lưu nếu vẫn mở được trang quản lý.</p></details>
             </aside>
           </div>
         </div>
@@ -1973,12 +1974,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
   );
 }
 
-function LocalDataNotice({ canBackup, onBackup, onClose }: { canBackup: boolean; onBackup: () => void; onClose: () => void }) {
-  const backupAndClose = () => {
-    onBackup();
-    onClose();
-  };
-
+function LocalDataNotice({ onClose }: { onClose: () => void }) {
   return (
     <div className="settings-backdrop local-data-backdrop" role="presentation">
       <section className="local-data-card" role="dialog" aria-modal="true" aria-labelledby="local-data-title">
@@ -1989,13 +1985,12 @@ function LocalDataNotice({ canBackup, onBackup, onClose }: { canBackup: boolean;
 
         <div className="local-data-facts">
           <div><span>✓</span><p><strong>Không tự động gửi đi</strong>Người làm ứng dụng không tự nhận được danh sách, điểm, ảnh và lịch sử quản lý lớp.</p></div>
-          <div><span>✓</span><p><strong>Thầy cô chủ động chia sẻ</strong>Chỉ dữ liệu tối giản cần cho phụ huynh mới được gửi lên Firebase khi thầy cô bấm “Cập nhật chia sẻ”.</p></div>
+          <div><span>✓</span><p><strong>Thầy cô chủ động chia sẻ</strong>Chỉ dữ liệu tối giản cần cho phụ huynh mới được đồng bộ vào kho dữ liệu chia sẻ khi thầy cô bấm “Cập nhật chia sẻ”.</p></div>
           <div className="local-data-warning"><span>!</span><p><strong>Cần sao lưu định kỳ</strong>Dữ liệu có thể mất khi xóa dữ liệu trang web, dùng chế độ ẩn danh, đổi trình duyệt, đổi hồ sơ người dùng, cài lại ứng dụng hoặc đổi thiết bị.</p></div>
         </div>
 
         <p className="local-data-footnote">Dữ liệu chỉ rời thiết bị khi thầy cô chủ động xuất, chia sẻ tệp hoặc dùng chức năng Cổng phụ huynh.</p>
         <div className="local-data-actions">
-          {canBackup && <button className="local-data-backup" onClick={backupAndClose}><Download size={18} /> Sao lưu dữ liệu ngay</button>}
           <button className="local-data-understand" onClick={onClose}><Check size={18} /> Tôi đã hiểu</button>
         </div>
       </section>
@@ -2055,7 +2050,7 @@ function ManagementPage({ students, activities, pointReasons, weekState, weeklyS
         <article className="management-data panel">
           <div><strong>{students.length}</strong><span>học sinh</span></div>
           <div><strong>{activities.length}</strong><span>hoạt động</span></div>
-          <button className="button button-soft" onClick={onExport}><Download size={17} /> Sao lưu xuống máy</button>
+          <button className="button button-soft" onClick={onExport}><Download size={17} /> Tải tệp sao lưu về máy</button>
           <button className="button management-import" type="button" disabled={backupImporting} onClick={() => backupInputRef.current?.click()}>
             <Upload size={17} /> {backupImporting ? 'Đang khôi phục...' : 'Khôi phục từ bản sao'}
           </button>
@@ -2077,7 +2072,7 @@ function ManagementPage({ students, activities, pointReasons, weekState, weeklyS
       <section className="management-privacy panel">
         <div className="management-privacy-icon"><ShieldCheck size={27} /></div>
         <div><span>DỮ LIỆU LƯU TRÊN THIẾT BỊ NÀY</span><h2>Ứng dụng không tự thu thập danh sách lớp</h2><p>Danh sách đầy đủ, điểm và lịch sử nằm trong trình duyệt hiện tại. Xóa dữ liệu trình duyệt hoặc đổi máy có thể làm mất dữ liệu.</p></div>
-        <div className="management-privacy-actions"><button onClick={onExport}><Download size={17} /> Sao lưu ngay</button><button onClick={onOpenPrivacy}><ShieldCheck size={17} /> Xem quyền riêng tư</button></div>
+        <div className="management-privacy-actions"><button onClick={onExport}><Download size={17} /> Tải tệp sao lưu</button><button onClick={onOpenPrivacy}><ShieldCheck size={17} /> Xem quyền riêng tư</button></div>
       </section>
 
       <section className="management-report-launch panel">
@@ -2484,7 +2479,7 @@ function TeacherAccess({ teacherName, googleAvailable, onGoogleLogin, onSuccess,
         <div className="teacher-access-icon"><ShieldCheck size={32} /></div>
         <span className="settings-eyebrow">KHU VỰC GIÁO VIÊN</span>
         <h2 id="teacher-access-title">{isSetup ? 'Thiết lập tài khoản giáo viên' : 'Đăng nhập giáo viên'}</h2>
-        <p>Đăng nhập Google để cập nhật dữ liệu phụ huynh lên Firebase; hoặc dùng PIN khi chỉ làm việc trên thiết bị này.</p>
+        <p>Đăng nhập Google để đồng bộ dữ liệu chia sẻ dành cho phụ huynh; hoặc dùng PIN khi chỉ làm việc trên thiết bị này.</p>
         <button className="teacher-google-login" type="button" disabled={!googleAvailable || googleSubmitting} onClick={() => void loginWithGoogle()}>
           <span>G</span>{googleSubmitting ? 'Đang mở Google…' : googleAvailable ? 'Đăng nhập bằng Google' : 'Mở bản web để đăng nhập Google'}
         </button>
@@ -4564,7 +4559,7 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
                   </a>
                 </div>
               </div>
-              <div className="feedback-guide-free-note"><ShieldCheck size={22} /><p><strong>Không cần Firebase Functions</strong><span>Phụ huynh chỉ cần có Internet. Lời nhắn đi thẳng đến Web app Apps Script do giáo viên sở hữu và được chuyển về Gmail đã cấu hình.</span></p></div>
+              <div className="feedback-guide-free-note"><ShieldCheck size={22} /><p><strong>Không cần máy chủ trung gian</strong><span>Phụ huynh chỉ cần có Internet. Lời nhắn đi thẳng đến Web app Apps Script do giáo viên sở hữu và được chuyển về Gmail đã cấu hình.</span></p></div>
               <div className="feedback-guide-code">
                 <div><p><strong>Mã tự điền Gmail và mã cổng</strong><span>{feedbackScriptReady ? `Đã chuẩn bị riêng cho ${feedbackScriptEmail}.` : 'Chưa nhập Gmail: Script sẽ tự dùng Gmail của tài khoản triển khai.'}</span></p><button type="button" onClick={() => void copyFeedbackAppsScript()}><Copy size={17} /> Sao chép mã đã điền</button></div>
                 {feedbackGuideCopyStatus && <p className="feedback-guide-copy-status" role="status">{feedbackGuideCopyStatus}</p>}

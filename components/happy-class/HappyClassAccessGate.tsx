@@ -122,7 +122,7 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
       : status === 'denied'
         ? 'Để truy cập app, thầy/cô cần được cấp quyền. Thầy/cô vui lòng tham gia nhóm Zalo để được hỗ trợ miễn phí.'
         : status === 'account-mismatch'
-          ? `GIAOVIENCN đang dùng ${email}, nhưng Firebase đang xác minh ${decision?.status === 'account-mismatch' ? decision.firebaseEmail : 'một email khác'}.`
+          ? `GIAOVIENCN đang dùng ${email}, nhưng hệ thống bảo mật đang xác minh ${decision?.status === 'account-mismatch' ? decision.firebaseEmail : 'một email khác'}.`
           : status === 'auth-required'
             ? 'Thầy/cô đã đăng nhập GIAOVIENCN. Hãy xác minh Google một lần để kết nối an toàn với kho dữ liệu Lớp Hạnh Phúc.'
             : detail || 'Hệ thống đang đối chiếu email và thiết bị với danh sách do Admin cấp.';
