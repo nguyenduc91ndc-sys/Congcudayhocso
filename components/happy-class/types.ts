@@ -52,11 +52,15 @@ export type WeekStudentSnapshot = {
   name: string;
   team: number;
   points: number;
+  goodPoints?: number;
+  reminderPoints?: number;
+  rewardPoints?: number;
 };
 
 export type WeekArchive = WeekPeriod & {
   closedAt: string;
   activityCount: number;
+  calculationMode?: 'instant' | 'weekly-net';
   studentScores: WeekStudentSnapshot[];
 };
 

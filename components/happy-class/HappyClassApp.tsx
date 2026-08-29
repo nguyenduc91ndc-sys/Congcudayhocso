@@ -124,7 +124,9 @@ type ParentPortalSettings = {
   teacherEmail?: string;
   feedbackEndpoint?: string;
 };
+type ScoringCalculationMode = 'instant' | 'weekly-net';
 type WeeklyScoringSettings = {
+  calculationMode: ScoringCalculationMode;
   startingPoints: number;
   positiveTarget: number;
   honorTarget: number;
@@ -229,8 +231,10 @@ function createParentPortalSettings(): ParentPortalSettings {
   return { enabled: true, publicId: `lop-${randomToken(10).toLowerCase()}`, requireAccessCode: true };
 }
 
-function createWeeklyScoringSettings(): WeeklyScoringSettings {
-  return { startingPoints: 50, positiveTarget: 60, honorTarget: 70, highScoreWarning: 100 };
+function createWeeklyScoringSettings(calculationMode: ScoringCalculationMode = 'instant'): WeeklyScoringSettings {
+  return calculationMode === 'weekly-net'
+    ? { calculationMode, startingPoints: 0, positiveTarget: 10, honorTarget: 20, highScoreWarning: 50 }
+    : { calculationMode, startingPoints: 50, positiveTarget: 60, honorTarget: 70, highScoreWarning: 100 };
 }
 
 function isWeeklyScoringSettings(value: unknown): value is WeeklyScoringSettings {
@@ -239,10 +243,21 @@ function isWeeklyScoringSettings(value: unknown): value is WeeklyScoringSettings
   const positive = value.positiveTarget;
   const honor = value.honorTarget;
   const warning = value.highScoreWarning;
-  return isNumber(starting) && Number.isInteger(starting) && starting >= 0 && starting <= 999
+  const modeValid = value.calculationMode === undefined || value.calculationMode === 'instant' || value.calculationMode === 'weekly-net';
+  return modeValid
+    && isNumber(starting) && Number.isInteger(starting) && starting >= 0 && starting <= 999
     && isNumber(positive) && Number.isInteger(positive) && positive >= starting && positive <= 999
     && isNumber(honor) && Number.isInteger(honor) && honor >= positive && honor <= 999
     && isNumber(warning) && Number.isInteger(warning) && warning >= honor && warning <= 999;
+}
+
+function normalizeWeeklyScoringSettings(value: unknown): WeeklyScoringSettings | null {
+  if (!isWeeklyScoringSettings(value)) return null;
+  const calculationMode: ScoringCalculationMode = value.calculationMode === 'weekly-net'
+    || (value.calculationMode === undefined && value.startingPoints === 0)
+    ? 'weekly-net'
+    : 'instant';
+  return { ...value, calculationMode, startingPoints: calculationMode === 'weekly-net' ? 0 : value.startingPoints };
 }
 function toLocalDateInput(date: Date) {
   const year = date.getFullYear();
@@ -324,9 +339,13 @@ function isWeekArchive(value: unknown): value is WeekArchive {
   const archive = value as unknown as Record<string, unknown>;
   return isText(archive.closedAt)
     && isNumber(archive.activityCount) && archive.activityCount >= 0
+    && (archive.calculationMode === undefined || archive.calculationMode === 'instant' || archive.calculationMode === 'weekly-net')
     && Array.isArray(archive.studentScores) && archive.studentScores.length <= 500
     && archive.studentScores.every((score: unknown) => isRecord(score)
-      && isNumber(score.studentId) && isText(score.name) && isNumber(score.team) && isNumber(score.points));
+      && isNumber(score.studentId) && isText(score.name) && isNumber(score.team) && isNumber(score.points)
+      && (score.goodPoints === undefined || isNumber(score.goodPoints))
+      && (score.reminderPoints === undefined || isNumber(score.reminderPoints))
+      && (score.rewardPoints === undefined || isNumber(score.rewardPoints)));
 }
 
 function isWeekState(value: unknown): value is WeekState {
@@ -354,6 +373,19 @@ const rewardActivityPrefix = 'Đổi thưởng: ';
 const isRewardRedemption = (activity: Activity) => activity.points < 0 && activity.title.startsWith(rewardActivityPrefix);
 const getRewardNameFromActivity = (activity: Activity) => activity.title.slice(rewardActivityPrefix.length).trim();
 
+type WeeklyPointSummary = { goodPoints: number; reminderPoints: number; netPoints: number };
+
+function getWeeklyPointSummary(activities: Activity[], weekId: string, studentId?: number): WeeklyPointSummary {
+  const scoringActivities = activities.filter((activity) => (activity.weekId ?? weekId) === weekId
+    && (studentId === undefined || activity.studentId === studentId)
+    && !isRewardRedemption(activity)
+    && activity.tone !== 'neutral');
+  const goodPoints = scoringActivities.reduce((sum, activity) => sum + Math.max(0, activity.points), 0);
+  const reminderPoints = scoringActivities.reduce((sum, activity) => sum + Math.abs(Math.min(0, activity.points)), 0);
+  const netPoints = goodPoints - reminderPoints;
+  return { goodPoints, reminderPoints, netPoints };
+}
+
 function parseClassBackup(content: string): ClassBackup {
   let value: unknown;
   try {
@@ -372,9 +404,11 @@ function parseClassBackup(content: string): ClassBackup {
     const teacher = isRecord(value.teacher) && (value.teacher.photo === '' || value.teacher.photo === null)
       ? Object.fromEntries(Object.entries(value.teacher).filter(([key]) => key !== 'photo'))
       : value.teacher;
+    const weeklyScoring = value.weeklyScoring === undefined ? undefined : normalizeWeeklyScoringSettings(value.weeklyScoring);
     value = {
       ...value,
       teacher,
+      weeklyScoring,
       students: value.students.map((item) => {
         if (!isRecord(item)) return item;
         const normalized = { ...item };
@@ -710,7 +744,7 @@ function readWeeklyScoringSettings(): WeeklyScoringSettings {
     const stored = localStorage.getItem('happy-class-weekly-scoring');
     if (!stored) return createWeeklyScoringSettings();
     const value: unknown = JSON.parse(stored);
-    return isWeeklyScoringSettings(value) ? value : createWeeklyScoringSettings();
+    return normalizeWeeklyScoringSettings(value) ?? createWeeklyScoringSettings();
   } catch {
     return createWeeklyScoringSettings();
   }
@@ -1346,8 +1380,10 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
         studentIds.includes(student.id)
           ? {
               ...student,
-              score: Math.max(0, student.score + points),
-              weeklyScore: Math.max(0, student.weeklyScore + points),
+              score: weeklyScoring.calculationMode === 'weekly-net' ? student.score : Math.max(0, student.score + points),
+              weeklyScore: weeklyScoring.calculationMode === 'weekly-net'
+                ? student.weeklyScore + points
+                : Math.max(0, student.weeklyScore + points),
               streak: points > 0 ? student.streak + 1 : student.streak,
             }
           : student,
@@ -1628,22 +1664,34 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   };
 
   const saveWeeklyScoring = (settings: WeeklyScoringSettings) => {
-    if (!isWeeklyScoringSettings(settings)) {
-      setToast('Các mốc cần theo thứ tự: Điểm đầu tuần ≤ Tuần tích cực ≤ Vinh danh ≤ Cảnh báo.');
+    const normalizedSettings = {
+      ...settings,
+      startingPoints: settings.calculationMode === 'weekly-net' ? 0 : settings.startingPoints,
+    };
+    if (!isWeeklyScoringSettings(normalizedSettings)) {
+      setToast('Các mốc điểm tuần chưa hợp lệ hoặc chưa đúng thứ tự.');
       return;
     }
-    const startingDelta = settings.startingPoints - weeklyScoring.startingPoints;
-    if (startingDelta !== 0) {
+    const modeChanged = normalizedSettings.calculationMode !== weeklyScoring.calculationMode;
+    const hasCurrentScoringActivities = activities.some((activity) => activity.weekId === weekState.current.id && !isRewardRedemption(activity) && activity.tone !== 'neutral');
+    if (modeChanged && hasCurrentScoringActivities) {
+      setToast('Hãy chốt tuần hoặc đưa điểm tuần về ban đầu trước khi đổi cách tính điểm.');
+      return;
+    }
+    if (modeChanged) {
+      setStudents((current) => current.map((student) => ({ ...student, weeklyScore: normalizedSettings.startingPoints })));
+    } else if (normalizedSettings.calculationMode === 'instant' && normalizedSettings.startingPoints !== weeklyScoring.startingPoints) {
+      const startingDelta = normalizedSettings.startingPoints - weeklyScoring.startingPoints;
       setStudents((current) => current.map((student) => ({ ...student, weeklyScore: Math.max(0, student.weeklyScore + startingDelta) })));
     }
-    setWeeklyScoring(settings);
-    setToast('Đã lưu mốc đánh giá điểm tuần');
+    setWeeklyScoring(normalizedSettings);
+    setToast(`Đã lưu chế độ “${normalizedSettings.calculationMode === 'weekly-net' ? 'Chốt cuối tuần' : 'Cộng/trừ trực tiếp'}”`);
   };
 
   const resetCurrentWeekPoints = () => {
     setStudents((current) => current.map((student) => ({ ...student, weeklyScore: weeklyScoring.startingPoints })));
-    setActivities((current) => current.filter((activity) => activity.weekId !== weekState.current.id));
-    setToast(`Đã đưa cả lớp về ${weeklyScoring.startingPoints} điểm đầu tuần`);
+    setActivities((current) => current.filter((activity) => activity.weekId !== weekState.current.id || isRewardRedemption(activity) || activity.tone === 'neutral'));
+    setToast(`Đã đưa điểm tuần của cả lớp về ${weeklyScoring.startingPoints}`);
   };
 
   const updateCurrentWeek = (number: number, startDate: string, studyDays: 5 | 6) => {
@@ -1663,12 +1711,27 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
 
   const closeCurrentWeek = () => {
     const current = weekState.current;
+    const weeklyNetMode = weeklyScoring.calculationMode === 'weekly-net';
+    const studentSummaries = new Map(students.map((student) => [student.id, getWeeklyPointSummary(activities, current.id, student.id)]));
     const archive: WeekArchive = {
       ...current,
       closedAt: new Date().toISOString(),
-      activityCount: activities.filter((activity) => activity.weekId === current.id).length,
+      calculationMode: weeklyScoring.calculationMode,
+      activityCount: activities.filter((activity) => activity.weekId === current.id && !isRewardRedemption(activity) && activity.tone !== 'neutral').length,
       studentScores: students
-        .map((student) => ({ studentId: student.id, name: student.name, team: student.team, points: student.weeklyScore }))
+        .map((student) => {
+          const summary = studentSummaries.get(student.id) ?? { goodPoints: 0, reminderPoints: 0, netPoints: 0 };
+          if (!weeklyNetMode) return { studentId: student.id, name: student.name, team: student.team, points: student.weeklyScore };
+          return {
+            studentId: student.id,
+            name: student.name,
+            team: student.team,
+            points: summary.netPoints,
+            goodPoints: summary.goodPoints,
+            reminderPoints: summary.reminderPoints,
+            rewardPoints: Math.max(0, student.score + summary.netPoints) - student.score,
+          };
+        })
         .sort((a, b) => b.points - a.points),
     };
     const nextStartDate = addDays(current.startDate, 7);
@@ -1677,8 +1740,21 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       current: createWeekPeriod(current.number + 1, nextStartDate, studyDays),
       history: [archive, ...state.history].slice(0, 520),
     }));
-    setStudents((currentStudents) => currentStudents.map((student) => ({ ...student, weeklyScore: weeklyScoring.startingPoints })));
-    setToast(`Đã chốt Tuần ${current.number} và mở Tuần ${current.number + 1}`);
+    if (weeklyNetMode) {
+      const walletAdjustment = students.reduce((sum, student) => {
+        const netPoints = studentSummaries.get(student.id)?.netPoints ?? 0;
+        return sum + Math.max(0, student.score + netPoints) - student.score;
+      }, 0);
+      setStudents((currentStudents) => currentStudents.map((student) => ({
+        ...student,
+        score: Math.max(0, student.score + (studentSummaries.get(student.id)?.netPoints ?? 0)),
+        weeklyScore: 0,
+      })));
+      setToast(`Đã chốt Tuần ${current.number}, điều chỉnh ${walletAdjustment > 0 ? '+' : ''}${walletAdjustment} điểm trong ví và mở Tuần ${current.number + 1}`);
+    } else {
+      setStudents((currentStudents) => currentStudents.map((student) => ({ ...student, weeklyScore: weeklyScoring.startingPoints })));
+      setToast(`Đã chốt Tuần ${current.number} và mở Tuần ${current.number + 1}; cách tính cũ được giữ nguyên`);
+    }
   };
 
   const deleteClosedWeek = (weekId: string) => {
@@ -1768,6 +1844,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
               classCode={classProfile.code}
               teamCount={classProfile.teamCount}
               teamScoringMode={classProfile.teamScoringMode ?? 'average'}
+              calculationMode={weeklyScoring.calculationMode}
               week={weekState.current}
               onNavigate={navigate}
               onOpenStudent={setProfileId}
@@ -1777,7 +1854,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'seating' && <ClassroomSeatingPage students={students} classCode={classProfile.code} className={classProfile.name} schoolYear={classProfile.schoolYear} teacherName={teacherName} canManage={isTeacher} value={classroomLayout} onChange={setClassroomLayout} onToast={setToast} />}
           {page === 'points' && <PointsPage students={students} reasons={pointReasons} currentWeekId={weekState.current.id} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onSaveTeacherComment={saveTeacherComment} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
-          {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} activities={activities} canConfigure={isTeacher} onRedeem={redeemReward} onUndoRedeem={undoRewardRedemption} onSaveRewards={saveRewards} />}
+          {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} activities={activities} currentWeekId={weekState.current.id} calculationMode={weeklyScoring.calculationMode} canConfigure={isTeacher} onRedeem={redeemReward} onUndoRedeem={undoRewardRedemption} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} onApplyTeams={applyRandomTeams} />}
           {page === 'tools' && <ClassroomToolsPage />}
           {page === 'attendance' && (
@@ -1960,7 +2037,7 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
               <div className="help-section-title"><div><span>CÂU HỎI THƯỜNG GẶP</span><h3>Cần biết trước khi dùng</h3></div></div>
               <details open><summary>Dữ liệu được lưu ở đâu?</summary><p>Danh sách đầy đủ, vòng quay và lịch sử quản lý chỉ lưu trong trình duyệt trên thiết bị đang dùng; người làm ứng dụng không tự nhận được các dữ liệu này. Chỉ hồ sơ tối giản đã bấm “Cập nhật chia sẻ” mới được đồng bộ vào kho dữ liệu chia sẻ dành cho phụ huynh.</p></details>
               <details><summary>Vì sao danh sách có thể bị mất?</summary><p>Dữ liệu có thể mất khi xóa dữ liệu trang web, dùng chế độ ẩn danh, đổi trình duyệt, đổi hồ sơ người dùng, cài lại ứng dụng hoặc đổi thiết bị. Hãy sao lưu xuống máy sau mỗi lần cập nhật lớn.</p></details>
-              <details><summary>Điểm tuần và điểm tích lũy khác nhau thế nào?</summary><p>Điểm tuần dùng cho thi đua và vinh danh trong tuần hiện tại. Khi chốt tuần, điểm tuần về 0 nhưng điểm tích lũy vẫn được giữ nguyên.</p></details>
+              <details><summary>Điểm tuần và điểm đổi thưởng khác nhau thế nào?</summary><p>Ứng dụng có hai lựa chọn. “Cộng/trừ trực tiếp” giữ nguyên cách cũ và cập nhật ví ngay khi chấm. “Chốt cuối tuần” tính điểm tốt − điểm nhắc nhở, rồi mới điều chỉnh ví khi giáo viên chốt tuần.</p></details>
               <details><summary>Vì sao không thấy nút thêm học sinh?</summary><p>Thêm, sửa, xóa và nhập Excel chỉ xuất hiện sau khi đăng nhập tài khoản giáo viên.</p></details>
               <details><summary>Excel cần có những cột nào?</summary><p>Bắt buộc điền đủ “Họ và tên”, “Ngày sinh”, “Họ tên phụ huynh” và “SĐT phụ huynh”. Các cột giới tính, mã định danh, tổ, vai trò, điểm và mã tra cứu có thể để trống.</p></details>
               <details><summary>Khi gặp lỗi nên làm gì?</summary><p>Không xóa dữ liệu ngay. Hãy chụp lại màn hình, ghi thao tác vừa thực hiện và tải một tệp sao lưu nếu vẫn mở được trang quản lý.</p></details>
@@ -2099,7 +2176,7 @@ function ManagementPage({ students, activities, pointReasons, weekState, weeklyS
               <span className="management-number">{String(index + 1).padStart(2, '0')}</span>
               <Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" />
               <div className="management-student-name"><strong>{student.name}</strong><span>Tổ {student.team} · {student.role}</span></div>
-              <div className="management-student-meta"><span>Điểm</span><strong>{student.score}</strong></div>
+              <div className="management-student-meta"><span>Ví điểm</span><strong>{student.score}</strong></div>
               <div className="management-student-meta"><span>Phụ huynh</span><strong>{student.parentName || 'Chưa cập nhật'}</strong></div>
               <button className="management-edit" onClick={() => setEditingStudent(student)}><Pencil size={16} /> Sửa</button>
               <button className="management-delete" aria-label={`Xóa ${student.name}`} onClick={() => { if (window.confirm(`Xóa ${student.name} khỏi lớp? Các hoạt động liên quan cũng sẽ bị xóa.`)) onDeleteStudent(student.id); }}><Trash2 size={16} /></button>
@@ -2142,12 +2219,19 @@ function WeekManagement({ students, teamCount, activities, weekState, scoring, o
   const [studyDays, setStudyDays] = useState<5 | 6>(weekState.current.studyDays === 6 ? 6 : 5);
   const [scoringDraft, setScoringDraft] = useState<WeeklyScoringSettings>({ ...scoring });
   const current = weekState.current;
-  const currentActivities = activities.filter((activity) => activity.weekId === current.id);
+  const weeklyNetMode = scoring.calculationMode === 'weekly-net';
+  const currentScoringActivities = activities.filter((activity) => activity.weekId === current.id && !isRewardRedemption(activity) && activity.tone !== 'neutral');
+  const weekSummary = getWeeklyPointSummary(activities, current.id);
+  const pendingRewardTotal = students.reduce((sum, student) => {
+    const netPoints = getWeeklyPointSummary(activities, current.id, student.id).netPoints;
+    return sum + Math.max(0, student.score + netPoints) - student.score;
+  }, 0);
   const weeklyTotal = students.reduce((sum, student) => sum + student.weeklyScore, 0);
   const leaders = [...students].sort((a, b) => b.weeklyScore - a.weeklyScore).slice(0, 3);
   const teams = getTeamStats(students, teamCount);
   const highScoreStudents = students.filter((student) => student.weeklyScore > scoring.highScoreWarning);
   const scoringValid = isWeeklyScoringSettings(scoringDraft);
+  const modeSwitchBlocked = scoringDraft.calculationMode !== scoring.calculationMode && currentScoringActivities.length > 0;
   const endDate = /^\d{4}-\d{2}-\d{2}$/.test(startDate) ? addDays(startDate, studyDays - 1) : current.endDate;
   const monthKeys = useMemo(() => Array.from(new Set([
     current.endDate.slice(0, 7),
@@ -2200,7 +2284,10 @@ function WeekManagement({ students, teamCount, activities, weekState, scoring, o
   };
 
   const close = () => {
-    if (window.confirm(`Chốt Tuần ${current.number}? Điểm tuần sẽ về 0, điểm tích lũy được giữ nguyên và kết quả tuần này được lưu vào lịch sử.`)) onClose();
+    const message = weeklyNetMode
+      ? `Chốt Tuần ${current.number}?\n\n• Điểm tốt: +${weekSummary.goodPoints}\n• Điểm nhắc nhở: −${weekSummary.reminderPoints}\n• Điểm ròng: ${weekSummary.netPoints}\n• Điều chỉnh ${pendingRewardTotal > 0 ? '+' : ''}${pendingRewardTotal} điểm trong ví đổi thưởng của học sinh.\n\nSau đó điểm tuần sẽ về 0 và kết quả được lưu vào lịch sử.`
+      : `Chốt Tuần ${current.number}? Điểm tuần sẽ về ${scoring.startingPoints}; ví đổi thưởng giữ nguyên vì điểm đã được cộng/trừ trực tiếp trong tuần.`;
+    if (window.confirm(message)) onClose();
   };
 
   return (
@@ -2222,31 +2309,34 @@ function WeekManagement({ students, teamCount, activities, weekState, scoring, o
           <button className="button button-soft week-save" type="submit"><Save size={17} /> Lưu thời gian tuần</button>
           <p className="week-setting-note"><ShieldCheck size={16} /> Đổi ngày hoặc số tuần không làm mất điểm đang có.</p>
           <div className="week-scoring-settings">
-            <div className="week-scoring-head"><span><Star size={17} /> ĐIỂM NỀN & MỐC ĐÁNH GIÁ / TUẦN</span><small>Mỗi em bắt đầu tuần từ điểm nền rồi được cộng hoặc trừ.</small></div>
-            <div className="week-scoring-fields">
-              <label><span>Điểm đầu tuần</span><input aria-label="Điểm đầu tuần" type="number" min="0" max="999" value={scoringDraft.startingPoints} onChange={(event) => setScoringDraft((current) => ({ ...current, startingPoints: Number(event.target.value) }))} /><small>Mặc định 50 · áp dụng cho mỗi em</small></label>
-              <label><span>Tuần tích cực</span><input aria-label="Mốc tuần tích cực" type="number" min="1" max="999" value={scoringDraft.positiveTarget} onChange={(event) => setScoringDraft((current) => ({ ...current, positiveTarget: Number(event.target.value) }))} /><small>Mặc định 60</small></label>
-              <label><span>Vinh danh</span><input aria-label="Mốc vinh danh" type="number" min="1" max="999" value={scoringDraft.honorTarget} onChange={(event) => setScoringDraft((current) => ({ ...current, honorTarget: Number(event.target.value) }))} /><small>Mặc định 70</small></label>
-              <label><span>Cảnh báo điểm cao</span><input aria-label="Mốc cảnh báo điểm cao" type="number" min="1" max="999" value={scoringDraft.highScoreWarning} onChange={(event) => setScoringDraft((current) => ({ ...current, highScoreWarning: Number(event.target.value) }))} /><small>Mặc định 100</small></label>
+            <div className="week-scoring-head"><span><Star size={17} /> CÁCH TÍNH ĐIỂM & MỐC ĐÁNH GIÁ</span><small>Chế độ cũ vẫn được giữ nguyên; giáo viên có thể chọn cách chốt cuối tuần.</small></div>
+            <div className="week-calculation-modes" role="radiogroup" aria-label="Cách tính điểm đổi thưởng">
+              <button type="button" role="radio" aria-checked={scoringDraft.calculationMode === 'instant'} className={scoringDraft.calculationMode === 'instant' ? 'active' : ''} onClick={() => setScoringDraft(createWeeklyScoringSettings('instant'))}><Coins size={18} /><span><strong>Cộng/trừ trực tiếp</strong><small>Cách cũ · ví thay đổi ngay khi chấm</small></span></button>
+              <button type="button" role="radio" aria-checked={scoringDraft.calculationMode === 'weekly-net'} className={scoringDraft.calculationMode === 'weekly-net' ? 'active' : ''} onClick={() => setScoringDraft(createWeeklyScoringSettings('weekly-net'))}><CalendarCheck2 size={18} /><span><strong>Chốt cuối tuần</strong><small>Điểm tốt − nhắc nhở rồi mới vào ví</small></span></button>
             </div>
-            {!scoringValid && <p className="week-scoring-error">Các mốc phải tăng dần: Điểm đầu tuần ≤ Tuần tích cực ≤ Vinh danh ≤ Cảnh báo.</p>}
-            <div className="week-scoring-actions"><button type="button" onClick={() => { const defaults = createWeeklyScoringSettings(); setScoringDraft(defaults); onSaveScoring(defaults); }}><RotateCcw size={15} /> Dùng mặc định 50–60–70–100</button><button type="button" disabled={!scoringValid} onClick={() => onSaveScoring(scoringDraft)}><Save size={15} /> Lưu cách tính điểm</button></div>
-            <button className="week-reset-current-points" type="button" disabled={!students.length} onClick={() => { if (window.confirm(`Đưa toàn bộ học sinh về ${scoring.startingPoints} điểm đầu tuần? Các lượt cộng/trừ của Tuần ${current.number} sẽ bị xóa; điểm tích lũy và lịch sử tuần đã chốt vẫn được giữ.`)) onResetWeekPoints(); }}><RotateCcw size={16} /><span><strong>Đưa cả lớp về {scoring.startingPoints} điểm đầu tuần</strong><small>Xóa các lượt cộng/trừ của riêng tuần đang chạy</small></span></button>
+            <div className="week-scoring-fields">
+              {scoringDraft.calculationMode === 'instant' && <label><span>Điểm đầu tuần</span><input aria-label="Điểm đầu tuần" type="number" min="0" max="999" value={scoringDraft.startingPoints} onChange={(event) => setScoringDraft((current) => ({ ...current, startingPoints: Number(event.target.value) }))} /><small>Mặc định 50</small></label>}
+              <label><span>Tuần tích cực</span><input aria-label="Mốc tuần tích cực" type="number" min="1" max="999" value={scoringDraft.positiveTarget} onChange={(event) => setScoringDraft((current) => ({ ...current, positiveTarget: Number(event.target.value) }))} /><small>Mặc định {scoringDraft.calculationMode === 'weekly-net' ? 10 : 60}</small></label>
+              <label><span>Vinh danh</span><input aria-label="Mốc vinh danh" type="number" min="1" max="999" value={scoringDraft.honorTarget} onChange={(event) => setScoringDraft((current) => ({ ...current, honorTarget: Number(event.target.value) }))} /><small>Mặc định {scoringDraft.calculationMode === 'weekly-net' ? 20 : 70}</small></label>
+              <label><span>Cảnh báo điểm cao</span><input aria-label="Mốc cảnh báo điểm cao" type="number" min="1" max="999" value={scoringDraft.highScoreWarning} onChange={(event) => setScoringDraft((current) => ({ ...current, highScoreWarning: Number(event.target.value) }))} /><small>Mặc định {scoringDraft.calculationMode === 'weekly-net' ? 50 : 100}</small></label>
+            </div>
+            {!scoringValid && <p className="week-scoring-error">Các mốc điểm phải hợp lệ và tăng dần.</p>}
+            <div className="week-scoring-actions"><button type="button" onClick={() => { const defaults = createWeeklyScoringSettings(scoringDraft.calculationMode); setScoringDraft(defaults); }}><RotateCcw size={15} /> Điền mốc mặc định</button><button type="button" disabled={!scoringValid || modeSwitchBlocked} onClick={() => onSaveScoring(scoringDraft)}><Save size={15} /> Lưu cách tính điểm</button></div>
+            {modeSwitchBlocked && <p className="week-scoring-error">Tuần hiện tại đã có {currentScoringActivities.length} lượt chấm. Hãy chốt tuần hoặc đưa điểm tuần về ban đầu trước khi đổi chế độ.</p>}
+            <button className="week-reset-current-points" type="button" disabled={!students.length} onClick={() => { if (window.confirm(`Đưa điểm tuần của toàn bộ học sinh về ${scoring.startingPoints}? Các lượt cộng/trừ của Tuần ${current.number} sẽ bị xóa; ví đổi thưởng và lịch sử tuần đã chốt vẫn được giữ.`)) onResetWeekPoints(); }}><RotateCcw size={16} /><span><strong>Đưa điểm tuần của cả lớp về {scoring.startingPoints}</strong><small>Xóa các lượt cộng/trừ của riêng tuần đang chạy</small></span></button>
           </div>
         </form>
 
         <div className="week-snapshot">
           <div className="week-section-label"><Flag size={17} /><span>KẾT QUẢ TẠM TÍNH</span></div>
-          <div className="week-kpis">
-            <div><strong>{weeklyTotal > 0 ? '+' : ''}{weeklyTotal}</strong><span>điểm tuần</span></div>
-            <div><strong>{currentActivities.length}</strong><span>ghi nhận</span></div>
-            <div><strong>Tổ {teams[0]?.team ?? '—'}</strong><span>đang dẫn đầu · {teams[0]?.weekly ?? 0} điểm</span></div>
+          <div className={`week-kpis ${weeklyNetMode ? 'week-kpis-four' : ''}`}>
+            {weeklyNetMode ? <><div><strong>+{weekSummary.goodPoints}</strong><span>điểm tốt</span></div><div><strong>−{weekSummary.reminderPoints}</strong><span>điểm nhắc nhở</span></div><div><strong>{weeklyTotal > 0 ? '+' : ''}{weeklyTotal}</strong><span>điểm ròng của lớp</span></div><div><strong>{pendingRewardTotal > 0 ? '+' : ''}{pendingRewardTotal}</strong><span>điều chỉnh ví khi chốt</span></div></> : <><div><strong>{weeklyTotal > 0 ? '+' : ''}{weeklyTotal}</strong><span>điểm tuần</span></div><div><strong>{currentScoringActivities.length}</strong><span>ghi nhận</span></div><div><strong>Tổ {teams[0]?.team ?? '—'}</strong><span>đang dẫn đầu · {teams[0]?.weekly ?? 0} điểm</span></div></>}
           </div>
           <div className="week-leaders">
             {leaders.map((student, index) => <div key={student.id}><span className={`week-rank rank-${index + 1}`}>{index + 1}</span><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="tiny" /><strong>{student.name}</strong><b>{student.weeklyScore > 0 ? '+' : ''}{student.weeklyScore}</b></div>)}
           </div>
           {highScoreStudents.length > 0 && <div className="week-score-warning"><ShieldCheck size={17} /><span><strong>{highScoreStudents.length} học sinh vượt {scoring.highScoreWarning} điểm tuần</strong><small>Đây chỉ là lời nhắc kiểm tra để tránh cộng điểm quá dày; app không khóa điểm.</small></span></div>}
-          <button className="week-close-button" onClick={close}><Archive size={18} /><span><strong>Chốt Tuần {current.number} & mở Tuần {current.number + 1}</strong><small>Lưu kết quả, đưa điểm tuần về 0; điểm tích lũy không đổi</small></span><ChevronRight size={19} /></button>
+          <button className="week-close-button" onClick={close}><Archive size={18} /><span><strong>Chốt Tuần {current.number} & mở Tuần {current.number + 1}</strong><small>{weeklyNetMode ? 'Điểm tốt − nhắc nhở sẽ được chuyển vào ví đổi thưởng, rồi điểm tuần về 0' : `Cách cũ: ví đã cập nhật trực tiếp; điểm tuần trở về ${scoring.startingPoints}`}</small></span><ChevronRight size={19} /></button>
         </div>
       </div>
 
@@ -2256,14 +2346,15 @@ function WeekManagement({ students, teamCount, activities, weekState, scoring, o
           <div className="week-history-list">{weekState.history.slice(0, 6).map((week) => {
             const top = week.studentScores[0];
             const total = week.studentScores.reduce((sum, student) => sum + student.points, 0);
+            const archivedWeeklyNetMode = week.calculationMode === 'weekly-net' || week.studentScores.some((score) => score.goodPoints !== undefined || score.reminderPoints !== undefined);
             return (
               <details className="week-history-entry" key={week.id}>
                 <summary><span className="week-history-icon"><Check size={17} /></span><div><strong>Tuần {week.number}</strong><small>{formatFullDate(week.startDate)} – {formatFullDate(week.endDate)}</small></div><div><span>Tổng điểm</span><b>{total > 0 ? '+' : ''}{total}</b></div><div><span>Nổi bật</span><b>{top ? `${top.name} · ${top.points > 0 ? '+' : ''}${top.points}` : '—'}</b></div><div><span>Ghi nhận</span><b>{week.activityCount}</b></div><span className="week-history-open"><span>Xem từng em</span><ChevronDown size={17} /></span></summary>
-                <div className="week-student-results"><div className="week-student-result-head"><span>Hạng</span><span>Học sinh</span><span>Tổ</span><span>Điểm tuần</span></div>{week.studentScores.map((score, index) => <div className="week-student-result-row" key={score.studentId}><span className={`week-student-rank rank-${index + 1}`}>{index + 1}</span><strong>{score.name}</strong><span>Tổ {score.team}</span><b>{score.points > 0 ? '+' : ''}{score.points}</b></div>)}</div>
+                <div className="week-student-results"><div className="week-student-result-head"><span>Hạng</span><span>Học sinh</span><span>Tổ</span><span>{archivedWeeklyNetMode ? 'Cách tính / vào ví' : 'Điểm tuần'}</span></div>{week.studentScores.map((score, index) => { const rewardPoints = score.rewardPoints ?? score.points; return <div className="week-student-result-row" key={score.studentId}><span className={`week-student-rank rank-${index + 1}`}>{index + 1}</span><strong>{score.name}</strong><span>Tổ {score.team}</span>{archivedWeeklyNetMode ? <b className="week-score-formula">+{score.goodPoints ?? Math.max(0, score.points)} − {score.reminderPoints ?? Math.abs(Math.min(0, score.points))} = {score.points} · ví {rewardPoints > 0 ? '+' : ''}{rewardPoints}</b> : <b>{score.points > 0 ? '+' : ''}{score.points}</b>}</div>; })}</div>
                 <div className="week-danger-zone">
-                  <div><span>VÙNG NGUY HIỂM</span><strong>Xóa Tuần {week.number} khỏi lịch sử</strong><small>Tuần này và các ghi nhận liên quan sẽ bị loại khỏi báo cáo tháng. Điểm tích lũy hiện tại của học sinh không thay đổi.</small></div>
+                  <div><span>VÙNG NGUY HIỂM</span><strong>Xóa Tuần {week.number} khỏi lịch sử</strong><small>Tuần này và các ghi nhận liên quan sẽ bị loại khỏi báo cáo tháng. Ví đổi thưởng hiện tại của học sinh không thay đổi.</small></div>
                   <button type="button" onClick={() => {
-                    const accepted = window.confirm(`VÙNG NGUY HIỂM\n\nXóa Tuần ${week.number} (${formatFullDate(week.startDate)} – ${formatFullDate(week.endDate)})?\n\n• Tuần này sẽ bị loại khỏi báo cáo tháng.\n• Các ghi nhận thuộc tuần này sẽ bị xóa.\n• Điểm tích lũy hiện tại không thay đổi.\n\nHãy cân nhắc kỹ trước khi tiếp tục.`);
+                    const accepted = window.confirm(`VÙNG NGUY HIỂM\n\nXóa Tuần ${week.number} (${formatFullDate(week.startDate)} – ${formatFullDate(week.endDate)})?\n\n• Tuần này sẽ bị loại khỏi báo cáo tháng.\n• Các ghi nhận thuộc tuần này sẽ bị xóa.\n• Ví đổi thưởng hiện tại không thay đổi.\n\nHãy cân nhắc kỹ trước khi tiếp tục.`);
                     if (accepted) onDeleteClosedWeek(week.id);
                   }}><Trash2 size={16} /> Xóa tuần đã lưu</button>
                 </div>
@@ -2608,6 +2699,7 @@ function Dashboard({
   classCode,
   teamCount,
   teamScoringMode = 'average',
+  calculationMode,
   week,
   onNavigate,
   onOpenStudent,
@@ -2618,6 +2710,7 @@ function Dashboard({
   classCode: string;
   teamCount: number;
   teamScoringMode?: TeamScoringMode;
+  calculationMode: ScoringCalculationMode;
   week: WeekPeriod;
   onNavigate: (page: PageId) => void;
   onOpenStudent: (id: number) => void;
@@ -2661,7 +2754,7 @@ function Dashboard({
       <section className="stats-grid">
         <StatCard label="Sĩ số lớp" value={students.length.toString()} suffix="học sinh" icon={UsersRound} tone="green" trend={`${teamCount} tổ đang hoạt động`} />
         <StatCard label="Có mặt hôm nay" value={present.toString()} suffix={`/ ${students.length} bạn`} icon={CalendarCheck2} tone="blue" trend={`${students.length - present} cần lưu ý`} />
-        <StatCard label="Tổng điểm tích lũy" value={totalScore.toLocaleString('vi-VN')} suffix="điểm" icon={Coins} tone="orange" trend={`${weeklyTotal > 0 ? '+' : ''}${weeklyTotal} trong Tuần ${week.number}`} />
+        <StatCard label="Tổng ví đổi thưởng" value={totalScore.toLocaleString('vi-VN')} suffix="điểm" icon={Coins} tone="orange" trend={calculationMode === 'weekly-net' ? `${weeklyTotal > 0 ? '+' : ''}${weeklyTotal} đang chờ chốt Tuần ${week.number}` : 'Đang cộng/trừ trực tiếp theo cách cũ'} />
         <StatCard label="Chuỗi tích cực" value="12" suffix="ngày" icon={Zap} tone="purple" trend="Kỷ lục của lớp" />
       </section>
 
@@ -2867,7 +2960,7 @@ function PointsPage({ students, reasons, currentWeekId, canConfigure, lastPointA
               <button key={student.id} className={`student-pick ${selected.includes(student.id) ? 'selected' : ''}`} aria-pressed={selected.includes(student.id)} onClick={() => toggleStudent(student.id)}>
                 <span className="check-circle">{selected.includes(student.id) && <Check size={14} strokeWidth={3} />}</span>
                 <Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" />
-                <div><strong>{student.name}</strong><span>Tổ {student.team} · {student.score} điểm{student.attendance !== 'present' && <em className={`points-attendance-tag ${student.attendance}`}>{attendanceLabels[student.attendance]}</em>}</span></div>
+                <div><strong>{student.name}</strong><span>Tổ {student.team} · {student.weeklyScore} điểm tuần · {student.score} điểm ví{student.attendance !== 'present' && <em className={`points-attendance-tag ${student.attendance}`}>{attendanceLabels[student.attendance]}</em>}</span></div>
               </button>
             ))}
           </div>
@@ -3192,13 +3285,17 @@ function TeamsPage({
   );
 }
 
-function RewardsPage({ students, rewards, activities, canConfigure, onRedeem, onUndoRedeem, onSaveRewards }: { students: Student[]; rewards: Reward[]; activities: Activity[]; canConfigure: boolean; onRedeem: (studentId: number, rewardId: number) => void; onUndoRedeem: (activityId: number) => void; onSaveRewards: (rewards: Reward[]) => void }) {
+function RewardsPage({ students, rewards, activities, currentWeekId, calculationMode, canConfigure, onRedeem, onUndoRedeem, onSaveRewards }: { students: Student[]; rewards: Reward[]; activities: Activity[]; currentWeekId: string; calculationMode: ScoringCalculationMode; canConfigure: boolean; onRedeem: (studentId: number, rewardId: number) => void; onUndoRedeem: (activityId: number) => void; onSaveRewards: (rewards: Reward[]) => void }) {
   const [studentId, setStudentId] = useState(students[0]?.id ?? 0);
   const [settingsVisible, setSettingsVisible] = useState(false);
   const selected = students.find((student) => student.id === studentId) ?? students[0];
   const redemptions = selected
     ? activities.filter((activity) => activity.studentId === selected.id && isRewardRedemption(activity)).slice(0, 5)
     : [];
+  const pendingSummary = selected ? getWeeklyPointSummary(activities, currentWeekId, selected.id) : null;
+  const pendingWalletAdjustment = selected && pendingSummary
+    ? Math.max(0, selected.score + pendingSummary.netPoints) - selected.score
+    : 0;
   if (!selected) return <><PageHeading eyebrow="CỬA HÀNG NIỀM VUI" title="Điểm tốt hóa thành món quà nhỏ" description="Mỗi phần thưởng là một lời cảm ơn cho sự cố gắng và tiến bộ mỗi ngày." icon="🎁" /><div className="panel page-empty-state"><Gift size={31} /><strong>Chưa có học sinh trong lớp</strong><span>Giáo viên hãy nhập danh sách lớp thật trước khi sử dụng đổi thưởng.</span></div></>;
   return (
     <>
@@ -3207,7 +3304,8 @@ function RewardsPage({ students, rewards, activities, canConfigure, onRedeem, on
         <div className="reward-student-info"><Avatar initials={selected.initials} gradient={selected.gradient} photo={selected.photo} /><div><span>ĐANG ĐỔI THƯỞNG CHO</span><select value={studentId} onChange={(event) => setStudentId(Number(event.target.value))}>{students.map((student) => <option value={student.id} key={student.id}>{student.name}</option>)}</select></div></div>
         <div className="reward-student-actions">
           {canConfigure && <button className="reward-settings-button" onClick={() => setSettingsVisible(true)}><Settings size={17} /> Tùy chỉnh quà</button>}
-          <div className="wallet"><Coins size={21} /><div><strong>{selected.score}</strong><span>điểm hiện có</span></div></div>
+          {calculationMode === 'weekly-net' && <div className="wallet wallet-pending"><Star size={21} /><div><strong>{pendingWalletAdjustment > 0 ? '+' : ''}{pendingWalletAdjustment}</strong><span>chờ chốt tuần · +{pendingSummary?.goodPoints ?? 0} − {pendingSummary?.reminderPoints ?? 0}</span></div></div>}
+          <div className="wallet"><Coins size={21} /><div><strong>{selected.score}</strong><span>điểm đã có thể đổi</span></div></div>
         </div>
       </section>
       <section className="reward-history panel">
@@ -4626,7 +4724,7 @@ function ParentsPage({ students, activities, classCode, week, scoring, isTeacher
           <div className="parent-student-head parent-student-highlight"><Avatar initials={result.initials} gradient={result.gradient} photo={result.photo} size="large" /><div><span>HỌC SINH LỚP {viewClassCode}</span><h2>{result.name}</h2><p>{result.role} · Tổ {result.team}</p></div><div className="parent-today-badge"><Sparkles size={17} /><span>Hôm nay</span><strong>{attendanceLabels[result.attendance]}</strong></div></div>
           <div className="parent-progress-message"><span>🌻</span><p><strong>Một lời nhắn nhỏ dành cho gia đình</strong>{progressMessage}</p></div>
           {teacherComment && <div className="parent-teacher-comment"><span>👩‍🏫</span><div><small>NHẬN XÉT CỦA GIÁO VIÊN CHỦ NHIỆM</small><strong>{teacherComment}</strong>{teacherCommentUpdatedLabel && <em>Cập nhật {teacherCommentUpdatedLabel}</em>}</div></div>}
-          <div className="parent-stats"><div><Star size={21} /><strong>{result.weeklyScore > 0 ? '+' : ''}{result.weeklyScore}</strong><span>Điểm Tuần {viewWeek.number}</span></div><div><Coins size={21} /><strong>{result.score}</strong><span>Điểm tích lũy</span></div><div><Zap size={21} /><strong>{result.streak}</strong><span>Chuỗi ngày tốt</span></div><div><CalendarCheck2 size={21} /><strong>{attendanceLabels[result.attendance]}</strong><span>Hôm nay</span></div></div>
+          <div className="parent-stats"><div><Star size={21} /><strong>{result.weeklyScore > 0 ? '+' : ''}{result.weeklyScore}</strong><span>Điểm Tuần {viewWeek.number}</span></div><div><Coins size={21} /><strong>{result.score}</strong><span>Ví đổi thưởng</span></div><div><Zap size={21} /><strong>{result.streak}</strong><span>Chuỗi ngày tốt</span></div><div><CalendarCheck2 size={21} /><strong>{attendanceLabels[result.attendance]}</strong><span>Hôm nay</span></div></div>
           <h3>Ghi nhận trong Tuần {viewWeek.number}</h3>
           <div className="parent-activity">{currentStudentActivities.slice(0, 4).map((activity) => <div key={activity.id}><span className={activity.points > 0 ? 'positive' : 'negative'}>{activity.points > 0 ? '✨' : '💬'}</span><div><strong>{activity.title}</strong><small>{activity.detail} · {activity.time}</small></div><b>{activity.points > 0 ? '+' : ''}{activity.points}</b></div>)}{!currentStudentActivities.length && <p className="empty-state">Chưa có ghi nhận mới trong tuần này.</p>}</div>
           <form className="parent-feedback" onSubmit={submitFeedback}>
@@ -4686,7 +4784,7 @@ function StudentProfile({
           </div>
           <div className="strength-tags centered">{student.strengths.map((item) => <span key={item}>{item}</span>)}</div>
         </div>
-        <div className="profile-stats"><div><strong>{student.score}</strong><span>Điểm tích lũy</span></div><div><strong>{student.weeklyScore > 0 ? '+' : ''}{student.weeklyScore}</strong><span>Điểm tuần</span></div><div><strong>{student.streak}</strong><span>Chuỗi tốt</span></div></div>
+        <div className="profile-stats"><div><strong>{student.score}</strong><span>Ví đổi thưởng</span></div><div><strong>{student.weeklyScore > 0 ? '+' : ''}{student.weeklyScore}</strong><span>Điểm tuần</span></div><div><strong>{student.streak}</strong><span>Chuỗi tốt</span></div></div>
         <div className="profile-info"><h3>Thông tin nhanh</h3><div><span>Ngày sinh</span><strong>{student.birthday}</strong></div>{student.gender && <div><span>Giới tính</span><strong>{student.gender}</strong></div>}{student.studentCode && <div><span>Mã học sinh</span><strong>{student.studentCode}</strong></div>}<div><span>Trạng thái hôm nay</span><strong className={`attendance-text ${student.attendance}`}>{attendanceLabels[student.attendance]}</strong></div><div><span>Mã phụ huynh</span><strong>{student.parentCode}</strong></div></div>
         <div className="profile-history"><h3>Ghi nhận gần đây</h3>{activities.length ? activities.slice(0, 5).map((activity) => <div key={activity.id}><span className={activity.points > 0 ? 'positive' : 'negative'}>{activity.points > 0 ? <Plus size={14} /> : <Minus size={14} />}</span><p><strong>{activity.title}</strong><small>{activity.detail} · {activity.time}</small></p><b>{activity.points > 0 ? '+' : ''}{activity.points}</b></div>) : <p className="empty-state">Chưa có hoạt động gần đây.</p>}</div>
       </aside>
