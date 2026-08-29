@@ -3673,6 +3673,36 @@ function LegacyRandomPage({ students, teamCount }: { students: Student[]; teamCo
       document.removeEventListener('keydown', closeFallbackWithEscape);
     };
   }, []);
+  useEffect(() => {
+    const stage = stageRef.current;
+    if (!stage || !isPresentation) {
+      stage?.style.removeProperty('--wheel-presentation-scale');
+      return;
+    }
+    const updatePresentationScale = () => {
+      const viewport = window.visualViewport;
+      const layoutWidth = window.innerWidth;
+      const availableWidth = Math.min(layoutWidth, viewport?.width ?? layoutWidth);
+      const availableHeight = Math.min(window.innerHeight, viewport?.height ?? window.innerHeight);
+      const horizontalFootprint = layoutWidth <= 680 ? 760 : layoutWidth <= 1050 ? 900 : 1360;
+      const horizontalPadding = layoutWidth <= 680 ? 16 : layoutWidth <= 1050 ? 40 : 56;
+      const verticalOverhead = layoutWidth <= 680 ? 235 : 185;
+      const scale = Math.max(.3, Math.min(
+        1.45,
+        (availableWidth - horizontalPadding) / horizontalFootprint,
+        (availableHeight - verticalOverhead) / 485,
+      ));
+      stage.style.setProperty('--wheel-presentation-scale', scale.toFixed(3));
+    };
+    updatePresentationScale();
+    window.addEventListener('resize', updatePresentationScale);
+    window.visualViewport?.addEventListener('resize', updatePresentationScale);
+    return () => {
+      window.removeEventListener('resize', updatePresentationScale);
+      window.visualViewport?.removeEventListener('resize', updatePresentationScale);
+      stage.style.removeProperty('--wheel-presentation-scale');
+    };
+  }, [isPresentation]);
   const spin = () => {
     if (spinning || !pool.length) return;
     const winnerIndex = Math.floor(Math.random() * pool.length);

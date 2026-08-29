@@ -1730,22 +1730,23 @@ h1, h2, h3,
 .random-stage.is-presentation .random-settings,
 .random-stage:fullscreen .random-settings { min-height: 62px; padding: 9px 16px; }
 .random-stage.is-presentation .wheel-showcase,
-.random-stage:fullscreen .wheel-showcase { width: min(760px,78vw); height: 485px; transform: none; zoom: 1.2; margin-bottom: 0; }
+.random-stage:fullscreen .wheel-showcase {
+  width: 760px;
+  max-width: none;
+  height: 485px;
+  transform: none;
+  zoom: var(--wheel-presentation-scale,1);
+  margin-bottom: 0;
+}
 .page-random .random-stage.is-presentation .random-presentation-button,
 .page-random .random-stage:fullscreen .random-presentation-button { color: white; border-color: #ffe477; background: linear-gradient(135deg,#9650d3,#e65394); box-shadow: 0 4px 0 #702c89; text-shadow: 0 1px 2px rgba(76,23,91,.45); }
 .page-random .random-stage.is-presentation .random-presentation-button > span,
 .page-random .random-stage.is-presentation .random-presentation-button > svg,
 .page-random .random-stage:fullscreen .random-presentation-button > span,
 .page-random .random-stage:fullscreen .random-presentation-button > svg { color: #fff; opacity: 1; }
-@media (min-height: 900px) and (min-width: 1200px) {
-  .random-stage.is-presentation .wheel-showcase,
-  .random-stage:fullscreen .wheel-showcase { width: min(760px,64vw); height: 485px; transform: none; zoom: 1.45; }
-}
 @media (max-height: 720px) {
   .random-stage.is-presentation,
   .random-stage:fullscreen { padding-block: 10px; }
-  .random-stage.is-presentation .wheel-showcase,
-  .random-stage:fullscreen .wheel-showcase { width: min(760px,94vw); height: 485px; transform: none; zoom: 1.03; }
 }
 
 /* Sân khấu game vinh quang — lấy cảm hứng từ bảng thi đua rực rỡ */
