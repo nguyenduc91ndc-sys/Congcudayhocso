@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Star, ChevronLeft, ChevronRight, MessageCircle, Zap, Heart, ExternalLink, Eye } from 'lucide-react';
+import { Star, ChevronLeft, ChevronRight, MessageCircle, Zap, Heart, ExternalLink, Eye, Phone } from 'lucide-react';
 import { getApprovedFeedbacks, Feedback } from '../utils/feedbackUtils';
 import { getVisitStats } from '../utils/visitCounter';
 import { useTheme } from '../contexts/ThemeContext';
@@ -282,36 +282,21 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                     </motion.div>
 
                     {/* Social Links */}
-                    <div className="flex items-center gap-3">
+                    <div className="relative flex items-center gap-3">
                         {socialLinks.map((link) =>
                             link.onClick ? (
-                                <div key={link.name} className="relative">
-                                    <motion.button
-                                        onClick={link.onClick}
-                                        className={`flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r ${link.bgColor} text-white rounded-xl font-semibold text-sm shadow-lg ${link.hoverColor} hover:shadow-xl transition-all cursor-pointer border-none`}
-                                        whileHover={{ scale: 1.05, y: -2 }}
-                                        whileTap={{ scale: 0.95 }}
-                                    >
-                                        {link.icon}
-                                        <span className="hidden sm:inline">{link.name}</span>
-                                    </motion.button>
-                                    <AnimatePresence>
-                                        {showZaloTooltip && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10, scale: 0.9 }}
-                                                animate={{ opacity: 1, y: 0, scale: 1 }}
-                                                exit={{ opacity: 0, y: 10, scale: 0.9 }}
-                                                className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 whitespace-nowrap"
-                                            >
-                                                <div className="bg-white text-gray-800 px-5 py-3 rounded-xl shadow-2xl border border-blue-100 text-sm font-medium flex items-center gap-2">
-                                                    <span className="text-blue-500 text-lg">📞</span>
-                                                    <span>Hãy liên hệ tôi - <strong className="text-blue-600">0975509490</strong></span>
-                                                </div>
-                                                <div className="absolute top-full left-1/2 -translate-x-1/2 w-3 h-3 bg-white border-r border-b border-blue-100 rotate-45 -mt-1.5" />
-                                            </motion.div>
-                                        )}
-                                    </AnimatePresence>
-                                </div>
+                                <motion.button
+                                    key={link.name}
+                                    type="button"
+                                    aria-label={link.name}
+                                    onClick={link.onClick}
+                                    className={`flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r ${link.bgColor} text-white rounded-xl font-semibold text-sm shadow-lg ${link.hoverColor} hover:shadow-xl transition-all cursor-pointer border-none`}
+                                    whileHover={{ scale: 1.05, y: -2 }}
+                                    whileTap={{ scale: 0.95 }}
+                                >
+                                    {link.icon}
+                                    <span className="hidden sm:inline">{link.name}</span>
+                                </motion.button>
                             ) : (
                                 <motion.a
                                     key={link.name}
@@ -327,6 +312,26 @@ const Footer: React.FC<FooterProps> = ({ onViewChange }) => {
                                 </motion.a>
                             )
                         )}
+                        <AnimatePresence>
+                            {showZaloTooltip && (
+                                <motion.div
+                                    initial={{ opacity: 0, x: '-50%', y: 10, scale: 0.9 }}
+                                    animate={{ opacity: 1, x: '-50%', y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, x: '-50%', y: 10, scale: 0.9 }}
+                                    className="absolute bottom-full left-1/2 z-[60] mb-3 w-max max-w-[calc(100vw-1.5rem)] -translate-x-1/2"
+                                    role="status"
+                                >
+                                    <div className="flex max-w-full items-center justify-center gap-1.5 rounded-xl border border-blue-100 bg-white px-3 py-2.5 text-xs font-medium leading-tight text-gray-800 shadow-2xl sm:gap-2 sm:px-5 sm:py-3 sm:text-sm">
+                                        <Phone size={19} className="shrink-0 text-blue-500" aria-hidden="true" />
+                                        <span className="flex flex-wrap items-baseline justify-center gap-x-1 text-center">
+                                            <span>Hãy liên hệ tôi -</span>
+                                            <a href="tel:0975509490" className="shrink-0 whitespace-nowrap font-bold text-blue-600">0975509490</a>
+                                        </span>
+                                    </div>
+                                    <div className="absolute left-1/2 top-full -mt-1.5 h-3 w-3 -translate-x-1/2 rotate-45 border-b border-r border-blue-100 bg-white" />
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
                     </div>
 
                     <div className="flex flex-col items-center md:items-end gap-3 pb-16 md:pb-0">
