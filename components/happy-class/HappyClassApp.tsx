@@ -74,6 +74,21 @@ import ClassroomSeatingPage, {
 } from './ClassroomSeatingPage';
 import ClassReportExport from './ClassReportExport';
 import WeeklyTrackingSheetExport from './WeeklyTrackingSheetExport';
+import {
+  MAX_ACTIVE_CLASSES,
+  createLocalClassId,
+  createLocalClassKey,
+  listLocalClasses,
+  loadLocalClass,
+  loadWorkspaceSettings,
+  replaceTeacherClasses,
+  saveLocalClass,
+  saveWorkspaceSettings,
+  toLocalClassSummary,
+  type LocalClassRecord,
+  type LocalClassSummary,
+  type LocalWorkspaceSettings,
+} from './class-storage';
 import parentFeedbackAppsScriptCode from './google-apps-script-parent-feedback.gs?raw';
 import happyClassStyles from './styles.css?raw';
 import {
@@ -115,7 +130,7 @@ type PageId =
 
 type NavItem = { id: PageId; label: string; icon: LucideIcon; badge?: string };
 type TeamScoringMode = 'total' | 'average';
-type ClassProfile = { name: string; code: string; schoolYear: string; teamCount: number; teamScoringMode?: TeamScoringMode };
+type ClassProfile = { name: string; code: string; schoolYear: string; subject?: string; teamCount: number; teamScoringMode?: TeamScoringMode };
 type ParentPortalSettings = {
   enabled: boolean;
   publicId: string;
@@ -167,9 +182,31 @@ type ClassBackup = {
   classroomLayout?: ClassroomLayout;
 };
 
+type LocalClassData = {
+  students: Student[];
+  activities: Activity[];
+  pointReasons: PointReason[];
+  rewards: Reward[];
+  parentPortal: ParentPortalSettings;
+  weekState: WeekState;
+  weeklyScoring: WeeklyScoringSettings;
+  attendanceHistory: AttendanceRecord[];
+  classroomLayout: ClassroomLayout | null;
+};
+
+type WorkspaceBackup = {
+  version: 2;
+  type: 'happy-class-workspace';
+  exportedAt: string;
+  teacher: { name: string; photo?: string };
+  classes: Array<ClassBackup & { archived?: boolean }>;
+};
+
 const DEFAULT_TEAM_COUNT = 4;
 const MAX_TEAM_COUNT = 30;
 const LOCAL_DATA_NOTICE_KEY = 'happy-class-local-data-notice-v1';
+const LEGACY_MIGRATION_OWNER_KEY = 'happy-class-indexeddb-migration-owner-v2';
+const BACKUP_REMINDER_DAYS = 14;
 
 function shouldShowLocalDataNotice() {
   try {
@@ -429,6 +466,7 @@ function parseClassBackup(content: string): ClassBackup {
     || !isText(profile.name) || !profile.name.trim()
     || !isText(profile.code) || !profile.code.trim()
     || !isText(profile.schoolYear) || !profile.schoolYear.trim()
+    || (profile.subject !== undefined && (!isText(profile.subject) || profile.subject.length > 80))
     || (profile.teamCount !== undefined && (!isNumber(profile.teamCount) || !isValidTeamCount(profile.teamCount)))) {
     throw new Error('Thông tin giáo viên hoặc lớp học trong bản sao không hợp lệ.');
   }
@@ -714,11 +752,11 @@ function readTeacherPhoto() {
 function readClassProfile(): ClassProfile {
   try {
     const stored = localStorage.getItem('happy-class-profile');
-    if (!stored) return { name: 'Lớp Hạnh Phúc', code: '5/4', schoolYear: '2026–2027', teamCount: DEFAULT_TEAM_COUNT, teamScoringMode: 'average' };
+    if (!stored) return { name: 'Lớp Hạnh Phúc', code: '5/4', schoolYear: '2026–2027', subject: 'Chủ nhiệm', teamCount: DEFAULT_TEAM_COUNT, teamScoringMode: 'average' };
     const profile = JSON.parse(stored) as Partial<ClassProfile>;
-    return { name: profile.name || 'Lớp Hạnh Phúc', code: profile.code || '5/4', schoolYear: profile.schoolYear || '2026–2027', teamCount: normalizeTeamCount(profile.teamCount), teamScoringMode: profile.teamScoringMode === 'total' ? 'total' : 'average' };
+    return { name: profile.name || 'Lớp Hạnh Phúc', code: profile.code || '5/4', schoolYear: profile.schoolYear || '2026–2027', subject: profile.subject?.trim() || 'Chủ nhiệm', teamCount: normalizeTeamCount(profile.teamCount), teamScoringMode: profile.teamScoringMode === 'total' ? 'total' : 'average' };
   } catch {
-    return { name: 'Lớp Hạnh Phúc', code: '5/4', schoolYear: '2026–2027', teamCount: DEFAULT_TEAM_COUNT, teamScoringMode: 'average' };
+    return { name: 'Lớp Hạnh Phúc', code: '5/4', schoolYear: '2026–2027', subject: 'Chủ nhiệm', teamCount: DEFAULT_TEAM_COUNT, teamScoringMode: 'average' };
   }
 }
 
@@ -841,6 +879,98 @@ function prepareStudentPhoto(file: File): Promise<string> {
   });
 }
 
+function teacherLocalStorageKey(account: TeacherAccount | null, platformUser?: PlatformUser | null) {
+  const identity = platformUser?.email || platformUser?.id || account?.email || account?.id || 'local-teacher';
+  return String(identity).trim().toLocaleLowerCase('vi-VN').replace(/[^a-z0-9@._-]+/g, '-').slice(0, 180) || 'local-teacher';
+}
+
+function scopedTeacherProfileKey(teacherKey: string, field: 'name' | 'photo') {
+  return `happy-class-teacher-${field}-v2:${teacherKey}`;
+}
+
+function createEmptyLocalClassData(): LocalClassData {
+  return {
+    students: [],
+    activities: [],
+    pointReasons: initialPointReasons.map((item) => ({ ...item })),
+    rewards: initialRewards.map((item) => ({ ...item })),
+    parentPortal: createParentPortalSettings(),
+    weekState: createWeekState(),
+    weeklyScoring: createWeeklyScoringSettings(),
+    attendanceHistory: [],
+    classroomLayout: null,
+  };
+}
+
+function classDataFromBackup(backup: ClassBackup): LocalClassData {
+  const weekState = normalizeWeekState(backup.weekState ?? createWeekState());
+  const teamCount = normalizeTeamCount(backup.classProfile.teamCount);
+  return {
+    students: backup.students.map((student) => ({ ...student, team: Math.min(Math.max(1, student.team), teamCount) })),
+    activities: backup.activities.map((activity) => ({
+      ...activity,
+      createdAt: activity.createdAt ?? new Date().toISOString(),
+      weekId: activity.weekId ?? weekState.current.id,
+    })),
+    pointReasons: backup.pointReasons ?? initialPointReasons,
+    rewards: backup.rewards ?? initialRewards,
+    parentPortal: backup.parentPortal ?? createParentPortalSettings(),
+    weekState,
+    weeklyScoring: backup.weeklyScoring ?? createWeeklyScoringSettings(),
+    attendanceHistory: backup.attendanceHistory ?? [],
+    classroomLayout: backup.classroomLayout ?? null,
+  };
+}
+
+function normalizeStoredClassProfile(profile: ClassProfile): ClassProfile {
+  return {
+    name: profile.name.trim() || 'Lớp học',
+    code: profile.code.trim() || 'Lớp',
+    schoolYear: profile.schoolYear.trim() || '2026–2027',
+    subject: profile.subject?.trim() || 'Bộ môn',
+    teamCount: normalizeTeamCount(profile.teamCount),
+    teamScoringMode: profile.teamScoringMode === 'total' ? 'total' : 'average',
+  };
+}
+
+function backupFromLocalClass(record: LocalClassRecord<LocalClassData>, teacher: { name: string; photo?: string }): ClassBackup & { archived?: boolean } {
+  return {
+    version: 1,
+    teacher,
+    classProfile: record.profile,
+    students: record.data.students,
+    activities: record.data.activities,
+    pointReasons: record.data.pointReasons,
+    rewards: record.data.rewards,
+    parentPortal: record.data.parentPortal,
+    weekState: record.data.weekState,
+    weeklyScoring: record.data.weeklyScoring,
+    attendanceHistory: record.data.attendanceHistory,
+    classroomLayout: record.data.classroomLayout ?? undefined,
+    archived: record.archived,
+  };
+}
+
+function parseWorkspaceBackup(content: string): WorkspaceBackup {
+  let value: unknown;
+  try {
+    value = JSON.parse(content);
+  } catch {
+    throw new Error('Tệp không phải bản sao JSON hợp lệ.');
+  }
+  if (!isRecord(value) || value.version !== 2 || value.type !== 'happy-class-workspace' || !Array.isArray(value.classes)
+    || value.classes.length < 1 || value.classes.length > 200 || !isRecord(value.teacher) || !isText(value.teacher.name)) {
+    throw new Error('Tệp không đúng định dạng sao lưu toàn bộ lớp.');
+  }
+  const classes = value.classes.map((item) => {
+    const parsed = parseClassBackup(JSON.stringify(item));
+    return { ...parsed, archived: isRecord(item) && item.archived === true };
+  });
+  const activeCount = classes.filter((item) => !item.archived).length;
+  if (activeCount > MAX_ACTIVE_CLASSES) throw new Error(`Bản sao có ${activeCount} lớp đang hoạt động, vượt giới hạn ${MAX_ACTIVE_CLASSES} lớp.`);
+  return { ...value, classes } as WorkspaceBackup;
+}
+
 export default function HappyClassApp({ platformUser, onBack }: HappyClassAppProps) {
   const [parentPortalEntry] = useState(isParentPortalEntry);
   const [teacherAccount, setTeacherAccount] = useState<TeacherAccount | null>(() => parentPortalEntry
@@ -849,6 +979,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       ? { ...platformUser, source: 'platform' }
       : readTeacherAccount());
   const isTeacher = Boolean(teacherAccount);
+  const storageTeacherKey = useMemo(() => teacherLocalStorageKey(teacherAccount, platformUser), [platformUser, teacherAccount]);
   const [page, setPage] = useState<PageId>(() => {
     if (isParentPortalEntry()) return 'parents';
     const requestedPage = readPageFromHash();
@@ -869,6 +1000,12 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [teacherName, setTeacherName] = useState(readTeacherName);
   const [teacherPhoto, setTeacherPhoto] = useState<string | undefined>(readTeacherPhoto);
   const [classProfile, setClassProfile] = useState<ClassProfile>(readClassProfile);
+  const [localClasses, setLocalClasses] = useState<LocalClassSummary[]>([]);
+  const [activeClassId, setActiveClassId] = useState('');
+  const [classStorageReady, setClassStorageReady] = useState(parentPortalEntry);
+  const [classWorkspaceOpen, setClassWorkspaceOpen] = useState(false);
+  const [backupReminderOpen, setBackupReminderOpen] = useState(false);
+  const [workspaceSettings, setWorkspaceSettings] = useState<LocalWorkspaceSettings>({ teacherKey: storageTeacherKey });
   const [parentPortal, setParentPortal] = useState<ParentPortalSettings>(readParentPortalSettings);
   const [weeklyScoring, setWeeklyScoring] = useState<WeeklyScoringSettings>(readWeeklyScoringSettings);
   const [attendanceHistory, setAttendanceHistory] = useState<AttendanceRecord[]>(readStoredAttendanceHistory);
@@ -931,6 +1068,50 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     playTabHoverSound();
   };
 
+  const getCurrentLocalClassData = (): LocalClassData => ({
+    students,
+    activities,
+    pointReasons,
+    rewards: rewardCatalog,
+    parentPortal,
+    weekState,
+    weeklyScoring,
+    attendanceHistory,
+    classroomLayout,
+  });
+
+  const createCurrentLocalRecord = (classId = activeClassId): LocalClassRecord<LocalClassData> => {
+    const previous = localClasses.find((item) => item.id === classId);
+    const now = new Date().toISOString();
+    return {
+      key: createLocalClassKey(storageTeacherKey, classId),
+      id: classId,
+      teacherKey: storageTeacherKey,
+      profile: normalizeStoredClassProfile(classProfile),
+      archived: previous?.archived ?? false,
+      createdAt: previous?.createdAt ?? now,
+      updatedAt: now,
+      data: getCurrentLocalClassData(),
+    };
+  };
+
+  const applyLocalClassRecord = (record: LocalClassRecord<LocalClassData>) => {
+    setStudents(record.data.students);
+    setActivities(record.data.activities);
+    setPointReasons(record.data.pointReasons);
+    setRewardCatalog(record.data.rewards);
+    setParentPortal(record.data.parentPortal);
+    setWeekState(record.data.weekState);
+    setWeeklyScoring(record.data.weeklyScoring);
+    setAttendanceHistory(record.data.attendanceHistory);
+    setClassroomLayout(record.data.classroomLayout);
+    setClassProfile(normalizeStoredClassProfile(record.profile));
+    setProfileId(null);
+    setPointUndoAction(null);
+    setWeekUndoAction(null);
+    setTeamUndoAction(null);
+  };
+
   useEffect(() => {
     const style = document.createElement('style');
     style.dataset.happyClassStyles = 'true';
@@ -950,41 +1131,104 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   }, [parentPortalEntry, platformUser]);
 
   useEffect(() => {
-    localStorage.setItem('happy-class-students', JSON.stringify(students));
-  }, [students]);
+    if (parentPortalEntry) return;
+    const nameKey = scopedTeacherProfileKey(storageTeacherKey, 'name');
+    const photoKey = scopedTeacherProfileKey(storageTeacherKey, 'photo');
+    const storedName = localStorage.getItem(nameKey)?.trim();
+    const storedPhoto = localStorage.getItem(photoKey) || undefined;
+    const fallbackName = platformUser?.name?.trim() || teacherAccount?.name?.trim() || readTeacherName();
+    setTeacherName(storedName || fallbackName);
+    setTeacherPhoto(storedPhoto);
+    if (!storedName && fallbackName) localStorage.setItem(nameKey, fallbackName);
+  }, [parentPortalEntry, platformUser?.name, storageTeacherKey, teacherAccount?.name]);
 
   useEffect(() => {
-    if (classroomLayout) localStorage.setItem('happy-class-seating-layout', JSON.stringify(classroomLayout));
-    else localStorage.removeItem('happy-class-seating-layout');
-  }, [classroomLayout]);
+    if (parentPortalEntry) return;
+    let cancelled = false;
+    setClassStorageReady(false);
+    const initializeLocalClasses = async () => {
+      try {
+        let records = await listLocalClasses<LocalClassData>(storageTeacherKey);
+        if (!records.length) {
+          const migrationOwner = localStorage.getItem(LEGACY_MIGRATION_OWNER_KEY);
+          const mayClaimLegacyData = !migrationOwner || migrationOwner === storageTeacherKey;
+          const legacyWeekState = mayClaimLegacyData ? readStoredWeekState() : createWeekState();
+          const profile = mayClaimLegacyData
+            ? readClassProfile()
+            : { name: 'Lớp học mới', code: 'Lớp 1', schoolYear: '2026–2027', subject: 'Bộ môn', teamCount: DEFAULT_TEAM_COUNT, teamScoringMode: 'average' as const };
+          // ID cố định giúp lần khởi tạo vẫn an toàn khi React StrictMode chạy hiệu ứng hai lần trong môi trường phát triển.
+          const classId = 'initial-local-class';
+          const now = new Date().toISOString();
+          const data: LocalClassData = mayClaimLegacyData
+            ? {
+                students: readStoredStudents(),
+                activities: readStoredActivities(legacyWeekState.current.id),
+                pointReasons: readStoredPointReasons(),
+                rewards: readStoredRewards(),
+                parentPortal: readParentPortalSettings(),
+                weekState: legacyWeekState,
+                weeklyScoring: readWeeklyScoringSettings(),
+                attendanceHistory: readStoredAttendanceHistory(),
+                classroomLayout: readStoredClassroomLayout(),
+              }
+            : createEmptyLocalClassData();
+          const firstRecord: LocalClassRecord<LocalClassData> = {
+            key: createLocalClassKey(storageTeacherKey, classId),
+            id: classId,
+            teacherKey: storageTeacherKey,
+            profile: normalizeStoredClassProfile(profile),
+            archived: false,
+            createdAt: now,
+            updatedAt: now,
+            data,
+          };
+          await saveLocalClass(firstRecord);
+          if (mayClaimLegacyData) localStorage.setItem(LEGACY_MIGRATION_OWNER_KEY, storageTeacherKey);
+          records = [firstRecord];
+        }
+
+        const settings = await loadWorkspaceSettings(storageTeacherKey);
+        const activeRecord = records.find((item) => item.id === settings.activeClassId && !item.archived)
+          ?? records.find((item) => !item.archived)
+          ?? records[0];
+        if (!activeRecord) throw new Error('Không tìm thấy lớp học trên thiết bị.');
+        const nextSettings = { ...settings, teacherKey: storageTeacherKey, activeClassId: activeRecord.id };
+        await saveWorkspaceSettings(nextSettings);
+        if (cancelled) return;
+        setWorkspaceSettings(nextSettings);
+        setLocalClasses(records.map(toLocalClassSummary));
+        setActiveClassId(activeRecord.id);
+        applyLocalClassRecord(activeRecord);
+        const lastBackup = settings.lastBackupAt ? new Date(settings.lastBackupAt).getTime() : 0;
+        const lastReminder = settings.lastBackupReminderAt ? new Date(settings.lastBackupReminderAt).getTime() : 0;
+        const reminderDue = (!lastBackup || Date.now() - lastBackup >= BACKUP_REMINDER_DAYS * 24 * 60 * 60 * 1000)
+          && (!lastReminder || Date.now() - lastReminder >= 7 * 24 * 60 * 60 * 1000);
+        setBackupReminderOpen(reminderDue && activeRecord.data.students.length > 0);
+        setClassStorageReady(true);
+      } catch (error) {
+        if (cancelled) return;
+        setClassStorageReady(true);
+        setToast(error instanceof Error ? error.message : 'Chưa thể mở kho dữ liệu nhiều lớp trên máy.');
+      }
+    };
+    void initializeLocalClasses();
+    return () => { cancelled = true; };
+  // Khởi tạo lại kho lớp khi đổi tài khoản giáo viên; dữ liệu lớp tự lưu bằng hiệu ứng bên dưới.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [parentPortalEntry, storageTeacherKey]);
 
   useEffect(() => {
-    localStorage.setItem('happy-class-activities', JSON.stringify(activities));
-  }, [activities]);
-
-  useEffect(() => {
-    localStorage.setItem('happy-class-week-state', JSON.stringify(weekState));
-  }, [weekState]);
-
-  useEffect(() => {
-    localStorage.setItem('happy-class-point-reasons', JSON.stringify(pointReasons));
-  }, [pointReasons]);
-
-  useEffect(() => {
-    localStorage.setItem('happy-class-rewards', JSON.stringify(rewardCatalog));
-  }, [rewardCatalog]);
-
-  useEffect(() => {
-    localStorage.setItem('happy-class-parent-portal', JSON.stringify(parentPortal));
-  }, [parentPortal]);
-
-  useEffect(() => {
-    localStorage.setItem('happy-class-weekly-scoring', JSON.stringify(weeklyScoring));
-  }, [weeklyScoring]);
-
-  useEffect(() => {
-    localStorage.setItem('happy-class-attendance-history', JSON.stringify(attendanceHistory));
-  }, [attendanceHistory]);
+    if (parentPortalEntry || !classStorageReady || !activeClassId) return;
+    const timer = window.setTimeout(() => {
+      const record = createCurrentLocalRecord();
+      void saveLocalClass(record)
+        .then(() => setLocalClasses((current) => current.map((item) => item.id === record.id ? toLocalClassSummary(record) : item)))
+        .catch(() => setToast('Không thể tự lưu lớp hiện tại. Hãy sao lưu toàn bộ lớp ngay.'));
+    }, 450);
+    return () => window.clearTimeout(timer);
+  // Mọi phần dữ liệu dưới đây đều thuộc lớp đang chọn và phải được lưu cùng một bản ghi IndexedDB.
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeClassId, activities, attendanceHistory, classProfile, classStorageReady, classroomLayout, parentPortalEntry, parentPortal, pointReasons, rewardCatalog, students, weeklyScoring, weekState]);
 
   // Sync student.attendance from today's attendance record on mount
   useEffect(() => {
@@ -1118,20 +1362,125 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     if (!nextName) return;
     setTeacherName(nextName);
     setTeacherPhoto(photo);
-    localStorage.setItem('happy-class-teacher-name', nextName);
-    if (photo) localStorage.setItem('happy-class-teacher-photo', photo);
-    else localStorage.removeItem('happy-class-teacher-photo');
+    localStorage.setItem(scopedTeacherProfileKey(storageTeacherKey, 'name'), nextName);
+    if (photo) localStorage.setItem(scopedTeacherProfileKey(storageTeacherKey, 'photo'), photo);
+    else localStorage.removeItem(scopedTeacherProfileKey(storageTeacherKey, 'photo'));
     setSettingsOpen(false);
     setToast('Đã cập nhật hồ sơ giáo viên');
   };
 
+  const switchLocalClass = async (classId: string) => {
+    if (!classStorageReady || classId === activeClassId) {
+      setClassWorkspaceOpen(false);
+      return;
+    }
+    const targetSummary = localClasses.find((item) => item.id === classId && !item.archived);
+    if (!targetSummary) return;
+    setClassStorageReady(false);
+    try {
+      if (activeClassId) await saveLocalClass(createCurrentLocalRecord());
+      const target = await loadLocalClass<LocalClassData>(storageTeacherKey, classId);
+      if (!target) throw new Error('Không tìm thấy dữ liệu của lớp đã chọn.');
+      const nextSettings = { ...workspaceSettings, teacherKey: storageTeacherKey, activeClassId: classId };
+      await saveWorkspaceSettings(nextSettings);
+      setWorkspaceSettings(nextSettings);
+      setActiveClassId(classId);
+      applyLocalClassRecord(target);
+      setClassWorkspaceOpen(false);
+      setSidebarOpen(false);
+      setToast(`Đã chuyển sang lớp ${target.profile.code}`);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Chưa thể chuyển lớp.');
+    } finally {
+      setClassStorageReady(true);
+    }
+  };
+
+  const createLocalClass = async (profile: ClassProfile) => {
+    const activeCount = localClasses.filter((item) => !item.archived).length;
+    if (activeCount >= MAX_ACTIVE_CLASSES) {
+      setToast(`Đã đủ ${MAX_ACTIVE_CLASSES} lớp đang hoạt động. Hãy lưu trữ một lớp cũ trước khi thêm lớp mới.`);
+      return false;
+    }
+    setClassStorageReady(false);
+    try {
+      if (activeClassId) await saveLocalClass(createCurrentLocalRecord());
+      const classId = createLocalClassId();
+      const now = new Date().toISOString();
+      const record: LocalClassRecord<LocalClassData> = {
+        key: createLocalClassKey(storageTeacherKey, classId),
+        id: classId,
+        teacherKey: storageTeacherKey,
+        profile: normalizeStoredClassProfile(profile),
+        archived: false,
+        createdAt: now,
+        updatedAt: now,
+        data: createEmptyLocalClassData(),
+      };
+      await saveLocalClass(record);
+      const nextSettings = { ...workspaceSettings, teacherKey: storageTeacherKey, activeClassId: classId };
+      await saveWorkspaceSettings(nextSettings);
+      setWorkspaceSettings(nextSettings);
+      setLocalClasses((current) => [...current, toLocalClassSummary(record)]);
+      setActiveClassId(classId);
+      applyLocalClassRecord(record);
+      setClassWorkspaceOpen(false);
+      setBackupReminderOpen(true);
+      setToast(`Đã thêm lớp ${record.profile.code}. Hãy nhập danh sách học sinh và sao lưu toàn bộ lớp sau khi hoàn tất.`);
+      return true;
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Chưa thể thêm lớp mới.');
+      return false;
+    } finally {
+      setClassStorageReady(true);
+    }
+  };
+
+  const setLocalClassArchived = async (classId: string, archived: boolean) => {
+    const summary = localClasses.find((item) => item.id === classId);
+    if (!summary || summary.archived === archived) return;
+    if (!archived && localClasses.filter((item) => !item.archived).length >= MAX_ACTIVE_CLASSES) {
+      setToast(`Chỉ được mở tối đa ${MAX_ACTIVE_CLASSES} lớp đang hoạt động.`);
+      return;
+    }
+    const nextActive = archived && classId === activeClassId
+      ? localClasses.find((item) => !item.archived && item.id !== classId)
+      : undefined;
+    if (archived && classId === activeClassId && !nextActive) {
+      setToast('Cần giữ ít nhất một lớp đang hoạt động.');
+      return;
+    }
+    setClassStorageReady(false);
+    try {
+      if (activeClassId) await saveLocalClass(createCurrentLocalRecord());
+      const record = await loadLocalClass<LocalClassData>(storageTeacherKey, classId);
+      if (!record) throw new Error('Không tìm thấy lớp cần cập nhật.');
+      const updated = { ...record, archived, updatedAt: new Date().toISOString() };
+      await saveLocalClass(updated);
+      setLocalClasses((current) => current.map((item) => item.id === classId ? toLocalClassSummary(updated) : item));
+      if (nextActive) {
+        const target = await loadLocalClass<LocalClassData>(storageTeacherKey, nextActive.id);
+        if (!target) throw new Error('Không tìm thấy lớp thay thế.');
+        const nextSettings = { ...workspaceSettings, activeClassId: target.id };
+        await saveWorkspaceSettings(nextSettings);
+        setWorkspaceSettings(nextSettings);
+        setActiveClassId(target.id);
+        applyLocalClassRecord(target);
+      }
+      setToast(archived ? `Đã đưa lớp ${record.profile.code} vào lưu trữ` : `Đã mở lại lớp ${record.profile.code}`);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Chưa thể cập nhật trạng thái lớp.');
+    } finally {
+      setClassStorageReady(true);
+    }
+  };
+
   const saveClassProfile = (profile: ClassProfile) => {
-    const nextProfile = { ...profile, teamCount: normalizeTeamCount(profile.teamCount) };
+    const nextProfile = normalizeStoredClassProfile(profile);
     const affectedStudents = students.filter((student) => student.team > nextProfile.teamCount);
     if (affectedStudents.length && !window.confirm(`Có ${affectedStudents.length} học sinh đang thuộc tổ lớn hơn ${nextProfile.teamCount}. Khi tiếp tục, các em này sẽ được chuyển về Tổ ${nextProfile.teamCount}.`)) return;
     if (affectedStudents.length) setStudents((current) => current.map((student) => student.team > nextProfile.teamCount ? { ...student, team: nextProfile.teamCount } : student));
     setClassProfile(nextProfile);
-    localStorage.setItem('happy-class-profile', JSON.stringify(nextProfile));
     setClassSettingsOpen(false);
     setToast(affectedStudents.length ? `Đã cập nhật lớp và chuyển ${affectedStudents.length} học sinh về Tổ ${nextProfile.teamCount}` : `Đã cập nhật lớp với ${nextProfile.teamCount} tổ`);
   };
@@ -1140,7 +1489,6 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     const nextMode: TeamScoringMode = classProfile.teamScoringMode === 'total' ? 'average' : 'total';
     const nextProfile: ClassProfile = { ...classProfile, teamScoringMode: nextMode };
     setClassProfile(nextProfile);
-    localStorage.setItem('happy-class-profile', JSON.stringify(nextProfile));
     setToast(nextMode === 'average' ? 'Đã chuyển sang tính Điểm trung bình / HS' : 'Đã chuyển sang tính Tổng điểm dồn của tổ');
   };
 
@@ -1152,7 +1500,6 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setStudents((current) => current.map((student) => ({ ...student, team: assignmentMap.get(student.id) ?? Math.min(student.team, normalizedTeamCount) })));
     const nextProfile = { ...classProfile, teamCount: normalizedTeamCount };
     setClassProfile(nextProfile);
-    localStorage.setItem('happy-class-profile', JSON.stringify(nextProfile));
     setTeamUndoAction({
       message: `Đã áp dụng cách chia ngẫu nhiên thành ${normalizedTeamCount} tổ`,
       teamCount: classProfile.teamCount,
@@ -1168,7 +1515,6 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setStudents((current) => current.map((student) => ({ ...student, team: assignmentMap.get(student.id) ?? student.team })));
     const previousProfile = { ...classProfile, teamCount: action.teamCount };
     setClassProfile(previousProfile);
-    localStorage.setItem('happy-class-profile', JSON.stringify(previousProfile));
     setTeamUndoAction(null);
     setToast('Đã khôi phục cách chia tổ trước đó');
   };
@@ -1205,6 +1551,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       setStudents((current) => [...current, ...normalized]);
     }
     const skipped = incoming.length - normalized.length;
+    if (normalized.length > 0) setBackupReminderOpen(true);
     setToast(`Đã nhập ${normalized.length} học sinh${skipped ? `, bỏ qua ${skipped} dòng trùng hoặc vượt giới hạn` : ''}. Hãy sao lưu dữ liệu xuống máy.`);
     return { imported: normalized.length, skipped };
   };
@@ -1297,33 +1644,29 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
         name: backup.classProfile.name.trim(),
         code: backup.classProfile.code.trim(),
         schoolYear: backup.classProfile.schoolYear.trim(),
+        subject: backup.classProfile.subject?.trim() || classProfile.subject || 'Bộ môn',
         teamCount: normalizeTeamCount(backup.classProfile.teamCount),
+        teamScoringMode: backup.classProfile.teamScoringMode === 'total' ? 'total' as const : 'average' as const,
       };
-      const restoredWeekState = normalizeWeekState(backup.weekState ?? createWeekState());
-
-      setStudents(backup.students.map((student) => ({ ...student, team: Math.min(Math.max(1, student.team), normalizedProfile.teamCount) })));
-      setWeekState(restoredWeekState);
-      setActivities(backup.activities.map((activity) => ({
-        ...activity,
-        createdAt: activity.createdAt ?? new Date().toISOString(),
-        weekId: activity.weekId ?? restoredWeekState.current.id,
-      })));
-      setPointReasons(backup.pointReasons ?? initialPointReasons);
-      setRewardCatalog(backup.rewards ?? initialRewards);
-      setParentPortal(backup.parentPortal ?? createParentPortalSettings());
-      setWeeklyScoring(backup.weeklyScoring ?? createWeeklyScoringSettings());
-      setAttendanceHistory(backup.attendanceHistory ?? []);
-      setClassroomLayout(backup.classroomLayout ?? null);
+      const restoredData = classDataFromBackup({ ...backup, classProfile: normalizedProfile });
+      setStudents(restoredData.students);
+      setWeekState(restoredData.weekState);
+      setActivities(restoredData.activities);
+      setPointReasons(restoredData.pointReasons);
+      setRewardCatalog(restoredData.rewards);
+      setParentPortal(restoredData.parentPortal);
+      setWeeklyScoring(restoredData.weeklyScoring);
+      setAttendanceHistory(restoredData.attendanceHistory);
+      setClassroomLayout(restoredData.classroomLayout);
       setTeacherName(backup.teacher.name.trim());
       setTeacherPhoto(backup.teacher.photo);
       setClassProfile(normalizedProfile);
       setProfileId(null);
       setSettingsOpen(false);
       setClassSettingsOpen(false);
-      localStorage.setItem('happy-class-teacher-name', backup.teacher.name.trim());
-      if (backup.teacher.photo) localStorage.setItem('happy-class-teacher-photo', backup.teacher.photo);
-      else localStorage.removeItem('happy-class-teacher-photo');
-      localStorage.setItem('happy-class-profile', JSON.stringify(normalizedProfile));
+      localStorage.setItem(scopedTeacherProfileKey(storageTeacherKey, 'name'), backup.teacher.name.trim());
+      if (backup.teacher.photo) localStorage.setItem(scopedTeacherProfileKey(storageTeacherKey, 'photo'), backup.teacher.photo);
+      else localStorage.removeItem(scopedTeacherProfileKey(storageTeacherKey, 'photo'));
       setToast(`Đã khôi phục bản sao với ${backup.students.length} học sinh`);
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Không thể nhập bản sao dữ liệu.';
@@ -1356,6 +1699,90 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     link.click();
     window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
     setToast(`Đã tải tệp “${fileName}” xuống máy. Hãy giữ tệp ở nơi an toàn.`);
+  };
+
+  const exportAllClasses = async () => {
+    if (!classStorageReady || !activeClassId) return;
+    try {
+      await saveLocalClass(createCurrentLocalRecord());
+      const records = await listLocalClasses<LocalClassData>(storageTeacherKey);
+      const exportedAt = new Date().toISOString();
+      const workspace: WorkspaceBackup = {
+        version: 2,
+        type: 'happy-class-workspace',
+        exportedAt,
+        teacher: { name: teacherName, photo: teacherPhoto },
+        classes: records.map((record) => backupFromLocalClass(record, { name: teacherName, photo: teacherPhoto })),
+      };
+      const url = URL.createObjectURL(new Blob([JSON.stringify(workspace, null, 2)], { type: 'application/json' }));
+      const link = document.createElement('a');
+      const fileName = `sao-luu-tat-ca-${records.length}-lop-${exportedAt.slice(0, 10)}.json`;
+      link.href = url;
+      link.download = fileName;
+      link.click();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1_000);
+      const nextSettings = { ...workspaceSettings, teacherKey: storageTeacherKey, activeClassId, lastBackupAt: exportedAt };
+      await saveWorkspaceSettings(nextSettings);
+      setWorkspaceSettings(nextSettings);
+      setBackupReminderOpen(false);
+      setToast(`Đã sao lưu ${records.length} lớp. Hãy giữ tệp “${fileName}” ở nơi an toàn.`);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Chưa thể sao lưu toàn bộ lớp.');
+    }
+  };
+
+  const importAllClasses = async (file: File) => {
+    try {
+      if (file.size > 250 * 1024 * 1024) throw new Error('Bản sao quá lớn. Vui lòng chọn tệp dưới 250 MB.');
+      const workspace = parseWorkspaceBackup(await file.text());
+      const activeCount = workspace.classes.filter((item) => !item.archived).length;
+      if (!window.confirm(`Khôi phục ${workspace.classes.length} lớp (${activeCount} lớp đang hoạt động)? Toàn bộ kho lớp hiện tại của tài khoản này trên máy sẽ được thay thế.`)) return;
+      setClassStorageReady(false);
+      const now = new Date().toISOString();
+      const records = workspace.classes.map((backup, index): LocalClassRecord<LocalClassData> => {
+        const id = createLocalClassId();
+        const archived = activeCount === 0 ? index !== 0 : backup.archived === true;
+        return {
+          key: createLocalClassKey(storageTeacherKey, id),
+          id,
+          teacherKey: storageTeacherKey,
+          profile: normalizeStoredClassProfile(backup.classProfile),
+          archived,
+          createdAt: now,
+          updatedAt: now,
+          data: classDataFromBackup(backup),
+        };
+      });
+      await replaceTeacherClasses(storageTeacherKey, records);
+      const activeRecord = records.find((item) => !item.archived) ?? records[0];
+      const nextSettings: LocalWorkspaceSettings = { teacherKey: storageTeacherKey, activeClassId: activeRecord.id };
+      await saveWorkspaceSettings(nextSettings);
+      setWorkspaceSettings(nextSettings);
+      setLocalClasses(records.map(toLocalClassSummary));
+      setActiveClassId(activeRecord.id);
+      applyLocalClassRecord(activeRecord);
+      setTeacherName(workspace.teacher.name.trim() || teacherName);
+      setTeacherPhoto(workspace.teacher.photo);
+      localStorage.setItem(scopedTeacherProfileKey(storageTeacherKey, 'name'), workspace.teacher.name.trim() || teacherName);
+      if (workspace.teacher.photo) localStorage.setItem(scopedTeacherProfileKey(storageTeacherKey, 'photo'), workspace.teacher.photo);
+      else localStorage.removeItem(scopedTeacherProfileKey(storageTeacherKey, 'photo'));
+      setBackupReminderOpen(true);
+      setClassWorkspaceOpen(false);
+      setToast(`Đã khôi phục ${records.length} lớp. Hãy tạo một bản sao mới sau khi kiểm tra dữ liệu.`);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Không thể khôi phục toàn bộ lớp.';
+      setToast(message);
+      window.alert(message);
+    } finally {
+      setClassStorageReady(true);
+    }
+  };
+
+  const remindBackupLater = async () => {
+    const nextSettings = { ...workspaceSettings, teacherKey: storageTeacherKey, activeClassId, lastBackupReminderAt: new Date().toISOString() };
+    setWorkspaceSettings(nextSettings);
+    setBackupReminderOpen(false);
+    await saveWorkspaceSettings(nextSettings).catch(() => undefined);
   };
 
   const acknowledgeLocalDataNotice = () => {
@@ -1831,7 +2258,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   return (
     <div className={`app-shell page-${page}`} onPointerDownCapture={unlockTabHoverAudio} onPointerOver={handleTabPointerOver}>
       {sidebarOpen && <button className="sidebar-scrim" aria-label="Đóng menu" onClick={() => setSidebarOpen(false)} />}
-      <Sidebar page={page} open={sidebarOpen} teacherAccount={teacherAccount} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onTeacherLogin={() => setTeacherAccessOpen(true)} onTeacherLogout={logoutTeacher} onHelp={() => { setHelpOpen(true); setSidebarOpen(false); }} onNavigate={navigate} />
+      <Sidebar page={page} open={sidebarOpen} teacherAccount={teacherAccount} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} classCount={localClasses.filter((item) => !item.archived).length} onManageClasses={() => { if (!isTeacher) { setTeacherAccessOpen(true); setToast('Vui lòng đăng nhập tài khoản giáo viên để thêm hoặc đổi lớp.'); return; } setClassWorkspaceOpen(true); setSidebarOpen(false); }} onTeacherLogin={() => setTeacherAccessOpen(true)} onTeacherLogout={logoutTeacher} onHelp={() => { setHelpOpen(true); setSidebarOpen(false); }} onNavigate={navigate} />
       <main className="main-shell">
         <Topbar pageTitle={pageTitle} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onOpenMenu={() => setSidebarOpen(true)} onBack={onBack} />
 
@@ -1862,16 +2289,19 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'honors' && <HonorsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} />}
           {page === 'parents' && <ParentsPage students={students} activities={activities} classCode={classProfile.code} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} portal={parentPortal} publishing={cloudPublishing} onPublish={publishParentPortal} onTogglePortal={() => void toggleParentPortal()} onToggleRequireAccessCode={toggleParentAccessMode} onRegenerateCode={regenerateParentCode} onToggleAccess={toggleParentAccess} onSaveFeedbackConfig={saveParentFeedbackConfig} onToast={setToast} />}
-          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onExport={exportBackup} onImport={importBackup} onOpenPrivacy={() => setPrivacyOpen(true)} onRestore={restoreSampleData} />}
+          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} classCount={localClasses.filter((item) => !item.archived).length} onManageClasses={() => setClassWorkspaceOpen(true)} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onExport={exportBackup} onExportAll={() => void exportAllClasses()} onImport={importBackup} onOpenPrivacy={() => setPrivacyOpen(true)} onRestore={restoreSampleData} />}
         </div>
       </main>
 
       <MobileNav page={page} onNavigate={navigate} />
+      {!classStorageReady && <div className="class-storage-loading" role="status"><span className="class-storage-spinner" /><strong>Đang mở dữ liệu lớp trên máy…</strong></div>}
       {settingsOpen && <TeacherSettings teacherName={teacherName} teacherPhoto={teacherPhoto} classCode={classProfile.code} onSave={saveTeacherProfile} onClose={() => setSettingsOpen(false)} />}
       {classSettingsOpen && <ClassSettings classProfile={classProfile} onSave={saveClassProfile} onClose={() => setClassSettingsOpen(false)} />}
+      {classWorkspaceOpen && <ClassWorkspaceDialog classes={localClasses} activeClassId={activeClassId} busy={!classStorageReady} onSwitch={switchLocalClass} onCreate={createLocalClass} onSetArchived={setLocalClassArchived} onExportAll={exportAllClasses} onImportAll={importAllClasses} onClose={() => setClassWorkspaceOpen(false)} />}
       {teacherAccessOpen && <TeacherAccess teacherName={teacherName} googleAvailable={canUseFirebaseOnline()} onGoogleLogin={loginFirebaseTeacher} onSuccess={finishTeacherLogin} onClose={() => setTeacherAccessOpen(false)} />}
       {helpOpen && <HelpCenter isTeacher={isTeacher} onNavigate={navigate} onTeacherLogin={() => { setHelpOpen(false); setTeacherAccessOpen(true); }} onClose={() => setHelpOpen(false)} />}
-      {privacyOpen && <LocalDataNotice onClose={acknowledgeLocalDataNotice} />}
+      {privacyOpen && <LocalDataNotice onBackup={() => void exportAllClasses()} onClose={acknowledgeLocalDataNotice} />}
+      {backupReminderOpen && !privacyOpen && <BackupReminder classCount={localClasses.length} onBackup={() => void exportAllClasses()} onLater={() => void remindBackupLater()} />}
       {selectedProfile && (
         <StudentProfile
           student={selectedProfile}
@@ -1900,19 +2330,19 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   );
 }
 
-function Sidebar({ page, open, teacherAccount, teacherName, teacherPhoto, classProfile, onTeacherLogin, onTeacherLogout, onHelp, onNavigate }: { page: PageId; open: boolean; teacherAccount: TeacherAccount | null; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onTeacherLogin: () => void; onTeacherLogout: () => void; onHelp: () => void; onNavigate: (page: PageId) => void }) {
+function Sidebar({ page, open, teacherAccount, teacherName, teacherPhoto, classProfile, classCount, onManageClasses, onTeacherLogin, onTeacherLogout, onHelp, onNavigate }: { page: PageId; open: boolean; teacherAccount: TeacherAccount | null; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; classCount: number; onManageClasses: () => void; onTeacherLogin: () => void; onTeacherLogout: () => void; onHelp: () => void; onNavigate: (page: PageId) => void }) {
   return (
     <aside className={`sidebar ${open ? 'is-open' : ''}`}>
       <div className="brand">
         <div className="brand-mark"><BookHeart size={24} /></div>
-        <div><strong>{classProfile.name}</strong><span>Trợ lý chủ nhiệm</span></div>
+        <div><strong>{classProfile.name}</strong><span>Trợ lý lớp học</span></div>
       </div>
 
-      <div className="class-switcher">
+      <button type="button" className="class-switcher" onClick={onManageClasses} aria-label={`Đổi lớp, hiện có ${classCount} lớp đang hoạt động`}>
         <div className="class-icon">{classProfile.code}</div>
-        <div><strong>{classProfile.name}</strong><span>Năm học {classProfile.schoolYear}</span></div>
+        <div><strong>{classProfile.name}</strong><span>{classProfile.subject || 'Bộ môn'} · {classCount}/{MAX_ACTIVE_CLASSES} lớp</span><em>+ Thêm / đổi lớp</em></div>
         <ChevronDown size={16} />
-      </div>
+      </button>
 
       <nav className="sidebar-nav" aria-label="Điều hướng chính">
         <span className="nav-eyebrow">QUẢN LÝ LỚP</span>
@@ -1971,6 +2401,7 @@ function Sidebar({ page, open, teacherAccount, teacherName, teacherPhoto, classP
 function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeacher: boolean; onNavigate: (page: PageId) => void; onTeacherLogin: () => void; onClose: () => void }) {
   const [query, setQuery] = useState('');
   const topics: { icon: string; title: string; description: string; keywords: string; page: PageId; teacherOnly?: boolean }[] = [
+    { icon: '🏫', title: 'Thêm và chuyển nhiều lớp', description: 'Nhấn thẻ lớp ở đầu thanh bên để tạo, chuyển hoặc lưu trữ tối đa 30 lớp đang giảng dạy.', keywords: 'thêm lớp nhiều lớp đổi lớp chuyển lớp giáo viên bộ môn lưu trữ', page: 'dashboard', teacherOnly: true },
     { icon: '👩‍🎓', title: 'Học sinh và nhập Excel', description: 'Thêm, sửa hồ sơ hoặc nhập cả danh sách học sinh từ tệp Excel.', keywords: 'học sinh excel danh sách thêm sửa xóa mã định danh', page: 'management', teacherOnly: true },
     { icon: '🪑', title: 'Tạo và xếp sơ đồ lớp', description: 'Chọn bàn 1–4 chỗ, kéo thả học sinh, khóa ghế hoặc bốc vị trí ngẫu nhiên.', keywords: 'sơ đồ lớp bàn ghế chỗ ngồi kéo thả ngẫu nhiên xuất png pdf', page: 'seating' },
     { icon: '🗓️', title: 'Quản lý tuần học', description: 'Đặt thời gian, chốt điểm tuần, mở tuần mới và xem lại lịch sử.', keywords: 'tuần chốt tuần điểm tuần lịch sử thi đua vinh danh', page: 'management', teacherOnly: true },
@@ -2035,7 +2466,9 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
 
             <aside className="help-faq">
               <div className="help-section-title"><div><span>CÂU HỎI THƯỜNG GẶP</span><h3>Cần biết trước khi dùng</h3></div></div>
-              <details open><summary>Dữ liệu được lưu ở đâu?</summary><p>Danh sách đầy đủ, vòng quay và lịch sử quản lý chỉ lưu trong trình duyệt trên thiết bị đang dùng; người làm ứng dụng không tự nhận được các dữ liệu này. Chỉ hồ sơ tối giản đã bấm “Cập nhật chia sẻ” mới được đồng bộ vào kho dữ liệu chia sẻ dành cho phụ huynh.</p></details>
+              <details open><summary>Dữ liệu được lưu ở đâu?</summary><p>Từng lớp được lưu riêng trong kho IndexedDB của trình duyệt trên thiết bị đang dùng; người làm ứng dụng không tự nhận được các dữ liệu này. Chỉ hồ sơ tối giản đã bấm “Cập nhật chia sẻ” mới được đồng bộ vào kho dữ liệu chia sẻ dành cho phụ huynh.</p></details>
+              <details><summary>Làm thế nào để thêm hoặc đổi lớp?</summary><p>Nhấn vào thẻ tên lớp ở đầu thanh bên, chọn “Thêm lớp”, nhập tên lớp, mã lớp, môn học và năm học. Trong cùng cửa sổ này, thầy cô có thể chuyển lớp, lưu trữ lớp cũ và mở lại khi cần.</p></details>
+              <details><summary>Nên sao lưu nhiều lớp như thế nào?</summary><p>Trong cửa sổ “Các lớp của tôi”, nhấn “Sao lưu tất cả” để tải một tệp chứa toàn bộ lớp. Ứng dụng nhắc lại sau 14 ngày; có thể chọn “Nhắc lại sau” để hoãn bảy ngày.</p></details>
               <details><summary>Vì sao danh sách có thể bị mất?</summary><p>Dữ liệu có thể mất khi xóa dữ liệu trang web, dùng chế độ ẩn danh, đổi trình duyệt, đổi hồ sơ người dùng, cài lại ứng dụng hoặc đổi thiết bị. Hãy sao lưu xuống máy sau mỗi lần cập nhật lớn.</p></details>
               <details><summary>Điểm tuần và điểm đổi thưởng khác nhau thế nào?</summary><p>Ứng dụng có hai lựa chọn. “Cộng/trừ trực tiếp” giữ nguyên cách cũ và cập nhật ví ngay khi chấm. “Chốt cuối tuần” tính điểm tốt − điểm nhắc nhở, rồi mới điều chỉnh ví khi giáo viên chốt tuần.</p></details>
               <details><summary>Vì sao không thấy nút thêm học sinh?</summary><p>Thêm, sửa, xóa và nhập Excel chỉ xuất hiện sau khi đăng nhập tài khoản giáo viên.</p></details>
@@ -2051,14 +2484,121 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
   );
 }
 
-function LocalDataNotice({ onClose }: { onClose: () => void }) {
+function ClassWorkspaceDialog({ classes, activeClassId, busy, onSwitch, onCreate, onSetArchived, onExportAll, onImportAll, onClose }: {
+  classes: LocalClassSummary[];
+  activeClassId: string;
+  busy: boolean;
+  onSwitch: (classId: string) => Promise<void>;
+  onCreate: (profile: ClassProfile) => Promise<boolean>;
+  onSetArchived: (classId: string, archived: boolean) => Promise<void>;
+  onExportAll: () => Promise<void>;
+  onImportAll: (file: File) => Promise<void>;
+  onClose: () => void;
+}) {
+  const activeClasses = classes.filter((item) => !item.archived);
+  const archivedClasses = classes.filter((item) => item.archived);
+  const [creating, setCreating] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [query, setQuery] = useState('');
+  const [draft, setDraft] = useState<ClassProfile>({ name: '', code: '', schoolYear: '2026–2027', subject: '', teamCount: 4, teamScoringMode: 'average' });
+  const importRef = useRef<HTMLInputElement>(null);
+  const normalizedQuery = query.trim().toLocaleLowerCase('vi-VN');
+  const matches = (item: LocalClassSummary) => !normalizedQuery || `${item.profile.name} ${item.profile.code} ${item.profile.subject || ''} ${item.profile.schoolYear}`.toLocaleLowerCase('vi-VN').includes(normalizedQuery);
+
+  const submit = async (event: FormEvent) => {
+    event.preventDefault();
+    if (!draft.name.trim() || !draft.code.trim() || !draft.subject?.trim() || !draft.schoolYear.trim()) return;
+    setSubmitting(true);
+    const created = await onCreate(draft);
+    setSubmitting(false);
+    if (created) {
+      setCreating(false);
+      setDraft({ name: '', code: '', schoolYear: draft.schoolYear, subject: draft.subject, teamCount: 4, teamScoringMode: 'average' });
+    }
+  };
+
+  return (
+    <div className="settings-backdrop class-workspace-backdrop" role="presentation" onMouseDown={onClose}>
+      <section className="class-workspace-card" role="dialog" aria-modal="true" aria-labelledby="class-workspace-title" onMouseDown={(event) => event.stopPropagation()}>
+        <header className="class-workspace-head">
+          <div className="class-workspace-title-icon"><LayoutGrid size={26} /></div>
+          <div><span>KHO LỚP TRÊN THIẾT BỊ</span><h2 id="class-workspace-title">Các lớp của tôi</h2><p>Mỗi lớp có danh sách, điểm, chuyên cần và Cổng phụ huynh riêng.</p></div>
+          <button type="button" aria-label="Đóng danh sách lớp" onClick={onClose}><X size={21} /></button>
+        </header>
+
+        <div className="class-workspace-toolbar">
+          <label><Search size={18} /><input value={query} onChange={(event) => setQuery(event.target.value)} placeholder="Tìm tên lớp, mã lớp hoặc môn học…" /></label>
+          <span><strong>{activeClasses.length}</strong>/{MAX_ACTIVE_CLASSES} lớp hoạt động</span>
+          <button type="button" className="button button-primary" disabled={busy || activeClasses.length >= MAX_ACTIVE_CLASSES} onClick={() => setCreating((value) => !value)}><Plus size={18} /> Thêm lớp</button>
+        </div>
+
+        {creating && (
+          <form className="class-create-form" onSubmit={submit}>
+            <div><span>THÊM LỚP MỚI</span><h3>Thông tin lớp giảng dạy</h3></div>
+            <div className="class-create-grid">
+              <label><span>Tên lớp</span><input autoFocus value={draft.name} maxLength={80} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Ví dụ: Lớp 5A" /></label>
+              <label><span>Mã lớp</span><input value={draft.code} maxLength={30} onChange={(event) => setDraft((current) => ({ ...current, code: event.target.value }))} placeholder="5A" /></label>
+              <label><span>Môn giảng dạy</span><input value={draft.subject || ''} maxLength={80} onChange={(event) => setDraft((current) => ({ ...current, subject: event.target.value }))} placeholder="Tin học, Tiếng Anh…" /></label>
+              <label><span>Năm học</span><input value={draft.schoolYear} maxLength={30} onChange={(event) => setDraft((current) => ({ ...current, schoolYear: event.target.value }))} placeholder="2026–2027" /></label>
+              <label><span>Số tổ/nhóm</span><input type="number" min="1" max={MAX_TEAM_COUNT} value={draft.teamCount} onChange={(event) => setDraft((current) => ({ ...current, teamCount: Number(event.target.value) }))} /></label>
+            </div>
+            <div className="class-create-actions"><button type="button" onClick={() => setCreating(false)}>Hủy</button><button type="submit" disabled={submitting || busy || !draft.name.trim() || !draft.code.trim() || !draft.subject?.trim()}><Check size={17} /> {submitting ? 'Đang tạo…' : 'Tạo và mở lớp'}</button></div>
+          </form>
+        )}
+
+        <div className="class-workspace-body">
+          <div className="class-workspace-section-title"><div><span>LỚP ĐANG HOẠT ĐỘNG</span><h3>Chọn lớp để làm việc</h3></div><small>Dữ liệu được tự động lưu trên máy</small></div>
+          <div className="class-workspace-grid">
+            {activeClasses.filter(matches).map((item) => (
+              <article className={`class-workspace-item ${item.id === activeClassId ? 'is-active' : ''}`} key={item.id}>
+                <button type="button" className="class-workspace-open" disabled={busy} onClick={() => void onSwitch(item.id)}>
+                  <span className="class-workspace-code">{item.profile.code}</span>
+                  <span><strong>{item.profile.name}</strong><small>{item.profile.subject || 'Bộ môn'} · {item.profile.schoolYear}</small></span>
+                  {item.id === activeClassId ? <em><Check size={14} /> Đang mở</em> : <ChevronRight size={18} />}
+                </button>
+                <button type="button" className="class-workspace-archive" disabled={busy || (item.id === activeClassId && activeClasses.length === 1)} onClick={() => void onSetArchived(item.id, true)} title="Đưa lớp cũ vào lưu trữ"><Archive size={15} /> Lưu trữ</button>
+              </article>
+            ))}
+            {!activeClasses.filter(matches).length && <div className="class-workspace-empty"><Search size={25} /><strong>Không tìm thấy lớp phù hợp</strong></div>}
+          </div>
+
+          {archivedClasses.length > 0 && (
+            <details className="class-workspace-archived">
+              <summary><Archive size={17} /> Lớp đã lưu trữ ({archivedClasses.length}) <ChevronDown size={16} /></summary>
+              <div>{archivedClasses.filter(matches).map((item) => <div key={item.id}><span><strong>{item.profile.code} · {item.profile.name}</strong><small>{item.profile.subject || 'Bộ môn'} · {item.profile.schoolYear}</small></span><button type="button" disabled={busy || activeClasses.length >= MAX_ACTIVE_CLASSES} onClick={() => void onSetArchived(item.id, false)}><RotateCcw size={15} /> Mở lại</button></div>)}</div>
+            </details>
+          )}
+        </div>
+
+        <footer className="class-workspace-backup">
+          <div><ShieldCheck size={22} /><span><strong>Dữ liệu chỉ nằm trên thiết bị này</strong><small>Hãy sao lưu tất cả lớp định kỳ để phòng khi đổi máy hoặc xóa dữ liệu trình duyệt.</small></span></div>
+          <div><button type="button" disabled={busy} onClick={() => void onExportAll()}><Download size={17} /> Sao lưu tất cả</button><button type="button" disabled={busy} onClick={() => importRef.current?.click()}><Upload size={17} /> Khôi phục tất cả</button></div>
+          <input ref={importRef} type="file" hidden accept=".json,application/json" onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (file) await onImportAll(file); input.value = ''; }} />
+        </footer>
+      </section>
+    </div>
+  );
+}
+
+function BackupReminder({ classCount, onBackup, onLater }: { classCount: number; onBackup: () => void; onLater: () => void }) {
+  return (
+    <aside className="backup-reminder" role="status" aria-live="polite">
+      <div className="backup-reminder-icon"><ShieldCheck size={24} /></div>
+      <div><strong>Nhắc sao lưu {classCount} lớp</strong><span>Dữ liệu đang lưu trên máy này. Hãy tải một bản sao để phòng khi đổi máy hoặc xóa dữ liệu trình duyệt.</span></div>
+      <button type="button" className="backup-reminder-main" onClick={onBackup}><Download size={16} /> Sao lưu ngay</button>
+      <button type="button" className="backup-reminder-later" onClick={onLater}>Nhắc lại sau</button>
+    </aside>
+  );
+}
+
+function LocalDataNotice({ onBackup, onClose }: { onBackup: () => void; onClose: () => void }) {
   return (
     <div className="settings-backdrop local-data-backdrop" role="presentation">
       <section className="local-data-card" role="dialog" aria-modal="true" aria-labelledby="local-data-title">
         <div className="local-data-icon"><ShieldCheck size={42} /></div>
         <span className="local-data-eyebrow">QUYỀN RIÊNG TƯ VÀ AN TOÀN DỮ LIỆU</span>
-        <h2 id="local-data-title">Danh sách lớp được lưu trên thiết bị của thầy cô</h2>
-        <p className="local-data-lead">Ứng dụng không tự thu thập hoặc tự tải danh sách lớp đầy đủ lên máy chủ. Dữ liệu quản lý lớp được lưu trong trình duyệt đang sử dụng trên thiết bị này.</p>
+        <h2 id="local-data-title">Tối đa 30 lớp được lưu trên thiết bị của thầy cô</h2>
+        <p className="local-data-lead">Ứng dụng không tự thu thập hoặc tự tải danh sách lớp đầy đủ lên máy chủ. Mỗi lớp được lưu riêng trong kho IndexedDB của trình duyệt trên thiết bị này.</p>
 
         <div className="local-data-facts">
           <div><span>✓</span><p><strong>Không tự động gửi đi</strong>Người làm ứng dụng không tự nhận được danh sách, điểm, ảnh và lịch sử quản lý lớp.</p></div>
@@ -2068,6 +2608,7 @@ function LocalDataNotice({ onClose }: { onClose: () => void }) {
 
         <p className="local-data-footnote">Dữ liệu chỉ rời thiết bị khi thầy cô chủ động xuất, chia sẻ tệp hoặc dùng chức năng Cổng phụ huynh.</p>
         <div className="local-data-actions">
+          <button className="local-data-backup" onClick={onBackup}><Download size={18} /> Sao lưu tất cả lớp ngay</button>
           <button className="local-data-understand" onClick={onClose}><Check size={18} /> Tôi đã hiểu</button>
         </div>
       </section>
@@ -2091,13 +2632,13 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
       <div className="topbar-actions">
         <label className="global-search"><Search size={18} /><input placeholder="Tìm học sinh, hoạt động..." /></label>
         <button className="icon-button notification-button" aria-label="Thông báo"><Bell size={20} /><i /></button>
-        <div className="teacher-top"><Avatar initials={getTeacherInitials(teacherName)} gradient="teacher" photo={teacherPhoto} size="small" /><div><strong>{teacherName}</strong><span>GVCN lớp {classProfile.code}</span></div></div>
+        <div className="teacher-top"><Avatar initials={getTeacherInitials(teacherName)} gradient="teacher" photo={teacherPhoto} size="small" /><div><strong>{teacherName}</strong><span>{classProfile.subject || 'GVBM'} · Lớp {classProfile.code}</span></div></div>
       </div>
     </header>
   );
 }
 
-function ManagementPage({ students, activities, pointReasons, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onExport, onImport, onOpenPrivacy, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onExport: () => void; onImport: (file: File) => Promise<void>; onOpenPrivacy: () => void; onRestore: () => void }) {
+function ManagementPage({ students, activities, pointReasons, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, classCount, onManageClasses, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onExport, onExportAll, onImport, onOpenPrivacy, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; classCount: number; onManageClasses: () => void; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onExport: () => void; onExportAll: () => void; onImport: (file: File) => Promise<void>; onOpenPrivacy: () => void; onRestore: () => void }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [reportExportOpen, setReportExportOpen] = useState(false);
@@ -2116,18 +2657,20 @@ function ManagementPage({ students, activities, pointReasons, weekState, weeklyS
       <section className="management-summary">
         <article className="management-teacher panel">
           <div className="management-card-icon"><Avatar initials={getTeacherInitials(teacherName)} gradient="teacher" photo={teacherPhoto} size="large" /></div>
-          <div><span>GIÁO VIÊN CHỦ NHIỆM</span><h2>{teacherName}</h2><p>Quản lý lớp {classProfile.code} · Năm học {classProfile.schoolYear}</p></div>
+          <div><span>GIÁO VIÊN PHỤ TRÁCH</span><h2>{teacherName}</h2><p>{classProfile.subject || 'Bộ môn'} · Lớp {classProfile.code} · Năm học {classProfile.schoolYear}</p></div>
           <button className="button button-primary" onClick={onEditTeacher}><Pencil size={17} /> Sửa hồ sơ giáo viên</button>
         </article>
         <article className="management-class panel">
           <div className="management-class-icon">{classProfile.code}</div>
-          <div><span>THÔNG TIN LỚP</span><h2>{classProfile.name}</h2><p>Năm học {classProfile.schoolYear}</p></div>
-          <button className="management-class-edit" onClick={onEditClass}><Pencil size={16} /> Sửa lớp</button>
+          <div><span>THÔNG TIN LỚP · {classCount}/{MAX_ACTIVE_CLASSES} LỚP</span><h2>{classProfile.name}</h2><p>{classProfile.subject || 'Bộ môn'} · Năm học {classProfile.schoolYear}</p></div>
+          <button className="management-class-edit" onClick={onEditClass}><Pencil size={16} /> Sửa lớp này</button>
+          <button className="management-multiclass-button" onClick={onManageClasses}><Plus size={16} /> Thêm / đổi lớp</button>
         </article>
         <article className="management-data panel">
           <div><strong>{students.length}</strong><span>học sinh</span></div>
           <div><strong>{activities.length}</strong><span>hoạt động</span></div>
-          <button className="button button-soft" onClick={onExport}><Download size={17} /> Tải tệp sao lưu về máy</button>
+          <button className="button button-soft" onClick={onExport}><Download size={17} /> Sao lưu lớp này</button>
+          <button className="button button-primary" onClick={onExportAll}><ShieldCheck size={17} /> Sao lưu tất cả lớp</button>
           <button className="button management-import" type="button" disabled={backupImporting} onClick={() => backupInputRef.current?.click()}>
             <Upload size={17} /> {backupImporting ? 'Đang khôi phục...' : 'Khôi phục từ bản sao'}
           </button>
@@ -2148,8 +2691,8 @@ function ManagementPage({ students, activities, pointReasons, weekState, weeklyS
 
       <section className="management-privacy panel">
         <div className="management-privacy-icon"><ShieldCheck size={27} /></div>
-        <div><span>DỮ LIỆU LƯU TRÊN THIẾT BỊ NÀY</span><h2>Ứng dụng không tự thu thập danh sách lớp</h2><p>Danh sách đầy đủ, điểm và lịch sử nằm trong trình duyệt hiện tại. Xóa dữ liệu trình duyệt hoặc đổi máy có thể làm mất dữ liệu.</p></div>
-        <div className="management-privacy-actions"><button onClick={onExport}><Download size={17} /> Tải tệp sao lưu</button><button onClick={onOpenPrivacy}><ShieldCheck size={17} /> Xem quyền riêng tư</button></div>
+        <div><span>DỮ LIỆU LƯU TRÊN THIẾT BỊ NÀY</span><h2>Ứng dụng lưu tối đa 30 lớp trong trình duyệt</h2><p>Danh sách đầy đủ, điểm và lịch sử nằm trong IndexedDB trên máy này. Xóa dữ liệu trình duyệt hoặc đổi máy có thể làm mất dữ liệu.</p></div>
+        <div className="management-privacy-actions"><button onClick={onExportAll}><Download size={17} /> Sao lưu tất cả lớp</button><button onClick={onOpenPrivacy}><ShieldCheck size={17} /> Xem quyền riêng tư</button></div>
       </section>
 
       <section className="management-report-launch panel">
@@ -2646,6 +3189,7 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
       name: draft.name.trim(),
       code: draft.code.trim(),
       schoolYear: draft.schoolYear.trim(),
+      subject: draft.subject?.trim() || 'Bộ môn',
       teamCount: normalizeTeamCount(draft.teamCount),
       teamScoringMode: draft.teamScoringMode === 'total' ? 'total' : 'average',
     };
@@ -2659,10 +3203,11 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
         <span className="settings-eyebrow">THÔNG TIN LỚP HỌC</span>
         <h2 id="class-settings-title">Tùy chỉnh lớp đang quản lý</h2>
         <p>Nội dung sẽ được cập nhật đồng bộ trên toàn bộ ứng dụng.</p>
-        <div className="class-settings-preview"><div className="class-icon">{draft.code || '—'}</div><div><strong>{draft.name || 'Tên lớp'}</strong><span>Năm học {draft.schoolYear || '—'} · {teamCountValid ? draft.teamCount : '—'} tổ</span></div></div>
+        <div className="class-settings-preview"><div className="class-icon">{draft.code || '—'}</div><div><strong>{draft.name || 'Tên lớp'}</strong><span>{draft.subject || 'Bộ môn'} · Năm học {draft.schoolYear || '—'} · {teamCountValid ? draft.teamCount : '—'} tổ</span></div></div>
         <div className="class-settings-fields">
           <label><span>Tên lớp</span><input autoFocus maxLength={60} value={draft.name} onChange={(event) => setDraft((current) => ({ ...current, name: event.target.value }))} placeholder="Ví dụ: Lớp Hạnh Phúc" /></label>
           <label><span>Mã lớp</span><input maxLength={20} value={draft.code} onChange={(event) => setDraft((current) => ({ ...current, code: event.target.value }))} placeholder="Ví dụ: 3/1 hoặc 4A" /></label>
+          <label><span>Môn giảng dạy</span><input maxLength={80} value={draft.subject || ''} onChange={(event) => setDraft((current) => ({ ...current, subject: event.target.value }))} placeholder="Ví dụ: Tin học, Tiếng Anh…" /></label>
           <label><span>Năm học</span><input maxLength={30} value={draft.schoolYear} onChange={(event) => setDraft((current) => ({ ...current, schoolYear: event.target.value }))} placeholder="Ví dụ: 2026–2027" /></label>
           <label><span>Số lượng tổ/nhóm</span><input type="number" inputMode="numeric" min={1} max={MAX_TEAM_COUNT} step={1} value={draft.teamCount || ''} onChange={(event) => setDraft((current) => ({ ...current, teamCount: event.target.value === '' ? 0 : Number(event.target.value) }))} placeholder="Ví dụ: 9" /><small>Tự nhập số lượng thực tế, từ 1 đến {MAX_TEAM_COUNT} tổ/nhóm.</small></label>
           <label>
@@ -2674,7 +3219,7 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
             <small>Điểm trung bình giúp các tổ ít học sinh hơn không bị thiệt thòi khi so sánh.</small>
           </label>
         </div>
-        <div className="settings-actions"><button type="button" className="settings-cancel" onClick={onClose}>Hủy</button><button type="submit" className="settings-save" disabled={!draft.name.trim() || !draft.code.trim() || !draft.schoolYear.trim() || !teamCountValid}><Check size={18} /> Lưu thông tin lớp</button></div>
+        <div className="settings-actions"><button type="button" className="settings-cancel" onClick={onClose}>Hủy</button><button type="submit" className="settings-save" disabled={!draft.name.trim() || !draft.code.trim() || !draft.schoolYear.trim() || !draft.subject?.trim() || !teamCountValid}><Check size={18} /> Lưu thông tin lớp</button></div>
       </form>
     </div>
   );
