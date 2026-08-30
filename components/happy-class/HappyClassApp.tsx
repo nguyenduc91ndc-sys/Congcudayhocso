@@ -78,6 +78,7 @@ import {
   MAX_ACTIVE_CLASSES,
   createLocalClassId,
   createLocalClassKey,
+  deleteLocalClass,
   listLocalClasses,
   loadLocalClass,
   loadWorkspaceSettings,
@@ -1475,6 +1476,55 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     }
   };
 
+  const removeLocalClass = async (classId: string) => {
+    const summary = localClasses.find((item) => item.id === classId);
+    if (!summary) return;
+    if (localClasses.length <= 1) {
+      setToast('Cần giữ lại ít nhất một lớp trên thiết bị.');
+      return;
+    }
+
+    const deletingActiveClass = classId === activeClassId;
+    const replacementSummary = deletingActiveClass
+      ? localClasses.find((item) => item.id !== classId && !item.archived)
+        ?? localClasses.find((item) => item.id !== classId)
+      : undefined;
+
+    setClassStorageReady(false);
+    try {
+      if (!deletingActiveClass && activeClassId) await saveLocalClass(createCurrentLocalRecord());
+
+      let replacement: LocalClassRecord<LocalClassData> | undefined;
+      if (replacementSummary) {
+        const storedReplacement = await loadLocalClass<LocalClassData>(storageTeacherKey, replacementSummary.id);
+        if (!storedReplacement) throw new Error('Không tìm thấy lớp thay thế để tiếp tục làm việc.');
+        replacement = storedReplacement.archived
+          ? { ...storedReplacement, archived: false, updatedAt: new Date().toISOString() }
+          : storedReplacement;
+        if (storedReplacement.archived) await saveLocalClass(replacement);
+
+        const nextSettings = { ...workspaceSettings, teacherKey: storageTeacherKey, activeClassId: replacement.id };
+        await saveWorkspaceSettings(nextSettings);
+        setWorkspaceSettings(nextSettings);
+      }
+
+      await deleteLocalClass(storageTeacherKey, classId);
+      setLocalClasses((current) => current
+        .filter((item) => item.id !== classId)
+        .map((item) => replacement && item.id === replacement.id ? toLocalClassSummary(replacement) : item));
+
+      if (replacement) {
+        setActiveClassId(replacement.id);
+        applyLocalClassRecord(replacement);
+      }
+      setToast(`Đã xóa lớp ${summary.profile.code} khỏi thiết bị`);
+    } catch (error) {
+      setToast(error instanceof Error ? error.message : 'Chưa thể xóa lớp.');
+    } finally {
+      setClassStorageReady(true);
+    }
+  };
+
   const saveClassProfile = (profile: ClassProfile) => {
     const nextProfile = normalizeStoredClassProfile(profile);
     const affectedStudents = students.filter((student) => student.team > nextProfile.teamCount);
@@ -2297,7 +2347,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       {!classStorageReady && <div className="class-storage-loading" role="status"><span className="class-storage-spinner" /><strong>Đang mở dữ liệu lớp trên máy…</strong></div>}
       {settingsOpen && <TeacherSettings teacherName={teacherName} teacherPhoto={teacherPhoto} classCode={classProfile.code} onSave={saveTeacherProfile} onClose={() => setSettingsOpen(false)} />}
       {classSettingsOpen && <ClassSettings classProfile={classProfile} onSave={saveClassProfile} onClose={() => setClassSettingsOpen(false)} />}
-      {classWorkspaceOpen && <ClassWorkspaceDialog classes={localClasses} activeClassId={activeClassId} busy={!classStorageReady} onSwitch={switchLocalClass} onCreate={createLocalClass} onSetArchived={setLocalClassArchived} onExportAll={exportAllClasses} onImportAll={importAllClasses} onClose={() => setClassWorkspaceOpen(false)} />}
+      {classWorkspaceOpen && <ClassWorkspaceDialog classes={localClasses} activeClassId={activeClassId} busy={!classStorageReady} onSwitch={switchLocalClass} onCreate={createLocalClass} onSetArchived={setLocalClassArchived} onDelete={removeLocalClass} onExportAll={exportAllClasses} onImportAll={importAllClasses} onClose={() => setClassWorkspaceOpen(false)} />}
       {teacherAccessOpen && <TeacherAccess teacherName={teacherName} googleAvailable={canUseFirebaseOnline()} onGoogleLogin={loginFirebaseTeacher} onSuccess={finishTeacherLogin} onClose={() => setTeacherAccessOpen(false)} />}
       {helpOpen && <HelpCenter isTeacher={isTeacher} onNavigate={navigate} onTeacherLogin={() => { setHelpOpen(false); setTeacherAccessOpen(true); }} onClose={() => setHelpOpen(false)} />}
       {privacyOpen && <LocalDataNotice onBackup={() => void exportAllClasses()} onClose={acknowledgeLocalDataNotice} />}
@@ -2484,13 +2534,14 @@ function HelpCenter({ isTeacher, onNavigate, onTeacherLogin, onClose }: { isTeac
   );
 }
 
-function ClassWorkspaceDialog({ classes, activeClassId, busy, onSwitch, onCreate, onSetArchived, onExportAll, onImportAll, onClose }: {
+function ClassWorkspaceDialog({ classes, activeClassId, busy, onSwitch, onCreate, onSetArchived, onDelete, onExportAll, onImportAll, onClose }: {
   classes: LocalClassSummary[];
   activeClassId: string;
   busy: boolean;
   onSwitch: (classId: string) => Promise<void>;
   onCreate: (profile: ClassProfile) => Promise<boolean>;
   onSetArchived: (classId: string, archived: boolean) => Promise<void>;
+  onDelete: (classId: string) => Promise<void>;
   onExportAll: () => Promise<void>;
   onImportAll: (file: File) => Promise<void>;
   onClose: () => void;
@@ -2500,6 +2551,7 @@ function ClassWorkspaceDialog({ classes, activeClassId, busy, onSwitch, onCreate
   const [creating, setCreating] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [query, setQuery] = useState('');
+  const [deleteTarget, setDeleteTarget] = useState<LocalClassSummary | null>(null);
   const [draft, setDraft] = useState<ClassProfile>({ name: '', code: '', schoolYear: '2026–2027', subject: '', teamCount: 4, teamScoringMode: 'average' });
   const importRef = useRef<HTMLInputElement>(null);
   const normalizedQuery = query.trim().toLocaleLowerCase('vi-VN');
@@ -2556,7 +2608,10 @@ function ClassWorkspaceDialog({ classes, activeClassId, busy, onSwitch, onCreate
                   <span><strong>{item.profile.name}</strong><small>{item.profile.subject || 'Bộ môn'} · {item.profile.schoolYear}</small></span>
                   {item.id === activeClassId ? <em><Check size={14} /> Đang mở</em> : <ChevronRight size={18} />}
                 </button>
-                <button type="button" className="class-workspace-archive" disabled={busy || (item.id === activeClassId && activeClasses.length === 1)} onClick={() => void onSetArchived(item.id, true)} title="Đưa lớp cũ vào lưu trữ"><Archive size={15} /> Lưu trữ</button>
+                <div className="class-workspace-item-actions">
+                  <button type="button" className="class-workspace-archive" disabled={busy || (item.id === activeClassId && activeClasses.length === 1)} onClick={() => void onSetArchived(item.id, true)} title="Đưa lớp cũ vào lưu trữ"><Archive size={15} /> Lưu trữ</button>
+                  <button type="button" className="class-workspace-delete" disabled={busy || classes.length <= 1} onClick={() => setDeleteTarget(item)} title={classes.length <= 1 ? 'Cần giữ lại ít nhất một lớp' : 'Xóa vĩnh viễn lớp này khỏi thiết bị'}><Trash2 size={15} /> Xóa</button>
+                </div>
               </article>
             ))}
             {!activeClasses.filter(matches).length && <div className="class-workspace-empty"><Search size={25} /><strong>Không tìm thấy lớp phù hợp</strong></div>}
@@ -2565,7 +2620,15 @@ function ClassWorkspaceDialog({ classes, activeClassId, busy, onSwitch, onCreate
           {archivedClasses.length > 0 && (
             <details className="class-workspace-archived">
               <summary><Archive size={17} /> Lớp đã lưu trữ ({archivedClasses.length}) <ChevronDown size={16} /></summary>
-              <div>{archivedClasses.filter(matches).map((item) => <div key={item.id}><span><strong>{item.profile.code} · {item.profile.name}</strong><small>{item.profile.subject || 'Bộ môn'} · {item.profile.schoolYear}</small></span><button type="button" disabled={busy || activeClasses.length >= MAX_ACTIVE_CLASSES} onClick={() => void onSetArchived(item.id, false)}><RotateCcw size={15} /> Mở lại</button></div>)}</div>
+              <div>{archivedClasses.filter(matches).map((item) => (
+                <div key={item.id}>
+                  <span><strong>{item.profile.code} · {item.profile.name}</strong><small>{item.profile.subject || 'Bộ môn'} · {item.profile.schoolYear}</small></span>
+                  <div className="class-workspace-archived-actions">
+                    <button type="button" disabled={busy || activeClasses.length >= MAX_ACTIVE_CLASSES} onClick={() => void onSetArchived(item.id, false)}><RotateCcw size={15} /> Mở lại</button>
+                    <button type="button" className="class-workspace-delete" disabled={busy || classes.length <= 1} onClick={() => setDeleteTarget(item)} title={classes.length <= 1 ? 'Cần giữ lại ít nhất một lớp' : 'Xóa vĩnh viễn lớp này khỏi thiết bị'}><Trash2 size={15} /> Xóa</button>
+                  </div>
+                </div>
+              ))}</div>
             </details>
           )}
         </div>
@@ -2575,6 +2638,22 @@ function ClassWorkspaceDialog({ classes, activeClassId, busy, onSwitch, onCreate
           <div><button type="button" disabled={busy} onClick={() => void onExportAll()}><Download size={17} /> Sao lưu tất cả</button><button type="button" disabled={busy} onClick={() => importRef.current?.click()}><Upload size={17} /> Khôi phục tất cả</button></div>
           <input ref={importRef} type="file" hidden accept=".json,application/json" onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (file) await onImportAll(file); input.value = ''; }} />
         </footer>
+
+        {deleteTarget && (
+          <div className="settings-backdrop class-delete-backdrop" role="presentation" onMouseDown={(event) => { event.stopPropagation(); setDeleteTarget(null); }}>
+            <section className="class-settings-card management-clear-confirm class-delete-confirm" role="alertdialog" aria-modal="true" aria-labelledby="class-delete-title" aria-describedby="class-delete-description" onMouseDown={(event) => event.stopPropagation()}>
+              <button className="settings-close" type="button" aria-label="Đóng xác nhận xóa lớp" onClick={() => setDeleteTarget(null)}><X size={21} /></button>
+              <div className="management-clear-confirm-icon"><Trash2 size={38} /></div>
+              <span className="settings-eyebrow">XÓA LỚP KHỎI THIẾT BỊ</span>
+              <h2 id="class-delete-title">Xóa lớp {deleteTarget.profile.code}?</h2>
+              <p id="class-delete-description">Toàn bộ học sinh, điểm, chuyên cần, hoạt động và cấu hình của <strong>{deleteTarget.profile.name}</strong> sẽ bị xóa vĩnh viễn khỏi thiết bị này. Thao tác không thể hoàn tác.</p>
+              <div className="settings-actions">
+                <button type="button" className="settings-cancel" onClick={() => setDeleteTarget(null)}>Giữ lại lớp</button>
+                <button type="button" className="settings-save management-clear-confirm-button" disabled={busy} onClick={async () => { const classId = deleteTarget.id; setDeleteTarget(null); await onDelete(classId); }}><Trash2 size={18} /> Xác nhận xóa lớp</button>
+              </div>
+            </section>
+          </div>
+        )}
       </section>
     </div>
   );

@@ -126,6 +126,17 @@ export async function saveLocalClass<TData>(record: LocalClassRecord<TData>) {
   }
 }
 
+export async function deleteLocalClass(teacherKey: string, classId: string) {
+  const database = await openDatabase();
+  try {
+    const transaction = database.transaction(CLASS_STORE, 'readwrite');
+    transaction.objectStore(CLASS_STORE).delete(createLocalClassKey(teacherKey, classId));
+    await transactionDone(transaction);
+  } finally {
+    database.close();
+  }
+}
+
 export async function saveLocalClasses<TData>(records: LocalClassRecord<TData>[]) {
   const database = await openDatabase();
   try {
