@@ -1900,6 +1900,50 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
     setToast('Đã hoàn tác lượt cộng/trừ điểm vừa rồi');
   };
 
+  const deletePointActivity = (activityId: number) => {
+    const activity = activities.find((item) => item.id === activityId);
+    if (!activity || activity.weekId !== weekState.current.id || isRewardRedemption(activity) || activity.tone === 'neutral') {
+      setToast('Chỉ có thể xóa lượt đánh giá thuộc tuần đang chạy.');
+      return;
+    }
+
+    const student = students.find((item) => item.id === activity.studentId);
+    if (!student) {
+      setToast('Không tìm thấy học sinh của lượt đánh giá này.');
+      return;
+    }
+
+    const remainingStudentActivities = activities
+      .filter((item) => item.id !== activityId
+        && item.studentId === activity.studentId
+        && item.weekId === weekState.current.id
+        && !isRewardRedemption(item)
+        && item.tone !== 'neutral')
+      .sort((left, right) => {
+        const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : left.id;
+        const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : right.id;
+        return leftTime - rightTime;
+      });
+    const recalculatedWeeklyScore = remainingStudentActivities.reduce(
+      (score, item) => weeklyScoring.calculationMode === 'weekly-net'
+        ? score + item.points
+        : Math.max(0, score + item.points),
+      weeklyScoring.startingPoints,
+    );
+
+    setStudents((current) => current.map((item) => item.id === activity.studentId
+      ? {
+          ...item,
+          score: weeklyScoring.calculationMode === 'instant' ? Math.max(0, item.score - activity.points) : item.score,
+          weeklyScore: recalculatedWeeklyScore,
+          streak: activity.points > 0 ? Math.max(0, item.streak - 1) : item.streak,
+        }
+      : item));
+    setActivities((current) => current.filter((item) => item.id !== activityId));
+    setPointUndoAction(null);
+    setToast(`Đã xóa lượt “${activity.title}” của ${student.name} và cập nhật lại điểm`);
+  };
+
   const updateAttendance = (studentId: number, status: AttendanceStatus, date?: string) => {
     const targetDate = date ?? toLocalDateInput(new Date());
     const isToday = targetDate === toLocalDateInput(new Date());
@@ -2329,7 +2373,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'students' && <StudentsPage students={students} teamCount={classProfile.teamCount} canManageStudents={isTeacher} onOpenStudent={setProfileId} onAddStudent={() => navigate('management')} />}
           {page === 'seating' && <ClassroomSeatingPage students={students} classCode={classProfile.code} className={classProfile.name} schoolYear={classProfile.schoolYear} teacherName={teacherName} canManage={isTeacher} value={classroomLayout} onChange={setClassroomLayout} onToast={setToast} />}
-          {page === 'points' && <PointsPage students={students} reasons={pointReasons} currentWeekId={weekState.current.id} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onSaveTeacherComment={saveTeacherComment} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} />}
+          {page === 'points' && <PointsPage students={students} activities={activities} reasons={pointReasons} currentWeekId={weekState.current.id} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onSaveTeacherComment={saveTeacherComment} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} onDeleteActivity={deletePointActivity} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} activities={activities} currentWeekId={weekState.current.id} calculationMode={weeklyScoring.calculationMode} canConfigure={isTeacher} onRedeem={redeemReward} onUndoRedeem={undoRewardRedemption} onSaveRewards={saveRewards} />}
           {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} onApplyTeams={applyRandomTeams} />}
@@ -3491,11 +3535,15 @@ function StudentsPage({ students, teamCount, canManageStudents, onOpenStudent, o
   );
 }
 
-function PointsPage({ students, reasons, currentWeekId, canConfigure, lastPointAction, onSaveReasons, onSaveTeacherComment, onAddPoints, onUndoPoints }: { students: Student[]; reasons: PointReason[]; currentWeekId: string; canConfigure: boolean; lastPointAction: string; onSaveReasons: (reasons: PointReason[]) => void; onSaveTeacherComment: (studentId: number, content: string) => void; onAddPoints: (ids: number[], points: number, reason: string) => void; onUndoPoints: () => void }) {
+function PointsPage({ students, activities, reasons, currentWeekId, canConfigure, lastPointAction, onSaveReasons, onSaveTeacherComment, onAddPoints, onUndoPoints, onDeleteActivity }: { students: Student[]; activities: Activity[]; reasons: PointReason[]; currentWeekId: string; canConfigure: boolean; lastPointAction: string; onSaveReasons: (reasons: PointReason[]) => void; onSaveTeacherComment: (studentId: number, content: string) => void; onAddPoints: (ids: number[], points: number, reason: string) => void; onUndoPoints: () => void; onDeleteActivity: (activityId: number) => void }) {
   const [selected, setSelected] = useState<number[]>([]);
   const [mode, setMode] = useState<'positive' | 'negative'>('positive');
   const [settingsVisible, setSettingsVisible] = useState(false);
   const [studentQuery, setStudentQuery] = useState('');
+  const [historyQuery, setHistoryQuery] = useState('');
+  const [historyFilter, setHistoryFilter] = useState<'all' | 'positive' | 'negative'>('all');
+  const [historyLimit, setHistoryLimit] = useState(50);
+  const [deleteTarget, setDeleteTarget] = useState<Activity | null>(null);
   const [commentStudentId, setCommentStudentId] = useState(students[0]?.id ?? 0);
   const commentStudent = students.find((student) => student.id === commentStudentId) ?? students[0];
   const savedTeacherComment = commentStudent?.teacherCommentWeekId === currentWeekId ? commentStudent.teacherComment?.trim() || '' : '';
@@ -3505,6 +3553,23 @@ function PointsPage({ students, reasons, currentWeekId, canConfigure, lastPointA
   const visibleStudents = normalizedStudentQuery
     ? students.filter((student) => normalizeSearchText(student.name).includes(normalizedStudentQuery))
     : students;
+  const studentById = new Map(students.map((student) => [student.id, student]));
+  const normalizedHistoryQuery = normalizeSearchText(historyQuery);
+  const currentWeekActivities = activities
+    .filter((activity) => activity.weekId === currentWeekId && !isRewardRedemption(activity) && activity.tone !== 'neutral')
+    .sort((left, right) => {
+      const leftTime = left.createdAt ? new Date(left.createdAt).getTime() : left.id;
+      const rightTime = right.createdAt ? new Date(right.createdAt).getTime() : right.id;
+      return rightTime - leftTime;
+    });
+  const filteredHistory = currentWeekActivities.filter((activity) => {
+    if (historyFilter === 'positive' && activity.points <= 0) return false;
+    if (historyFilter === 'negative' && activity.points >= 0) return false;
+    if (!normalizedHistoryQuery) return true;
+    const student = studentById.get(activity.studentId);
+    return normalizeSearchText(`${student?.name || ''} ${activity.title} ${activity.detail}`).includes(normalizedHistoryQuery);
+  });
+  const visibleHistory = filteredHistory.slice(0, historyLimit);
   const teamOptions = Array.from(new Set(students.map((student) => student.team))).sort((a, b) => a - b);
   const selectedSet = new Set(selected);
   const unavailableSelected = students.filter((student) => selectedSet.has(student.id) && student.attendance !== 'present');
@@ -3538,6 +3603,10 @@ function PointsPage({ students, reasons, currentWeekId, canConfigure, lastPointA
   useEffect(() => {
     setCommentDraft(savedTeacherComment);
   }, [commentStudentId, currentWeekId, savedTeacherComment]);
+
+  useEffect(() => {
+    setHistoryLimit(50);
+  }, [historyFilter, historyQuery]);
 
   const saveComment = () => {
     if (!commentStudent) return;
@@ -3629,7 +3698,62 @@ function PointsPage({ students, reasons, currentWeekId, canConfigure, lastPointA
           </div>
         </section>
       </div>
+      <section className="panel point-history-panel">
+        <header className="point-history-head">
+          <span className="point-history-icon"><History size={22} /></span>
+          <div><span>NHẬT KÝ TUẦN ĐANG CHẠY</span><h2>Quản lý các lượt đã đánh giá</h2><p>Tìm và xóa riêng từng lượt điểm tốt hoặc nhắc nhở. Tuần đã chốt không xuất hiện tại đây.</p></div>
+          <strong>{currentWeekActivities.length} lượt</strong>
+        </header>
+        <div className="point-history-toolbar">
+          <label><Search size={18} /><input type="search" value={historyQuery} onChange={(event) => setHistoryQuery(event.target.value)} placeholder="Tìm học sinh hoặc nội dung đánh giá…" />{historyQuery && <button type="button" aria-label="Xóa nội dung tìm kiếm nhật ký" onClick={() => setHistoryQuery('')}><X size={15} /></button>}</label>
+          <div role="group" aria-label="Lọc loại đánh giá">
+            <button type="button" className={historyFilter === 'all' ? 'active' : ''} onClick={() => setHistoryFilter('all')}>Tất cả</button>
+            <button type="button" className={historyFilter === 'positive' ? 'active positive' : ''} onClick={() => setHistoryFilter('positive')}>Điểm tốt</button>
+            <button type="button" className={historyFilter === 'negative' ? 'active negative' : ''} onClick={() => setHistoryFilter('negative')}>Nhắc nhở</button>
+          </div>
+        </div>
+        <div className="point-history-list">
+          {visibleHistory.map((activity) => {
+            const student = studentById.get(activity.studentId);
+            if (!student) return null;
+            const parsedTime = activity.createdAt ? new Date(activity.createdAt) : null;
+            const timestamp = parsedTime && !Number.isNaN(parsedTime.getTime())
+              ? new Intl.DateTimeFormat('vi-VN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: '2-digit' }).format(parsedTime)
+              : activity.time;
+            return (
+              <article className="point-history-row" key={activity.id}>
+                <Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" />
+                <div className="point-history-student"><strong>{student.name}</strong><small>Tổ {student.team} · {timestamp}</small></div>
+                <div className="point-history-reason"><strong>{activity.title}</strong><small>{activity.detail}</small></div>
+                <b className={activity.points > 0 ? 'positive' : 'negative'}>{activity.points > 0 ? '+' : ''}{activity.points}</b>
+                {canConfigure && <button type="button" className="point-history-delete" aria-label={`Xóa lượt ${activity.title} của ${student.name}`} onClick={() => setDeleteTarget(activity)}><Trash2 size={16} /><span>Xóa</span></button>}
+              </article>
+            );
+          })}
+          {!filteredHistory.length && <div className="point-history-empty"><History size={28} /><strong>{currentWeekActivities.length ? 'Không tìm thấy lượt đánh giá phù hợp' : 'Tuần này chưa có lượt đánh giá nào'}</strong><span>{currentWeekActivities.length ? 'Thử đổi từ khóa hoặc bộ lọc.' : 'Các lượt điểm tốt và nhắc nhở mới sẽ xuất hiện tại đây.'}</span></div>}
+        </div>
+        {filteredHistory.length > visibleHistory.length && <button type="button" className="point-history-more" onClick={() => setHistoryLimit((current) => current + 50)}>Xem thêm {Math.min(50, filteredHistory.length - visibleHistory.length)} lượt</button>}
+        {!canConfigure && currentWeekActivities.length > 0 && <p className="point-history-login-note"><ShieldCheck size={15} /> Chỉ tài khoản giáo viên mới được xóa lượt đánh giá.</p>}
+      </section>
       {settingsVisible && <PointReasonSettings reasons={reasons} onSave={onSaveReasons} onClose={() => setSettingsVisible(false)} />}
+      {deleteTarget && (() => {
+        const student = studentById.get(deleteTarget.studentId);
+        return (
+          <div className="settings-backdrop point-history-confirm-backdrop" role="presentation" onMouseDown={() => setDeleteTarget(null)}>
+            <section className="class-settings-card management-clear-confirm point-history-confirm" role="alertdialog" aria-modal="true" aria-labelledby="point-history-delete-title" aria-describedby="point-history-delete-description" onMouseDown={(event) => event.stopPropagation()}>
+              <button className="settings-close" type="button" aria-label="Đóng xác nhận xóa lượt đánh giá" onClick={() => setDeleteTarget(null)}><X size={21} /></button>
+              <div className="management-clear-confirm-icon"><Trash2 size={38} /></div>
+              <span className="settings-eyebrow">XÓA LƯỢT ĐÁNH GIÁ</span>
+              <h2 id="point-history-delete-title">Xóa “{deleteTarget.title}”?</h2>
+              <p id="point-history-delete-description">Lượt <strong>{deleteTarget.points > 0 ? '+' : ''}{deleteTarget.points} điểm</strong> của <strong>{student?.name || 'học sinh'}</strong> sẽ bị xóa khỏi tuần hiện tại. Điểm tuần và ví đổi thưởng (nếu đang cộng/trừ trực tiếp) sẽ được cập nhật lại.</p>
+              <div className="settings-actions">
+                <button type="button" className="settings-cancel" onClick={() => setDeleteTarget(null)}>Giữ lại</button>
+                <button type="button" className="settings-save management-clear-confirm-button" onClick={() => { const activityId = deleteTarget.id; setDeleteTarget(null); onDeleteActivity(activityId); }}><Trash2 size={18} /> Xác nhận xóa lượt</button>
+              </div>
+            </section>
+          </div>
+        );
+      })()}
     </>
   );
 }

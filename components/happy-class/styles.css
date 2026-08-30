@@ -3331,11 +3331,40 @@ body {
 .app-shell .points-undo-bar > button:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.03); }
 .app-shell .points-undo-bar > button:active:not(:disabled) { transform: translateY(2px); box-shadow: 0 2px 0 #bd7928; }
 .app-shell .points-undo-bar > button:disabled { border-color: #ded7e0; color: #a59ba7; background: #eee9ef; box-shadow: 0 4px 0 #d3ccd5; cursor: not-allowed; }
+.app-shell .point-history-panel { margin-top: 18px; padding: 18px; border: 2px solid #e5d8e7; background: linear-gradient(145deg,#fff,#fffafd); }
+.app-shell .point-history-head { display: grid; grid-template-columns: auto 1fr auto; align-items: center; gap: 12px; }
+.app-shell .point-history-icon { width: 45px; height: 45px; display: grid; place-items: center; border-radius: 15px; color: white; background: linear-gradient(145deg,#ad54b2,#74328e); box-shadow: 0 4px 0 #542168; }
+.app-shell .point-history-head > div > span { color: #a14c93; font-size: 9px; font-weight: 950; letter-spacing: .12em; }
+.app-shell .point-history-head h2 { margin: 2px 0 3px; color: #553055; font-size: 17px; }
+.app-shell .point-history-head p { margin: 0; color: #756776; font-size: 10.5px; font-weight: 700; }
+.app-shell .point-history-head > strong { padding: 7px 10px; border-radius: 999px; color: #743477; background: #f1e6f3; font-size: 10px; white-space: nowrap; }
+.app-shell .point-history-toolbar { margin: 15px 0 10px; display: grid; grid-template-columns: minmax(220px,1fr) auto; gap: 10px; }
+.app-shell .point-history-toolbar > label { min-height: 42px; display: flex; align-items: center; gap: 8px; padding: 0 10px 0 12px; border: 2px solid #e7d8e8; border-radius: 14px; color: #824c83; background: white; }
+.app-shell .point-history-toolbar input { min-width: 0; flex: 1; border: 0; outline: 0; color: #513852; background: transparent; font-size: 11px; font-weight: 750; }
+.app-shell .point-history-toolbar label > button { width: 27px; height: 27px; display: grid; place-items: center; border: 0; border-radius: 8px; color: #876e89; background: #f4edf5; }
+.app-shell .point-history-toolbar > div { display: flex; gap: 5px; padding: 4px; border-radius: 13px; background: #f2edf3; }
+.app-shell .point-history-toolbar > div button { padding: 0 11px; border: 0; border-radius: 10px; color: #7b6a7d; background: transparent; font-size: 9px; font-weight: 900; }
+.app-shell .point-history-toolbar > div button.active { color: #6d2d72; background: white; box-shadow: 0 2px 7px rgba(71,39,75,.12); }.app-shell .point-history-toolbar > div button.active.positive { color: #167459; }.app-shell .point-history-toolbar > div button.active.negative { color: #b54458; }
+.app-shell .point-history-list { max-height: 500px; overflow-y: auto; border: 1px solid #eadfea; border-radius: 15px; background: white; }
+.app-shell .point-history-row { min-height: 64px; display: grid; grid-template-columns: auto minmax(125px,.7fr) minmax(160px,1fr) auto auto; align-items: center; gap: 10px; padding: 9px 11px; border-bottom: 1px solid #eee6ef; }.app-shell .point-history-row:last-child { border-bottom: 0; }
+.app-shell .point-history-student,.app-shell .point-history-reason { min-width: 0; }.app-shell .point-history-student strong,.app-shell .point-history-student small,.app-shell .point-history-reason strong,.app-shell .point-history-reason small { display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.app-shell .point-history-student strong { color: #4c374f; font-size: 11px; }.app-shell .point-history-student small,.app-shell .point-history-reason small { margin-top: 3px; color: #88798a; font-size: 9px; font-weight: 700; }.app-shell .point-history-reason strong { color: #604663; font-size: 10.5px; }
+.app-shell .point-history-row > b { min-width: 42px; padding: 6px 7px; border-radius: 9px; font-size: 11px; text-align: center; }.app-shell .point-history-row > b.positive { color: #117057; background: #e6f7f1; }.app-shell .point-history-row > b.negative { color: #b64253; background: #ffebef; }
+.app-shell .point-history-delete { min-height: 34px; padding: 0 10px; display: inline-flex; align-items: center; gap: 5px; border: 1px solid #efc4cc; border-radius: 10px; color: #ae3b51; background: #fff3f5; font-size: 9px; font-weight: 900; }.app-shell .point-history-delete:hover { border-color: #df8394; background: #ffe8ed; }
+.app-shell .point-history-empty { min-height: 145px; display: grid; place-items: center; align-content: center; gap: 5px; color: #98849a; text-align: center; }.app-shell .point-history-empty strong { color: #624b65; font-size: 11px; }.app-shell .point-history-empty span { font-size: 9px; font-weight: 700; }
+.app-shell .point-history-more { min-height: 38px; margin: 10px auto 0; padding: 0 15px; display: block; border: 2px solid #dec9e0; border-radius: 12px; color: #754d78; background: white; font-size: 9.5px; font-weight: 900; }
+.app-shell .point-history-login-note { margin: 10px 0 0; display: flex; align-items: center; justify-content: center; gap: 6px; color: #887389; font-size: 9px; font-weight: 750; }
+.point-history-confirm-backdrop { z-index: 10030; }.point-history-confirm { width: min(520px,calc(100vw - 24px)); }.point-history-confirm > p strong { color: #812e50; }
 @media (max-width: 680px) {
   .app-shell .points-undo-bar { align-items: stretch; flex-wrap: wrap; }
   .app-shell .points-undo-bar > div { justify-content: center; }
   .app-shell .points-undo-bar small { white-space: normal; }
   .app-shell .points-undo-bar > button { width: 100%; }
+  .app-shell .point-history-panel { padding: 13px 10px; }
+  .app-shell .point-history-head { grid-template-columns: auto 1fr; }.app-shell .point-history-head > strong { grid-column: 1/-1; width: fit-content; }
+  .app-shell .point-history-head p { display: none; }
+  .app-shell .point-history-toolbar { grid-template-columns: 1fr; }.app-shell .point-history-toolbar > div button { min-height: 34px; flex: 1; }
+  .app-shell .point-history-row { grid-template-columns: auto 1fr auto auto; }.app-shell .point-history-reason { grid-column: 2/-1; grid-row: 2; }.app-shell .point-history-row > b { grid-column: 3; grid-row: 1; }.app-shell .point-history-delete { grid-column: 4; grid-row: 1; width: 34px; padding: 0; justify-content: center; }.app-shell .point-history-delete span { display: none; }
 }
 
 /* Chia tổ ngẫu nhiên có xem trước, xác nhận và hoàn tác. */
