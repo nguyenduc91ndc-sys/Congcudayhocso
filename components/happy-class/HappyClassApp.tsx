@@ -28,6 +28,7 @@ import {
   History,
   Home,
   LayoutGrid,
+  Leaf,
   LogOut,
   Mail,
   Maximize2,
@@ -36,6 +37,7 @@ import {
   Minus,
   Minimize2,
   MoreHorizontal,
+  Palette,
   PartyPopper,
   Pencil,
   Play,
@@ -151,6 +153,7 @@ type WeeklyScoringSettings = {
 type ParentFeedbackCategory = 'learning' | 'attendance' | 'support' | 'thanks';
 type TeacherAccount = { id?: string; email?: string; name: string; source?: 'platform' | 'local' | 'firebase' };
 type TeacherCredential = { name: string; salt: string; pinHash: string };
+type AppTheme = 'colorful' | 'garden';
 type PointUndoAction = {
   message: string;
   activityIds: number[];
@@ -208,6 +211,15 @@ const MAX_TEAM_COUNT = 30;
 const LOCAL_DATA_NOTICE_KEY = 'happy-class-local-data-notice-v1';
 const LEGACY_MIGRATION_OWNER_KEY = 'happy-class-indexeddb-migration-owner-v2';
 const BACKUP_REMINDER_DAYS = 14;
+const APP_THEME_KEY = 'happy-class-theme';
+
+function readAppTheme(): AppTheme {
+  try {
+    return localStorage.getItem(APP_THEME_KEY) === 'garden' ? 'garden' : 'colorful';
+  } catch {
+    return 'colorful';
+  }
+}
 
 function shouldShowLocalDataNotice() {
   try {
@@ -993,6 +1005,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [pointReasons, setPointReasons] = useState<PointReason[]>(readStoredPointReasons);
   const [rewardCatalog, setRewardCatalog] = useState<Reward[]>(readStoredRewards);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [appTheme, setAppTheme] = useState<AppTheme>(readAppTheme);
   const [profileId, setProfileId] = useState<number | null>(null);
   const [toast, setToast] = useState('');
   const [pointUndoAction, setPointUndoAction] = useState<PointUndoAction | null>(null);
@@ -1018,6 +1031,10 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const [cloudPublishing, setCloudPublishing] = useState(false);
   const tabHoverAudioContextRef = useRef<AudioContext | null>(null);
   const lastTabHoverSoundAtRef = useRef(0);
+
+  useEffect(() => {
+    try { localStorage.setItem(APP_THEME_KEY, appTheme); } catch { /* Theme vẫn hoạt động nếu trình duyệt chặn lưu trữ. */ }
+  }, [appTheme]);
 
   const getTabHoverAudioContext = () => {
     if (tabHoverAudioContextRef.current) return tabHoverAudioContextRef.current;
@@ -2319,7 +2336,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
 
   if (parentPortalEntry) {
     return (
-      <div className="app-shell parent-portal-shell page-parents">
+      <div className={`app-shell theme-${appTheme} parent-portal-shell page-parents`}>
         <main className="parent-portal-main">
           <ParentsPage
             students={students}
@@ -2350,7 +2367,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   }
 
   return (
-    <div className={`app-shell page-${page}`} onPointerDownCapture={unlockTabHoverAudio} onPointerOver={handleTabPointerOver}>
+    <div className={`app-shell theme-${appTheme} page-${page}`} onPointerDownCapture={unlockTabHoverAudio} onPointerOver={handleTabPointerOver}>
       {sidebarOpen && <button className="sidebar-scrim" aria-label="Đóng menu" onClick={() => setSidebarOpen(false)} />}
       <Sidebar page={page} open={sidebarOpen} teacherAccount={teacherAccount} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} classCount={localClasses.filter((item) => !item.archived).length} onManageClasses={() => { if (!isTeacher) { setTeacherAccessOpen(true); setToast('Vui lòng đăng nhập tài khoản giáo viên để thêm hoặc đổi lớp.'); return; } setClassWorkspaceOpen(true); setSidebarOpen(false); }} onTeacherLogin={() => setTeacherAccessOpen(true)} onTeacherLogout={logoutTeacher} onHelp={() => { setHelpOpen(true); setSidebarOpen(false); }} onNavigate={navigate} />
       <main className="main-shell">
@@ -2383,7 +2400,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           )}
           {page === 'honors' && <HonorsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} />}
           {page === 'parents' && <ParentsPage students={students} activities={activities} classCode={classProfile.code} week={weekState.current} scoring={weeklyScoring} isTeacher={isTeacher} portal={parentPortal} publishing={cloudPublishing} onPublish={publishParentPortal} onTogglePortal={() => void toggleParentPortal()} onToggleRequireAccessCode={toggleParentAccessMode} onRegenerateCode={regenerateParentCode} onToggleAccess={toggleParentAccess} onSaveFeedbackConfig={saveParentFeedbackConfig} onToast={setToast} />}
-          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} classCount={localClasses.filter((item) => !item.archived).length} onManageClasses={() => setClassWorkspaceOpen(true)} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onExport={exportBackup} onExportAll={() => void exportAllClasses()} onImport={importBackup} onOpenPrivacy={() => setPrivacyOpen(true)} onRestore={restoreSampleData} />}
+          {page === 'management' && isTeacher && <ManagementPage students={students} activities={activities} pointReasons={pointReasons} weekState={weekState} weeklyScoring={weeklyScoring} attendanceHistory={attendanceHistory} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} classCount={localClasses.filter((item) => !item.archived).length} appTheme={appTheme} onThemeChange={(theme) => { setAppTheme(theme); setToast(theme === 'garden' ? 'Đã áp dụng giao diện Vườn Xanh' : 'Đã áp dụng giao diện Rực rỡ'); }} onManageClasses={() => setClassWorkspaceOpen(true)} onEditTeacher={() => setSettingsOpen(true)} onEditClass={() => setClassSettingsOpen(true)} onUpdateWeek={updateCurrentWeek} onCloseWeek={closeCurrentWeek} onDeleteClosedWeek={deleteClosedWeek} onSaveWeeklyScoring={saveWeeklyScoring} onResetWeekPoints={resetCurrentWeekPoints} onSaveStudent={saveStudentProfile} onImportStudents={importStudentList} onDeleteStudent={deleteStudent} onClearStudents={clearStudentList} onExport={exportBackup} onExportAll={() => void exportAllClasses()} onImport={importBackup} onOpenPrivacy={() => setPrivacyOpen(true)} onRestore={restoreSampleData} />}
         </div>
       </main>
 
@@ -2761,7 +2778,7 @@ function Topbar({ pageTitle, teacherName, teacherPhoto, classProfile, onOpenMenu
   );
 }
 
-function ManagementPage({ students, activities, pointReasons, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, classCount, onManageClasses, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onExport, onExportAll, onImport, onOpenPrivacy, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; classCount: number; onManageClasses: () => void; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onExport: () => void; onExportAll: () => void; onImport: (file: File) => Promise<void>; onOpenPrivacy: () => void; onRestore: () => void }) {
+function ManagementPage({ students, activities, pointReasons, weekState, weeklyScoring, attendanceHistory, teacherName, teacherPhoto, classProfile, classCount, appTheme, onThemeChange, onManageClasses, onEditTeacher, onEditClass, onUpdateWeek, onCloseWeek, onDeleteClosedWeek, onSaveWeeklyScoring, onResetWeekPoints, onSaveStudent, onImportStudents, onDeleteStudent, onClearStudents, onExport, onExportAll, onImport, onOpenPrivacy, onRestore }: { students: Student[]; activities: Activity[]; pointReasons: PointReason[]; weekState: WeekState; weeklyScoring: WeeklyScoringSettings; attendanceHistory: AttendanceRecord[]; teacherName: string; teacherPhoto?: string; classProfile: ClassProfile; classCount: number; appTheme: AppTheme; onThemeChange: (theme: AppTheme) => void; onManageClasses: () => void; onEditTeacher: () => void; onEditClass: () => void; onUpdateWeek: (number: number, startDate: string, studyDays: 5 | 6) => void; onCloseWeek: () => void; onDeleteClosedWeek: (weekId: string) => void; onSaveWeeklyScoring: (settings: WeeklyScoringSettings) => void; onResetWeekPoints: () => void; onSaveStudent: (student: Student) => void; onImportStudents: (students: Student[], mode: 'append' | 'replace') => { imported: number; skipped: number }; onDeleteStudent: (studentId: number) => void; onClearStudents: () => void; onExport: () => void; onExportAll: () => void; onImport: (file: File) => Promise<void>; onOpenPrivacy: () => void; onRestore: () => void }) {
   const [editingStudent, setEditingStudent] = useState<Student | null>(null);
   const [excelImportOpen, setExcelImportOpen] = useState(false);
   const [reportExportOpen, setReportExportOpen] = useState(false);
@@ -2810,6 +2827,29 @@ function ManagementPage({ students, activities, pointReasons, weekState, weeklyS
             }
           }} />
         </article>
+      </section>
+
+      <section className="theme-settings panel" aria-labelledby="theme-settings-title">
+        <div className="theme-settings-copy">
+          <span className="theme-settings-icon"><Palette size={25} /></span>
+          <div>
+            <span>GIAO DIỆN ỨNG DỤNG</span>
+            <h2 id="theme-settings-title">Chọn màu sắc cho lớp học</h2>
+            <p>Thay đổi ngay trên toàn bộ ứng dụng và tự động ghi nhớ trên thiết bị này.</p>
+          </div>
+        </div>
+        <div className="theme-options" role="radiogroup" aria-label="Chọn giao diện">
+          <button type="button" role="radio" aria-checked={appTheme === 'colorful'} className={`theme-option theme-option-colorful ${appTheme === 'colorful' ? 'active' : ''}`} onClick={() => onThemeChange('colorful')}>
+            <span className="theme-preview" aria-hidden="true"><i /><i /><i /><i /></span>
+            <span className="theme-option-copy"><strong>Rực rỡ</strong><small>Hồng tím · sinh động</small></span>
+            <span className="theme-check">{appTheme === 'colorful' ? <Check size={16} strokeWidth={3} /> : null}</span>
+          </button>
+          <button type="button" role="radio" aria-checked={appTheme === 'garden'} className={`theme-option theme-option-garden ${appTheme === 'garden' ? 'active' : ''}`} onClick={() => onThemeChange('garden')}>
+            <span className="theme-preview" aria-hidden="true"><i /><i /><i /><i /></span>
+            <span className="theme-option-copy"><strong><Leaf size={15} /> Vườn Xanh</strong><small>Xanh lá · dịu mắt</small></span>
+            <span className="theme-check">{appTheme === 'garden' ? <Check size={16} strokeWidth={3} /> : null}</span>
+          </button>
+        </div>
       </section>
 
       <section className="management-privacy panel">

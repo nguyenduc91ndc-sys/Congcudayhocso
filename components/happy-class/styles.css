@@ -4568,3 +4568,296 @@ body {
 @media (max-width: 560px) {
   .class-workspace-backdrop { padding: 6px; }.class-workspace-card { max-height: 98vh; border-width: 2px; border-radius: 18px; box-shadow: 0 7px 0 #74268c,0 20px 45px rgba(77,29,91,.25); }.class-workspace-head { padding: 14px; }.class-workspace-title-icon { width: 42px; height: 42px; }.class-workspace-head h2 { font-size: 21px; }.class-workspace-head p { display: none; }.class-workspace-toolbar { padding: 10px; grid-template-columns: 1fr auto; }.class-workspace-toolbar .button { min-width: 43px; padding-inline: 10px; font-size: 0; }.class-workspace-toolbar .button svg { width: 20px; height: 20px; }.class-create-form { padding: 12px; }.class-create-grid { grid-template-columns: 1fr 1fr; }.class-create-grid label:first-child,.class-create-grid label:nth-child(3) { grid-column: 1/-1; }.class-workspace-body { padding: 13px 10px; }.class-workspace-section-title small { display: none; }.class-workspace-grid { grid-template-columns: 1fr; }.class-workspace-backup { padding: 11px; }.backup-reminder { right: 8px; bottom: 74px; grid-template-columns: auto 1fr; }.backup-reminder-main { grid-column: 1/-1; justify-content: center; }.backup-reminder-later { grid-column: 1/-1; }.class-workspace-open { min-height: 68px; }
 }
+
+/* HAPPY_CLASS_THEME_SYNC */
+/* Vườn Xanh cho toàn bộ sân khấu Gọi tên vui / Chia tổ bí mật */
+.app-shell.theme-garden.page-random {
+  --primary: #2e7d32;
+  --primary-dark: #1f5c29;
+  --primary-soft: #e7f5e3;
+}
+.app-shell.theme-garden.page-random .page-heading {
+  border-color: #e3e97d;
+  background:
+    radial-gradient(circle at 12% 50%,rgba(242,235,115,.2),transparent 20%),
+    radial-gradient(circle at 88% 30%,rgba(183,225,118,.24),transparent 24%),
+    linear-gradient(105deg,#17562a,#31813c 48%,#71b956);
+  box-shadow: 0 10px 0 #608f42,0 17px 0 #245c31,0 30px 50px rgba(28,76,35,.28),inset 0 3px 2px rgba(255,255,255,.62),inset 0 -10px 25px rgba(26,78,34,.2);
+}
+.app-shell.theme-garden.page-random .page-heading::before {
+  color: #fff28a;
+  background: linear-gradient(145deg,#8bd45f 8%,#3d9847 52%,#22612f);
+  text-shadow: 0 4px 0 #5c7c29,0 0 15px #f6f3a5;
+  filter: drop-shadow(0 0 0 #dce66d) drop-shadow(0 8px 0 #285d31) drop-shadow(0 15px 17px rgba(24,66,30,.34));
+}
+.app-shell.theme-garden.page-random .page-heading span { color: #fff49d; text-shadow: 0 2px 0 #47692c; }
+.app-shell.theme-garden.page-random .page-heading p { color: white; text-shadow: 0 2px 0 #286535; }
+.app-shell.theme-garden.page-random .page-heading h1 { filter: drop-shadow(0 3px 0 #fff3a0) drop-shadow(0 7px 0 #856719) drop-shadow(0 11px 7px rgba(24,65,29,.34)); }
+.app-shell.theme-garden.page-random .page-heading-icon { border-color: #f2ef91; background: linear-gradient(145deg,#fff7a3,#dbe65c 52%,#83b943); box-shadow: 0 8px 0 #547c36,0 16px 25px rgba(28,70,33,.32),inset 0 3px 4px rgba(255,255,255,.7); text-shadow: 0 4px 0 #5b8338; }
+
+.app-shell.theme-garden.page-random .random-mode-switch { border-color: #b9d9b2; background: rgba(250,255,247,.94); box-shadow: 0 7px 0 rgba(57,112,57,.17),0 13px 24px rgba(36,84,41,.1); }
+.app-shell.theme-garden.page-random .random-mode-switch button { color: #426a48; }
+.app-shell.theme-garden.page-random .random-mode-switch button:hover { color: #245f31; background: #edf7e9; }
+.app-shell.theme-garden.page-random .random-mode-switch button.active { color: white; background: linear-gradient(135deg,#286c36,#4b9b49 58%,#79bd5b); box-shadow: 0 4px 0 #1f552a,0 8px 13px rgba(34,85,39,.22); text-shadow: 0 1px 2px rgba(22,64,29,.35); }
+.app-shell.theme-garden.page-random .random-mode-switch button i { color: #53661e; background: #fff07a; }
+
+.app-shell.theme-garden.page-random .random-stage {
+  border-color: #dfe981;
+  background:
+    radial-gradient(circle at 50% 18%,rgba(242,238,137,.18),transparent 27%),
+    radial-gradient(circle at 12% 60%,rgba(113,190,89,.2),transparent 24%),
+    linear-gradient(155deg,#e8f5dd,#f8fbe9 50%,#dcefd5);
+  box-shadow: 0 10px 0 #669747,0 18px 0 #2a6436,0 34px 55px rgba(32,83,38,.23),inset 0 3px 2px rgba(255,255,255,.72);
+}
+.app-shell.theme-garden.page-random .random-stage::before { background: linear-gradient(180deg,rgba(242,250,218,.24),transparent 25%,rgba(24,76,32,.12)); }
+.app-shell.theme-garden.page-random .random-settings { border-color: #dce99b; background: linear-gradient(180deg,rgba(255,255,255,.98),rgba(239,249,232,.94)); box-shadow: 0 6px 0 rgba(70,128,67,.38),0 12px 22px rgba(35,82,39,.16),inset 0 2px 1px white; }
+.app-shell.theme-garden.page-random .random-settings > span,
+.app-shell.theme-garden.page-random .secret-group-settings > label > span,
+.app-shell.theme-garden.page-random .secret-scope > span { color: #356a3e; }
+.app-shell.theme-garden.page-random .random-settings p,
+.app-shell.theme-garden.page-random .secret-group-settings p { color: #526956; }
+.app-shell.theme-garden.page-random .secret-group-settings p strong { color: #2e7d32; }
+.app-shell.theme-garden.page-random .random-settings .filter-tabs button { color: #3e6b45; }
+.app-shell.theme-garden.page-random .random-settings .filter-tabs button.active { color: white; background: linear-gradient(135deg,#317b3b,#65ae55); box-shadow: 0 4px 0 #245d2e,0 8px 12px rgba(35,86,40,.18),inset 0 2px 1px rgba(255,255,255,.45); }
+.app-shell.theme-garden.page-random .random-presentation-button,
+.app-shell.theme-garden.page-random .random-sound-button { color: #31683b; border-color: #b8d9b2; background: linear-gradient(#fff,#edf7e8); box-shadow: 0 4px 0 #9ec69a; }
+.app-shell.theme-garden.page-random .random-presentation-button:hover,
+.app-shell.theme-garden.page-random .random-sound-button:hover { color: white; border-color: #e7ed89; background: linear-gradient(135deg,#347e3d,#72b85a); box-shadow: 0 5px 0 #245d2e; }
+
+.app-shell.theme-garden.page-random .secret-group-stage { border-color: #b8d9ae; background: radial-gradient(circle at 10% 15%,rgba(241,225,94,.22),transparent 21%),radial-gradient(circle at 91% 34%,rgba(111,190,84,.2),transparent 23%),linear-gradient(155deg,#f8fced,#eef8e8 52%,#e3f2df); box-shadow: 0 9px 0 #82b078,0 18px 36px rgba(40,91,44,.15); }
+.app-shell.theme-garden.page-random .secret-group-settings select { border-color: #b8d5b2; color: #315f38; background: #fbfef9; }
+.app-shell.theme-garden.page-random .secret-groups-arena {
+  background:
+    radial-gradient(ellipse at 50% 15%,rgba(243,240,142,.25),transparent 38%),
+    radial-gradient(circle at 8% 70%,rgba(121,191,91,.24),transparent 24%),
+    radial-gradient(circle at 92% 62%,rgba(159,211,104,.2),transparent 23%),
+    linear-gradient(145deg,#164f29,#287638 52%,#3f9248);
+  box-shadow: inset 0 0 45px rgba(15,57,24,.4),0 7px 0 #3f7946,0 15px 25px rgba(29,77,35,.2);
+}
+.app-shell.theme-garden.page-random .secret-groups-arena::after { background: radial-gradient(ellipse at 50% 24%,rgba(244,241,152,.25),transparent 43%); }
+.app-shell.theme-garden.page-random .secret-dice-orbit { background: linear-gradient(145deg,#75c65f,#3d9346 58%,#236330); box-shadow: 0 8px 0 #1e5129,0 0 36px rgba(232,237,116,.58); }
+.app-shell.theme-garden.page-random .secret-dice-orbit > span { color: #35652f; }
+.app-shell.theme-garden.page-random .secret-group-intro h2 { text-shadow: 0 4px 0 #245f31,0 7px 10px rgba(15,53,22,.38); }
+.app-shell.theme-garden.page-random .secret-group-intro > p { color: #f4faed; }
+.app-shell.theme-garden.page-random .secret-fairness { background: rgba(17,65,27,.38); }
+.app-shell.theme-garden.page-random .secret-status { background: rgba(20,73,30,.76); box-shadow: 0 4px 12px rgba(15,55,22,.25); }
+.app-shell.theme-garden.page-random .secret-status.phase-complete { color: #315f32; background: #f5f1a4; }
+.app-shell.theme-garden.page-random .secret-countdown,
+.app-shell.theme-garden.page-random .secret-shuffle-banner { background: linear-gradient(145deg,rgba(91,174,71,.98),rgba(32,103,47,.98)); box-shadow: 0 12px 0 #245b2e,0 0 0 9999px rgba(12,48,20,.45),0 25px 60px rgba(15,54,22,.55); }
+.app-shell.theme-garden.page-random .secret-countdown > strong { text-shadow: 0 7px 0 #245d2f; }
+.app-shell.theme-garden.page-random .secret-start-button { background: linear-gradient(135deg,#79c85e,#469b48 58%,#286e37); box-shadow: 0 7px 0 #20582b,0 15px 25px rgba(31,81,36,.26); }
+.app-shell.theme-garden.page-random .secret-start-button:not(:disabled):hover { box-shadow: 0 9px 0 #20582b,0 19px 30px rgba(31,81,36,.3); }
+.app-shell.theme-garden.page-random .secret-group-note { color: #49654e; }
+.app-shell.theme-garden.page-random .secret-audio-credit { color: #708172; }
+.app-shell.theme-garden.page-random .secret-group-stage.is-presentation,
+.app-shell.theme-garden.page-random .secret-group-stage:fullscreen { background: linear-gradient(155deg,#f8fced,#eef8e8 52%,#e3f2df); }
+
+.app-shell.theme-garden.page-random .wheel-pedestal { color: #f7f3a5; background: linear-gradient(180deg,#6fbd5a,#3a8a43 55%,#245f31); box-shadow: 0 8px 0 #194722,0 15px 22px rgba(28,71,33,.3),inset 0 2px 1px rgba(255,255,255,.38); }
+.app-shell.theme-garden.page-random .wheel-pedestal i { background: #317a3c; }
+.app-shell.theme-garden.page-random .random-stage .spin-button { border-color: #e6ed89; background: linear-gradient(180deg,#8dcc61,#4c9d49 52%,#276b35); box-shadow: 0 8px 0 #20562b,0 15px 0 rgba(34,84,39,.3),0 24px 36px rgba(32,80,37,.3),inset 0 3px 2px rgba(255,255,255,.52); text-shadow: 0 2px 3px rgba(24,66,29,.55); }
+.app-shell.theme-garden.page-random .random-stage .spin-button:not(:disabled):hover { box-shadow: 0 12px 0 #20562b,0 19px 0 rgba(34,84,39,.3),0 30px 42px rgba(32,80,37,.34),inset 0 3px 2px rgba(255,255,255,.52); }
+.app-shell.theme-garden.page-random .wheel-tip { color: #35683d; background: rgba(248,252,222,.9); box-shadow: 0 3px 0 rgba(72,126,66,.2); }
+
+/* Tăng độ nét và tương phản chữ trên thanh bên Vườn Xanh */
+.app-shell.theme-garden .sidebar {
+  color: #163f24;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+}
+.app-shell.theme-garden .brand strong {
+  color: #174b28;
+  font-weight: 950;
+  letter-spacing: -.15px;
+  text-shadow: none;
+}
+.app-shell.theme-garden .brand span {
+  color: #3f6350;
+  font-weight: 800;
+  text-shadow: none;
+}
+.app-shell.theme-garden .class-switcher strong {
+  color: #fff;
+  font-weight: 950;
+  text-shadow: 0 2px 0 #1c5629;
+}
+.app-shell.theme-garden .class-switcher span {
+  color: #f3fae8;
+  font-weight: 850;
+  text-shadow: 0 1px 0 #286534;
+}
+.app-shell.theme-garden .nav-eyebrow {
+  color: #f7ffdf;
+  font-weight: 950;
+  letter-spacing: 1.1px;
+  text-shadow: 0 2px 0 #39763e;
+}
+.app-shell.theme-garden .sidebar-nav button,
+.app-shell.theme-garden .sidebar-footer > button {
+  color: #174b28;
+  font-weight: 950;
+  letter-spacing: .05px;
+  text-shadow: none;
+}
+.app-shell.theme-garden .sidebar-nav button:hover {
+  color: #123f21;
+  text-shadow: none;
+}
+.app-shell.theme-garden .sidebar-nav button.active,
+.app-shell.theme-garden .sidebar-footer > button.active {
+  color: #fff;
+  text-shadow: 0 2px 0 #1d572a;
+}
+.app-shell.theme-garden .teacher-mini strong,
+.app-shell.theme-garden .teacher-login-copy strong {
+  color: #174b28;
+  font-weight: 950;
+  text-shadow: none;
+}
+.app-shell.theme-garden .teacher-mini span,
+.app-shell.theme-garden .teacher-login-copy small {
+  color: #45644e;
+  font-weight: 800;
+  text-shadow: none;
+}
+.app-shell.theme-garden .sidebar-footer > .teacher-management-button:hover,
+.app-shell.theme-garden .sidebar-footer > .teacher-management-button.active {
+  color: #fff;
+  text-shadow: 0 2px 0 #1d572a;
+}
+
+/* Những chi tiết quản lý còn lại khi dùng Vườn Xanh */
+.app-shell.theme-garden .happy-class-home { color: #285f33; border-color: #e9ed8e; background: linear-gradient(145deg,#fff,#edf4b5); box-shadow: 0 5px 0 #5d8145,0 10px 16px rgba(31,75,36,.18),inset 0 1px 0 white; }
+.app-shell.theme-garden .happy-class-home svg { color: #3e8b44; }
+.app-shell.theme-garden .sidebar-footer > .teacher-management-button > span { color: white; background: linear-gradient(145deg,#78c965,#358a42); box-shadow: 0 3px 0 #245f30; }
+.app-shell.theme-garden .management-data strong { color: #34783e; }
+.app-shell.theme-garden .week-management-head { border-bottom-color: #e6df67; background: linear-gradient(105deg,#225d2f,#3d8d44 55%,#82c45e); }
+.app-shell.theme-garden .week-management-title > span { color: #f4efa0; }
+
+/* Bộ chọn giao diện trong trang Quản lý lớp */
+.theme-settings { margin-bottom: 17px; padding: 19px 21px; display: grid; grid-template-columns: minmax(280px,.9fr) minmax(460px,1.1fr); align-items: center; gap: 20px; }
+.theme-settings-copy { min-width: 0; display: flex; align-items: center; gap: 13px; }
+.theme-settings-icon { width: 54px; height: 54px; flex: none; display: grid; place-items: center; border: 3px solid #ead0ee; border-radius: 18px; color: white; background: linear-gradient(145deg,#e464b8,#7b42bd); box-shadow: 0 5px 0 #653077; }
+.theme-settings-copy > div { min-width: 0; }
+.theme-settings-copy > div > span { color: #a63f78; font-size: 11px; font-weight: 950; letter-spacing: 1px; }
+.theme-settings-copy h2 { margin: 3px 0; color: #71336f; font-size: 18px; font-weight: 950; }
+.theme-settings-copy p { margin: 0; color: #625867; font-size: 12px; font-weight: 700; line-height: 1.5; }
+.theme-options { min-width: 0; display: grid; grid-template-columns: repeat(2,minmax(0,1fr)); gap: 11px; }
+.theme-option { min-width: 0; min-height: 86px; padding: 10px; display: grid; grid-template-columns: 72px minmax(0,1fr) 26px; align-items: center; gap: 10px; border: 3px solid #ead3e2; border-radius: 19px; color: #684261; background: #fff; box-shadow: 0 4px 0 #dcc4d3; text-align: left; transition: .18s ease; }
+.theme-option:hover { transform: translateY(-2px); box-shadow: 0 6px 0 #d2b7c9,0 11px 18px rgba(82,42,77,.1); }
+.theme-option.active { border-color: #ffd85d; box-shadow: 0 5px 0 #8c3a91,0 11px 20px rgba(81,32,87,.18); }
+.theme-preview { width: 72px; height: 58px; overflow: hidden; position: relative; display: grid; grid-template-columns: 19px 1fr; grid-template-rows: 14px 1fr; border: 2px solid rgba(255,255,255,.92); border-radius: 12px; box-shadow: 0 4px 9px rgba(53,31,51,.17); }
+.theme-preview i { display: block; }
+.theme-preview i:nth-child(1) { grid-row: 1/-1; }
+.theme-preview i:nth-child(2) { grid-column: 2; }
+.theme-preview i:nth-child(3),.theme-preview i:nth-child(4) { width: 17px; height: 14px; align-self: center; border-radius: 5px; background: rgba(255,255,255,.88); box-shadow: 21px 0 0 rgba(255,255,255,.72); }
+.theme-preview i:nth-child(3) { margin-left: 5px; }
+.theme-preview i:nth-child(4) { display: none; }
+.theme-option-colorful .theme-preview { background: linear-gradient(135deg,#f9cbdc,#e6c6f4); }.theme-option-colorful .theme-preview i:nth-child(1) { background: linear-gradient(#ffd76e,#d85aaa,#7b43b8); }.theme-option-colorful .theme-preview i:nth-child(2) { background: linear-gradient(90deg,#813eb4,#ef5f86,#f69c3d); }
+.theme-option-garden .theme-preview { background: linear-gradient(135deg,#f1faee,#dff1d9); }.theme-option-garden .theme-preview i:nth-child(1) { background: linear-gradient(#8bcf78,#3f9146,#245c31); }.theme-option-garden .theme-preview i:nth-child(2) { background: linear-gradient(90deg,#245c31,#4b9f50,#7fc66b); }
+.theme-option-copy { min-width: 0; display: flex; flex-direction: column; gap: 4px; }.theme-option-copy strong { display: flex; align-items: center; gap: 5px; color: #64375e; font-size: 13px; font-weight: 950; }.theme-option-copy small { overflow: hidden; color: #756875; font-size: 10px; font-weight: 750; text-overflow: ellipsis; white-space: nowrap; }
+.theme-check { width: 25px; height: 25px; display: grid; place-items: center; border-radius: 50%; color: white; background: #9b43a5; }
+.theme-option:not(.active) .theme-check { border: 2px solid #e1d3de; background: #f8f3f7; }
+.theme-option-garden.active { border-color: #74bb6b; box-shadow: 0 5px 0 #2f7339,0 11px 20px rgba(39,103,48,.17); }.theme-option-garden.active .theme-check { background: #2e7d32; }.theme-option-garden .theme-option-copy strong { color: #286334; }
+
+/* Giao diện Vườn Xanh */
+html[data-theme='garden'] body { color: #18351e; background: #eef7eb; }
+.app-shell.theme-garden {
+  --primary: #2e7d32;
+  --primary-dark: #1f5c29;
+  --primary-soft: #e5f4df;
+  --ink: #18351e;
+  --muted: #526956;
+  --line: #cfe3ca;
+  --surface: #fbfef9;
+  --cream: #fff9df;
+  --shadow: 0 12px 0 rgba(49,111,55,.1),0 25px 45px rgba(36,84,41,.13);
+  --shadow-hover: 0 15px 0 rgba(49,111,55,.14),0 31px 55px rgba(36,84,41,.18);
+  color: var(--ink);
+  background: #eef7eb;
+}
+.app-shell.theme-garden .main-shell { background: radial-gradient(circle at 85% 8%,rgba(246,196,83,.14),transparent 18%),radial-gradient(circle at 9% 65%,rgba(102,187,106,.13),transparent 24%),linear-gradient(180deg,#f7fcf4,#edf7e9); }
+.app-shell.theme-garden::before { background: rgba(117,190,91,.14); box-shadow: -73vw 55vh 0 rgba(246,196,83,.11); }
+.app-shell.theme-garden::after { background: rgba(67,160,71,.1); box-shadow: -63vw -61vh 0 rgba(139,195,74,.1); }
+.app-shell.theme-garden .sidebar { border-right-color: #9dcc75; background: radial-gradient(circle at 38% 3%,rgba(255,255,255,.72),transparent 20%),linear-gradient(180deg,#eff9d2 0%,#bde18d 18%,#72bb68 54%,#2f7840 100%); box-shadow: 9px 0 0 #2b6538,18px 0 35px rgba(35,88,43,.2),inset -3px 0 0 rgba(255,255,255,.45); scrollbar-color: rgba(35,91,44,.45) transparent; }
+.app-shell.theme-garden .brand { border-color: #d8eda8; background: linear-gradient(145deg,rgba(255,255,255,.96),rgba(241,250,218,.94)); box-shadow: 0 6px 0 #65964d,0 12px 20px rgba(38,87,44,.17),inset 0 2px 1px white; }
+.app-shell.theme-garden .brand-mark { border-color: #d9f0a9; color: #f7ffd9; background: linear-gradient(145deg,#63bb58,#2e7d32 58%,#1f5c29); box-shadow: 0 5px 0 #194d23,0 10px 16px rgba(30,79,36,.23),inset 0 2px 1px rgba(255,255,255,.45); }
+.app-shell.theme-garden .brand strong { color: #245c31; }.app-shell.theme-garden .brand span { color: #527158; }
+.app-shell.theme-garden .class-switcher { border-color: #e8ed91; background: linear-gradient(135deg,#286b35,#4e9c48 56%,#86c95f); box-shadow: 0 6px 0 #20542c,0 13px 21px rgba(31,80,38,.25),inset 0 2px 1px rgba(255,255,255,.4); }
+.app-shell.theme-garden .class-switcher strong,.app-shell.theme-garden .class-switcher span { color: white; }.app-shell.theme-garden .class-icon { color: #5e4511; border-color: #fff1a0; background: linear-gradient(145deg,#fff48a,#f6c453); box-shadow: 0 4px 0 #a97523; }
+.app-shell.theme-garden .nav-eyebrow { color: #e8f7c8; text-shadow: 0 2px 2px rgba(24,77,32,.48); }
+.app-shell.theme-garden .sidebar-nav button,.app-shell.theme-garden .sidebar-footer > button { color: #285d34; border-color: rgba(255,255,255,.52); background: rgba(250,255,247,.82); box-shadow: 0 4px 0 rgba(35,93,44,.25),0 8px 12px rgba(24,67,31,.1),inset 0 1px 0 white; }
+.app-shell.theme-garden .sidebar-nav button > svg,.app-shell.theme-garden .sidebar-footer > button > svg { color: white; background: linear-gradient(145deg,#72c467,#338a43); box-shadow: 0 3px 0 #236531; }
+.app-shell.theme-garden .sidebar-nav button:nth-of-type(4n+2) > svg { background: linear-gradient(145deg,#9bd675,#4d9b4b); box-shadow: 0 3px 0 #347139; }.app-shell.theme-garden .sidebar-nav button:nth-of-type(4n+3) > svg { background: linear-gradient(145deg,#65bfa0,#2c806b); box-shadow: 0 3px 0 #1f5e4e; }.app-shell.theme-garden .sidebar-nav button:nth-of-type(4n+4) > svg { background: linear-gradient(145deg,#b5d75d,#6c9f36); box-shadow: 0 3px 0 #4c7626; }
+.app-shell.theme-garden .sidebar-nav button:hover { color: #1f5c29; border-color: #e9f4a2; background: #fff; box-shadow: 0 6px 0 rgba(40,103,48,.3),0 12px 18px rgba(31,79,37,.15); }
+.app-shell.theme-garden .sidebar-nav button.active { color: white; border-color: #f5e875; background: linear-gradient(135deg,#7fc866,#49a34d 55%,#28733a); box-shadow: 0 6px 0 #1c5529,0 13px 21px rgba(28,79,35,.26),inset 0 2px 1px rgba(255,255,255,.4); text-shadow: 0 2px 2px rgba(23,68,30,.5); }
+.app-shell.theme-garden .sidebar-nav button.active > svg { color: #356d2a; border-color: #fbf3a5; background: linear-gradient(145deg,#fff9ad,#d9e85e); box-shadow: 0 3px 0 #78952a; }
+.app-shell.theme-garden .teacher-mini { border-top-color: rgba(229,246,193,.6); }.app-shell.theme-garden .teacher-mini span,.app-shell.theme-garden .teacher-mini > svg { color: #e9f8d3; }
+.app-shell.theme-garden .topbar { border-bottom-color: #e6d85c; background: linear-gradient(105deg,#225d2f 0%,#378842 43%,#69b85b 74%,#a3ce62 100%); box-shadow: 0 7px 0 #2a6734,0 15px 28px rgba(31,83,38,.2),inset 0 -2px 0 rgba(255,255,255,.2); }
+.app-shell.theme-garden .topbar-left > div { border-color: rgba(240,242,151,.55); background: rgba(25,78,34,.26); }.app-shell.theme-garden .topbar-breadcrumb,.app-shell.theme-garden .teacher-top span { color: #edf8d5; }
+.app-shell.theme-garden .global-search { border-color: #dae98a; color: #5f775e; box-shadow: 0 5px 0 rgba(34,85,40,.38),0 10px 16px rgba(29,73,35,.15); }.app-shell.theme-garden .icon-button { border-color: #e6ed96; color: #2c6c36; background: linear-gradient(145deg,#fff,#eef5b5); box-shadow: 0 5px 0 #62874b,0 10px 16px rgba(33,77,38,.18); }.app-shell.theme-garden .teacher-top .avatar { border-color: #e8ed91; box-shadow: 0 4px 0 #47743e; }
+.app-shell.theme-garden:not(.page-random) .page-heading,.app-shell.theme-garden .welcome-hero { border-color: #dce778; background: radial-gradient(circle at 82% 18%,rgba(255,255,255,.18),transparent 26%),linear-gradient(115deg,#1f5c29,#3c8d43 54%,#7abd5d); box-shadow: 0 9px 0 #548c45,0 16px 0 #285f34,0 30px 48px rgba(34,83,39,.23),inset 0 3px 2px rgba(255,255,255,.55); }
+.app-shell.theme-garden:not(.page-random) .page-heading h1,
+.app-shell.theme-garden .welcome-copy h1 {
+  padding-bottom: 6px;
+  color: #fff;
+  background: none;
+  -webkit-text-fill-color: #fff;
+  letter-spacing: -.45px;
+  filter: none;
+  text-shadow: 0 2px 0 #8fbc76,0 4px 0 #4f8a49,0 6px 0 #255e32;
+}
+.app-shell.theme-garden:not(.page-random) .page-heading span {
+  color: #fff49c;
+  text-shadow: 0 2px 0 #48682c;
+}
+.app-shell.theme-garden:not(.page-random) .page-heading p {
+  color: white;
+  text-shadow: 0 2px 0 #286535;
+}
+.app-shell.theme-garden:not(.page-random) .page-heading-icon { border-color: #f3ef9c; color: #356c2e; background: linear-gradient(145deg,#fff9ad,#e5e866 57%,#a8c84c); box-shadow: 0 8px 0 #628936,0 16px 25px rgba(30,72,35,.3),inset 0 3px 2px rgba(255,255,255,.65); }
+.app-shell.theme-garden .sun-pill { border-color: #eaf09c; color: #315c2f; background: linear-gradient(#fffdb8,#dfe86b); box-shadow: 0 4px 0 #6d8c36,0 9px 14px rgba(30,71,34,.22); }.app-shell.theme-garden .hero-mascot { border-color: #eef18d; background: linear-gradient(145deg,#fff6a0,#e8d65e 62%,#8cc558); box-shadow: 0 9px 0 #58843e,0 20px 35px rgba(28,71,33,.29); }
+.app-shell.theme-garden .panel,.app-shell.theme-garden .student-card,.app-shell.theme-garden .reward-card,.app-shell.theme-garden .quick-action,.app-shell.theme-garden .stat-card,.app-shell.theme-garden .attendance-stat { border-color: #b9d9b2; background: linear-gradient(145deg,rgba(255,255,255,.98),rgba(245,251,241,.97)); box-shadow: 0 7px 0 #9fc997,0 16px 28px rgba(41,92,45,.12),inset 0 2px 1px white; }
+.app-shell.theme-garden .panel:nth-of-type(3n+1),.app-shell.theme-garden .panel:nth-of-type(3n+2) { border-color: #b9d9b2; box-shadow: 0 7px 0 #9fc997,0 16px 28px rgba(41,92,45,.12),inset 0 2px 1px white; }
+.app-shell.theme-garden .panel-header h2,.app-shell.theme-garden .selection-header h3 { color: #285e33; }.app-shell.theme-garden .panel-header span,.app-shell.theme-garden .selection-header span { color: #4b8d50; }
+.app-shell.theme-garden .button,.app-shell.theme-garden .reward-footer button { border-color: #e5ea8a; background: linear-gradient(180deg,#6fbe61,#3f9146 55%,#286c36); box-shadow: 0 6px 0 #20572b,0 12px 19px rgba(30,76,36,.2),inset 0 2px 1px rgba(255,255,255,.45); text-shadow: 0 2px 2px rgba(25,67,31,.5); }.app-shell.theme-garden .button:hover,.app-shell.theme-garden .reward-footer button:not(:disabled):hover { box-shadow: 0 9px 0 #20572b,0 17px 24px rgba(30,76,36,.24),inset 0 2px 1px rgba(255,255,255,.45); }
+.app-shell.theme-garden .teacher-management-button,.app-shell.theme-garden .sidebar-footer > .teacher-management-button { color: #285f33; border-color: #dced99; background: linear-gradient(145deg,#fbfff3,#e4f1c6); box-shadow: 0 5px 0 #396d3d,0 10px 17px rgba(30,73,35,.15); }.app-shell.theme-garden .sidebar-footer > .teacher-management-button:hover,.app-shell.theme-garden .sidebar-footer > .teacher-management-button.active { color: white; border-color: #f0eb84; background: linear-gradient(135deg,#78c55f,#4c9f4c 55%,#2b7139); box-shadow: 0 6px 0 #20532a,0 12px 19px rgba(29,74,34,.23); }
+.app-shell.theme-garden.page-management { --primary: #2e7d32; --primary-dark: #1f5c29; --primary-soft: #e7f5e3; }
+.app-shell.theme-garden .management-teacher span,.app-shell.theme-garden .management-header span,.app-shell.theme-garden .management-danger span,.app-shell.theme-garden .management-class span { color: #43834a; }.app-shell.theme-garden .management-teacher h2,.app-shell.theme-garden .management-header h2,.app-shell.theme-garden .management-class h2 { color: #285f33; }.app-shell.theme-garden .management-teacher p,.app-shell.theme-garden .management-header p,.app-shell.theme-garden .management-class p { color: #526956; }
+.app-shell.theme-garden .management-class-edit { border-color: #e6eb8b; background: linear-gradient(#6cbb5f,#398a42); box-shadow: 0 5px 0 #245e30; }.app-shell.theme-garden .management-privacy { border-color: #9ed39f!important; background: linear-gradient(135deg,#eff9eb,#fffdeb 58%,#e9f5df)!important; }
+.app-shell.theme-garden .theme-settings-icon { border-color: #dceca9; background: linear-gradient(145deg,#72bd62,#307a3b); box-shadow: 0 5px 0 #235b2e; }.app-shell.theme-garden .theme-settings-copy > div > span { color: #4a874b; }.app-shell.theme-garden .theme-settings-copy h2 { color: #285f33; }.app-shell.theme-garden .theme-settings-copy p { color: #526956; }
+
+@media (max-width: 900px) {
+  .theme-settings { grid-template-columns: 1fr; }
+}
+@media (max-width: 620px) {
+  .theme-settings { padding: 15px; }.theme-options { grid-template-columns: 1fr; }.theme-option { min-height: 78px; }.theme-settings-copy h2 { font-size: 16px; }.theme-settings-copy p { font-size: 10.5px; }
+  .app-shell.theme-garden:not(.page-random) .page-heading h1,
+  .app-shell.theme-garden .welcome-copy h1 {
+    padding-bottom: 4px;
+    text-shadow: 0 2px 0 #72a45f,0 4px 0 #285f34;
+  }
+}
+
+/* Lớp hoàn thiện độ rõ của chữ sidebar — đặt cuối để thắng các responsive cũ. */
+.app-shell.theme-garden .sidebar { color: #163f24; text-rendering: optimizeLegibility; -webkit-font-smoothing: antialiased; }
+.app-shell.theme-garden .brand strong { color: #174b28; font-weight: 950; text-shadow: none; }
+.app-shell.theme-garden .brand span { color: #3f6350; font-weight: 800; text-shadow: none; }
+.app-shell.theme-garden .class-switcher strong { color: #fff; font-weight: 950; text-shadow: 0 2px 0 #1c5629; }
+.app-shell.theme-garden .class-switcher span { color: #f3fae8; font-weight: 850; text-shadow: 0 1px 0 #286534; }
+.app-shell.theme-garden .nav-eyebrow { color: #f8ffe5; font-size: 11.5px; font-weight: 950; letter-spacing: 1.05px; text-shadow: 0 2px 0 #39763e; }
+.app-shell.theme-garden .sidebar-nav button,
+.app-shell.theme-garden .sidebar-footer > button { color: #174b28; font-size: 13.5px; font-weight: 950; letter-spacing: .05px; text-shadow: none; }
+.app-shell.theme-garden .sidebar-nav button:hover { color: #123f21; text-shadow: none; }
+.app-shell.theme-garden .sidebar-nav button.active,
+.app-shell.theme-garden .sidebar-footer > button.active { color: #fff; text-shadow: 0 2px 0 #1d572a; }
+.app-shell.theme-garden .teacher-mini strong,
+.app-shell.theme-garden .teacher-login-copy strong { color: #174b28; font-weight: 950; text-shadow: none; }
+.app-shell.theme-garden .teacher-mini span,
+.app-shell.theme-garden .teacher-login-copy small { color: #45644e; font-weight: 800; text-shadow: none; }
+.app-shell.theme-garden .sidebar-footer > .teacher-management-button:hover,
+.app-shell.theme-garden .sidebar-footer > .teacher-management-button.active { color: #fff; text-shadow: 0 2px 0 #1d572a; }
+
+@media (max-width: 1380px) {
+  .app-shell.theme-garden .sidebar-nav button,
+  .app-shell.theme-garden .sidebar-footer > button { font-size: 13px; }
+}
