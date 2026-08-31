@@ -2393,7 +2393,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'points' && <PointsPage students={students} activities={activities} reasons={pointReasons} currentWeekId={weekState.current.id} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onSaveTeacherComment={saveTeacherComment} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} onDeleteActivity={deletePointActivity} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} activities={activities} currentWeekId={weekState.current.id} calculationMode={weeklyScoring.calculationMode} canConfigure={isTeacher} onRedeem={redeemReward} onUndoRedeem={undoRewardRedemption} onSaveRewards={saveRewards} />}
-          {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} onApplyTeams={applyRandomTeams} />}
+          {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} canManagePhotos={isTeacher || Boolean(platformUser)} onApplyTeams={applyRandomTeams} onMarkAbsent={(studentId) => updateAttendance(studentId, 'absent')} onUpdatePhoto={updateStudentPhoto} onRemovePhoto={removeStudentPhoto} />}
           {page === 'tools' && <ClassroomToolsPage />}
           {page === 'attendance' && (
             <AttendancePage students={students} classCode={classProfile.code} attendanceHistory={attendanceHistory} weekState={weekState} weeklyScoring={weeklyScoring} onUpdate={updateAttendance} onUpdateBulk={updateAttendanceBulk} onComplete={markAttendanceComplete} onToast={setToast} />
@@ -4262,22 +4262,246 @@ function RewardSettings({ rewards, onSave, onClose }: { rewards: Reward[]; onSav
   );
 }
 
-type RandomMode = 'wheel' | 'groups';
+type RandomMode = 'photos' | 'wheel' | 'groups';
 type SecretGroupPhase = 'idle' | 'countdown' | 'shuffling' | 'revealing' | 'complete';
 
-function RandomPage({ students, teamCount, onApplyTeams }: { students: Student[]; teamCount: number; onApplyTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void }) {
-  const [mode, setMode] = useState<RandomMode>('wheel');
+function RandomPage({ students, teamCount, canManagePhotos, onApplyTeams, onMarkAbsent, onUpdatePhoto, onRemovePhoto }: { students: Student[]; teamCount: number; canManagePhotos: boolean; onApplyTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void; onMarkAbsent: (studentId: number) => void; onUpdatePhoto: (studentId: number, file: File) => Promise<void>; onRemovePhoto: (studentId: number) => void }) {
+  const [mode, setMode] = useState<RandomMode>('photos');
+  const heading = mode === 'photos'
+    ? { title: 'Gọi tên bằng ảnh', description: 'Ảnh chạy thật vui, chậm dần rồi dừng ở một bạn may mắn.', icon: '📸' }
+    : mode === 'wheel'
+      ? { title: 'Vòng quay vinh quang', description: 'Mỗi lượt quay là một khoảnh khắc bất ngờ và đầy hứng khởi của lớp học.', icon: '🏆' }
+      : { title: 'Chia tổ bí mật', description: 'Xúc xắc đã gieo — đồng đội của em là ai?', icon: '🎲' };
   return (
     <>
-      <PageHeading eyebrow="SÂN KHẤU NGẪU NHIÊN" title={mode === 'wheel' ? 'Vòng quay vinh quang' : 'Chia tổ bí mật'} description={mode === 'wheel' ? 'Mỗi lượt quay là một khoảnh khắc bất ngờ và đầy hứng khởi của lớp học.' : 'Xúc xắc đã gieo — đồng đội của em là ai?'} icon={mode === 'wheel' ? '🏆' : '🎲'} />
+      <PageHeading eyebrow="SÂN KHẤU NGẪU NHIÊN" title={heading.title} description={heading.description} icon={heading.icon} />
       <div className="random-mode-switch" role="tablist" aria-label="Chọn trò chơi ngẫu nhiên">
+        <button type="button" role="tab" aria-selected={mode === 'photos'} className={mode === 'photos' ? 'active' : ''} onClick={() => setMode('photos')}><Camera size={18} /><span>Gọi tên bằng ảnh</span><i>MỚI</i></button>
         <button type="button" role="tab" aria-selected={mode === 'wheel'} className={mode === 'wheel' ? 'active' : ''} onClick={() => setMode('wheel')}><Sparkles size={18} /><span>Vòng quay cá nhân</span></button>
-        <button type="button" role="tab" aria-selected={mode === 'groups'} className={mode === 'groups' ? 'active' : ''} onClick={() => setMode('groups')}><Dices size={19} /><span>Chia tổ bí mật</span><i>MỚI</i></button>
+        <button type="button" role="tab" aria-selected={mode === 'groups'} className={mode === 'groups' ? 'active' : ''} onClick={() => setMode('groups')}><Dices size={19} /><span>Chia tổ bí mật</span></button>
       </div>
-      {mode === 'wheel'
-        ? <div className="random-legacy-shell"><LegacyRandomPage students={students} teamCount={teamCount} /></div>
-        : <SecretGroupsPage students={students} initialTeamCount={teamCount} onApplyTeams={onApplyTeams} />}
+      {mode === 'photos' && <PhotoRandomPage students={students} teamCount={teamCount} canManagePhotos={canManagePhotos} onMarkAbsent={onMarkAbsent} onUpdatePhoto={onUpdatePhoto} onRemovePhoto={onRemovePhoto} />}
+      {mode === 'wheel' && <div className="random-legacy-shell"><LegacyRandomPage students={students} teamCount={teamCount} /></div>}
+      {mode === 'groups' && <SecretGroupsPage students={students} initialTeamCount={teamCount} onApplyTeams={onApplyTeams} />}
     </>
+  );
+}
+
+function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, onUpdatePhoto, onRemovePhoto }: { students: Student[]; teamCount: number; canManagePhotos: boolean; onMarkAbsent: (studentId: number) => void; onUpdatePhoto: (studentId: number, file: File) => Promise<void>; onRemovePhoto: (studentId: number) => void }) {
+  const [team, setTeam] = useState(0);
+  const [avoidRepeats, setAvoidRepeats] = useState(true);
+  const [soundEnabled, setSoundEnabled] = useState(true);
+  const [calledIds, setCalledIds] = useState<number[]>([]);
+  const [history, setHistory] = useState<Student[]>([]);
+  const [winner, setWinner] = useState<Student | null>(null);
+  const [preview, setPreview] = useState<Student | null>(null);
+  const [picking, setPicking] = useState(false);
+  const [isPresentation, setIsPresentation] = useState(false);
+  const [photoManagerOpen, setPhotoManagerOpen] = useState(false);
+  const [photoManagerFullscreen, setPhotoManagerFullscreen] = useState(false);
+  const [photoManagerMode, setPhotoManagerMode] = useState<'individual' | 'group'>('group');
+  const [updatingPhotoId, setUpdatingPhotoId] = useState<number | null>(null);
+  const [groupPhotoUrl, setGroupPhotoUrl] = useState('');
+  const [groupPhotoName, setGroupPhotoName] = useState('');
+  const [groupTargetId, setGroupTargetId] = useState<number | null>(null);
+  const [groupFacePoint, setGroupFacePoint] = useState<{ x: number; y: number } | null>(null);
+  const [groupCropSize, setGroupCropSize] = useState(150);
+  const [groupZoom, setGroupZoom] = useState(1);
+  const [groupCropSaving, setGroupCropSaving] = useState(false);
+  const [lastSavedGroupName, setLastSavedGroupName] = useState('');
+  const stageRef = useRef<HTMLElement | null>(null);
+  const groupPhotoRef = useRef<HTMLImageElement | null>(null);
+  const groupPhotoUrlRef = useRef('');
+  const spinAudioRef = useRef<HTMLAudioElement | null>(null);
+  const victoryAudioRef = useRef<HTMLAudioElement | null>(null);
+  const shuffleTimerRef = useRef<number | undefined>(undefined);
+  const finishTimerRef = useRef<number | undefined>(undefined);
+  const pool = useMemo(() => students.filter((student) => student.attendance === 'present' && (!team || student.team === team)), [students, team]);
+  const calledSet = useMemo(() => new Set(calledIds), [calledIds]);
+  const availablePool = avoidRepeats ? pool.filter((student) => !calledSet.has(student.id)) : pool;
+  const calledCount = pool.filter((student) => calledSet.has(student.id)).length;
+  const shownStudent = picking ? preview : winner;
+  const photoCount = pool.filter((student) => student.photo).length;
+  const allPhotoCount = students.filter((student) => student.photo).length;
+  const photoManagerStudents = team ? students.filter((student) => student.team === team) : students;
+  const groupTarget = groupTargetId === null ? null : photoManagerStudents.find((student) => student.id === groupTargetId) ?? null;
+  const completedRound = avoidRepeats && pool.length > 0 && availablePool.length === 0;
+
+  const stopTimersAndAudio = () => {
+    if (shuffleTimerRef.current !== undefined) window.clearInterval(shuffleTimerRef.current);
+    if (finishTimerRef.current !== undefined) window.clearTimeout(finishTimerRef.current);
+    shuffleTimerRef.current = undefined;
+    finishTimerRef.current = undefined;
+    if (spinAudioRef.current) { spinAudioRef.current.pause(); spinAudioRef.current.currentTime = 0; }
+  };
+  const resetRound = () => {
+    if (picking) return;
+    setCalledIds([]); setHistory([]); setWinner(null); setPreview(null);
+  };
+  const changeTeam = (nextTeam: number) => {
+    if (picking) return;
+    setTeam(nextTeam); setCalledIds([]); setHistory([]); setWinner(null); setPreview(null);
+  };
+  const pickStudent = () => {
+    if (picking || !availablePool.length) return;
+    const candidates = [...availablePool];
+    const finalWinner = candidates[secureRandomIndex(candidates.length)];
+    setPicking(true); setWinner(null); setPreview(candidates[secureRandomIndex(candidates.length)]);
+    if (victoryAudioRef.current) { victoryAudioRef.current.pause(); victoryAudioRef.current.currentTime = 0; }
+    if (soundEnabled && spinAudioRef.current) {
+      spinAudioRef.current.currentTime = 0;
+      spinAudioRef.current.volume = .68;
+      void spinAudioRef.current.play().catch(() => undefined);
+    }
+    let tick = 0;
+    shuffleTimerRef.current = window.setInterval(() => {
+      tick += 1;
+      setPreview(candidates[secureRandomIndex(candidates.length)]);
+      if (tick > 20 && shuffleTimerRef.current !== undefined) {
+        window.clearInterval(shuffleTimerRef.current);
+        shuffleTimerRef.current = undefined;
+      }
+    }, 105);
+    finishTimerRef.current = window.setTimeout(() => {
+      if (shuffleTimerRef.current !== undefined) window.clearInterval(shuffleTimerRef.current);
+      shuffleTimerRef.current = undefined;
+      if (spinAudioRef.current) { spinAudioRef.current.pause(); spinAudioRef.current.currentTime = 0; }
+      setPreview(finalWinner); setWinner(finalWinner); setPicking(false);
+      setCalledIds((current) => avoidRepeats && !current.includes(finalWinner.id) ? [...current, finalWinner.id] : current);
+      setHistory((current) => [finalWinner, ...current].slice(0, 12));
+      if (soundEnabled && victoryAudioRef.current) {
+        victoryAudioRef.current.currentTime = 0;
+        victoryAudioRef.current.volume = .82;
+        void victoryAudioRef.current.play().catch(() => undefined);
+      }
+      finishTimerRef.current = undefined;
+    }, 2850);
+  };
+  const markWinnerAbsent = () => {
+    if (!winner || picking) return;
+    onMarkAbsent(winner.id);
+    setCalledIds((current) => current.filter((studentId) => studentId !== winner.id));
+    setHistory((current) => current.filter((student) => student.id !== winner.id));
+    setWinner(null); setPreview(null);
+  };
+  const togglePresentation = async () => {
+    const stage = stageRef.current;
+    if (!stage) return;
+    if (isPresentation) {
+      setIsPresentation(false);
+      if (document.fullscreenElement) await document.exitFullscreen().catch(() => undefined);
+      return;
+    }
+    setIsPresentation(true);
+    if (stage.requestFullscreen) await stage.requestFullscreen().catch(() => undefined);
+  };
+  const openPhotoManager = () => {
+    setGroupTargetId(null);
+    setPhotoManagerMode('group'); setPhotoManagerFullscreen(false); setPhotoManagerOpen(true);
+  };
+  const chooseGroupPhoto = (file: File) => {
+    if (!file.type.startsWith('image/')) return;
+    if (groupPhotoUrlRef.current) URL.revokeObjectURL(groupPhotoUrlRef.current);
+    const url = URL.createObjectURL(file);
+    groupPhotoUrlRef.current = url;
+    setGroupPhotoUrl(url); setGroupPhotoName(file.name); setGroupFacePoint(null); setGroupZoom(1); setLastSavedGroupName('');
+  };
+  const saveGroupFace = async () => {
+    const image = groupPhotoRef.current;
+    if (!image || !groupFacePoint || !groupTarget || groupCropSaving) return;
+    const rect = image.getBoundingClientRect();
+    if (!rect.width || !image.naturalWidth || !image.naturalHeight) return;
+    const sourceSize = Math.min(image.naturalWidth, image.naturalHeight, groupCropSize * image.naturalWidth / rect.width);
+    const centerX = groupFacePoint.x * image.naturalWidth;
+    const centerY = groupFacePoint.y * image.naturalHeight;
+    const sourceX = Math.max(0, Math.min(image.naturalWidth - sourceSize, centerX - sourceSize / 2));
+    const sourceY = Math.max(0, Math.min(image.naturalHeight - sourceSize, centerY - sourceSize / 2));
+    const canvas = document.createElement('canvas');
+    canvas.width = 420; canvas.height = 420;
+    const context = canvas.getContext('2d');
+    if (!context) return;
+    context.drawImage(image, sourceX, sourceY, sourceSize, sourceSize, 0, 0, canvas.width, canvas.height);
+    const blob = await new Promise<Blob | null>((resolve) => canvas.toBlob(resolve, 'image/jpeg', .9));
+    if (!blob) return;
+    setGroupCropSaving(true);
+    const safeName = groupTarget.name.normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-zA-Z0-9]+/g, '-').replace(/^-|-$/g, '') || `hoc-sinh-${groupTarget.id}`;
+    await onUpdatePhoto(groupTarget.id, new File([blob], `${safeName}.jpg`, { type: 'image/jpeg' }));
+    setLastSavedGroupName(groupTarget.name); setGroupTargetId(null); setGroupFacePoint(null); setGroupCropSaving(false);
+  };
+
+  useEffect(() => () => stopTimersAndAudio(), []);
+  useEffect(() => () => { if (groupPhotoUrlRef.current) URL.revokeObjectURL(groupPhotoUrlRef.current); }, []);
+  useEffect(() => {
+    const syncFullscreen = () => setIsPresentation(document.fullscreenElement === stageRef.current);
+    document.addEventListener('fullscreenchange', syncFullscreen);
+    return () => document.removeEventListener('fullscreenchange', syncFullscreen);
+  }, []);
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (event.code !== 'Space' || target?.matches('input, textarea, select, button')) return;
+      event.preventDefault(); pickStudent();
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => document.removeEventListener('keydown', onKeyDown);
+  });
+
+  return (
+    <section ref={stageRef} className={`photo-random-stage panel ${isPresentation ? 'is-presentation' : ''}`}>
+      <audio ref={spinAudioRef} src={spinWheelSound} preload="auto" aria-hidden="true" />
+      <audio ref={victoryAudioRef} src={victorySound} preload="auto" aria-hidden="true" />
+      <div className="photo-random-toolbar">
+        <div className="photo-scope"><span>Phạm vi gọi</span><div className="filter-tabs">{[0, ...getTeamNumbers(teamCount)].map((item) => <button type="button" key={item} disabled={picking} className={team === item ? 'active' : ''} onClick={() => changeTeam(item)}>{item === 0 ? 'Cả lớp' : `Tổ ${item}`}</button>)}</div></div>
+        {canManagePhotos && <button type="button" className="photo-manager-open" disabled={picking} onClick={openPhotoManager}><Camera size={17} /><span>Thêm / cắt ảnh</span><b>{allPhotoCount}/{students.length}</b></button>}
+        <button type="button" className={`photo-repeat-toggle ${avoidRepeats ? 'active' : ''}`} disabled={picking} onClick={() => { setAvoidRepeats((current) => !current); resetRound(); }}><Check size={16} /> Không gọi trùng</button>
+        <button type="button" className="random-sound-button" disabled={picking} onClick={() => setSoundEnabled((current) => !current)} aria-label={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}>{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
+        <button type="button" className="random-presentation-button" onClick={() => void togglePresentation()}>{isPresentation ? <Minimize2 size={18} /> : <Maximize2 size={18} />}<span>{isPresentation ? 'Thu nhỏ' : 'Phóng to'}</span></button>
+      </div>
+      <div className="photo-picker-layout">
+        <div className={`photo-picker-arena ${picking ? 'is-picking' : ''} ${winner ? 'has-winner' : ''}`} aria-live="polite">
+          <div className="photo-stage-lights" aria-hidden="true"><i /><i /><i /></div>
+          <div className="photo-picker-kicker">{picking ? 'ĐANG XÁO THẺ…' : winner ? 'XIN MỜI BẠN' : completedRound ? 'ĐÃ GỌI HẾT MỘT LƯỢT' : 'SẴN SÀNG GỌI TÊN'}</div>
+          <div className="photo-picker-card">{shownStudent ? <Avatar initials={shownStudent.initials} gradient={shownStudent.gradient} photo={shownStudent.photo} size="xlarge" /> : <span className="photo-picker-placeholder"><Camera size={64} /><b>?</b></span>}{shownStudent && !shownStudent.photo && <small className="photo-missing-badge">Chưa có ảnh · dùng tên viết tắt</small>}</div>
+          <div className="photo-picker-name">{shownStudent ? <><strong>{shownStudent.name}</strong><span>Tổ {shownStudent.team}{picking ? ' · Đang lựa chọn…' : ' · Chúc em tự tin trả lời!'}</span></> : <><strong>{completedRound ? 'Tuyệt vời!' : 'Ai sẽ được gọi?'}</strong><span>{completedRound ? 'Cả lớp đã có lượt — hãy bắt đầu vòng mới.' : 'Nhấn nút bên dưới hoặc phím Space'}</span></>}</div>
+          {winner && !picking && <><div className="photo-picker-confetti" aria-hidden="true">{Array.from({ length: 22 }, (_, index) => <i key={index} style={{ '--photo-confetti': index } as CSSProperties} />)}</div><PartyPopper className="photo-party-icon" size={31} /></>}
+        </div>
+        <div className="photo-picker-actions">
+          <button type="button" className="photo-pick-button" disabled={picking || !availablePool.length} onClick={pickStudent}><Sparkles size={21} />{picking ? 'ĐANG CHỌN…' : completedRound ? 'ĐÃ GỌI HẾT LƯỢT' : winner ? 'GỌI BẠN TIẾP THEO' : 'GỌI NGẪU NHIÊN'}</button>
+          {winner && !picking && <button type="button" className="photo-absent-button" onClick={markWinnerAbsent}><X size={17} /> Báo vắng</button>}
+        </div>
+        <aside className="photo-history-panel">
+          <header><div><History size={19} /><span>LỊCH SỬ LƯỢT GỌI</span></div><strong>{avoidRepeats ? `${calledCount}/${pool.length}` : history.length}</strong></header>
+          <div className="photo-round-progress"><i style={{ width: `${pool.length ? Math.min(100, (calledCount / pool.length) * 100) : 0}%` }} /></div>
+          <div className="photo-history-list">{history.length ? history.map((student, index) => <div key={`${student.id}-${index}`}><b>{history.length - index}</b><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" /><span><strong>{student.name}</strong><small>Tổ {student.team}</small></span></div>) : <p><History size={28} /><span>Những bạn đã được gọi sẽ xuất hiện ở đây.</span></p>}</div>
+          <button type="button" disabled={picking || !history.length} onClick={resetRound}><RotateCcw size={16} /> Bắt đầu vòng mới</button>
+        </aside>
+      </div>
+      <p className="photo-picker-note"><UserRoundCheck size={16} /> {pool.length} học sinh có mặt · {photoCount} bạn đã có ảnh {avoidRepeats && <>· còn {availablePool.length} bạn trong lượt</>}</p>
+      {photoManagerOpen && (
+        <div className={`photo-manager-backdrop ${photoManagerFullscreen ? 'is-fullscreen' : ''}`} role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) { setPhotoManagerOpen(false); setPhotoManagerFullscreen(false); } }}>
+          <section className={`photo-manager-card ${photoManagerFullscreen ? 'is-fullscreen' : ''}`} role="dialog" aria-modal="true" aria-labelledby="photo-manager-title">
+            <header><div className="photo-manager-heading-icon"><Camera size={25} /></div><div><span>ẢNH DÙNG KHI GỌI TÊN</span><h2 id="photo-manager-title">Thêm ảnh học sinh</h2><p>Tải ảnh riêng hoặc cắt nhanh từng khuôn mặt từ một ảnh tập thể.</p></div><div className="photo-manager-head-actions"><button type="button" aria-label={photoManagerFullscreen ? 'Thu nhỏ cửa sổ cắt ảnh' : 'Toàn màn hình cửa sổ cắt ảnh'} onClick={() => setPhotoManagerFullscreen((current) => !current)}>{photoManagerFullscreen ? <Minimize2 size={19} /> : <Maximize2 size={19} />}</button><button type="button" aria-label="Đóng quản lý ảnh" onClick={() => { setPhotoManagerOpen(false); setPhotoManagerFullscreen(false); }}><X size={20} /></button></div></header>
+            <div className="photo-manager-summary"><div><strong>{allPhotoCount}</strong><span>đã có ảnh</span></div><i><b style={{ width: `${students.length ? (allPhotoCount / students.length) * 100 : 0}%` }} /></i><small>{Math.max(0, students.length - allPhotoCount)} học sinh cần thêm ảnh</small></div>
+            <div className="photo-manager-modes" role="tablist" aria-label="Cách thêm ảnh học sinh"><button type="button" role="tab" aria-selected={photoManagerMode === 'group'} className={photoManagerMode === 'group' ? 'active' : ''} onClick={() => setPhotoManagerMode('group')}><UsersRound size={17} /> Cắt từ ảnh tập thể <i>NHANH</i></button><button type="button" role="tab" aria-selected={photoManagerMode === 'individual'} className={photoManagerMode === 'individual' ? 'active' : ''} onClick={() => setPhotoManagerMode('individual')}><Camera size={17} /> Tải ảnh từng em</button></div>
+            {photoManagerMode === 'individual' ? (
+              <div className="photo-manager-list">{photoManagerStudents.map((student, index) => <article className="photo-manager-row" key={student.id}><b>{index + 1}</b><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="large" /><div><strong>{student.name}</strong><span><i className={`status-dot ${student.attendance}`} /> Tổ {student.team} · {student.photo ? 'Đã có ảnh' : 'Chưa có ảnh'}</span></div><label className="photo-manager-upload"><Camera size={16} /><span>{updatingPhotoId === student.id ? 'Đang lưu…' : student.photo ? 'Thay ảnh' : 'Chọn ảnh'}</span><input type="file" accept="image/png,image/jpeg,image/webp" disabled={updatingPhotoId !== null} onChange={async (event) => { const input = event.currentTarget; const file = input.files?.[0]; if (!file) return; setUpdatingPhotoId(student.id); await onUpdatePhoto(student.id, file); setUpdatingPhotoId(null); input.value = ''; }} /></label>{student.photo && <button type="button" className="photo-manager-remove" aria-label={`Xóa ảnh của ${student.name}`} disabled={updatingPhotoId !== null} onClick={() => onRemovePhoto(student.id)}><Trash2 size={16} /></button>}</article>)}{!photoManagerStudents.length && <div className="photo-manager-empty"><UsersRound size={33} /><strong>Chưa có học sinh</strong><span>Hãy nhập danh sách lớp trước khi thêm ảnh.</span></div>}</div>
+            ) : (
+              <div className="photo-group-workspace">
+                <div className="photo-group-steps" aria-label="Tiến trình cắt ảnh"><div className={groupPhotoUrl ? 'done' : 'active'}><b>{groupPhotoUrl ? <Check size={15} /> : '1'}</b><span><strong>Tải ảnh lớp</strong><small>Chọn ảnh rõ khuôn mặt</small></span></div><i /><div className={groupFacePoint ? 'done' : groupPhotoUrl ? 'active' : ''}><b>{groupFacePoint ? <Check size={15} /> : '2'}</b><span><strong>Chọn khuôn mặt</strong><small>Bấm vào chính giữa mặt</small></span></div><i /><div className={groupTarget ? 'active' : ''}><b>3</b><span><strong>Gán tên &amp; lưu</strong><small>Chọn đúng học sinh</small></span></div></div>
+                <div className="photo-group-guide"><HelpCircle size={17} /><span><strong>Mẹo:</strong> kéo thanh phóng to nếu khuôn mặt nhỏ, sau đó điều chỉnh vòng chọn vừa khuôn mặt.</span></div>
+                {lastSavedGroupName && <div className="photo-group-success" role="status"><span><Check size={17} /></span><div><strong>Đã lưu ảnh của {lastSavedGroupName}</strong><small>Bạn có thể chọn khuôn mặt tiếp theo ngay trên ảnh này.</small></div></div>}
+                <div className="photo-group-tools"><label className="photo-group-file"><Upload size={18} /><span><strong>{groupPhotoUrl ? 'Đổi ảnh tập thể' : 'Tải ảnh tập thể'}</strong><small>{groupPhotoName || 'PNG, JPG hoặc WEBP'}</small></span><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { const input = event.currentTarget; const file = input.files?.[0]; if (file) chooseGroupPhoto(file); input.value = ''; }} /></label><label><span>Cỡ vùng chọn</span><input type="range" min="80" max="240" step="4" value={groupCropSize} onChange={(event) => setGroupCropSize(Number(event.target.value))} /><b>{groupCropSize}px</b></label><label><span>Phóng to</span><input type="range" min="1" max="2.5" step="0.1" value={groupZoom} onChange={(event) => setGroupZoom(Number(event.target.value))} /><b>{Math.round(groupZoom * 100)}%</b></label></div>
+                <div className="photo-group-layout">
+                  <div className="photo-group-image-area">{groupPhotoUrl ? <><div className="photo-group-viewport"><div className="photo-group-canvas" style={{ width: `${groupZoom * 100}%` }}><img ref={groupPhotoRef} src={groupPhotoUrl} alt="Ảnh tập thể đang cắt" draggable={false} onClick={(event) => { const rect = event.currentTarget.getBoundingClientRect(); setGroupTargetId(null); setLastSavedGroupName(''); setGroupFacePoint({ x: Math.max(0, Math.min(1, (event.clientX - rect.left) / rect.width)), y: Math.max(0, Math.min(1, (event.clientY - rect.top) / rect.height)) }); }} />{groupFacePoint && <div className="photo-group-crop-ring" style={{ left: `${groupFacePoint.x * 100}%`, top: `${groupFacePoint.y * 100}%`, width: groupCropSize, height: groupCropSize }}><span>{groupTarget ? groupTarget.name.split(' ').slice(-2).join(' ') : 'Chọn tên →'}</span></div>}</div></div><p><Camera size={15} /> Bấm khuôn mặt trên ảnh, sau đó chọn đúng tên học sinh bên phải.</p></> : <label className="photo-group-empty"><span><UsersRound size={41} /></span><strong>Tải một ảnh tập thể của lớp</strong><small>Sau đó bấm lần lượt vào khuôn mặt và gắn với tên học sinh.</small><b><Upload size={16} /> Chọn ảnh tập thể</b><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => { const input = event.currentTarget; const file = input.files?.[0]; if (file) chooseGroupPhoto(file); input.value = ''; }} /></label>}</div>
+                  <aside className="photo-group-students"><header className={groupFacePoint && !groupTarget ? 'needs-name' : ''}><div><span>{groupFacePoint && !groupTarget ? 'CHỌN TÊN CHO KHUÔN MẶT' : 'ĐANG CẮT ẢNH CHO'}</span><strong>{groupTarget?.name ?? (groupFacePoint ? 'Bấm một tên bên dưới' : 'Hãy bấm vào khuôn mặt')}</strong></div>{groupTarget ? <Avatar initials={groupTarget.initials} gradient={groupTarget.gradient} photo={groupTarget.photo} size="large" /> : <span className="photo-group-target-placeholder">?</span>}</header><div>{photoManagerStudents.map((student, index) => <button type="button" key={student.id} className={student.id === groupTarget?.id ? 'active' : ''} onClick={() => setGroupTargetId(student.id)}><b>{index + 1}</b><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" /><span><strong>{student.name}</strong><small>Tổ {student.team}</small></span>{student.photo ? <Check size={15} /> : <i />}</button>)}</div><button type="button" className="photo-group-save" disabled={!groupPhotoUrl || !groupFacePoint || !groupTarget || groupCropSaving} onClick={() => void saveGroupFace()}><Camera size={18} />{groupCropSaving ? 'Đang lưu ảnh…' : 'Cắt và lưu ảnh này'}</button></aside>
+                </div>
+              </div>
+            )}
+            <footer><span>{photoManagerMode === 'group' ? 'Mẹo: phóng to ảnh để chọn khuôn mặt chính xác hơn.' : 'Mẹo: ảnh dọc, rõ khuôn mặt sẽ đẹp nhất khi trình chiếu.'}</span><button type="button" onClick={() => { setPhotoManagerOpen(false); setPhotoManagerFullscreen(false); }}><Check size={17} /> Xong</button></footer>
+          </section>
+        </div>
+      )}
+    </section>
   );
 }
 
