@@ -4291,6 +4291,7 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
   const [team, setTeam] = useState(0);
   const [avoidRepeats, setAvoidRepeats] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
+  const [flightDuration, setFlightDuration] = useState(7);
   const [calledIds, setCalledIds] = useState<number[]>([]);
   const [history, setHistory] = useState<Student[]>([]);
   const [winner, setWinner] = useState<Student | null>(null);
@@ -4326,6 +4327,7 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
   const photoManagerStudents = team ? students.filter((student) => student.team === team) : students;
   const groupTarget = groupTargetId === null ? null : photoManagerStudents.find((student) => student.id === groupTargetId) ?? null;
   const completedRound = avoidRepeats && pool.length > 0 && availablePool.length === 0;
+  const flyingStudents = useMemo(() => pool.slice(0, 36), [pool]);
 
   const stopTimersAndAudio = () => {
     if (shuffleTimerRef.current !== undefined) window.clearInterval(shuffleTimerRef.current);
@@ -4357,7 +4359,7 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
     shuffleTimerRef.current = window.setInterval(() => {
       tick += 1;
       setPreview(candidates[secureRandomIndex(candidates.length)]);
-      if (tick > 20 && shuffleTimerRef.current !== undefined) {
+      if (tick > Math.max(20, Math.floor((flightDuration * 1000 - 450) / 105)) && shuffleTimerRef.current !== undefined) {
         window.clearInterval(shuffleTimerRef.current);
         shuffleTimerRef.current = undefined;
       }
@@ -4375,7 +4377,7 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
         void victoryAudioRef.current.play().catch(() => undefined);
       }
       finishTimerRef.current = undefined;
-    }, 2850);
+    }, flightDuration * 1000);
   };
   const markWinnerAbsent = () => {
     if (!winner || picking) return;
@@ -4453,6 +4455,7 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
       <div className="photo-random-toolbar">
         <div className="photo-scope"><span>Phạm vi gọi</span><div className="filter-tabs">{[0, ...getTeamNumbers(teamCount)].map((item) => <button type="button" key={item} disabled={picking} className={team === item ? 'active' : ''} onClick={() => changeTeam(item)}>{item === 0 ? 'Cả lớp' : `Tổ ${item}`}</button>)}</div></div>
         {canManagePhotos && <button type="button" className="photo-manager-open" disabled={picking} onClick={openPhotoManager}><Camera size={17} /><span>Thêm / cắt ảnh</span><b>{allPhotoCount}/{students.length}</b></button>}
+        <label className="photo-flight-duration"><Clock3 size={16} /><span>Ảnh bay</span><select value={flightDuration} disabled={picking} onChange={(event) => setFlightDuration(Number(event.target.value))}><option value="5">5 giây</option><option value="7">7 giây</option><option value="10">10 giây</option></select></label>
         <button type="button" className={`photo-repeat-toggle ${avoidRepeats ? 'active' : ''}`} disabled={picking} onClick={() => { setAvoidRepeats((current) => !current); resetRound(); }}><Check size={16} /> Không gọi trùng</button>
         <button type="button" className="random-sound-button" disabled={picking} onClick={() => setSoundEnabled((current) => !current)} aria-label={soundEnabled ? 'Tắt âm thanh' : 'Bật âm thanh'}>{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
         <button type="button" className="random-presentation-button" onClick={() => void togglePresentation()}>{isPresentation ? <Minimize2 size={18} /> : <Maximize2 size={18} />}<span>{isPresentation ? 'Thu nhỏ' : 'Phóng to'}</span></button>
@@ -4460,7 +4463,8 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
       <div className="photo-picker-layout">
         <div className={`photo-picker-arena ${picking ? 'is-picking' : ''} ${winner ? 'has-winner' : ''}`} aria-live="polite">
           <div className="photo-stage-lights" aria-hidden="true"><i /><i /><i /></div>
-          <div className="photo-picker-kicker">{picking ? 'ĐANG XÁO THẺ…' : winner ? 'XIN MỜI BẠN' : completedRound ? 'ĐÃ GỌI HẾT MỘT LƯỢT' : 'SẴN SÀNG GỌI TÊN'}</div>
+          {picking && <div className="photo-flying-cloud" aria-hidden="true">{flyingStudents.map((student, index) => <span key={student.id} style={{ '--fly-left': `${5 + ((index * 37) % 88)}%`, '--fly-top': `${8 + ((index * 53) % 72)}%`, '--fly-delay': `${-((index * .29) % 3.4)}s`, '--fly-duration': `${3.4 + (index % 6) * .42}s`, '--fly-scale': `${.76 + (index % 5) * .09}`, '--fly-drift-x': `${45 + (index % 4) * 22}px`, '--fly-drift-y': `${28 + (index % 5) * 13}px` } as CSSProperties}><Avatar initials={student.initials} gradient={student.gradient} photo={student.photo} size="small" /></span>)}</div>}
+          <div className="photo-picker-kicker">{picking ? 'ẢNH ĐANG BAY…' : winner ? 'XIN MỜI BẠN' : completedRound ? 'ĐÃ GỌI HẾT MỘT LƯỢT' : 'SẴN SÀNG GỌI TÊN'}</div>
           <div className="photo-picker-card">{shownStudent ? <Avatar initials={shownStudent.initials} gradient={shownStudent.gradient} photo={shownStudent.photo} size="xlarge" /> : <span className="photo-picker-placeholder"><Camera size={64} /><b>?</b></span>}{shownStudent && !shownStudent.photo && <small className="photo-missing-badge">Chưa có ảnh · dùng tên viết tắt</small>}</div>
           <div className="photo-picker-name">{shownStudent ? <><strong>{shownStudent.name}</strong><span>Tổ {shownStudent.team}{picking ? ' · Đang lựa chọn…' : ' · Chúc em tự tin trả lời!'}</span></> : <><strong>{completedRound ? 'Tuyệt vời!' : 'Ai sẽ được gọi?'}</strong><span>{completedRound ? 'Cả lớp đã có lượt — hãy bắt đầu vòng mới.' : 'Nhấn nút bên dưới hoặc phím Space'}</span></>}</div>
           {winner && !picking && <><div className="photo-picker-confetti" aria-hidden="true">{Array.from({ length: 22 }, (_, index) => <i key={index} style={{ '--photo-confetti': index } as CSSProperties} />)}</div><PartyPopper className="photo-party-icon" size={31} /></>}

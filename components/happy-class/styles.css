@@ -4078,6 +4078,11 @@ body {
 .photo-manager-open:hover { color: white; border-color: #ffe17a; background: linear-gradient(135deg,#3caed2,#7761df); box-shadow: 0 5px 0 #4c479e; transform: translateY(-1px); }
 .photo-manager-open b { min-width: 34px; padding: 3px 5px; border-radius: 8px; color: white; background: #4aa7c6; font-size: 8px; text-align: center; }
 .photo-manager-open:hover b { color: #655095; background: #fff1a6; }
+.photo-flight-duration { min-height: 38px; margin-left: auto; padding: 0 7px 0 10px; display: inline-flex; align-items: center; gap: 6px; flex: none; border: 2px solid #e2d2e8; border-radius: 13px; color: #704f79; background: linear-gradient(#fff,#faf4ff); box-shadow: 0 3px 0 #d7c5de; font-size: 9.5px; font-weight: 900; }
+.photo-flight-duration svg { color: #9a56b5; }
+.photo-flight-duration select { height: 27px; padding: 0 22px 0 7px; border: 0; border-radius: 8px; color: #6b4079; background: #f1e7f7; font-size: 9px; font-weight: 950; }
+.photo-manager-open + .photo-flight-duration { margin-left: 0; }
+.photo-flight-duration + .photo-repeat-toggle { margin-left: 0; }
 .photo-repeat-toggle { min-height: 38px; margin-left: auto; padding: 0 12px; display: inline-flex; align-items: center; gap: 6px; flex: none; border: 2px solid #e1cfe4; border-radius: 13px; color: #765d78; background: #fff; box-shadow: 0 3px 0 #d9c5dc; font-size: 10.5px; font-weight: 900; }
 .photo-manager-open + .photo-repeat-toggle { margin-left: 0; }
 .photo-repeat-toggle svg { width: 18px; height: 18px; padding: 3px; border-radius: 6px; color: transparent; background: #eee7ef; }
@@ -4093,6 +4098,12 @@ body {
 .photo-stage-lights i { width: 150px; height: 430px; position: absolute; top: -220px; left: 7%; border-radius: 50%; background: linear-gradient(rgba(255,247,180,.38),transparent); filter: blur(7px); transform: rotate(-20deg); transform-origin: top; animation: photoLightSweep 2.8s ease-in-out infinite alternate; }
 .photo-stage-lights i:nth-child(2) { left: 50%; transform: translateX(-50%); animation-delay: -.9s; }
 .photo-stage-lights i:nth-child(3) { left: auto; right: 7%; transform: rotate(20deg); animation-delay: -1.8s; }
+.photo-flying-cloud { position: absolute; z-index: 5; inset: 0; overflow: hidden; pointer-events: none; }
+.photo-flying-cloud > span { width: 78px; height: 78px; position: absolute; left: var(--fly-left); top: var(--fly-top); display: grid; place-items: center; border: 4px solid rgba(255,255,255,.96); border-radius: 50%; background: linear-gradient(145deg,#fff7b0,#ef67a2 52%,#7062d8); box-shadow: 0 0 0 3px rgba(255,224,91,.78),0 8px 17px rgba(34,11,56,.42); animation: photoStudentFloat var(--fly-duration) ease-in-out infinite alternate; animation-delay: var(--fly-delay); }
+.photo-flying-cloud .avatar { width: 100%; height: 100%; border: 3px solid white; border-radius: 50%; font-size: 17px; }
+.photo-flying-cloud .avatar.has-photo img { object-position: center 24%; }
+.is-picking .photo-picker-card,.is-picking .photo-picker-name { opacity: 0; visibility: hidden; }
+.is-picking .photo-picker-kicker { z-index: 7; }
 .photo-picker-kicker { min-height: 31px; padding: 7px 15px; position: relative; z-index: 3; display: flex; align-items: center; border: 2px solid rgba(255,255,255,.7); border-radius: 999px; color: #6c3974; background: linear-gradient(#fff9ae,#ffc947); box-shadow: 0 4px 0 #b45c2e,0 8px 14px rgba(47,15,66,.25); font-size: 10px; font-weight: 1000; letter-spacing: 1.2px; }
 .is-picking .photo-picker-kicker { color: white; background: linear-gradient(135deg,#f25d91,#8356dc); box-shadow: 0 4px 0 #582e91; }
 .photo-picker-card { width: 222px; height: 245px; margin-top: 14px; position: relative; z-index: 3; display: grid; place-items: center; padding: 11px; border: 6px solid white; border-radius: 42% 42% 34% 34% / 35% 35% 29% 29%; background: conic-gradient(from -20deg,#ffdf5e,#f3659a,#7d68e9,#49bed9,#58c593,#ffdf5e); box-shadow: 0 0 0 6px rgba(255,224,90,.82),0 11px 0 #5f2e8c,0 22px 36px rgba(35,12,60,.42); }
@@ -4104,7 +4115,7 @@ body {
 .photo-picker-placeholder { width: 100%; height: 100%; position: relative; display: grid; place-items: center; border: 5px solid white; border-radius: inherit; color: #7752b1; background: radial-gradient(circle at 35% 24%,#fff,#efe8ff 58%,#dacefb); }
 .photo-picker-placeholder b { position: absolute; right: 28px; bottom: 22px; color: #e65591; font-size: 45px; line-height: 1; }
 .photo-missing-badge { padding: 5px 8px; position: absolute; z-index: 8; left: 50%; bottom: 8px; border-radius: 99px; color: #63476b; background: rgba(255,255,255,.9); font-size: 7.5px; font-weight: 900; transform: translateX(-50%); white-space: nowrap; }
-.is-picking .photo-picker-card { animation: photoCardShuffle .22s ease-in-out infinite alternate; filter: saturate(1.16); }
+.is-picking .photo-picker-card { filter: saturate(1.16); }
 .has-winner .photo-picker-card { animation: photoWinnerPop .65s cubic-bezier(.17,.89,.3,1.35) both; }
 .photo-picker-name { min-height: 70px; position: relative; z-index: 3; display: flex; align-items: center; justify-content: center; flex-direction: column; text-align: center; }
 .photo-picker-name strong { max-width: 540px; overflow: hidden; color: #fff; font-family: 'Baloo 2','Nunito',sans-serif; font-size: clamp(25px,3vw,38px); line-height: 1.08; text-overflow: ellipsis; text-shadow: 0 4px 0 #6d2b83,0 8px 14px rgba(37,9,56,.45); white-space: nowrap; }
@@ -4263,6 +4274,7 @@ body {
 @keyframes photoPartyBounce { to { transform: translateY(-10px) rotate(12deg) scale(1.15); } }
 @keyframes photoConfettiFall { 0% { opacity: 0; transform: translateY(-40px) rotate(0); } 12% { opacity: 1; } 100% { opacity: 0; transform: translate(calc((var(--photo-confetti) - 11) * 5px),520px) rotate(620deg); } }
 @keyframes photoHistoryEnter { from { opacity: 0; transform: translateX(12px); } }
+@keyframes photoStudentFloat { 0% { opacity: .35; transform: translate(-50%,-50%) translate(calc(-1 * var(--fly-drift-x)),var(--fly-drift-y)) rotate(-14deg) scale(calc(var(--fly-scale) * .76)); } 35% { opacity: 1; } 100% { opacity: .96; transform: translate(-50%,-50%) translate(var(--fly-drift-x),calc(-1 * var(--fly-drift-y))) rotate(15deg) scale(var(--fly-scale)); } }
 
 @media (max-width: 900px) {
   .photo-random-toolbar { align-items: flex-start; flex-wrap: wrap; }
@@ -4278,14 +4290,18 @@ body {
   .photo-scope .filter-tabs { display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); }
   .photo-scope .filter-tabs button { min-width: 0; padding: 0 4px; font-size: 9px; }
   .photo-manager-open { flex: 1; justify-content: center; }
+  .photo-flight-duration { min-width: 116px; margin-left: 0; flex: 1; justify-content: center; }
+  .photo-flight-duration > span { display: none; }
   .photo-manager-open + .photo-repeat-toggle { flex: 1.1; }
-  .photo-repeat-toggle { flex: 1; justify-content: center; }
+  .photo-repeat-toggle { flex: 1.2; justify-content: center; }
   .photo-random-toolbar .random-presentation-button span { display: none; }
   .photo-picker-layout { margin-top: 12px; grid-template-columns: 1fr; }
   .photo-picker-arena { min-height: 430px; padding: 20px 8px; }
   .photo-picker-card { width: 182px; height: 205px; }
   .photo-picker-name strong { max-width: 310px; font-size: 26px; }
   .photo-party-icon { right: 7%; top: 32%; }
+  .photo-flying-cloud > span { width: 58px; height: 58px; border-width: 3px; }
+  .photo-flying-cloud .avatar { border-width: 2px; font-size: 12px; }
   .photo-picker-actions { min-height: 61px; grid-column: 1; grid-row: 2; align-items: stretch; gap: 7px; }
   .photo-picker-actions button { min-height: 52px; padding-inline: 12px; font-size: 11px; }
   .photo-pick-button { min-width: 0; flex: 1; }
