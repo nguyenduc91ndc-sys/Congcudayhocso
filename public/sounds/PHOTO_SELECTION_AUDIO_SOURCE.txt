@@ -1,0 +1,10 @@
+Track: Game show happy timer
+Creator/library: Mixkit (sound effect 666)
+Source page: https://mixkit.co/free-sound-effects/game-show/
+Asset stream: https://assets.mixkit.co/active_storage/sfx/666/666-preview.mp3
+License: Mixkit Sound Effects Free License
+License information: https://mixkit.co/license/#sfxFree
+Downloaded: 2026-08-31
+
+Used as the waiting/selection sound while student photos fly. The existing
+wheel sound remains limited to the separate wheel game.

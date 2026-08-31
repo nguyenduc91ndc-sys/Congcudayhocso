@@ -107,6 +107,7 @@ import {
 } from './firebase';
 
 const spinWheelSound = '/sounds/Am_thanh_vong_quay_chiec_non_ky_dieu-www_tiengdong_com.mp3';
+const photoSelectionSound = '/sounds/photo-selection-happy-timer-mixkit-666.mp3';
 const victorySound = '/sounds/Am_thanh_chuc_mung_chien_thang-www_tiengdong_com.mp3';
 const secretGroupsSuspenseSound = '/sounds/secret-groups-intense-suspense.mp3';
 const teacherFacebookUrl = 'https://www.facebook.com/duc.the3?locale=vi_VN';
@@ -4450,7 +4451,7 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
 
   return (
     <section ref={stageRef} className={`photo-random-stage panel ${isPresentation ? 'is-presentation' : ''}`}>
-      <audio ref={spinAudioRef} src={spinWheelSound} preload="auto" aria-hidden="true" />
+      <audio className="photo-selection-audio" ref={spinAudioRef} src={photoSelectionSound} preload="auto" aria-hidden="true" />
       <audio ref={victoryAudioRef} src={victorySound} preload="auto" aria-hidden="true" />
       <div className="photo-random-toolbar">
         <div className="photo-scope"><span>Phạm vi gọi</span><div className="filter-tabs">{[0, ...getTeamNumbers(teamCount)].map((item) => <button type="button" key={item} disabled={picking} className={team === item ? 'active' : ''} onClick={() => changeTeam(item)}>{item === 0 ? 'Cả lớp' : `Tổ ${item}`}</button>)}</div></div>
