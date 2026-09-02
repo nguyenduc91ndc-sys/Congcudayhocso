@@ -100,14 +100,16 @@ try {
   assert.equal(backup.type, 'happy-class-workspace');
   assert.equal(backup.classes.length, 2);
 
+  await page.getByRole('button', { name: 'Đóng danh sách lớp' }).click();
+  await page.getByRole('button', { name: 'Quản lý lớp', exact: true }).first().click();
+  await page.getByRole('heading', { name: 'Quản lý lớp học' }).waitFor();
   page.once('dialog', (dialog) => dialog.accept());
-  await page.locator('.class-workspace-backup input[type="file"]').setInputFiles(downloadPath);
-  await page.locator('.class-workspace-card').waitFor({ state: 'hidden' });
+  await page.locator('.management-import-input').setInputFiles(downloadPath);
   await page.waitForFunction(() => document.querySelector('.class-switcher')?.getAttribute('aria-label')?.includes('hiện có 2 lớp'));
   assert.match(await page.locator('.toast').innerText(), /khôi phục 2 lớp/i);
   assert.deepEqual(pageErrors, []);
 
-  console.log('Happy Class multi-class smoke test passed: migration, create, switch, persistence, portal isolation, backup, restore.');
+  console.log('Happy Class multi-class smoke test passed: migration, create, switch, persistence, portal isolation, backup, and restore from the management page.');
 } finally {
   await browser.close();
 }

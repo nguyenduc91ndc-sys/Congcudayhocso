@@ -1703,8 +1703,19 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
   const importBackup = async (file: File) => {
     try {
       setToast(`Đang kiểm tra bản sao ${file.name}...`);
-      if (file.size > 25 * 1024 * 1024) throw new Error('Bản sao quá lớn. Vui lòng chọn tệp dưới 25 MB.');
-      const backup = parseClassBackup(await file.text());
+      if (file.size > 250 * 1024 * 1024) throw new Error('Bản sao quá lớn. Vui lòng chọn tệp dưới 250 MB.');
+      const content = await file.text();
+      let rawBackup: unknown;
+      try {
+        rawBackup = JSON.parse(content);
+      } catch {
+        throw new Error('Tệp không phải bản sao JSON hợp lệ.');
+      }
+      if (isRecord(rawBackup) && rawBackup.version === 2 && rawBackup.type === 'happy-class-workspace') {
+        await importAllClasses(file);
+        return;
+      }
+      const backup = parseClassBackup(content);
       if (!window.confirm(`Khôi phục bản sao của lớp ${backup.classProfile.code}? Dữ liệu hiện tại trên thiết bị này sẽ được thay thế.`)) {
         setToast('Đã hủy khôi phục. Dữ liệu hiện tại được giữ nguyên.');
         return;
@@ -2814,7 +2825,7 @@ function ManagementPage({ students, activities, pointReasons, weekState, weeklyS
           <button className="button button-soft" onClick={onExport}><Download size={17} /> Sao lưu lớp này</button>
           <button className="button button-primary" onClick={onExportAll}><ShieldCheck size={17} /> Sao lưu tất cả lớp</button>
           <button className="button management-import" type="button" disabled={backupImporting} onClick={() => backupInputRef.current?.click()}>
-            <Upload size={17} /> {backupImporting ? 'Đang khôi phục...' : 'Khôi phục từ bản sao'}
+            <Upload size={17} /> {backupImporting ? 'Đang khôi phục...' : 'Khôi phục lớp / tất cả lớp'}
           </button>
           <input ref={backupInputRef} className="management-import-input" type="file" accept=".json,application/json" onChange={async (event) => {
             const input = event.currentTarget;
