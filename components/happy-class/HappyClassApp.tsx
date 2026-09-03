@@ -5209,18 +5209,21 @@ function HonorPortraitCard({ entry, showTeam = false }: { entry: HonorRank; show
 function HonorsPage({ students, teamCount, week, scoring, isTeacher }: { students: Student[]; teamCount: number; week: WeekPeriod; scoring: WeeklyScoringSettings; isTeacher: boolean }) {
   const [scope, setScope] = useState<'teams' | 'class'>('teams');
   const [selectedTeam, setSelectedTeam] = useState(1);
-  const [honorLimit, setHonorLimit] = useState<3 | 5 | 10>(() => {
+  const [honorLimit, setHonorLimit] = useState<2 | 3 | 5 | 10>(() => {
     const storedLimit = Number(localStorage.getItem('happy-class-honor-limit'));
-    return storedLimit === 3 || storedLimit === 10 ? storedLimit : 5;
+    return storedLimit === 2 || storedLimit === 3 || storedLimit === 10 ? storedLimit : 5;
   });
   const [isPresentation, setIsPresentation] = useState(false);
   const honorBoardRef = useRef<HTMLElement>(null);
   const classRanked = rankStudentsByWeeklyScore(students);
   const selectedTeamStudents = students.filter((student) => student.team === selectedTeam);
   const activeRanked = scope === 'teams' ? rankStudentsByWeeklyScore(selectedTeamStudents) : classRanked;
-  const visibleRanked = activeRanked.slice(0, honorLimit);
-  const lastVisibleScore = visibleRanked[visibleRanked.length - 1]?.student.weeklyScore;
-  const hiddenTiedCount = activeRanked.slice(honorLimit).filter((entry) => entry.student.weeklyScore === lastVisibleScore).length;
+  const rankedWithinLimit = activeRanked.slice(0, honorLimit);
+  const lastVisibleScore = rankedWithinLimit[rankedWithinLimit.length - 1]?.student.weeklyScore;
+  const visibleRanked = lastVisibleScore === undefined
+    ? []
+    : activeRanked.filter((entry, index) => index < honorLimit || entry.student.weeklyScore === lastVisibleScore);
+  const addedTiedCount = Math.max(0, visibleRanked.length - rankedWithinLimit.length);
   const honorRows = visibleRanked.reduce<Array<{ rank: number; score: number; entries: HonorRank[] }>>((rows, entry) => {
     const currentRow = rows[rows.length - 1];
     if (currentRow?.score === entry.student.weeklyScore) currentRow.entries.push(entry);
@@ -5272,7 +5275,7 @@ function HonorsPage({ students, teamCount, week, scoring, isTeacher }: { student
               <button role="tab" aria-selected={scope === 'teams'} className={scope === 'teams' ? 'active' : ''} onClick={() => setScope('teams')}><UsersRound size={17} /> Theo từng tổ</button>
               <button role="tab" aria-selected={scope === 'class'} className={scope === 'class' ? 'active' : ''} onClick={() => setScope('class')}><Trophy size={17} /> Toàn lớp</button>
             </div>
-            {isTeacher ? <div className="honor-limit-picker"><span>Hiển thị</span><button aria-pressed={honorLimit === 3} className={honorLimit === 3 ? 'active' : ''} onClick={() => setHonorLimit(3)}>Top 3</button><button aria-pressed={honorLimit === 5} className={honorLimit === 5 ? 'active' : ''} onClick={() => setHonorLimit(5)}>Top 5</button><button aria-pressed={honorLimit === 10} className={honorLimit === 10 ? 'active' : ''} onClick={() => setHonorLimit(10)}>Top 10</button></div> : <span className="honor-limit-view">Đang hiển thị Top {honorLimit}</span>}
+            {isTeacher ? <div className="honor-limit-picker"><span>Hiển thị</span><button aria-pressed={honorLimit === 2} className={honorLimit === 2 ? 'active' : ''} onClick={() => setHonorLimit(2)}>Top 2</button><button aria-pressed={honorLimit === 3} className={honorLimit === 3 ? 'active' : ''} onClick={() => setHonorLimit(3)}>Top 3</button><button aria-pressed={honorLimit === 5} className={honorLimit === 5 ? 'active' : ''} onClick={() => setHonorLimit(5)}>Top 5</button><button aria-pressed={honorLimit === 10} className={honorLimit === 10 ? 'active' : ''} onClick={() => setHonorLimit(10)}>Top 10</button></div> : <span className="honor-limit-view">Đang hiển thị Top {honorLimit}</span>}
             <button className="honor-presentation-button" type="button" onClick={() => void togglePresentation()} aria-label={isPresentation ? 'Thoát trình chiếu bảng vinh danh' : 'Phóng to bảng vinh danh để trình chiếu'}>{isPresentation ? <Minimize2 size={17} /> : <Maximize2 size={17} />}<span>{isPresentation ? 'Thu nhỏ' : 'Phóng to để chiếu'}</span></button>
           </div>
         </header>
@@ -5302,7 +5305,7 @@ function HonorsPage({ students, teamCount, week, scoring, isTeacher }: { student
               ))}
             </div>
           ) : <div className="honor-empty"><span>🌱</span><strong>Chưa có học sinh</strong><small>Thêm học sinh vào {scope === 'teams' ? `Tổ ${selectedTeam}` : 'lớp'} để bắt đầu vinh danh.</small></div>}
-          {activeRanked.length > honorLimit && <p className="honor-portrait-limit"><Award size={15} /> Đang hiển thị Top {honorLimit}{hiddenTiedCount ? ` · ${hiddenTiedCount} bạn còn lại đồng hạng` : ''}</p>}
+          {activeRanked.length > honorLimit && <p className="honor-portrait-limit"><Award size={15} /> Đang hiển thị Top {honorLimit}{addedTiedCount ? ` · Hiển thị thêm ${addedTiedCount} bạn đồng hạng` : ''}</p>}
         </section>
 
         <footer className="honor-board-note"><HeartHandshake size={18} /><span><strong>Cùng điểm, cùng hạng.</strong> Bảng chỉ tuyên dương các vị trí nổi bật và không công khai thứ hạng cuối.</span></footer>
