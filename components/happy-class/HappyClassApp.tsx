@@ -4277,6 +4277,7 @@ function RewardSettings({ rewards, onSave, onClose }: { rewards: Reward[]; onSav
 
 type RandomMode = 'photos' | 'wheel' | 'groups';
 type SecretGroupPhase = 'idle' | 'countdown' | 'shuffling' | 'revealing' | 'complete';
+type SecretGroupMethod = 'teams' | 'size-3' | 'size-4' | 'custom';
 
 function RandomPage({ students, teamCount, canManagePhotos, onApplyTeams, onMarkAbsent, onUpdatePhoto, onRemovePhoto }: { students: Student[]; teamCount: number; canManagePhotos: boolean; onApplyTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void; onMarkAbsent: (studentId: number) => void; onUpdatePhoto: (studentId: number, file: File) => Promise<void>; onRemovePhoto: (studentId: number) => void }) {
   const [mode, setMode] = useState<RandomMode>('photos');
@@ -4524,6 +4525,8 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
 
 function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { students: Student[]; initialTeamCount: number; onApplyTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void }) {
   const [groupCount, setGroupCount] = useState(Math.min(8, Math.max(2, initialTeamCount)));
+  const [groupMethod, setGroupMethod] = useState<SecretGroupMethod>('teams');
+  const [customGroupSize, setCustomGroupSize] = useState('5');
   const [groupScope, setGroupScope] = useState<'present' | 'all'>('present');
   const [secretGroups, setSecretGroups] = useState<Student[][]>([]);
   const [secretPhase, setSecretPhase] = useState<SecretGroupPhase>('idle');
@@ -4539,6 +4542,15 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
   const audioContextRef = useRef<AudioContext | null>(null);
   const soundEnabledRef = useRef(true);
   const groupPool = useMemo(() => students.filter((student) => groupScope === 'all' || student.attendance === 'present'), [students, groupScope]);
+  const targetGroupSize = groupMethod === 'size-3'
+    ? 3
+    : groupMethod === 'size-4'
+      ? 4
+      : Math.max(2, Math.min(20, Number.parseInt(customGroupSize, 10) || 2));
+  const effectiveGroupCount = groupMethod === 'teams'
+    ? groupCount
+    : Math.max(1, Math.ceil(groupPool.length / targetGroupSize));
+  const isDiscussionGrouping = groupMethod !== 'teams';
   const groupBusy = secretPhase === 'countdown' || secretPhase === 'shuffling' || secretPhase === 'revealing';
   const maxGroupRows = Math.max(0, ...secretGroups.map((group) => group.length));
   const groupColors = ['#f05f76', '#8b62df', '#31aa91', '#f2a72f', '#438bd8', '#dc6fb0', '#45a7bd', '#7caf48'];
@@ -4594,6 +4606,11 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
     setRevealedRows(0);
     setResultSaved(false);
   };
+  const changeGroupMethod = (method: SecretGroupMethod) => {
+    if (groupBusy) return;
+    resetSecretStage();
+    setGroupMethod(method);
+  };
 
   useEffect(() => () => {
     clearGroupTimers();
@@ -4626,8 +4643,8 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
       victoryAudioRef.current.currentTime = 0;
     }
     const shuffled = shuffleStudentsSecurely(groupPool);
-    const nextGroups = Array.from({ length: groupCount }, () => [] as Student[]);
-    shuffled.forEach((student, index) => nextGroups[index % groupCount].push(student));
+    const nextGroups = Array.from({ length: effectiveGroupCount }, () => [] as Student[]);
+    shuffled.forEach((student, index) => nextGroups[index % effectiveGroupCount].push(student));
     const rowCount = Math.max(0, ...nextGroups.map((group) => group.length));
     setSecretGroups(nextGroups);
     setSecretPhase('countdown');
@@ -4678,8 +4695,8 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
     if (secretPhase !== 'complete' || !secretGroups.length) return;
     const assignments = secretGroups.flatMap((group, groupIndex) => group.map((student) => ({ id: student.id, team: groupIndex + 1 })));
     const scopeNote = assignments.length < students.length ? `\n\n${students.length - assignments.length} học sinh không tham gia lượt chia sẽ giữ nguyên tổ hiện tại.` : '';
-    if (!window.confirm(`Lưu kết quả này làm ${groupCount} tổ chính thức?${scopeNote}`)) return;
-    onApplyTeams(assignments, groupCount);
+    if (!window.confirm(`Lưu kết quả này làm ${secretGroups.length} tổ chính thức?${scopeNote}`)) return;
+    onApplyTeams(assignments, secretGroups.length);
     setResultSaved(true);
   };
   const togglePresentation = async () => {
@@ -4708,9 +4725,14 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
       <audio ref={suspenseAudioRef} src={secretGroupsSuspenseSound} preload="auto" loop aria-hidden="true" />
       <audio ref={victoryAudioRef} src={victorySound} preload="auto" aria-hidden="true" />
       <div className="random-settings secret-group-settings">
-        <label><span>Số lượng tổ</span><select aria-label="Số lượng tổ ngẫu nhiên" value={groupCount} disabled={groupBusy} onChange={(event) => { resetSecretStage(); setGroupCount(Number(event.target.value)); }}>{Array.from({ length: 7 }, (_, index) => index + 2).map((count) => <option key={count} value={count}>{count} tổ</option>)}</select></label>
+        <div className="secret-group-method"><span>Cách chia</span><div className="filter-tabs" role="group" aria-label="Chọn cách chia nhóm"><button type="button" className={groupMethod === 'teams' ? 'active' : ''} disabled={groupBusy} onClick={() => changeGroupMethod('teams')}>Theo số tổ</button><button type="button" className={groupMethod === 'size-3' ? 'active' : ''} disabled={groupBusy} onClick={() => changeGroupMethod('size-3')}>Nhóm 3</button><button type="button" className={groupMethod === 'size-4' ? 'active' : ''} disabled={groupBusy} onClick={() => changeGroupMethod('size-4')}>Nhóm 4</button><button type="button" className={groupMethod === 'custom' ? 'active' : ''} disabled={groupBusy} onClick={() => changeGroupMethod('custom')}>Tùy chỉnh</button></div></div>
+        {groupMethod === 'teams'
+          ? <label><span>Số lượng tổ</span><select aria-label="Số lượng tổ ngẫu nhiên" value={groupCount} disabled={groupBusy} onChange={(event) => { resetSecretStage(); setGroupCount(Number(event.target.value)); }}>{Array.from({ length: 7 }, (_, index) => index + 2).map((count) => <option key={count} value={count}>{count} tổ</option>)}</select></label>
+          : groupMethod === 'custom'
+            ? <label><span>Số HS/nhóm</span><input aria-label="Số học sinh mỗi nhóm" type="number" min="2" max="20" inputMode="numeric" value={customGroupSize} disabled={groupBusy} onChange={(event) => { resetSecretStage(); setCustomGroupSize(event.target.value); }} onBlur={() => setCustomGroupSize(String(targetGroupSize))} /></label>
+            : null}
         <div className="secret-scope"><span>Phạm vi chia</span><div className="filter-tabs"><button type="button" className={groupScope === 'present' ? 'active' : ''} disabled={groupBusy} onClick={() => { resetSecretStage(); setGroupScope('present'); }}>Học sinh có mặt</button><button type="button" className={groupScope === 'all' ? 'active' : ''} disabled={groupBusy} onClick={() => { resetSecretStage(); setGroupScope('all'); }}>Cả lớp</button></div></div>
-        <p><UserRoundCheck size={17} /><strong>{groupPool.length}</strong> học sinh · chênh lệch tối đa 1 em</p>
+        <p><UserRoundCheck size={17} /><strong>{groupPool.length}</strong> học sinh · {isDiscussionGrouping ? `${effectiveGroupCount} nhóm, tối đa ${targetGroupSize} em/nhóm` : 'chênh lệch tối đa 1 em'}</p>
         <button className="random-sound-button" type="button" onClick={toggleSecretSound} aria-label={soundEnabled ? 'Tắt âm thanh hồi hộp' : 'Bật âm thanh hồi hộp'} title={soundEnabled ? 'Tắt âm thanh hồi hộp' : 'Bật âm thanh hồi hộp'}>{soundEnabled ? <Volume2 size={18} /> : <VolumeX size={18} />}</button>
         <button className="random-presentation-button" type="button" onClick={() => void togglePresentation()} aria-label={isPresentation ? 'Thoát trình chiếu toàn màn hình' : 'Trình chiếu toàn màn hình'}>{isPresentation ? <Minimize2 size={18} /> : <Maximize2 size={18} />}<span>{isPresentation ? 'Thu nhỏ' : 'Phóng to'}</span></button>
       </div>
@@ -4727,10 +4749,10 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
         ) : (
           <>
             <div className={`secret-status phase-${secretPhase}`}><span>{secretPhase === 'complete' ? '🎉' : '🎲'}</span><strong>{phaseMessage}</strong></div>
-            <div className="secret-groups-board" style={{ '--secret-group-count': groupCount } as CSSProperties}>
+            <div className="secret-groups-board" style={{ '--secret-group-count': secretGroups.length } as CSSProperties}>
               {secretGroups.map((group, groupIndex) => (
                 <article className="secret-group-column" key={groupIndex} style={{ '--secret-color': groupColors[groupIndex % groupColors.length], '--secret-delay': `${groupIndex * 70}ms` } as CSSProperties}>
-                  <header><span>{groupIndex + 1}</span><div><small>ĐỘI NGŨ BÍ MẬT</small><strong>Tổ {groupIndex + 1}</strong></div><b>{group.length} HS</b></header>
+                  <header><span>{groupIndex + 1}</span><div><small>{isDiscussionGrouping ? 'NHÓM THẢO LUẬN' : 'ĐỘI NGŨ BÍ MẬT'}</small><strong>{isDiscussionGrouping ? 'Nhóm' : 'Tổ'} {groupIndex + 1}</strong></div><b>{group.length} HS</b></header>
                   <div className="secret-member-list">
                     {group.map((student, rowIndex) => {
                       const revealed = rowIndex < revealedRows;
@@ -4747,10 +4769,10 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
         )}
       </div>
       <div className="secret-group-actions">
-        <button className="secret-start-button" type="button" onClick={startSecretGroups} disabled={groupBusy || groupPool.length < 2}><Dices size={22} />{groupBusy ? phaseMessage : secretPhase === 'complete' ? 'CHIA LẠI MỘT LƯỢT' : 'BẮT ĐẦU CHIA TỔ'}</button>
-        {secretPhase === 'complete' && <button className={`secret-save-button ${resultSaved ? 'is-saved' : ''}`} type="button" onClick={saveSecretGroups} disabled={resultSaved}><Save size={20} />{resultSaved ? 'Đã lưu tổ chính thức' : 'Lưu làm tổ chính thức'}</button>}
+        <button className="secret-start-button" type="button" onClick={startSecretGroups} disabled={groupBusy || groupPool.length < 2}><Dices size={22} />{groupBusy ? phaseMessage : secretPhase === 'complete' ? `CHIA LẠI ${isDiscussionGrouping ? 'NHÓM' : 'MỘT LƯỢT'}` : `BẮT ĐẦU CHIA ${isDiscussionGrouping ? 'NHÓM' : 'TỔ'}`}</button>
+        {secretPhase === 'complete' && <button className={`secret-save-button ${resultSaved ? 'is-saved' : ''}`} type="button" onClick={saveSecretGroups} disabled={resultSaved || secretGroups.length > 8} title={secretGroups.length > 8 ? 'Hồ sơ lớp chỉ hỗ trợ tối đa 8 tổ chính thức' : undefined}><Save size={20} />{resultSaved ? 'Đã lưu tổ chính thức' : secretGroups.length > 8 ? 'Chỉ dùng cho hoạt động' : 'Lưu làm tổ chính thức'}</button>}
       </div>
-      <p className="secret-group-note">{groupPool.length < 2 ? 'Cần ít nhất 2 học sinh trong phạm vi đã chọn.' : resultSaved ? 'Kết quả đã được cập nhật vào hồ sơ lớp. Có thể hoàn tác tại trang Thi đua tổ.' : '🔒 Kết quả hiện chỉ là bản xem trước, chưa làm thay đổi tổ hiện tại.'}</p>
+      <p className="secret-group-note">{groupPool.length < 2 ? 'Cần ít nhất 2 học sinh trong phạm vi đã chọn.' : resultSaved ? 'Kết quả đã được cập nhật vào hồ sơ lớp. Có thể hoàn tác tại trang Thi đua tổ.' : secretGroups.length > 8 ? '💬 Các nhóm này dùng ngay cho hoạt động thảo luận và không làm thay đổi tổ chính thức.' : isDiscussionGrouping ? '💬 Có thể dùng ngay cho hoạt động thảo luận; chỉ lưu khi cô muốn đổi tổ chính thức.' : '🔒 Kết quả hiện chỉ là bản xem trước, chưa làm thay đổi tổ hiện tại.'}</p>
       <small className="secret-audio-credit">Nhạc “Intense Suspense” — <a href="https://audionautix.com" target="_blank" rel="noreferrer">Jason Shaw / Audionautix</a> · CC BY 3.0</small>
     </section>
   );
