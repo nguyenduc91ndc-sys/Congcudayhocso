@@ -6,6 +6,7 @@ const SETTINGS_STORE = 'settings';
 export const MAX_ACTIVE_CLASSES = 30;
 
 export type LocalClassProfile = {
+  padletUrl?: string;
   name: string;
   code: string;
   schoolYear: string;

@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { PadletGallery, parsePadletEmbed } from './PadletGallery';
 import type { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent } from 'react';
 import type { LucideIcon } from 'lucide-react';
 import type { User as PlatformUser } from '../../types';
@@ -131,11 +132,12 @@ type PageId =
   | 'attendance'
   | 'honors'
   | 'parents'
+  | 'gallery'
   | 'management';
 
 type NavItem = { id: PageId; label: string; icon: LucideIcon; badge?: string };
 type TeamScoringMode = 'total' | 'average';
-type ClassProfile = { name: string; code: string; schoolYear: string; subject?: string; teamCount: number; teamScoringMode?: TeamScoringMode };
+type ClassProfile = { name: string; code: string; schoolYear: string; subject?: string; teamCount: number; teamScoringMode?: TeamScoringMode; padletUrl?: string };
 type ParentPortalSettings = {
   enabled: boolean;
   publicId: string;
@@ -590,6 +592,7 @@ const navItems: NavItem[] = [
   { id: 'attendance', label: 'Chuyên cần', icon: CalendarCheck2 },
   { id: 'honors', label: 'Vinh danh', icon: Trophy },
   { id: 'parents', label: 'Cổng phụ huynh', icon: HeartHandshake },
+  { id: 'gallery', label: 'Trưng bày sản phẩm', icon: Palette },
 ];
 
 const pageIds = new Set<PageId>([...navItems.map((item) => item.id), 'management']);
@@ -939,6 +942,7 @@ function classDataFromBackup(backup: ClassBackup): LocalClassData {
 
 function normalizeStoredClassProfile(profile: ClassProfile): ClassProfile {
   return {
+    padletUrl: parsePadletEmbed(profile.padletUrl) || '',
     name: profile.name.trim() || 'Lớp học',
     code: profile.code.trim() || 'Lớp',
     schoolYear: profile.schoolYear.trim() || '2026–2027',
@@ -1721,6 +1725,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
         return;
       }
       const normalizedProfile = {
+        padletUrl: parsePadletEmbed(backup.classProfile.padletUrl) || '',
         name: backup.classProfile.name.trim(),
         code: backup.classProfile.code.trim(),
         schoolYear: backup.classProfile.schoolYear.trim(),
@@ -2387,6 +2392,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
         <Topbar pageTitle={pageTitle} teacherName={teacherName} teacherPhoto={teacherPhoto} classProfile={classProfile} onOpenMenu={() => setSidebarOpen(true)} onBack={onBack} />
 
         <div className="page-content">
+          {page === 'gallery' && <PadletGallery key={activeClassId} url={classProfile.padletUrl || ''} canEdit={isTeacher} onSave={(padletUrl) => { if (isTeacher) setClassProfile((current) => ({ ...current, padletUrl })); }} />}
           {page === 'dashboard' && (
             <Dashboard
               students={students}
@@ -3362,6 +3368,7 @@ function ClassSettings({ classProfile, onSave, onClose }: { classProfile: ClassP
     event.preventDefault();
     if (!teamCountValid) return;
     const profile: ClassProfile = {
+      padletUrl: parsePadletEmbed(draft.padletUrl) || '',
       name: draft.name.trim(),
       code: draft.code.trim(),
       schoolYear: draft.schoolYear.trim(),
