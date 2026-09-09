@@ -1,3 +1,4 @@
+import BirthdayPanel from './BirthdayPanel';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { PadletGallery, parsePadletEmbed } from './PadletGallery';
 import type { CSSProperties, FormEvent, PointerEvent as ReactPointerEvent } from 'react';
@@ -3530,13 +3531,7 @@ function Dashboard({
           </div>
         </section>
 
-        <section className="panel birthday-panel">
-          <div className="birthday-art">🎂<i>✨</i></div>
-          <span className="birthday-label">SINH NHẬT SẮP TỚI</span>
-          <h3>Chúc mừng Khánh Vy!</h3>
-          <p>Còn 4 ngày nữa đến sinh nhật bạn. Cùng chuẩn bị một điều bất ngờ nhé!</p>
-          <button className="text-button">Tạo thiệp chúc mừng <ChevronRight size={16} /></button>
-        </section>
+        <BirthdayPanel students={students} />
       </div>
     </>
   );
