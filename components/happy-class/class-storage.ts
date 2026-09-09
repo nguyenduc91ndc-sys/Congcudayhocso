@@ -7,6 +7,7 @@ export const MAX_ACTIVE_CLASSES = 30;
 
 export type LocalClassProfile = {
   padletUrl?: string;
+  attendanceSessions?: 1 | 2;
   name: string;
   code: string;
   schoolYear: string;

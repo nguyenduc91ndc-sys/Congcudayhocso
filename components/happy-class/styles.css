@@ -5160,3 +5160,14 @@ html[data-theme='garden'] body { color: #18351e; background: #eef7eb; }
   .app-shell.theme-garden .sidebar-nav button,
   .app-shell.theme-garden .sidebar-footer > button { font-size: 13px; }
 }
+.attendance-session-bar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+}
+.attendance-session-bar > span {
+  font-size: 13px;
+  color: var(--text-secondary, #64748b);
+}

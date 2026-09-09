@@ -87,7 +87,10 @@ export type Reward = {
   stock: number | null;
 };
 
+export type AttendanceSession = 'day' | 'morning' | 'afternoon';
+
 export type AttendanceRecord = {
+  session?: AttendanceSession;
   date: string;
   weekId: string;
   records: Record<number, AttendanceStatus>;

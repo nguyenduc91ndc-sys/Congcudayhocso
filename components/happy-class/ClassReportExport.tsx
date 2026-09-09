@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Check, Download, FileSpreadsheet, FileText, Printer, ShieldCheck, X } from 'lucide-react';
 import { utils, writeFileXLSX } from 'xlsx';
 import type { Activity, AttendanceRecord, AttendanceStatus, Student, WeekState } from './types';
+import { attendanceAbsences, attendanceSessionLabel } from './attendance';
 
 type ReportScope = 'week' | 'month' | 'year';
 type ReportDetail = 'summary' | 'full';
@@ -154,7 +155,7 @@ export default function ClassReportExport({ students, activities, attendanceHist
 
     const ranked = Array.from(rows.values())
       .sort((a, b) => b.points - a.points || a.name.localeCompare(b.name, 'vi'))
-      .map((row, index) => ({ ...row, rank: index + 1, activities: [...row.activities].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '')) }));
+      .map((row, index) => ({ ...row, absences: attendanceAbsences(relevantAttendance, row.id), rank: index + 1, activities: [...row.activities].sort((a, b) => (b.createdAt ?? '').localeCompare(a.createdAt ?? '')) }));
     const visibleRows = selectedStudentId === 'all' ? ranked : ranked.filter((row) => row.id === selectedStudentId);
     const firstWeek = [...includedWeeks].sort((a, b) => a.startDate.localeCompare(b.startDate))[0];
     const lastWeek = [...includedWeeks].sort((a, b) => b.endDate.localeCompare(a.endDate))[0];
@@ -177,6 +178,7 @@ export default function ClassReportExport({ students, activities, attendanceHist
   }, [activities, attendanceHistory, classInfo.schoolYear, scope, selectedMonth, selectedStudentId, selectedWeekId, students, weekState]);
 
   const reportTitle = detail === 'full' ? 'Sổ theo dõi chi tiết học sinh' : 'Sổ tổng hợp kết quả lớp học';
+  const hasSessions = report.attendanceRecords.some((record) => record.session === 'morning' || record.session === 'afternoon');
   const fileBase = `so-lop-${safeFileName(classInfo.code || classInfo.name)}-${scope === 'month' ? selectedMonth : scope}`;
 
   const buildPrintHtml = () => {
@@ -185,7 +187,7 @@ export default function ClassReportExport({ students, activities, attendanceHist
         <td class="center">${row.rank}</td><td>${escapeHtml(row.name)}</td><td class="center">${escapeHtml(row.studentCode || '—')}</td>
         <td class="center">${row.team}</td><td class="number">${signedPoints(row.points)}</td><td class="number">${row.cumulativeScore}</td>
         ${includeAttendance ? `<td class="center">${row.present}</td><td class="center">${row.late}</td><td class="center">${row.excused}</td><td class="center">${row.absent}</td>` : ''}
-        <td></td>
+        <td>${includeAttendance && hasSessions ? `Nghỉ trọn ${row.absences.days} ngày; ${row.absences.sessions} buổi nghỉ trong lịch 2 buổi` : ''}</td>
       </tr>`).join('');
     const detailPages = detail === 'full' && includeActivities ? report.rows.map((row) => `
       <section class="student-detail">
@@ -195,7 +197,7 @@ export default function ClassReportExport({ students, activities, attendanceHist
         <table><thead><tr><th>STT</th><th>Thời gian</th><th>Nội dung</th><th>Chi tiết</th><th>Điểm</th></tr></thead><tbody>
           ${row.activities.length ? row.activities.map((activity, index) => `<tr><td class="center">${index + 1}</td><td class="center">${escapeHtml(activity.createdAt ? new Date(activity.createdAt).toLocaleDateString('vi-VN') : activity.time)}</td><td>${escapeHtml(activity.title)}</td><td>${escapeHtml(activity.detail)}</td><td class="number">${signedPoints(activity.points)}</td></tr>`).join('') : '<tr><td colspan="5" class="empty">Không có lượt ghi nhận trong kỳ báo cáo.</td></tr>'}
         </tbody></table>
-        ${includeAttendance ? `<p class="attendance-line"><b>Chuyên cần:</b> Có mặt ${row.present} · Đi muộn ${row.late} · Nghỉ phép ${row.excused} · Vắng ${row.absent}</p>` : ''}
+        ${includeAttendance ? `<p class="attendance-line"><b>Chuyên cần (${hasSessions ? 'lượt điểm danh' : 'ngày'}):</b> Có mặt ${row.present} · Đi muộn ${row.late} · Nghỉ phép ${row.excused} · Vắng ${row.absent}${hasSessions ? `<br>Nghỉ trọn ${row.absences.days} ngày; ${row.absences.sessions} buổi nghỉ trong lịch 2 buổi.` : ''}</p>` : ''}
         <div class="note-box"><b>Nhận xét của giáo viên:</b></div>
       </section>`).join('') : '';
     return `<!doctype html><html lang="vi"><head><meta charset="utf-8"><title>${escapeHtml(reportTitle)}</title><style>
@@ -211,7 +213,8 @@ export default function ClassReportExport({ students, activities, attendanceHist
       <header><div class="left">TRƯỜNG: ........................................<br>TỔ/ KHỐI: .......................................</div><div class="center"><p>${escapeHtml(classInfo.name)}</p><h1>${escapeHtml(reportTitle)}</h1><p>${escapeHtml(report.periodLabel)}</p></div><div class="badge">Năm học ${escapeHtml(classInfo.schoolYear)}</div></header>
       <div class="info"><div><span>Lớp</span><b>${escapeHtml(classInfo.code)}</b></div><div><span>Giáo viên chủ nhiệm</span><b>${escapeHtml(teacherName)}</b></div><div><span>Thời gian</span><b>${escapeHtml(report.dateRange)}</b></div><div><span>Ngày xuất sổ</span><b>${new Date().toLocaleDateString('vi-VN')}</b></div></div>
       <div class="kpis"><div><strong>${report.rows.length}</strong><span>học sinh trong báo cáo</span></div><div><strong>${report.weekCount}</strong><span>tuần được tính</span></div><div><strong>${signedPoints(report.totalPoints)}</strong><span>tổng điểm</span></div><div><strong>${report.activityCount}</strong><span>lượt ghi nhận</span></div></div>
-      <table><thead><tr><th>Hạng</th><th>Họ và tên</th><th>Mã HS</th><th>Tổ</th><th>Điểm kỳ</th><th>Tích lũy</th>${includeAttendance ? '<th>Có mặt</th><th>Muộn</th><th>Phép</th><th>Vắng</th>' : ''}<th>Nhận xét</th></tr></thead><tbody>${summaryRows || '<tr><td class="empty" colspan="11">Chưa có dữ liệu phù hợp.</td></tr>'}</tbody></table>
+      ${includeAttendance && hasSessions ? '<p>Trạng thái tính theo lượt điểm danh. Ngày cũ giữ 1 lượt. Nghỉ trọn ngày ở lịch 2 buổi chỉ tính khi cả sáng và chiều đều nghỉ; số buổi nghỉ bao gồm các buổi của ngày nghỉ trọn.</p>' : ''}
+      <table><thead><tr><th>Hạng</th><th>Họ và tên</th><th>Mã HS</th><th>Tổ</th><th>Điểm kỳ</th><th>Tích lũy</th>${includeAttendance ? '<th>Có mặt</th><th>Muộn</th><th>Phép</th><th>Vắng</th>' : ''}<th>${includeAttendance && hasSessions ? 'Tổng số nghỉ' : 'Nhận xét'}</th></tr></thead><tbody>${summaryRows || '<tr><td class="empty" colspan="11">Chưa có dữ liệu phù hợp.</td></tr>'}</tbody></table>
       <div class="signatures"><div><p>NGƯỜI LẬP BẢNG</p><small>(Ký, ghi rõ họ tên)</small><b>${escapeHtml(teacherName)}</b></div><div><p>GIÁO VIÊN CHỦ NHIỆM</p><small>(Ký, ghi rõ họ tên)</small><b></b></div><div><p>XÁC NHẬN CỦA NHÀ TRƯỜNG</p><small>(Ký tên, đóng dấu)</small><b></b></div></div>
       ${detailPages}<div class="footer">Sổ được xuất từ ứng dụng Lớp Hạnh Phúc · Không bao gồm số điện thoại hoặc mã truy cập phụ huynh</div>
     </body></html>`;
@@ -244,6 +247,7 @@ export default function ClassReportExport({ students, activities, attendanceHist
       'Đi muộn': row.late,
       'Nghỉ phép': row.excused,
       'Vắng': row.absent,
+      ...(hasSessions ? { 'Nghỉ trọn ngày': row.absences.days, 'Buổi nghỉ (lịch 2 buổi)': row.absences.sessions, 'Đơn vị các cột trạng thái': 'Lượt điểm danh; ngày cũ giữ 1 lượt' } : {}),
     }));
     const summarySheet = utils.json_to_sheet(summaryData);
     summarySheet['!cols'] = [{ wch: 9 }, { wch: 28 }, { wch: 15 }, { wch: 7 }, { wch: 10 }, { wch: 18 }, { wch: 15 }, { wch: 10 }, { wch: 10 }, { wch: 11 }, { wch: 8 }];
@@ -270,10 +274,10 @@ export default function ClassReportExport({ students, activities, attendanceHist
         .filter(([studentId]) => visibleIds.has(Number(studentId)))
         .map(([studentId, status]) => {
           const student = report.rows.find((row) => row.id === Number(studentId));
-          return { 'Ngày': formatDate(record.date), 'Họ và tên': student?.name ?? studentId, 'Mã học sinh': student?.studentCode ?? '', 'Tổ': student?.team ?? '', 'Trạng thái': attendanceLabels[status] };
+          return { 'Ngày': formatDate(record.date), ...(hasSessions ? { 'Buổi': attendanceSessionLabel(record) } : {}), 'Họ và tên': student?.name ?? studentId, 'Mã học sinh': student?.studentCode ?? '', 'Tổ': student?.team ?? '', 'Trạng thái': attendanceLabels[status] };
         }));
       const attendanceSheet = utils.json_to_sheet(attendanceData);
-      attendanceSheet['!cols'] = [{ wch: 13 }, { wch: 28 }, { wch: 15 }, { wch: 7 }, { wch: 15 }];
+      attendanceSheet['!cols'] = [{ wch: 13 }, ...(hasSessions ? [{ wch: 18 }] : []), { wch: 28 }, { wch: 15 }, { wch: 7 }, { wch: 15 }];
       utils.book_append_sheet(workbook, attendanceSheet, 'Chuyên cần');
     }
     writeFileXLSX(workbook, `${fileBase}.xlsx`);
@@ -309,7 +313,8 @@ export default function ClassReportExport({ students, activities, attendanceHist
               <div className="report-paper-head"><div><span>TRƯỜNG: ................................</span><span>TỔ/KHỐI: .................................</span></div><div><small>{classInfo.name}</small><h3>{reportTitle}</h3><p>{report.periodLabel}</p></div><b>Năm học {classInfo.schoolYear}</b></div>
               <div className="report-paper-info"><span><small>LỚP</small><strong>{classInfo.code}</strong></span><span><small>GIÁO VIÊN</small><strong>{teacherName}</strong></span><span><small>THỜI GIAN</small><strong>{report.dateRange}</strong></span></div>
               <div className="report-paper-kpis"><span><strong>{report.rows.length}</strong><small>học sinh</small></span><span><strong>{report.weekCount}</strong><small>tuần</small></span><span><strong>{signedPoints(report.totalPoints)}</strong><small>tổng điểm</small></span><span><strong>{report.activityCount}</strong><small>ghi nhận</small></span></div>
-              <div className="report-paper-table"><div className={`report-paper-table-head ${includeAttendance ? 'has-attendance' : ''}`}><span>HẠNG</span><span>HỌ VÀ TÊN</span><span>TỔ</span><span>ĐIỂM KỲ</span><span>TÍCH LŨY</span>{includeAttendance && <span>CHUYÊN CẦN</span>}</div>{report.rows.slice(0, 12).map((row) => <div className={`report-paper-row ${includeAttendance ? 'has-attendance' : ''}`} key={row.id}><span>{row.rank}</span><strong>{row.name}</strong><span>{row.team}</span><b>{signedPoints(row.points)}</b><span>{row.cumulativeScore}</span>{includeAttendance && <small>{row.present} mặt · {row.absent} vắng</small>}</div>)}{!report.rows.length && <p className="report-paper-empty">Chưa có dữ liệu trong kỳ báo cáo này.</p>}{report.rows.length > 12 && <p className="report-paper-more">… và {report.rows.length - 12} học sinh ở các trang tiếp theo</p>}</div>
+              {includeAttendance && hasSessions && <p>Ngày nghỉ trọn và buổi nghỉ được thống kê riêng; buổi chưa điểm danh chưa được tính.</p>}
+              <div className="report-paper-table"><div className={`report-paper-table-head ${includeAttendance ? 'has-attendance' : ''}`}><span>HẠNG</span><span>HỌ VÀ TÊN</span><span>TỔ</span><span>ĐIỂM KỲ</span><span>TÍCH LŨY</span>{includeAttendance && <span>CHUYÊN CẦN</span>}</div>{report.rows.slice(0, 12).map((row) => <div className={`report-paper-row ${includeAttendance ? 'has-attendance' : ''}`} key={row.id}><span>{row.rank}</span><strong>{row.name}</strong><span>{row.team}</span><b>{signedPoints(row.points)}</b><span>{row.cumulativeScore}</span>{includeAttendance && <small>{hasSessions ? `Nghỉ ${row.absences.days} ngày trọn · ${row.absences.sessions} buổi (lịch 2 buổi)` : `${row.present} mặt · ${row.absent} vắng`}</small>}</div>)}{!report.rows.length && <p className="report-paper-empty">Chưa có dữ liệu trong kỳ báo cáo này.</p>}{report.rows.length > 12 && <p className="report-paper-more">… và {report.rows.length - 12} học sinh ở các trang tiếp theo</p>}</div>
               <div className="report-paper-signatures"><span>NGƯỜI LẬP BẢNG<small>(Ký, ghi rõ họ tên)</small></span><span>GIÁO VIÊN CHỦ NHIỆM<small>(Ký, ghi rõ họ tên)</small></span><span>XÁC NHẬN NHÀ TRƯỜNG<small>(Ký tên, đóng dấu)</small></span></div>
             </div>
           </div>
