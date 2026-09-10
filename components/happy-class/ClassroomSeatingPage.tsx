@@ -60,6 +60,7 @@ export type ClassroomLayout = {
   columns: number;
   defaultSeatsPerDesk: 1 | 2 | 3 | 4;
   viewpoint?: 'student' | 'teacher';
+  deskStartSide?: 'left' | 'right';
   desks: ClassroomDesk[];
   customStudents?: ClassroomCustomStudent[];
   previousPairings?: string[];
@@ -144,6 +145,7 @@ export function isClassroomLayout(value: unknown): value is ClassroomLayout {
     || !Number.isInteger(layout.columns) || (layout.columns ?? 0) < MIN_COLUMNS || (layout.columns ?? 0) > MAX_COLUMNS
     || ![1, 2, 3, 4].includes(layout.defaultSeatsPerDesk ?? 0)
     || (layout.viewpoint !== undefined && layout.viewpoint !== 'student' && layout.viewpoint !== 'teacher')
+    || (layout.deskStartSide !== undefined && layout.deskStartSide !== 'left' && layout.deskStartSide !== 'right')
     || !Array.isArray(layout.desks) || layout.desks.length !== (layout.rows ?? 0) * (layout.columns ?? 0)
     || typeof layout.updatedAt !== 'string') return false;
   if (layout.customStudents !== undefined) {
@@ -279,7 +281,7 @@ function pairingKeys(layout: ClassroomLayout) {
 
 function initials(name: string) {
   const words = name.trim().split(/\s+/).filter(Boolean);
-  return `${words.at(-2)?.[0] ?? ''}${words.at(-1)?.[0] ?? ''}`.toLocaleUpperCase('vi-VN') || 'HS';
+  return `${words[words.length - 2]?.[0] ?? ''}${words[words.length - 1]?.[0] ?? ''}`.toLocaleUpperCase('vi-VN') || 'HS';
 }
 
 function shortName(name: string) {
@@ -415,9 +417,13 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
   const capacity = allSeats.length;
   const isBusy = shufflePhase !== 'idle';
   const isTeacherView = layout.viewpoint === 'teacher';
-  const displayedDesks = isTeacherView
-    ? [...layout.desks].sort((left, right) => right.row - left.row || left.column - right.column)
-    : layout.desks;
+  const displayedSeats = (desk: ClassroomDesk) => isTeacherView ? [...desk.seats].reverse() : desk.seats;
+  // Store the side from the teacher's perspective; the opposite view swaps sides.
+  const teacherDeskStartSide = layout.deskStartSide ?? 'right';
+  const deskStartSide = isTeacherView ? teacherDeskStartSide : teacherDeskStartSide === 'right' ? 'left' : 'right';
+  const displayedDesks = [...layout.desks].sort((left, right) =>
+    (isTeacherView ? right.row - left.row : left.row - right.row)
+    || (deskStartSide === 'right' ? right.column - left.column : left.column - right.column));
 
   useEffect(() => {
     if (!value) onChange(layout);
@@ -785,7 +791,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     const desksHtml = displayedDesks.map((desk) => {
       const deskNumber = desk.row * layout.columns + desk.column + 1;
       if (desk.removed) return '<div class="desk removed" aria-hidden="true"></div>';
-      return `<article class="desk"><header><span>BÀN ${deskNumber}</span><small>${desk.seats.length} chỗ</small></header><div class="seats seats-${desk.seats.length}">${desk.seats.map((seat) => {
+      return `<article class="desk"><header><span>BÀN ${deskNumber}</span><small>${desk.seats.length} chỗ</small></header><div class="seats seats-${desk.seats.length}">${displayedSeats(desk).map((seat) => {
       const student = seat.studentId === undefined ? undefined : studentMap.get(seat.studentId);
       return `<div class="seat ${student ? 'filled' : ''}"><b>${student ? escapeHtml(initials(student.name)) : '—'}</b><span>${student ? escapeHtml(student.name) : 'Ghế trống'}</span>${student ? `<small>${student.isCustom ? 'Tên tự nhập' : `Tổ ${student.team}`}</small>` : ''}</div>`;
       }).join('')}</div></article>`;
@@ -854,7 +860,8 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
     const deskWidth = (width - margin * 2 - gapX * (layout.columns - 1)) / layout.columns;
     layout.desks.forEach((desk, deskIndex) => {
       if (desk.removed) return;
-      const x = margin + desk.column * (deskWidth + gapX);
+      const visualColumn = deskStartSide === 'right' ? layout.columns - desk.column - 1 : desk.column;
+      const x = margin + visualColumn * (deskWidth + gapX);
       const visualRow = isTeacherView ? layout.rows - desk.row - 1 : desk.row;
       const y = gridStartY + visualRow * (deskHeight + gapY);
       roundedRect(context, x, y, deskWidth, deskHeight, 18);
@@ -875,7 +882,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
       const seatGap = 7;
       const seatWidth = (deskWidth - 22 - seatGap * (seatColumns - 1)) / seatColumns;
       const seatHeight = (deskHeight - 43 - seatGap * (seatRows - 1)) / seatRows;
-      desk.seats.forEach((seat, seatIndex) => {
+      displayedSeats(desk).forEach((seat, seatIndex) => {
         const student = seat.studentId === undefined ? undefined : studentMap.get(seat.studentId);
         const seatX = x + 11 + (seatIndex % seatColumns) * (seatWidth + seatGap);
         const seatY = y + 33 + Math.floor(seatIndex / seatColumns) * (seatHeight + seatGap);
@@ -957,6 +964,15 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
             <button className={`seating-viewpoint-button ${isTeacherView ? 'is-active' : ''}`} type="button" onClick={toggleViewpoint} title="Đổi góc nhìn sơ đồ"><ArrowUpDown size={17} /><span>{isTeacherView ? 'Góc nhìn giáo viên' : 'Góc nhìn học sinh'}</span></button>
             <button type="button" onClick={() => void togglePresentation()}>{isPresentation ? <Minimize2 size={17} /> : <Maximize2 size={17} />}<span>{isPresentation ? 'Thu nhỏ' : 'Trình chiếu'}</span></button>
           </div>
+          <label className="seating-start-side">Bàn 1 bắt đầu từ (theo góc nhìn giáo viên)
+            <select aria-label="Bàn 1 bắt đầu từ (theo góc nhìn giáo viên)" value={teacherDeskStartSide} disabled={!canManage || isBusy} onChange={(event) => {
+              if (!canManage || isBusy) return;
+              onChange({ ...copyLayout(layout), deskStartSide: event.target.value as 'left' | 'right', updatedAt: new Date().toISOString() });
+            }}>
+              <option value="left">Bên trái giáo viên</option>
+              <option value="right">Bên phải giáo viên</option>
+            </select>
+          </label>
           {!canManage && <p className="seating-view-notice"><Lock size={14} /> Đăng nhập giáo viên để sắp xếp và tạo ngẫu nhiên. Sơ đồ hiện tại vẫn có thể xem và in.</p>}
         </section>
 
@@ -976,7 +992,7 @@ export default function ClassroomSeatingPage({ students, classCode, className, s
                       <div className="seating-chair-row" aria-hidden="true">{desk.seats.map((seat) => <i key={seat.id} />)}</div>
                       <header><span>Bàn {desk.row * layout.columns + desk.column + 1}</span>{canManage && !isBusy && <div><button type="button" disabled={desk.seats.length <= 1} onClick={() => changeDeskSeats(desk.id, -1)} title="Bớt một ghế"><Minus size={12} /></button><small>{desk.seats.length} chỗ</small><button type="button" disabled={desk.seats.length >= 4} onClick={() => changeDeskSeats(desk.id, 1)} title="Thêm một ghế"><Plus size={12} /></button><button className="seating-delete-desk" type="button" onClick={() => deleteDesk(desk.id)} title={`Xóa riêng Bàn ${desk.row * layout.columns + desk.column + 1}`} aria-label={`Xóa riêng Bàn ${desk.row * layout.columns + desk.column + 1}`}><Trash2 size={12} /></button></div>}</header>
                       <div className="seating-desk-surface">
-                        {desk.seats.map((seat) => <SeatCard key={seat.id} seat={seat} student={seat.studentId === undefined ? undefined : studentMap.get(seat.studentId)} selected={selectedStudentId === seat.studentId} canManage={canManage && !isBusy} hidden={shufflePhase === 'revealing' && !revealedDeskIds.has(desk.id)} onSelect={() => selectSeat(seat)} onToggleLock={(event) => { event.stopPropagation(); toggleSeatLock(seat.id); }} />)}
+                        {displayedSeats(desk).map((seat) => <SeatCard key={seat.id} seat={seat} student={seat.studentId === undefined ? undefined : studentMap.get(seat.studentId)} selected={selectedStudentId === seat.studentId} canManage={canManage && !isBusy} hidden={shufflePhase === 'revealing' && !revealedDeskIds.has(desk.id)} onSelect={() => selectSeat(seat)} onToggleLock={(event) => { event.stopPropagation(); toggleSeatLock(seat.id); }} />)}
                       </div>
                     </article>
                 ))}
