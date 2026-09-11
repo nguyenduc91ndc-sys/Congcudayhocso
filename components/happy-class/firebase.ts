@@ -563,9 +563,19 @@ export async function publishParentPortal(input: PublishInput) {
   await checked('ghi thông tin cổng phụ huynh', () => setDoc(publicPortalRef(input.portal.publicId), portalRecord));
 
   const staleKeys = Object.keys(previousSignatures).filter((key) => !nextSignatures[key]);
-  const operations: ({ type: 'set'; key: string; value: (typeof changedDocuments)[number]['value'] } | { type: 'delete'; key: string })[] = [
-    ...changedDocuments.map(({ key, value }) => ({ type: 'set' as const, key, value })),
-    ...staleKeys.map((key) => ({ type: 'delete' as const, key })),
+  const operations = [
+    ...changedDocuments,
+    // Old merged manifests and interrupted publishes can reference deleted docs.
+    // A full replacement with an inactive marker is safe to repeat, even when
+    // the doc is absent. It removes personal fields and keeps the old link closed.
+    // Existing foreign-owned docs still fail the unchanged ownership rules.
+    ...staleKeys.map((key) => ({ key, value: {
+      schemaVersion: 1,
+      ownerUid: user.uid,
+      portalId: input.portal.publicId,
+      active: false,
+      updatedAt: serverTimestamp(),
+    } })),
   ];
 
   // Rules can read the access grant twice and the portal once per write.
@@ -575,8 +585,7 @@ export async function publishParentPortal(input: PublishInput) {
     const batch = writeBatch(db);
     operations.slice(index, index + publishBatchSize).forEach((operation) => {
       const reference = publicStudentRef(input.portal.publicId, operation.key);
-      if (operation.type === 'set') batch.set(reference, operation.value);
-      else batch.delete(reference);
+      batch.set(reference, operation.value);
     });
     await checked(`ghi hồ sơ/thu hồi mã đợt ${Math.floor(index / publishBatchSize) + 1}/${Math.ceil(operations.length / publishBatchSize)}`, () => batch.commit());
   }
