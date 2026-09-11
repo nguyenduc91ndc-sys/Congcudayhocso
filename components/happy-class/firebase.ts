@@ -457,6 +457,18 @@ function manifestRef(uid: string, publicId: string) {
 export async function publishParentPortal(input: PublishInput) {
   const user = auth.currentUser;
   if (!user) throw new Error('FIREBASE_SIGN_IN_REQUIRED');
+  const checked = async <T,>(stage: string, action: () => Promise<T>): Promise<T> => {
+    try {
+      return await action();
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : 'unknown';
+      throw Object.assign(new Error(`Không thể ${stage}. Tài khoản chia sẻ: ${user.email || 'không xác định'}.`), { code });
+    }
+  };
+  const existingPortal = await checked('kiểm tra chủ sở hữu lớp', () => getDoc(publicPortalRef(input.portal.publicId)));
+  if (existingPortal.exists() && existingPortal.data().ownerUid !== user.uid) {
+    throw Object.assign(new Error('Lớp này đã được chia sẻ bằng tài khoản Google khác. Hãy đăng nhập tài khoản đã chia sẻ lớp lần đầu để cập nhật các liên kết hiện có.'), { code: 'portal-owner-mismatch' });
+  }
   const publishedAt = new Date().toISOString();
   const portalRecord: PublicPortalRecord & { ownerUid: string; updatedAt: ReturnType<typeof serverTimestamp> } = {
     schemaVersion: 1,
@@ -476,7 +488,7 @@ export async function publishParentPortal(input: PublishInput) {
   };
 
   const privateRef = manifestRef(user.uid, input.portal.publicId);
-  const previousManifest = await getDoc(privateRef);
+  const previousManifest = await checked('đọc danh mục chia sẻ của giáo viên', () => getDoc(privateRef));
   const previousSignatures = previousManifest.exists()
     ? ((previousManifest.data() as PrivateManifest).studentSignatures || {})
     : {};
@@ -548,7 +560,7 @@ export async function publishParentPortal(input: PublishInput) {
     }
   }
 
-  await setDoc(publicPortalRef(input.portal.publicId), portalRecord);
+  await checked('ghi thông tin cổng phụ huynh', () => setDoc(publicPortalRef(input.portal.publicId), portalRecord));
 
   const staleKeys = Object.keys(previousSignatures).filter((key) => !nextSignatures[key]);
   const operations: ({ type: 'set'; key: string; value: (typeof changedDocuments)[number]['value'] } | { type: 'delete'; key: string })[] = [
@@ -566,17 +578,17 @@ export async function publishParentPortal(input: PublishInput) {
       if (operation.type === 'set') batch.set(reference, operation.value);
       else batch.delete(reference);
     });
-    await batch.commit();
+    await checked(`ghi hồ sơ/thu hồi mã đợt ${Math.floor(index / publishBatchSize) + 1}/${Math.ceil(operations.length / publishBatchSize)}`, () => batch.commit());
   }
 
-  await setDoc(privateRef, {
+  await checked('lưu danh mục sau khi chia sẻ', () => setDoc(privateRef, {
     ownerUid: user.uid,
     publicId: input.portal.publicId,
     studentSignatures: nextSignatures,
     studentCount: Object.keys(nextSignatures).length,
     lastPublishedAt: publishedAt,
     updatedAt: serverTimestamp(),
-  }, { merge: true });
+  }));
 
   return {
     publishedAt,

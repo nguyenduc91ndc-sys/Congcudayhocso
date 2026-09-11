@@ -2165,7 +2165,9 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
       console.error('Parent portal publish failed', { code, error });
       if (code === 'permission-denied') {
-        setToast('Kho chia sẻ từ chối quyền ghi dữ liệu. Vui lòng kiểm tra quyền tài khoản giáo viên. (permission-denied)');
+        setToast(`${error instanceof Error ? error.message : 'Kho chia sẻ từ chối quyền ghi dữ liệu.'} (permission-denied)`);
+      } else if (code === 'portal-owner-mismatch') {
+        setToast(error instanceof Error ? error.message : 'Hãy đăng nhập tài khoản Google đã chia sẻ lớp lần đầu.');
       } else if (code === 'resource-exhausted') {
         setToast('Kho chia sẻ đã chạm hạn mức xử lý. Vui lòng thử lại sau. (resource-exhausted)');
       } else if (code === 'unavailable' || code === 'deadline-exceeded') {
