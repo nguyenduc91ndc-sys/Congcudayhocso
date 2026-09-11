@@ -2161,8 +2161,18 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
       setToast(result.changed || result.removed
         ? `Đã cập nhật ${result.changed} hồ sơ, thu hồi ${result.removed} liên kết cũ trên hệ thống chia sẻ`
         : `Dữ liệu phụ huynh đã mới nhất; không ghi lại ${result.total} hồ sơ không đổi`);
-    } catch {
-      setToast('Chưa thể cập nhật kho dữ liệu chia sẻ. Hãy kiểm tra kết nối Internet rồi thử lại.');
+    } catch (error) {
+      const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : '';
+      console.error('Parent portal publish failed', { code, error });
+      if (code === 'permission-denied') {
+        setToast('Kho chia sẻ từ chối quyền ghi dữ liệu. Vui lòng kiểm tra quyền tài khoản giáo viên. (permission-denied)');
+      } else if (code === 'resource-exhausted') {
+        setToast('Kho chia sẻ đã chạm hạn mức xử lý. Vui lòng thử lại sau. (resource-exhausted)');
+      } else if (code === 'unavailable' || code === 'deadline-exceeded') {
+        setToast('Kết nối kho chia sẻ bị gián đoạn. Hãy kiểm tra Internet rồi bấm cập nhật lại.');
+      } else {
+        setToast(`Chưa thể cập nhật kho dữ liệu chia sẻ. Vui lòng thử lại.${code ? ` Mã lỗi: ${code}` : ''}`);
+      }
     } finally {
       setCloudPublishing(false);
     }

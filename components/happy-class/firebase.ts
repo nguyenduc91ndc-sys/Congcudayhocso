@@ -556,9 +556,12 @@ export async function publishParentPortal(input: PublishInput) {
     ...staleKeys.map((key) => ({ type: 'delete' as const, key })),
   ];
 
-  for (let index = 0; index < operations.length; index += 400) {
+  // Rules can read the access grant twice and the portal once per write.
+  // Stay below the 20-call batch limit without relying on rule read caching.
+  const publishBatchSize = 5;
+  for (let index = 0; index < operations.length; index += publishBatchSize) {
     const batch = writeBatch(db);
-    operations.slice(index, index + 400).forEach((operation) => {
+    operations.slice(index, index + publishBatchSize).forEach((operation) => {
       const reference = publicStudentRef(input.portal.publicId, operation.key);
       if (operation.type === 'set') batch.set(reference, operation.value);
       else batch.delete(reference);
