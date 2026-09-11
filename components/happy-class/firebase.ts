@@ -462,7 +462,7 @@ export async function publishParentPortal(input: PublishInput) {
       return await action();
     } catch (error) {
       const code = error && typeof error === 'object' && 'code' in error ? String(error.code) : 'unknown';
-      throw Object.assign(new Error(`Không thể ${stage}. Tài khoản chia sẻ: ${user.email || 'không xác định'}.`), { code });
+      throw Object.assign(new Error(`Không thể ${stage}.`), { code, stage });
     }
   };
   const existingPortal = await checked('kiểm tra chủ sở hữu lớp', () => getDoc(publicPortalRef(input.portal.publicId)));
