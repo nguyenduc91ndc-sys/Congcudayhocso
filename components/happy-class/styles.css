@@ -5174,3 +5174,46 @@ html[data-theme='garden'] body { color: #18351e; background: #eef7eb; }
 
 .seating-start-side { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; padding: 10px 12px; font-size: 13px; font-weight: 700; }
 .seating-start-side select { padding: 8px 12px; border: 1px solid #d8bce9; border-radius: 10px; background: white; color: #3b2543; font: inherit; }
+
+/* Keep the crop viewport inside the dialog, including short laptop screens. */
+.photo-manager-card > header,
+.photo-manager-summary,
+.photo-manager-modes,
+.photo-manager-card > footer,
+.photo-group-workspace > :not(.photo-group-layout),
+.photo-group-students > header,
+.photo-group-image-area > p { flex-shrink: 0; }
+
+@media (min-width: 681px) {
+  .photo-manager-card { height: calc(100dvh - 36px); max-height: calc(100dvh - 36px); }
+  .photo-manager-card.is-fullscreen { height: 100dvh; max-height: 100dvh; }
+  .photo-group-workspace { overflow-y: auto; }
+  .photo-group-layout { min-height: 200px; grid-template-rows: minmax(0, 1fr); flex: 1 0 200px; }
+  .photo-group-image-area,
+  .photo-manager-card.is-fullscreen .photo-group-image-area { min-height: 0; }
+  .photo-group-empty { min-height: 0; flex: 1; padding: 12px; }
+  .photo-group-tools { flex-wrap: wrap; }
+}
+@media (min-width: 681px) and (max-height: 850px) {
+  .photo-manager-backdrop { padding: 10px; }
+  .photo-manager-card { height: calc(100dvh - 20px); max-height: calc(100dvh - 20px); }
+  .photo-manager-card > header { min-height: 64px; padding: 8px 16px; }
+  .photo-manager-heading-icon { width: 42px; height: 42px; }
+  .photo-manager-card > header h2 { font-size: 19px; }
+  .photo-manager-card > header p { display: none; }
+  .photo-manager-summary { min-height: 35px; padding: 5px 16px; }
+  .photo-manager-summary strong { font-size: 20px; }
+  .photo-manager-modes { min-height: 46px; padding: 4px 16px; }
+  .photo-manager-modes button { min-height: 34px; }
+  .photo-group-workspace { padding: 8px 12px; }
+  .photo-group-steps { min-height: 38px; margin-bottom: 5px; padding: 3px 10px; }
+  .photo-group-steps small { display: none; }
+  .photo-group-steps > div > b { width: 26px; height: 26px; }
+  .photo-group-guide { display: none; }
+  .photo-group-success { min-height: 34px; margin-bottom: 5px; padding: 3px 10px; }
+  .photo-group-success small { display: none; }
+  .photo-group-layout { margin-top: 7px; }
+  .photo-group-image-area > p { min-height: 28px; padding: 4px 8px; }
+  .photo-manager-card > footer { min-height: 49px; padding: 5px 16px 9px; }
+  .photo-manager-card > footer > button { min-height: 34px; }
+}
