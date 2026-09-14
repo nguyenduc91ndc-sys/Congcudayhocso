@@ -5217,3 +5217,14 @@ html[data-theme='garden'] body { color: #18351e; background: #eef7eb; }
   .photo-manager-card > footer { min-height: 49px; padding: 5px 16px 9px; }
   .photo-manager-card > footer > button { min-height: 34px; }
 }
+
+/* Award the selected student using the class point reasons. */
+.photo-picker-actions { flex-wrap: wrap; }
+.random-winner-points { position: relative; z-index: 2; width: 100%; min-width: 0; margin: 0 auto 10px; padding: 12px; border: 2px solid #b5dec8; border-radius: 16px; color: #285b46; background: #f3fff7; text-align: left; }
+.random-winner-points > strong { display: block; margin-bottom: 8px; font-size: 14px; overflow-wrap: anywhere; }
+.random-winner-reasons { display: flex; flex-wrap: wrap; gap: 7px; max-height: 150px; overflow-y: auto; }
+.random-winner-reasons > button { min-height: 40px; max-width: 100%; padding: 7px 10px; display: inline-flex; align-items: center; gap: 8px; border: 1px solid #a2ceb7; border-radius: 10px; color: #285b46; background: white; font-size: 12px; font-weight: 800; text-align: left; }
+.random-winner-reasons > button:hover { background: #dcfce7; border-color: #38a16b; }
+.random-winner-reasons > button > span { overflow-wrap: anywhere; min-width: 0; }
+.random-winner-reasons > button > b { flex: none; color: #16804e; }
+.random-winner-points > p { margin: 0; font-size: 13px; }

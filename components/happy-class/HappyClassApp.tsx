@@ -2402,7 +2402,7 @@ export default function HappyClassApp({ platformUser, onBack }: HappyClassAppPro
           {page === 'points' && <PointsPage students={students} activities={activities} reasons={pointReasons} currentWeekId={weekState.current.id} canConfigure={isTeacher} lastPointAction={pointUndoAction?.message ?? ''} onSaveReasons={savePointReasons} onSaveTeacherComment={saveTeacherComment} onAddPoints={addPoints} onUndoPoints={undoLastPointAction} onDeleteActivity={deletePointActivity} />}
           {page === 'teams' && <TeamsPage students={students} teamCount={classProfile.teamCount} week={weekState.current} teamScoringMode={classProfile.teamScoringMode ?? 'average'} canManage={isTeacher} lastTeamAction={teamUndoAction?.message ?? ''} onToggleScoringMode={toggleTeamScoringMode} onApplyRandomTeams={applyRandomTeams} onUndoRandomTeams={undoRandomTeams} />}
           {page === 'rewards' && <RewardsPage students={students} rewards={rewardCatalog} activities={activities} currentWeekId={weekState.current.id} calculationMode={weeklyScoring.calculationMode} canConfigure={isTeacher} onRedeem={redeemReward} onUndoRedeem={undoRewardRedemption} onSaveRewards={saveRewards} />}
-          {page === 'random' && <RandomPage students={students} teamCount={classProfile.teamCount} canManagePhotos={isTeacher || Boolean(platformUser)} onApplyTeams={applyRandomTeams} onMarkAbsent={(studentId) => updateAttendance(studentId, 'absent')} onUpdatePhoto={updateStudentPhoto} onRemovePhoto={removeStudentPhoto} />}
+          {page === 'random' && <RandomPage key={activeClassId} reasons={pointReasons} onAddPoints={addPoints} canAwardPoints={isTeacher || Boolean(platformUser)} students={students} teamCount={classProfile.teamCount} canManagePhotos={isTeacher || Boolean(platformUser)} onApplyTeams={applyRandomTeams} onMarkAbsent={(studentId) => updateAttendance(studentId, 'absent')} onUpdatePhoto={updateStudentPhoto} onRemovePhoto={removeStudentPhoto} />}
           {page === 'tools' && <ClassroomToolsPage />}
           {page === 'attendance' && (
             <AttendancePage key={activeClassId} sessions={classProfile.attendanceSessions ?? 1} students={students} classCode={classProfile.code} attendanceHistory={attendanceHistory} weekState={weekState} weeklyScoring={weeklyScoring} onUpdate={updateAttendance} onUpdateBulk={updateAttendanceBulk} onComplete={markAttendanceComplete} onToast={setToast} />
@@ -4272,7 +4272,35 @@ type RandomMode = 'photos' | 'wheel' | 'groups';
 type SecretGroupPhase = 'idle' | 'countdown' | 'shuffling' | 'revealing' | 'complete';
 type SecretGroupMethod = 'teams' | 'size-3' | 'size-4' | 'custom';
 
-function RandomPage({ students, teamCount, canManagePhotos, onApplyTeams, onMarkAbsent, onUpdatePhoto, onRemovePhoto }: { students: Student[]; teamCount: number; canManagePhotos: boolean; onApplyTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void; onMarkAbsent: (studentId: number) => void; onUpdatePhoto: (studentId: number, file: File) => Promise<void>; onRemovePhoto: (studentId: number) => void }) {
+type RandomPointsProps = {
+  reasons: PointReason[];
+  canAwardPoints: boolean;
+  onAddPoints: (studentIds: number[], points: number, reason: string) => void;
+};
+
+function RandomWinnerPoints({ student, reasons, onAddPoints }: { student: Student } & Pick<RandomPointsProps, 'reasons' | 'onAddPoints'>) {
+  const [awarded, setAwarded] = useState<PointReason | null>(null);
+  const awardLock = useRef(false);
+  const positiveReasons = reasons.filter((reason) => reason.points > 0);
+  return (
+    <section className="random-winner-points" aria-label={`Cộng điểm tốt cho ${student.name}`}>
+      <strong>⭐ Điểm tốt cho {student.name}</strong>
+      {awarded ? <p role="status">Đã cộng +{awarded.points} điểm · {awarded.label}</p> : <>
+        <div className="random-winner-reasons">{positiveReasons.map((reason) => (
+          <button type="button" key={reason.id} onClick={() => {
+            if (awardLock.current) return;
+            awardLock.current = true;
+            onAddPoints([student.id], reason.points, reason.label);
+            setAwarded(reason);
+          }}><span>{reason.icon} {reason.label}</span><b>+{reason.points}</b></button>
+        ))}</div>
+        {!positiveReasons.length && <p>Chưa có nội dung điểm tốt. Thầy cô thêm tại Vườn điểm tốt → Cấu hình.</p>}
+      </>}
+    </section>
+  );
+}
+
+function RandomPage({ reasons, canAwardPoints, onAddPoints, students, teamCount, canManagePhotos, onApplyTeams, onMarkAbsent, onUpdatePhoto, onRemovePhoto }: RandomPointsProps & { students: Student[]; teamCount: number; canManagePhotos: boolean; onApplyTeams: (assignments: Array<Pick<Student, 'id' | 'team'>>, teamCount: number) => void; onMarkAbsent: (studentId: number) => void; onUpdatePhoto: (studentId: number, file: File) => Promise<void>; onRemovePhoto: (studentId: number) => void }) {
   const [mode, setMode] = useState<RandomMode>('photos');
   const heading = mode === 'photos'
     ? { title: 'Gọi tên bằng ảnh', description: 'Ảnh chạy thật vui, chậm dần rồi dừng ở một bạn may mắn.', icon: '📸' }
@@ -4287,14 +4315,14 @@ function RandomPage({ students, teamCount, canManagePhotos, onApplyTeams, onMark
         <button type="button" role="tab" aria-selected={mode === 'wheel'} className={mode === 'wheel' ? 'active' : ''} onClick={() => setMode('wheel')}><Sparkles size={18} /><span>Vòng quay cá nhân</span></button>
         <button type="button" role="tab" aria-selected={mode === 'groups'} className={mode === 'groups' ? 'active' : ''} onClick={() => setMode('groups')}><Dices size={19} /><span>Chia tổ bí mật</span></button>
       </div>
-      {mode === 'photos' && <PhotoRandomPage students={students} teamCount={teamCount} canManagePhotos={canManagePhotos} onMarkAbsent={onMarkAbsent} onUpdatePhoto={onUpdatePhoto} onRemovePhoto={onRemovePhoto} />}
-      {mode === 'wheel' && <div className="random-legacy-shell"><LegacyRandomPage students={students} teamCount={teamCount} /></div>}
+      {mode === 'photos' && <PhotoRandomPage reasons={reasons} canAwardPoints={canAwardPoints} onAddPoints={onAddPoints} students={students} teamCount={teamCount} canManagePhotos={canManagePhotos} onMarkAbsent={onMarkAbsent} onUpdatePhoto={onUpdatePhoto} onRemovePhoto={onRemovePhoto} />}
+      {mode === 'wheel' && <div className="random-legacy-shell"><LegacyRandomPage reasons={reasons} canAwardPoints={canAwardPoints} onAddPoints={onAddPoints} students={students} teamCount={teamCount} /></div>}
       {mode === 'groups' && <SecretGroupsPage students={students} initialTeamCount={teamCount} onApplyTeams={onApplyTeams} />}
     </>
   );
 }
 
-function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, onUpdatePhoto, onRemovePhoto }: { students: Student[]; teamCount: number; canManagePhotos: boolean; onMarkAbsent: (studentId: number) => void; onUpdatePhoto: (studentId: number, file: File) => Promise<void>; onRemovePhoto: (studentId: number) => void }) {
+function PhotoRandomPage({ reasons, canAwardPoints, onAddPoints, students, teamCount, canManagePhotos, onMarkAbsent, onUpdatePhoto, onRemovePhoto }: RandomPointsProps & { students: Student[]; teamCount: number; canManagePhotos: boolean; onMarkAbsent: (studentId: number) => void; onUpdatePhoto: (studentId: number, file: File) => Promise<void>; onRemovePhoto: (studentId: number) => void }) {
   const [team, setTeam] = useState(0);
   const [avoidRepeats, setAvoidRepeats] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
@@ -4477,6 +4505,7 @@ function PhotoRandomPage({ students, teamCount, canManagePhotos, onMarkAbsent, o
           {winner && !picking && <><div className="photo-picker-confetti" aria-hidden="true">{Array.from({ length: 22 }, (_, index) => <i key={index} style={{ '--photo-confetti': index } as CSSProperties} />)}</div><PartyPopper className="photo-party-icon" size={31} /></>}
         </div>
         <div className="photo-picker-actions">
+          {winner && !picking && canAwardPoints && students.some((student) => student.id === winner.id) && <RandomWinnerPoints key={winner.id} student={winner} reasons={reasons} onAddPoints={onAddPoints} />}
           <button type="button" className="photo-pick-button" disabled={picking || !availablePool.length} onClick={pickStudent}><Sparkles size={21} />{picking ? 'ĐANG CHỌN…' : completedRound ? 'ĐÃ GỌI HẾT LƯỢT' : winner ? 'GỌI BẠN TIẾP THEO' : 'GỌI NGẪU NHIÊN'}</button>
           {winner && !picking && <button type="button" className="photo-absent-button" onClick={markWinnerAbsent}><X size={17} /> Báo vắng</button>}
         </div>
@@ -4771,7 +4800,7 @@ function SecretGroupsPage({ students, initialTeamCount, onApplyTeams }: { studen
   );
 }
 
-function LegacyRandomPage({ students, teamCount }: { students: Student[]; teamCount: number }) {
+function LegacyRandomPage({ reasons, canAwardPoints, onAddPoints, students, teamCount }: RandomPointsProps & { students: Student[]; teamCount: number }) {
   const [team, setTeam] = useState(0);
   const [winner, setWinner] = useState<Student | null>(null);
   const [spinning, setSpinning] = useState(false);
@@ -4934,10 +4963,11 @@ function LegacyRandomPage({ students, teamCount }: { students: Student[]; teamCo
             </div>
             <div className="wheel-pedestal"><i /><span>VÒNG QUAY MAY MẮN</span></div>
           </div>
-          {winner && !spinning && <div className="winner-banner"><div className="winner-portrait"><Avatar initials={winner.initials} gradient={winner.gradient} photo={winner.photo} size="xlarge" /></div><div className="winner-copy"><span>Chúc mừng, xin mời</span><strong>{winner.name}</strong><small>Tổ {winner.team} · {winner.score} điểm</small></div><PartyPopper className="winner-party" size={26} /></div>}
+          {winner && !spinning && <div className="winner-banner"><div className="winner-portrait"><Avatar initials={winner.initials} gradient={winner.gradient} photo={winner.photo} size="xlarge" /></div><div className="winner-copy"><span>Chúc mừng, xin mời</span><strong>{winner.name}</strong><small>Tổ {winner.team} · {students.find((student) => student.id === winner.id)?.score ?? winner.score} điểm</small></div><PartyPopper className="winner-party" size={26} /></div>}
           {winner && !spinning && <div className="wheel-fireworks" aria-hidden="true">{[0, 1, 2].map((burst) => <span className={`wheel-firework burst-${burst + 1}`} key={burst}>{Array.from({ length: 12 }, (_, ray) => <i key={ray} style={{ '--firework-ray': ray, '--firework-color': (ray + burst * 3) % 12 } as CSSProperties} />)}</span>)}</div>}
           {winner && !spinning && <div className="wheel-confetti" aria-hidden="true">{Array.from({ length: 20 }, (_, index) => <i key={index} style={{ '--confetti-index': index, '--confetti-drift': `${(index - 10) * 8}px`, left: `${(index * 47) % 100}%`, animationDelay: `${(index % 6) * .06}s` } as CSSProperties} />)}</div>}
         </div>
+        {winner && !spinning && canAwardPoints && students.some((student) => student.id === winner.id) && <RandomWinnerPoints key={winner.id} student={winner} reasons={reasons} onAddPoints={onAddPoints} />}
         <button className="spin-button" onClick={spin} disabled={spinning || !pool.length}><Sparkles size={21} />{spinning ? 'Vòng quay đang chạy...' : winner ? 'Quay thêm một lượt' : 'QUAY NGAY!'}</button>
         <p className="wheel-tip">🎉 Mỗi học sinh có cơ hội được chọn như nhau</p>
       </section>
