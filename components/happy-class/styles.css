@@ -5228,3 +5228,12 @@ html[data-theme='garden'] body { color: #18351e; background: #eef7eb; }
 .random-winner-reasons > button > span { overflow-wrap: anywhere; min-width: 0; }
 .random-winner-reasons > button > b { flex: none; color: #16804e; }
 .random-winner-points > p { margin: 0; font-size: 13px; }
+
+.random-points-switch { display: flex; gap: 8px; margin-bottom: 10px; }
+.random-points-switch > button { min-height: 40px; padding: 7px 12px; border: 1px solid #a2ceb7; border-radius: 10px; background: white; color: #285b46; font-weight: 800; }
+.random-points-switch > button[aria-pressed="true"] { background: #dcfce7; border-color: #38a16b; }
+.random-winner-points.is-negative { border-color: #fecaca; background: #fff7f7; color: #9f3030; }
+.random-winner-points.is-negative .random-winner-reasons > button { border-color: #fecaca; color: #9f3030; }
+.random-winner-points.is-negative .random-winner-reasons > button:hover,
+.random-winner-points.is-negative .random-points-switch > button[aria-pressed="true"] { background: #fee2e2; border-color: #ef4444; color: #9f3030; }
+.random-winner-points.is-negative .random-winner-reasons > button > b { color: #b91c1c; }

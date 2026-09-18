@@ -4280,21 +4280,26 @@ type RandomPointsProps = {
 
 function RandomWinnerPoints({ student, reasons, onAddPoints }: { student: Student } & Pick<RandomPointsProps, 'reasons' | 'onAddPoints'>) {
   const [awarded, setAwarded] = useState<PointReason | null>(null);
+  const [mode, setMode] = useState<'positive' | 'negative'>('positive');
   const awardLock = useRef(false);
-  const positiveReasons = reasons.filter((reason) => reason.points > 0);
+  const visibleReasons = reasons.filter((reason) => mode === 'positive' ? reason.points > 0 : reason.points < 0);
   return (
-    <section className="random-winner-points" aria-label={`Cộng điểm tốt cho ${student.name}`}>
-      <strong>⭐ Điểm tốt cho {student.name}</strong>
-      {awarded ? <p role="status">Đã cộng +{awarded.points} điểm · {awarded.label}</p> : <>
-        <div className="random-winner-reasons">{positiveReasons.map((reason) => (
+    <section className={`random-winner-points ${mode === 'negative' ? 'is-negative' : ''}`} aria-label={`Cộng hoặc trừ điểm cho ${student.name}`}>
+      <strong>⭐ Ghi nhận điểm cho {student.name}</strong>
+      {awarded ? <p role="status">{awarded.points > 0 ? 'Đã cộng' : 'Đã trừ'} {Math.abs(awarded.points)} điểm · {awarded.label}</p> : <>
+        <div className="random-points-switch" role="group" aria-label="Loại điểm">
+          <button type="button" aria-pressed={mode === 'positive'} onClick={() => setMode('positive')}>Điểm cộng</button>
+          <button type="button" aria-pressed={mode === 'negative'} onClick={() => setMode('negative')}>Điểm trừ</button>
+        </div>
+        <div className="random-winner-reasons">{visibleReasons.map((reason) => (
           <button type="button" key={reason.id} onClick={() => {
             if (awardLock.current) return;
             awardLock.current = true;
             onAddPoints([student.id], reason.points, reason.label);
             setAwarded(reason);
-          }}><span>{reason.icon} {reason.label}</span><b>+{reason.points}</b></button>
+          }}><span>{reason.icon} {reason.label}</span><b>{reason.points > 0 ? '+' : ''}{reason.points}</b></button>
         ))}</div>
-        {!positiveReasons.length && <p>Chưa có nội dung điểm tốt. Thầy cô thêm tại Vườn điểm tốt → Cấu hình.</p>}
+        {!visibleReasons.length && <p>Chưa có nội dung {mode === 'positive' ? 'điểm cộng' : 'điểm trừ'}. Thầy cô thêm tại Vườn điểm tốt → Cấu hình.</p>}
       </>}
     </section>
   );
