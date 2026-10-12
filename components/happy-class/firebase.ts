@@ -248,7 +248,7 @@ export async function checkHappyClassAccess(expectedEmail: string): Promise<Happ
     const now = new Date().toISOString();
     const devices = { ...record.devices };
     const existingDevice = devices[deviceId];
-    if (!existingDevice && Object.keys(devices).length >= 2) {
+    if (!existingDevice && Object.keys(devices).length >= 3) {
       decision = { status: 'device-limit', record };
       return;
     }

@@ -40,7 +40,7 @@ service cloud.firestore {
         || (ownsEmail(email)
           && resource.data.active == true
           && request.resource.data.diff(resource.data).affectedKeys().hasOnly(['devices', 'lastAccessAt'])
-          && request.resource.data.devices.size() <= 2
+          && request.resource.data.devices.size() <= 3
           && request.resource.data.devices.keys().hasAll(resource.data.devices.keys()));
     }
 

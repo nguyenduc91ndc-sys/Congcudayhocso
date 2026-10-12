@@ -53,7 +53,7 @@ function createAccessMailDraft(entries: HappyClassAccessInput[]): AccessMailDraf
   return {
     recipients,
     subject: 'Thông báo cấp quyền truy cập Lớp Hạnh Phúc',
-    body: `${greeting}\n\nThầy/Cô đã được cấp quyền truy cập ứng dụng Lớp Hạnh Phúc trên GIAOVIENCN.\n\nVui lòng đăng nhập bằng đúng tài khoản Gmail được cấp quyền để sử dụng ứng dụng. Mỗi tài khoản được sử dụng tối đa trên 2 thiết bị.\n\nMở ứng dụng tại: https://giaoviencn.io.vn/lop-hanh-phuc\n\nTrân trọng,\nGIAOVIENCN`,
+    body: `${greeting}\n\nThầy/Cô đã được cấp quyền truy cập ứng dụng Lớp Hạnh Phúc trên GIAOVIENCN.\n\nVui lòng đăng nhập bằng đúng tài khoản Gmail được cấp quyền để sử dụng ứng dụng. Mỗi tài khoản được sử dụng tối đa trên 3 thiết bị.\n\nMở ứng dụng tại: https://giaoviencn.io.vn/lop-hanh-phuc\n\nTrân trọng,\nGIAOVIENCN`,
   };
 }
 
@@ -488,7 +488,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
   }
 
   const activeCount = records.filter((record) => record.active).length;
-  const fullDeviceCount = records.filter((record) => Object.keys(record.devices || {}).length >= 2).length;
+  const fullDeviceCount = records.filter((record) => Object.keys(record.devices || {}).length >= 3).length;
   const accessedRecords = records.filter((record) => Boolean(record.lastAccessAt));
   const now = Date.now();
   const todayKey = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Ho_Chi_Minh' });
@@ -511,7 +511,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
       <div className="mx-auto max-w-7xl space-y-4 pb-8">
         <header className="overflow-hidden rounded-3xl bg-gradient-to-r from-violet-700 via-fuchsia-600 to-orange-400 p-5 text-white shadow-lg sm:p-6">
           <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-center">
-            <div><span className="text-xs font-black uppercase tracking-[.18em] text-yellow-200">Quản trị ứng dụng</span><h2 className="mt-1 text-2xl font-black sm:text-3xl">Quyền truy cập Lớp Hạnh Phúc</h2><p className="mt-2 text-sm font-semibold text-white/85">Cấp theo email Google, tối đa hai thiết bị cho mỗi giáo viên.</p></div>
+            <div><span className="text-xs font-black uppercase tracking-[.18em] text-yellow-200">Quản trị ứng dụng</span><h2 className="mt-1 text-2xl font-black sm:text-3xl">Quyền truy cập Lớp Hạnh Phúc</h2><p className="mt-2 text-sm font-semibold text-white/85">Cấp theo email Google, tối đa ba thiết bị cho mỗi giáo viên.</p></div>
             <div className="rounded-2xl border border-white/30 bg-white/15 px-4 py-3 text-sm backdrop-blur"><span className="block text-[10px] font-black uppercase tracking-wider text-white/60">Firebase riêng</span><strong>lop-hanh-phuc-c57b3</strong></div>
           </div>
         </header>
@@ -546,7 +546,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
                   <div key={`recent-${record.email}`} className="flex min-w-0 items-center gap-3 rounded-2xl border border-slate-100 bg-slate-50 px-3 py-2.5">
                     <span className="grid h-9 w-9 flex-none place-items-center rounded-xl bg-gradient-to-br from-fuchsia-500 to-orange-400 text-xs font-black text-white">{(record.name || record.email).trim().charAt(0).toUpperCase()}</span>
                     <span className="min-w-0 flex-1"><strong className="block truncate text-sm text-purple-950">{record.name || record.email}</strong><small className="block truncate font-semibold text-slate-500">{record.email}</small></span>
-                    <span className="flex-none text-right"><strong className="block text-[11px] text-fuchsia-700">{formatDate(record.lastAccessAt)}</strong><small className="font-bold text-slate-400">{Object.keys(record.devices || {}).length}/2 thiết bị</small></span>
+                    <span className="flex-none text-right"><strong className="block text-[11px] text-fuchsia-700">{formatDate(record.lastAccessAt)}</strong><small className="font-bold text-slate-400">{Object.keys(record.devices || {}).length}/3 thiết bị</small></span>
                   </div>
                 ))}
               </div>
@@ -562,7 +562,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
         <div className="grid grid-cols-3 gap-2 sm:gap-4">
           <div className="rounded-2xl border border-purple-100 bg-white p-3 shadow-sm sm:p-4"><Users className="text-purple-600" size={21} /><strong className="mt-2 block text-2xl text-purple-950">{records.length}</strong><span className="text-xs font-bold text-slate-500">Tổng email</span></div>
           <div className="rounded-2xl border border-emerald-100 bg-white p-3 shadow-sm sm:p-4"><CheckCircle2 className="text-emerald-600" size={21} /><strong className="mt-2 block text-2xl text-emerald-800">{activeCount}</strong><span className="text-xs font-bold text-slate-500">Đang có quyền</span></div>
-          <div className="rounded-2xl border border-orange-100 bg-white p-3 shadow-sm sm:p-4"><Laptop className="text-orange-500" size={21} /><strong className="mt-2 block text-2xl text-orange-700">{fullDeviceCount}</strong><span className="text-xs font-bold text-slate-500">Đủ 2 thiết bị</span></div>
+          <div className="rounded-2xl border border-orange-100 bg-white p-3 shadow-sm sm:p-4"><Laptop className="text-orange-500" size={21} /><strong className="mt-2 block text-2xl text-orange-700">{fullDeviceCount}</strong><span className="text-xs font-bold text-slate-500">Đủ 3 thiết bị</span></div>
         </div>
 
         {(error || notice) && <div role="status" className={`rounded-2xl border px-4 py-3 text-sm font-bold ${error ? 'border-red-200 bg-red-50 text-red-700' : 'border-emerald-200 bg-emerald-50 text-emerald-700'}`}>{error || notice}</div>}
@@ -633,7 +633,7 @@ export default function HappyClassAccessAdmin({ adminEmail }: { adminEmail?: str
                 <article key={record.email} className={`overflow-hidden rounded-2xl border ${record.active ? 'border-emerald-100 bg-white' : 'border-rose-100 bg-rose-50/40'}`}>
                   <div className="grid gap-3 p-4 lg:grid-cols-[minmax(230px,1.4fr)_minmax(150px,.8fr)_auto] lg:items-center">
                     <div className="min-w-0"><div className="flex items-center gap-2"><strong className="truncate text-sm text-purple-950 sm:text-base">{record.name || 'Chưa nhập họ tên'}</strong><span className={`rounded-full px-2 py-0.5 text-[10px] font-black ${record.active ? 'bg-emerald-100 text-emerald-700' : 'bg-rose-100 text-rose-700'}`}>{record.active ? 'ĐANG CÓ QUYỀN' : 'ĐÃ THU HỒI'}</span></div><span className="mt-1 block break-all text-xs font-bold text-purple-600">{record.email}</span>{record.school && <span className="mt-1 block truncate text-xs text-slate-500">{record.school}</span>}</div>
-                    <button onClick={() => setExpandedEmail(expanded ? '' : record.email)} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-left"><span><small className="block font-bold text-slate-400">THIẾT BỊ</small><strong className={devices.length >= 2 ? 'text-orange-600' : 'text-slate-700'}>{devices.length}/2 thiết bị</strong></span>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>
+                    <button onClick={() => setExpandedEmail(expanded ? '' : record.email)} className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 text-left"><span><small className="block font-bold text-slate-400">THIẾT BỊ</small><strong className={devices.length >= 3 ? 'text-orange-600' : 'text-slate-700'}>{devices.length}/3 thiết bị</strong></span>{expanded ? <ChevronUp size={18} /> : <ChevronDown size={18} />}</button>
                     <div className="flex flex-wrap gap-2 lg:justify-end">
                       {record.active && <button title="Soạn thông báo Gmail" onClick={() => { setAccessMailDraft(createAccessMailDraft([{ email: record.email, name: record.name, school: record.school }])); setError(''); setNotice(`Đã soạn thông báo Gmail cho ${record.email}.`); }} className="rounded-xl bg-emerald-50 p-2.5 text-emerald-700 hover:bg-emerald-100"><Mail size={17} /></button>}
                       <button title="Chỉnh sửa" onClick={() => startEdit(record)} className="rounded-xl bg-purple-50 p-2.5 text-purple-700 hover:bg-purple-100"><Edit3 size={17} /></button>

@@ -102,7 +102,7 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
   const isWaiting = status === 'checking';
   const isBlocked = status === 'denied' || status === 'revoked' || status === 'device-limit';
   const heading = status === 'device-limit'
-    ? 'Tài khoản đã dùng đủ 2 thiết bị'
+    ? 'Tài khoản đã dùng đủ 3 thiết bị'
     : status === 'revoked'
       ? 'Quyền truy cập đang tạm khóa'
       : isBlocked
@@ -116,7 +116,7 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
               : 'Đang kiểm tra quyền truy cập';
 
   const description = status === 'device-limit'
-    ? 'Email này đã đăng ký đủ hai trình duyệt. Thầy/cô vui lòng liên hệ Admin để xóa thiết bị cũ hoặc đặt lại danh sách thiết bị.'
+    ? 'Email này đã đăng ký đủ ba trình duyệt. Thầy/cô vui lòng liên hệ Admin để xóa thiết bị cũ hoặc đặt lại danh sách thiết bị.'
     : status === 'revoked'
       ? 'Tài khoản đã được thu hồi quyền. Thầy/cô vui lòng liên hệ Admin để được mở lại miễn phí.'
       : status === 'denied'
@@ -231,7 +231,7 @@ export default function HappyClassAccessGate({ platformUser, onBack, onSwitchAcc
                   <span className="grid h-11 w-11 flex-none place-items-center rounded-2xl border-2 border-white bg-blue-600 text-white shadow-[0_4px_0_#174ea6]"><Facebook size={22} fill="currentColor" /></span>
                   <span><strong className="block text-sm font-black">Nhấn theo dõi Facebook Thầy Đức</strong><small className="mt-0.5 block font-semibold text-blue-700">Xem thêm nhiều chia sẻ hữu ích về CNTT</small></span>
                 </a>
-                {status === 'device-limit' && <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800"><Laptop className="mt-0.5 flex-none" size={17} /> Admin có thể xóa thiết bị cũ hoặc đặt lại danh sách hai thiết bị trong trang quản trị.</div>}
+                {status === 'device-limit' && <div className="mt-4 flex items-start gap-2 rounded-xl bg-amber-50 p-3 text-xs font-semibold leading-5 text-amber-800"><Laptop className="mt-0.5 flex-none" size={17} /> Admin có thể xóa thiết bị cũ hoặc đặt lại danh sách ba thiết bị trong trang quản trị.</div>}
               </>
             )}
           </section>
