@@ -498,8 +498,8 @@ function GalleryCanvas({
 
         // Place each heading on its wall so it follows the room perspective.
         const titlePositions: Record<string, [number, number, number]> = {
-            front: [0, 2.65, -5.8], left: [-6.8, 2.65, -0.7],
-            right: [6.8, 2.65, -0.7], back: [0, 2.65, 4.85]
+            front: [0, 2.8, -5.8], left: [-6.8, 2.8, -0.7],
+            right: [6.8, 2.8, -0.7], back: [0, 2.8, 4.85]
         };
         Object.entries(gallery.wallTitles || {}).forEach(([wall, title]) => {
             if (!title?.trim() || !titlePositions[wall]) return;
@@ -530,7 +530,7 @@ function GalleryCanvas({
             texture.colorSpace = THREE.SRGBColorSpace;
             created.push(texture);
             const board = addMesh(new THREE.Mesh(
-                new THREE.PlaneGeometry(5.4, 0.9),
+                new THREE.PlaneGeometry(7.2, 1.2),
                 new THREE.MeshBasicMaterial({ map: texture })
             ));
             board.position.set(...titlePositions[wall]);
