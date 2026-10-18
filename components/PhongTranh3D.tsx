@@ -420,11 +420,13 @@ function GalleryCanvas({
         camera.position.set(0, 0.55, 1.6);
 
         const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false });
-        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+        const isTouchDevice = window.matchMedia('(pointer: coarse)').matches;
+        renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, isTouchDevice ? 1.5 : 2));
         renderer.setClearColor(0x020617, 1);
         renderer.domElement.style.width = '100%';
         renderer.domElement.style.height = '100%';
         renderer.domElement.style.display = 'block';
+        renderer.domElement.style.touchAction = 'none';
         mount.appendChild(renderer.domElement);
 
         let disposed = false;
@@ -809,6 +811,7 @@ function GalleryCanvas({
         let draggedFrame: GalleryPainting | null = null;
         let frameDragMoved = false;
         let frameId = 0;
+        let activePointerId: number | null = null;
         const raycaster = new THREE.Raycaster();
         const pointer = new THREE.Vector2();
         visitorRobot.position.set(-1.25, -1.54, -0.85);
@@ -926,14 +929,17 @@ function GalleryCanvas({
 
         const animate = () => {
             if (disposed) return;
+            frameId = window.requestAnimationFrame(animate);
+            if (document.hidden) return;
             updateCamera();
             updateVisitorRobot();
             renderer.render(scene, camera);
             updateHotspots();
-            frameId = window.requestAnimationFrame(animate);
         };
 
         const onPointerDown = (event: PointerEvent) => {
+            if (activePointerId !== null || event.button !== 0) return;
+            activePointerId = event.pointerId;
             const hit = !readOnly ? getHoveredPainting(event) : null;
             const hitFrameId = hit?.object.userData.frameId;
             const hitFrame = paintings.find(item => item.id === hitFrameId);
@@ -959,6 +965,7 @@ function GalleryCanvas({
         };
 
         const onPointerMove = (event: PointerEvent) => {
+            if (activePointerId !== null && event.pointerId !== activePointerId) return;
             if (draggedFrame) {
                 event.preventDefault();
                 const point = getFramePointFromPointer(draggedFrame, event);
@@ -980,6 +987,8 @@ function GalleryCanvas({
         };
 
         const onPointerUp = (event: PointerEvent) => {
+            if (event.pointerId !== activePointerId) return;
+            activePointerId = null;
             if (draggedFrame) {
                 renderer.domElement.releasePointerCapture?.(event.pointerId);
                 const nextFrame = draggedFrame;
@@ -1010,6 +1019,20 @@ function GalleryCanvas({
             if (!isDragging && !draggedFrame) renderer.domElement.style.cursor = 'grab';
         };
 
+        // A browser gesture or interrupted touch must never open or save a frame.
+        const onPointerCancel = () => {
+            if (draggedFrame) {
+                const original = paintings.find(frame => frame.id === draggedFrame?.id);
+                if (original) moveFrameVisual(original);
+            }
+            activePointerId = null;
+            isDragging = false;
+            draggedFrame = null;
+            draggingFrameId = null;
+            frameDragMoved = false;
+            updateCanvasCursor();
+        };
+
         const onWheel = (event: WheelEvent) => {
             event.preventDefault();
             camera.fov = Math.max(42, Math.min(72, camera.fov + event.deltaY * 0.018));
@@ -1026,7 +1049,7 @@ function GalleryCanvas({
         renderer.domElement.addEventListener('pointerdown', onPointerDown);
         renderer.domElement.addEventListener('pointermove', onPointerMove);
         renderer.domElement.addEventListener('pointerup', onPointerUp);
-        renderer.domElement.addEventListener('pointercancel', onPointerUp);
+        renderer.domElement.addEventListener('pointercancel', onPointerCancel);
         renderer.domElement.addEventListener('pointerleave', onPointerLeave);
         renderer.domElement.addEventListener('wheel', onWheel, { passive: false });
 
@@ -1038,7 +1061,7 @@ function GalleryCanvas({
             renderer.domElement.removeEventListener('pointerdown', onPointerDown);
             renderer.domElement.removeEventListener('pointermove', onPointerMove);
             renderer.domElement.removeEventListener('pointerup', onPointerUp);
-            renderer.domElement.removeEventListener('pointercancel', onPointerUp);
+            renderer.domElement.removeEventListener('pointercancel', onPointerCancel);
             renderer.domElement.removeEventListener('pointerleave', onPointerLeave);
             renderer.domElement.removeEventListener('wheel', onWheel);
             created.forEach(item => item.dispose?.());
@@ -1086,6 +1109,12 @@ function GalleryCanvas({
         overlayDragRef.current = null;
         canvasApiRef.current?.setDraggingFrameId(null);
         event.currentTarget.releasePointerCapture?.(event.pointerId);
+        if (event.type === 'pointercancel') {
+            const original = paintings.find(frame => frame.id === drag.frame.id);
+            if (original) canvasApiRef.current?.moveFrameVisual(original);
+            suppressOverlayClickRef.current = true;
+            return;
+        }
         if (drag.moved) {
             suppressOverlayClickRef.current = true;
             onMoveFrameRef.current?.(drag.frame);
@@ -1095,7 +1124,7 @@ function GalleryCanvas({
     };
 
     return (
-        <div className="relative h-full w-full overflow-hidden bg-slate-950">
+        <div className="relative h-full w-full touch-none overflow-hidden bg-slate-950">
             <div ref={mountRef} className="absolute inset-0" />
             <div className="pointer-events-none absolute inset-0">
                 {paintings.map(frame => {
@@ -1619,7 +1648,7 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
         const filledCount = getFilledCount(currentGallery);
 
         return (
-            <div ref={containerRef} className="h-[100dvh] overflow-hidden bg-slate-950 text-white">
+            <div ref={containerRef} className="h-[100dvh] overflow-hidden bg-slate-950 text-white" style={{ paddingTop: 'env(safe-area-inset-top)', paddingBottom: 'env(safe-area-inset-bottom)', paddingLeft: 'env(safe-area-inset-left)', paddingRight: 'env(safe-area-inset-right)' }}>
                 <div className="flex h-full flex-col">
                     <header className="z-20 flex min-h-14 items-center justify-between gap-2 border-b border-white/10 bg-slate-950/95 px-2 py-2 md:h-16 md:px-5 md:py-0">
                         <button
@@ -1651,8 +1680,8 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
                                 <Fullscreen size={18} />
                             </button>
                             {!readOnly && (
-                                <button type="button" onClick={() => handleCopyShare(currentGallery.id)} className="hidden items-center gap-2 rounded-2xl bg-emerald-500 px-4 py-2 text-sm font-black text-white md:inline-flex">
-                                    {copiedGalleryId === currentGallery.id ? <Check size={16} /> : <Copy size={16} />} Chia sẻ
+                                <button type="button" onClick={() => handleCopyShare(currentGallery.id)} aria-label="Sao chép liên kết chia sẻ" className="inline-flex min-h-11 min-w-11 items-center justify-center gap-2 rounded-2xl bg-emerald-500 px-2 py-2 text-sm font-black text-white md:px-4">
+                                    {copiedGalleryId === currentGallery.id ? <Check size={16} /> : <Copy size={16} />} <span className="hidden md:inline">Chia sẻ</span>
                                 </button>
                             )}
                         </div>

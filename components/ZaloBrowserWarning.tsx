@@ -22,6 +22,9 @@ const isZaloCompatibleFlow = (): boolean => {
     const pathname = window.location.pathname.toLowerCase().replace(/\/$/, '');
 
     return app === 'thu_moi_tuong_tac' ||
+        app === 'phong_tranh_3d' ||
+        pathname.startsWith('/share/panorama/') ||
+        pathname.startsWith('/share/phong-tranh-3d/') ||
         app === 'thu_moi_dau_nam' ||
         app === 'thiep_moi_online' ||
         app === 'happy_class' ||
