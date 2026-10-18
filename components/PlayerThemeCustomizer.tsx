@@ -1,4 +1,5 @@
-import React, { useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { Award, BadgeCheck, BookOpen, CheckCircle2, ChevronDown, Download, ExternalLink, Eye, GraduationCap, ImageIcon, LayoutTemplate, MessageCircle, MousePointerClick, Palette, PenLine, Play, Settings2, SlidersHorizontal, Sparkles, Type, Upload, UserRound, X } from 'lucide-react';
 import { VideoPlayerTheme, VideoPlayerLayout, VideoQuestionStyle, VideoSidebarCardStyle, normalizeVideoPlayerTheme } from '../types';
 
@@ -487,6 +488,37 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
   const [showPreview, setShowPreview] = useState(false);
   const [showStartLibrary, setShowStartLibrary] = useState(false);
   const [showReportGuide, setShowReportGuide] = useState(false);
+  const reportGuideRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!showReportGuide) return;
+    const previousFocus = document.activeElement as HTMLElement | null;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    reportGuideRef.current?.querySelector<HTMLButtonElement>('button')?.focus();
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        setShowReportGuide(false);
+      }
+      if (event.key === 'Tab') {
+        const elements = reportGuideRef.current?.querySelectorAll<HTMLElement>('button, a[href], textarea, iframe');
+        if (!elements?.length) return;
+        const first = elements[0];
+        const last = elements[elements.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault(); last.focus();
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault(); first.focus();
+        }
+      }
+    };
+    document.addEventListener('keydown', onKeyDown);
+    return () => {
+      document.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = previousOverflow;
+      previousFocus?.focus();
+    };
+  }, [showReportGuide]);
   const [activePanel, setActivePanel] = useState<'publish' | 'start' | 'colors' | 'layout' | null>(null);
   const [logoStatus, setLogoStatus] = useState('');
   const [authorAvatarStatus, setAuthorAvatarStatus] = useState('');
@@ -1375,24 +1407,24 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
       </>
       )}
 
-      {showReportGuide && (
-        <div className="fixed inset-0 z-[80] flex items-center justify-center bg-slate-950/60 p-4 backdrop-blur-sm">
-          <div className="w-full max-w-2xl overflow-hidden rounded-3xl bg-white shadow-2xl">
-            <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
-              <div>
+      {showReportGuide && createPortal(
+        <div onClick={event => { if (event.target === event.currentTarget) setShowReportGuide(false); }} className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-950/60 p-2 backdrop-blur-sm sm:p-4">
+          <div ref={reportGuideRef} role="dialog" aria-modal="true" aria-labelledby="report-guide-title" className="flex max-h-[calc(100dvh-2rem)] w-full max-w-2xl flex-col overflow-hidden rounded-3xl bg-white shadow-2xl">
+            <div className="flex shrink-0 items-center justify-between gap-3 border-b border-slate-100 bg-white px-4 py-3 sm:px-5">
+              <div className="min-w-0">
                 <p className="text-xs font-black uppercase text-indigo-500">Gửi báo cáo về Gmail</p>
-                <h3 className="text-lg font-black text-slate-900">Cách lấy link Apps Script</h3>
+                <h3 id="report-guide-title" className="text-lg font-black text-slate-900">Cách lấy link Apps Script</h3>
               </div>
               <button
                 type="button"
                 onClick={() => setShowReportGuide(false)}
-                className="grid h-9 w-9 place-items-center rounded-full bg-slate-100 text-slate-500 transition hover:bg-slate-200 hover:text-slate-900"
+                className="flex min-h-11 shrink-0 items-center justify-center gap-1 rounded-xl bg-slate-100 px-3 text-sm font-bold text-slate-700 transition hover:bg-slate-200 focus-visible:outline focus-visible:outline-2 focus-visible:outline-indigo-500"
                 aria-label="Đóng hướng dẫn"
               >
-                <X size={18} />
+                <X size={18} /> Đóng
               </button>
             </div>
-            <div className="space-y-4 p-5 text-sm font-semibold text-slate-600">
+            <div className="min-h-0 flex-1 space-y-4 overflow-y-auto overscroll-contain p-4 text-sm font-semibold text-slate-600 sm:p-5">
               <div className="overflow-hidden rounded-2xl border border-indigo-200 bg-slate-900 text-white shadow-xl">
                 <div className="flex items-center justify-between bg-slate-800/90 px-4 py-2.5 text-xs font-black text-indigo-300">
                   <span className="flex items-center gap-1.5"><Play size={13} fill="currentColor" className="text-rose-400" /> VIDEO HƯỚNG DẪN CHI TIẾT (1 PHÚT)</span>
@@ -1457,7 +1489,7 @@ const PlayerThemeCustomizer: React.FC<PlayerThemeCustomizerProps> = ({ theme, on
               </ol>
             </div>
           </div>
-        </div>
+        </div>, document.fullscreenElement || document.body
       )}
 
       {showPreview && <ThemePreviewModal theme={theme} onClose={() => setShowPreview(false)} />}
