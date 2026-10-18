@@ -691,6 +691,7 @@ function GalleryCanvas({
             liveFramePositions.set(frame.id, point.clone());
             const frameColor = KID_FRAME_COLORS[index % KID_FRAME_COLORS.length];
             const group = new THREE.Group();
+            group.scale.set(1.4, 1.4, 1);
             group.position.copy(point);
             setGroupWallRotation(group, point);
             frameGroups.set(frame.id, group);
