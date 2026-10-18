@@ -31,6 +31,7 @@ export interface GalleryPainting {
 }
 
 export interface Gallery {
+    wallTitles?: Partial<Record<'front' | 'left' | 'right' | 'back', string>>;
     id: string;
     title: string;
     template: GalleryTemplate;

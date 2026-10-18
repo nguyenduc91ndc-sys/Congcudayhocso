@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import * as THREE from 'three';
 import { motion, AnimatePresence } from 'framer-motion';
 import ReactPlayer from 'react-player/lazy';
@@ -75,6 +76,8 @@ const ROOM_TEMPLATES: Array<{
 const getTemplate = (id: GalleryTemplate) => ROOM_TEMPLATES.find(template => template.id === id) || ROOM_TEMPLATES[0];
 
 const DEFAULT_FRAME_COUNT = 16;
+const WALL_LABELS = { left: 'Tường trái', front: 'Tường trước', right: 'Tường phải', back: 'Tường sau' };
+const SOIL_WALL_TITLES = { left: '1. NGUYÊN NHÂN', front: '2. TÁC HẠI', right: '3. BIỆN PHÁP BẢO VỆ ĐẤT', back: '' };
 
 const getEvenCoordinate = (slot: number, count: number, min: number, max: number) => {
     if (count <= 1) return (min + max) / 2;
@@ -492,6 +495,47 @@ function GalleryCanvas({
         const ceiling = addMesh(new THREE.Mesh(new THREE.PlaneGeometry(14, 11.5), ceilingMaterial));
         ceiling.position.set(0, 3.55, -0.7);
         ceiling.rotation.x = Math.PI / 2;
+
+        // Place each heading on its wall so it follows the room perspective.
+        const titlePositions: Record<string, [number, number, number]> = {
+            front: [0, 2.65, -5.8], left: [-6.8, 2.65, -0.7],
+            right: [6.8, 2.65, -0.7], back: [0, 2.65, 4.85]
+        };
+        Object.entries(gallery.wallTitles || {}).forEach(([wall, title]) => {
+            if (!title?.trim() || !titlePositions[wall]) return;
+            const canvas = document.createElement('canvas');
+            canvas.width = 1536;
+            canvas.height = 256;
+            const ctx = canvas.getContext('2d');
+            if (!ctx) return;
+            ctx.fillStyle = '#78350f';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            ctx.fillStyle = wall === 'right' ? '#15803d' : '#c26920';
+            ctx.fillRect(12, 12, canvas.width - 24, canvas.height - 24);
+            ctx.strokeStyle = '#fde68a';
+            ctx.lineWidth = 4;
+            ctx.strokeRect(22, 22, canvas.width - 44, canvas.height - 44);
+            let fontSize = 90;
+            const text = title.trim();
+            do {
+                ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+                if (ctx.measureText(text).width <= 1416) break;
+                fontSize -= 2;
+            } while (fontSize > 24);
+            ctx.fillStyle = '#ffffff';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText(text, 768, 128, 1416);
+            const texture = new THREE.CanvasTexture(canvas);
+            texture.colorSpace = THREE.SRGBColorSpace;
+            created.push(texture);
+            const board = addMesh(new THREE.Mesh(
+                new THREE.PlaneGeometry(5.4, 0.9),
+                new THREE.MeshBasicMaterial({ map: texture })
+            ));
+            board.position.set(...titlePositions[wall]);
+            board.rotation.y = getFrameWallRotation(board.position);
+        });
 
         const trimMaterial = new THREE.MeshStandardMaterial({ color: colors.accent, roughness: 0.5, metalness: gallery.template === 'technology' ? 0.26 : 0.08 });
         const addBox = (size: [number, number, number], position: [number, number, number]) => {
@@ -1000,7 +1044,7 @@ function GalleryCanvas({
             renderer.dispose();
             renderer.domElement.remove();
         };
-    }, [gallery.panoramaUrl, gallery.template, paintings, readOnly]);
+    }, [gallery.panoramaUrl, gallery.template, gallery.wallTitles, paintings, readOnly]);
 
     const handleHotspotPointerDown = (frame: GalleryPainting, event: React.PointerEvent<HTMLButtonElement>) => {
         if (readOnly) return;
@@ -1107,10 +1151,37 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
     const [newTemplate, setNewTemplate] = useState<GalleryTemplate>('classroom');
     const [copiedGalleryId, setCopiedGalleryId] = useState<string | null>(null);
     const [previewFrame, setPreviewFrame] = useState<GalleryPainting | null>(null);
+    const [wallTitleDraft, setWallTitleDraft] = useState<Gallery['wallTitles'] | null>(null);
+    const [savingWallTitles, setSavingWallTitles] = useState(false);
+    const [wallTitleError, setWallTitleError] = useState('');
     const containerRef = useRef<HTMLDivElement>(null);
 
     const userEmail = user?.email || '';
     const userName = user?.name || 'Giáo viên';
+
+    const saveWallTitles = async () => {
+        if (!currentGallery || !wallTitleDraft || currentGallery.ownerEmail !== userEmail) return;
+        setSavingWallTitles(true);
+        setWallTitleError('');
+        try {
+            const wallTitles = Object.fromEntries(Object.keys(WALL_LABELS).map(wall => [
+                wall, (wallTitleDraft[wall as keyof typeof WALL_LABELS] || '').trim().slice(0, 80)
+            ]));
+            const success = await updateGallery(currentGallery.id, { wallTitles });
+            if (!success) {
+                setWallTitleError('Chưa lưu được tiêu đề. Bạn hãy thử lại.');
+                return;
+            }
+            const updated = { ...currentGallery, wallTitles };
+            setCurrentGallery(updated);
+            setGalleries(prev => prev.map(item => item.id === updated.id ? updated : item));
+            setWallTitleDraft(null);
+        } catch {
+            setWallTitleError('Chưa lưu được tiêu đề. Bạn hãy thử lại.');
+        } finally {
+            setSavingWallTitles(false);
+        }
+    };
 
     const loadUserGalleries = async () => {
         if (!userEmail) {
@@ -1570,6 +1641,11 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
                             {!readOnly && <p className="hidden text-xs font-bold text-white/55 md:block">{filledCount}/{paintings.length} khung đã có nội dung</p>}
                         </div>
                         <div className="flex shrink-0 items-center gap-2">
+                            {!readOnly && <button type="button" onClick={() => {
+                                setSelectedFrame(null);
+                                setWallTitleError('');
+                                setWallTitleDraft({ ...currentGallery.wallTitles });
+                            }} className="rounded-xl bg-amber-500 px-3 py-2 text-xs font-black text-slate-950 md:text-sm">Tiêu đề tường</button>}
                                 <button type="button" onClick={handleFullscreen} className="inline-flex h-9 w-9 items-center justify-center rounded-xl bg-white/10 text-white hover:bg-white/15 md:h-10 md:w-10 md:rounded-2xl" title="Toàn màn hình">
                                 <Fullscreen size={18} />
                             </button>
@@ -1707,6 +1783,28 @@ export default function PhongTranh3D({ user, onRequireLogin, onBack }: Props) {
             {mode === 'dashboard' && renderDashboard()}
             {mode === 'editor' && renderRoom(false)}
             {mode === 'viewer' && renderRoom(true)}
+
+            {wallTitleDraft && mode === 'editor' && createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4">
+                    <form role="dialog" aria-modal="true" aria-labelledby="wall-titles-heading" onSubmit={event => { event.preventDefault(); void saveWallTitles(); }} className="max-h-[90dvh] w-full max-w-lg overflow-y-auto rounded-3xl bg-white p-6 text-slate-800 shadow-2xl">
+                        <h3 id="wall-titles-heading" className="text-xl font-black">Tiêu đề từng mảng tường</h3>
+                        <p className="mt-2 text-sm text-slate-600">Bảng tiêu đề nằm phía trên các khung tranh. Để trống nếu muốn ẩn bảng.</p>
+                        <button type="button" disabled={savingWallTitles} onClick={() => setWallTitleDraft({ ...SOIL_WALL_TITLES })} className="my-4 rounded-xl bg-emerald-100 px-3 py-2 text-sm font-bold text-emerald-800">Dùng mẫu bảo vệ đất</button>
+                        <fieldset disabled={savingWallTitles} className="space-y-3">
+                            {Object.entries(WALL_LABELS).map(([wall, label]) => (
+                                <label key={wall} className="block text-sm font-bold">{label}
+                                    <input autoFocus={wall === 'left'} maxLength={80} value={wallTitleDraft[wall as keyof typeof WALL_LABELS] || ''} onChange={event => setWallTitleDraft(prev => ({ ...prev, [wall]: event.target.value }))} placeholder={SOIL_WALL_TITLES[wall as keyof typeof WALL_LABELS] || 'Ví dụ: Em cùng hành động!'} className="mt-1 w-full rounded-xl border border-slate-300 px-3 py-2 font-normal" />
+                                </label>
+                            ))}
+                        </fieldset>
+                        {wallTitleError && <p role="alert" className="mt-3 text-sm text-red-600">{wallTitleError}</p>}
+                        <div className="mt-5 flex justify-end gap-3">
+                            <button type="button" disabled={savingWallTitles} onClick={() => setWallTitleDraft(null)} className="rounded-xl bg-slate-100 px-4 py-2 font-bold">Hủy</button>
+                            <button type="submit" disabled={savingWallTitles} className="rounded-xl bg-amber-500 px-4 py-2 font-bold disabled:opacity-50">{savingWallTitles ? 'Đang lưu...' : 'Lưu tiêu đề'}</button>
+                        </div>
+                    </form>
+                </div>, containerRef.current || document.body
+            )}
 
             <AnimatePresence>
                 {showCreateModal && (
